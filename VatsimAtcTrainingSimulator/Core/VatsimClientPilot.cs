@@ -1,17 +1,39 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace VatsimAtcTrainingSimulator.Core
 {
+    public enum XpdrMode
+    {
+        STANDBY = 'S',
+        MODE_C = 'C',
+        IDENT = 'Y'
+    }
+
     class VatsimClientPilot : IVatsimClient
     {
         public VatsimConnectionHandler ConnHandler { get; private set; }
 
         private string NetworkId { get; set; }
+        private Thread posUpdThread;
 
         public string Callsign { get; private set; }
 
         public Action<string> Logger { get; set; }
+
+        public bool Paused { get; set; }
+        public XpdrMode XpdrMode { get; private set; }
+        public int Squawk { get; private set; }
+        public int Rating { get; private set; }
+        public AcftPosition Position { get; private set; }
+        public double GroundSpeed { get; private set; }
+        public double Pitch { get; private set; }
+        public double Bank { get; private set; }
+        public double Heading { get; private set; }
+        public bool OnGround { get; private set; }
+        public int PresAltDiff { get; private set; }
 
         public async Task<bool> Connect(string hostname, int port, string callsign, string cid, string password, string fullname, bool vatsim)
         {            
@@ -21,7 +43,8 @@ namespace VatsimAtcTrainingSimulator.Core
             // Establish Connection
             ConnHandler = new VatsimConnectionHandler()
             {
-                Logger = Logger
+                Logger = Logger,
+                RequestCommand = HandleRequest
             };
 
             await ConnHandler.Connect(hostname, port);
@@ -34,11 +57,107 @@ namespace VatsimAtcTrainingSimulator.Core
             // Connect client
             await ConnHandler.AddClient(CLIENT_TYPE.PILOT, Callsign, fullname, cid, password);
 
+            // Prefill data
+            Paused = true;
+
             return true;
+        }
+
+        private void CalculateNextPosition(int nextUpdateTimeMs)
+        {
+            if (!Paused)
+            {
+                Position = GeoTools.CalculateNextLatLon(Position, Heading, GroundSpeed, 0, nextUpdateTimeMs);
+            }
+        }
+
+        private void AircraftPositionWorker()
+        {
+            try
+            {
+                while (ConnHandler.Status == CONN_STATUS.CONNECTED)
+                {
+                    // Construct position data
+                    int posdata = 0;
+                    if (OnGround)
+                    {
+                        posdata += 2;
+                    }
+                    posdata += Convert.ToInt32(Heading * 1024.0 / 360.0) << 2;
+                    posdata += Convert.ToInt32(Bank * 512.0 / 180.0) << 12;
+                    posdata += Convert.ToInt32(Pitch * 256.0 / 90.0) << 22;
+
+                    // Send Position
+                    string posStr = $"@{(char) XpdrMode}:{Callsign}:{Squawk}:{Rating}:{Position.Latitude}:{Position.Longitude}:{Position.Altitude}:{GroundSpeed}:{posdata}:{PresAltDiff}";
+                    ConnHandler.SendData(posStr);
+
+                    // Calculate next position
+                    CalculateNextPosition(5000);
+
+                    Thread.Sleep(5000);
+                }
+            } catch (ThreadAbortException) { }
+        }
+
+        public void HandleRequest(string command, string requestee, string requester)
+        {
+            if (requestee.Equals(Callsign))
+            {
+                switch (command)
+                {
+                    case "ACC":
+                        AccConfig config = new AccConfig()
+                        {
+                            is_full_data = true,
+                            on_ground = OnGround
+                        };
+                        string jsonOut = JsonConvert.SerializeObject(config);
+
+                        ConnHandler.SendData($"$CQ{requester}:{Callsign}:{command}:{jsonOut}");
+                        break;
+                }
+            }
+        }
+
+        public void SetInitialData(XpdrMode xpdrMode, int squawk, int rating, double lat, double lon, double alt, double gs, int posdata, int presAltDiff)
+        {
+            XpdrMode = xpdrMode;
+            Squawk = squawk;
+            Rating = rating;
+            Position = new AcftPosition()
+            {
+                Latitude = lat,
+                Longitude = lon,
+                Altitude = alt
+            };
+
+            GroundSpeed = gs;
+            PresAltDiff = presAltDiff;
+
+            // Read position data
+            posdata >>= 1;
+            OnGround = (posdata & 0x1) != 0;
+            posdata >>= 1;
+            Heading = posdata & 0x3FF;
+            Heading = (Heading * 360.0) / 1024.0;
+            posdata >>= 10;
+            Bank = posdata & 0x3FF;
+            Bank = (Bank * 180.0) / 512;
+            posdata >>= 10;
+            Pitch = posdata & 0x3FF;
+            Pitch = (Pitch * 90.0) / 256.0;
+
+            // Start Position Update Thread
+            posUpdThread = new Thread(new ThreadStart(AircraftPositionWorker));
+            posUpdThread.Start();
         }
 
         public async Task Disconnect()
         {
+            // Abort pos update thread
+            try { posUpdThread.Abort(); } catch (Exception) { }
+            posUpdThread = null;
+
             // Send Disconnect Message
             await ConnHandler.RemoveClient(CLIENT_TYPE.PILOT, Callsign, NetworkId);
             await ConnHandler.Disconnect();

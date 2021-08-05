@@ -29,6 +29,7 @@ namespace VatsimAtcTrainingSimulator.Core
         public StreamReader Reader { get; private set; }
         public StreamWriter Writer { get; private set; }
         public Action<CONN_STATUS> StatusChangeAction { get; set; }
+        public Action<string, string, string> RequestCommand { get; set; }
         public Action<string> Logger { get; set; }
 
         public CONN_STATUS Status
@@ -90,6 +91,19 @@ namespace VatsimAtcTrainingSimulator.Core
             Status = CONN_STATUS.CONNECTED;
         }
 
+        private void HandleData(string line)
+        {
+            // Handle request
+            if (line.StartsWith("$CQ"))
+            {
+                string[] items = line.Split(':');
+                string requester = items[0].Replace("$CQ", "");
+                string command = items[2];
+
+                RequestCommand?.Invoke(command, items[1], requester);
+            }
+        }
+
         private void RecvData()
         {
             try
@@ -97,7 +111,10 @@ namespace VatsimAtcTrainingSimulator.Core
                 string line;
                 while ((line = Reader.ReadLine()) != null)
                 {
-                    Logger?.Invoke(line);
+                    if (line.StartsWith("$") || line.StartsWith("#"))
+                    {
+                        Logger?.Invoke(line);
+                    }
                 }
             } catch (ThreadAbortException)
             {
