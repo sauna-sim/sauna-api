@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -32,11 +33,21 @@ namespace VatsimAtcTrainingSimulator.Core
         public double Pitch { get; private set; }
         public double Bank { get; private set; }
         public double Heading { get; private set; }
-        public bool OnGround { get; private set; }
+        private bool _onGround = false;
+        public bool OnGround
+        {
+            get => _onGround;
+            private set
+            {
+                _onGround = value;
+                JObject obj = new JObject(new JProperty("on_ground", _onGround));
+                ConnHandler.SendData($"$CQ{Callsign}:@94836:ACC:{obj}");
+            }
+        }
         public int PresAltDiff { get; private set; }
 
         public async Task<bool> Connect(string hostname, int port, string callsign, string cid, string password, string fullname, bool vatsim)
-        {            
+        {
             Callsign = callsign;
             NetworkId = cid;
 
@@ -88,7 +99,7 @@ namespace VatsimAtcTrainingSimulator.Core
                     posdata += Convert.ToInt32(Pitch * 256.0 / 90.0) << 22;
 
                     // Send Position
-                    string posStr = $"@{(char) XpdrMode}:{Callsign}:{Squawk}:{Rating}:{Position.Latitude}:{Position.Longitude}:{Position.Altitude}:{GroundSpeed}:{posdata}:{PresAltDiff}";
+                    string posStr = $"@{(char)XpdrMode}:{Callsign}:{Squawk}:{Rating}:{Position.Latitude}:{Position.Longitude}:{Position.Altitude}:{GroundSpeed}:{posdata}:{PresAltDiff}";
                     ConnHandler.SendData(posStr);
 
                     // Calculate next position
@@ -96,7 +107,8 @@ namespace VatsimAtcTrainingSimulator.Core
 
                     Thread.Sleep(5000);
                 }
-            } catch (ThreadAbortException) { }
+            }
+            catch (ThreadAbortException) { }
         }
 
         public void HandleRequest(string command, string requestee, string requester)
@@ -113,7 +125,7 @@ namespace VatsimAtcTrainingSimulator.Core
                         };
                         string jsonOut = JsonConvert.SerializeObject(config);
 
-                        ConnHandler.SendData($"$CQ{requester}:{Callsign}:{command}:{jsonOut}");
+                        ConnHandler.SendData($"$CQ{Callsign}:{requester}:{command}:{jsonOut}");
                         break;
                 }
             }
@@ -146,6 +158,9 @@ namespace VatsimAtcTrainingSimulator.Core
             posdata >>= 10;
             Pitch = posdata & 0x3FF;
             Pitch = (Pitch * 90.0) / 256.0;
+
+            // Send initial configuration
+            HandleRequest("ACC", Callsign, "@94836");
 
             // Start Position Update Thread
             posUpdThread = new Thread(new ThreadStart(AircraftPositionWorker));
