@@ -131,7 +131,7 @@ namespace VatsimAtcTrainingSimulator.Core
             }
         }
 
-        public void SetInitialData(XpdrMode xpdrMode, int squawk, int rating, double lat, double lon, double alt, double gs, int posdata, int presAltDiff)
+        public async void SetInitialData(XpdrMode xpdrMode, int squawk, int rating, double lat, double lon, double alt, double gs, int posdata, int presAltDiff)
         {
             XpdrMode = xpdrMode;
             Squawk = squawk;
@@ -161,6 +161,9 @@ namespace VatsimAtcTrainingSimulator.Core
 
             // Send initial configuration
             HandleRequest("ACC", Callsign, "@94836");
+
+            // TEST
+            await GeoTools.GetWindsAloft(Callsign, Position);
 
             // Start Position Update Thread
             posUpdThread = new Thread(new ThreadStart(AircraftPositionWorker));
