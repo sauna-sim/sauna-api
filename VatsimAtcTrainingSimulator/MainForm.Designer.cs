@@ -35,29 +35,27 @@ namespace VatsimAtcTrainingSimulator
         private void InitializeComponent()
         {
             this.headerPnl = new System.Windows.Forms.Panel();
-            this.settingsBtn = new System.Windows.Forms.Button();
-            this.addAcftBtn = new System.Windows.Forms.Button();
-            this.mainSplitContainer = new System.Windows.Forms.SplitContainer();
-            this.connectionsList = new System.Windows.Forms.ListView();
-            this.msgBox = new System.Windows.Forms.TextBox();
             this.pauseAllBtn = new System.Windows.Forms.Button();
+            this.settingsBtn = new System.Windows.Forms.Button();
             this.menuStrip = new System.Windows.Forms.MenuStrip();
             this.fileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.openScenarioToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.euroscopeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.mainSplitContainer = new System.Windows.Forms.SplitContainer();
+            this.connectionsList = new System.Windows.Forms.ListView();
+            this.msgBox = new System.Windows.Forms.TextBox();
             this.headerPnl.SuspendLayout();
+            this.menuStrip.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.mainSplitContainer)).BeginInit();
             this.mainSplitContainer.Panel1.SuspendLayout();
             this.mainSplitContainer.Panel2.SuspendLayout();
             this.mainSplitContainer.SuspendLayout();
-            this.menuStrip.SuspendLayout();
             this.SuspendLayout();
             // 
             // headerPnl
             // 
             this.headerPnl.Controls.Add(this.pauseAllBtn);
             this.headerPnl.Controls.Add(this.settingsBtn);
-            this.headerPnl.Controls.Add(this.addAcftBtn);
             this.headerPnl.Controls.Add(this.menuStrip);
             this.headerPnl.Dock = System.Windows.Forms.DockStyle.Top;
             this.headerPnl.Location = new System.Drawing.Point(0, 0);
@@ -65,10 +63,21 @@ namespace VatsimAtcTrainingSimulator
             this.headerPnl.Size = new System.Drawing.Size(584, 57);
             this.headerPnl.TabIndex = 0;
             // 
+            // pauseAllBtn
+            // 
+            this.pauseAllBtn.FlatStyle = System.Windows.Forms.FlatStyle.System;
+            this.pauseAllBtn.Location = new System.Drawing.Point(12, 28);
+            this.pauseAllBtn.Name = "pauseAllBtn";
+            this.pauseAllBtn.Size = new System.Drawing.Size(75, 23);
+            this.pauseAllBtn.TabIndex = 2;
+            this.pauseAllBtn.Text = "Unpause All";
+            this.pauseAllBtn.UseVisualStyleBackColor = true;
+            this.pauseAllBtn.Click += new System.EventHandler(this.pauseAllBtn_Click);
+            // 
             // settingsBtn
             // 
             this.settingsBtn.FlatStyle = System.Windows.Forms.FlatStyle.System;
-            this.settingsBtn.Location = new System.Drawing.Point(165, 27);
+            this.settingsBtn.Location = new System.Drawing.Point(93, 28);
             this.settingsBtn.Name = "settingsBtn";
             this.settingsBtn.Size = new System.Drawing.Size(75, 23);
             this.settingsBtn.TabIndex = 1;
@@ -76,16 +85,38 @@ namespace VatsimAtcTrainingSimulator
             this.settingsBtn.UseVisualStyleBackColor = true;
             this.settingsBtn.Click += new System.EventHandler(this.settingsBtn_Click);
             // 
-            // addAcftBtn
+            // menuStrip
             // 
-            this.addAcftBtn.FlatStyle = System.Windows.Forms.FlatStyle.System;
-            this.addAcftBtn.Location = new System.Drawing.Point(3, 27);
-            this.addAcftBtn.Name = "addAcftBtn";
-            this.addAcftBtn.Size = new System.Drawing.Size(75, 23);
-            this.addAcftBtn.TabIndex = 0;
-            this.addAcftBtn.Text = "Add Aircraft";
-            this.addAcftBtn.UseVisualStyleBackColor = true;
-            this.addAcftBtn.Click += new System.EventHandler(this.addAcftBtn_Click);
+            this.menuStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.fileToolStripMenuItem});
+            this.menuStrip.Location = new System.Drawing.Point(0, 0);
+            this.menuStrip.Name = "menuStrip";
+            this.menuStrip.Size = new System.Drawing.Size(584, 24);
+            this.menuStrip.TabIndex = 3;
+            this.menuStrip.Text = "menuStrip1";
+            // 
+            // fileToolStripMenuItem
+            // 
+            this.fileToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.openScenarioToolStripMenuItem});
+            this.fileToolStripMenuItem.Name = "fileToolStripMenuItem";
+            this.fileToolStripMenuItem.Size = new System.Drawing.Size(37, 20);
+            this.fileToolStripMenuItem.Text = "File";
+            // 
+            // openScenarioToolStripMenuItem
+            // 
+            this.openScenarioToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.euroscopeToolStripMenuItem});
+            this.openScenarioToolStripMenuItem.Name = "openScenarioToolStripMenuItem";
+            this.openScenarioToolStripMenuItem.Size = new System.Drawing.Size(151, 22);
+            this.openScenarioToolStripMenuItem.Text = "Open Scenario";
+            // 
+            // euroscopeToolStripMenuItem
+            // 
+            this.euroscopeToolStripMenuItem.Name = "euroscopeToolStripMenuItem";
+            this.euroscopeToolStripMenuItem.Size = new System.Drawing.Size(129, 22);
+            this.euroscopeToolStripMenuItem.Text = "Euroscope";
+            this.euroscopeToolStripMenuItem.Click += new System.EventHandler(this.euroscopeToolStripMenuItem_Click);
             // 
             // mainSplitContainer
             // 
@@ -125,50 +156,6 @@ namespace VatsimAtcTrainingSimulator
             this.msgBox.Size = new System.Drawing.Size(386, 304);
             this.msgBox.TabIndex = 0;
             // 
-            // pauseAllBtn
-            // 
-            this.pauseAllBtn.FlatStyle = System.Windows.Forms.FlatStyle.System;
-            this.pauseAllBtn.Location = new System.Drawing.Point(84, 27);
-            this.pauseAllBtn.Name = "pauseAllBtn";
-            this.pauseAllBtn.Size = new System.Drawing.Size(75, 23);
-            this.pauseAllBtn.TabIndex = 2;
-            this.pauseAllBtn.Text = "Unpause All";
-            this.pauseAllBtn.UseVisualStyleBackColor = true;
-            this.pauseAllBtn.Click += new System.EventHandler(this.pauseAllBtn_Click);
-            // 
-            // menuStrip
-            // 
-            this.menuStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.fileToolStripMenuItem});
-            this.menuStrip.Location = new System.Drawing.Point(0, 0);
-            this.menuStrip.Name = "menuStrip";
-            this.menuStrip.Size = new System.Drawing.Size(584, 24);
-            this.menuStrip.TabIndex = 3;
-            this.menuStrip.Text = "menuStrip1";
-            // 
-            // fileToolStripMenuItem
-            // 
-            this.fileToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.openScenarioToolStripMenuItem});
-            this.fileToolStripMenuItem.Name = "fileToolStripMenuItem";
-            this.fileToolStripMenuItem.Size = new System.Drawing.Size(37, 20);
-            this.fileToolStripMenuItem.Text = "File";
-            // 
-            // openScenarioToolStripMenuItem
-            // 
-            this.openScenarioToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.euroscopeToolStripMenuItem});
-            this.openScenarioToolStripMenuItem.Name = "openScenarioToolStripMenuItem";
-            this.openScenarioToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
-            this.openScenarioToolStripMenuItem.Text = "Open Scenario";
-            // 
-            // euroscopeToolStripMenuItem
-            // 
-            this.euroscopeToolStripMenuItem.Name = "euroscopeToolStripMenuItem";
-            this.euroscopeToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
-            this.euroscopeToolStripMenuItem.Text = "Euroscope";
-            this.euroscopeToolStripMenuItem.Click += new System.EventHandler(this.euroscopeToolStripMenuItem_Click);
-            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -185,13 +172,13 @@ namespace VatsimAtcTrainingSimulator
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.MainForm_FormClosing);
             this.headerPnl.ResumeLayout(false);
             this.headerPnl.PerformLayout();
+            this.menuStrip.ResumeLayout(false);
+            this.menuStrip.PerformLayout();
             this.mainSplitContainer.Panel1.ResumeLayout(false);
             this.mainSplitContainer.Panel2.ResumeLayout(false);
             this.mainSplitContainer.Panel2.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.mainSplitContainer)).EndInit();
             this.mainSplitContainer.ResumeLayout(false);
-            this.menuStrip.ResumeLayout(false);
-            this.menuStrip.PerformLayout();
             this.ResumeLayout(false);
 
         }
@@ -199,7 +186,6 @@ namespace VatsimAtcTrainingSimulator
         #endregion
 
         private Panel headerPnl;
-        private Button addAcftBtn;
         private Button settingsBtn;
         private SplitContainer mainSplitContainer;
         private ListView connectionsList;

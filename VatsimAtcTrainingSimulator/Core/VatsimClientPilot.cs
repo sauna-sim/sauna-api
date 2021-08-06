@@ -3,6 +3,7 @@ using Newtonsoft.Json.Linq;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using VatsimAtcTrainingSimulator.Core.GeoTools;
 
 namespace VatsimAtcTrainingSimulator.Core
 {
@@ -78,7 +79,7 @@ namespace VatsimAtcTrainingSimulator.Core
         {
             if (!Paused)
             {
-                Position = GeoTools.CalculateNextLatLon(Position, Heading, GroundSpeed, 0, nextUpdateTimeMs);
+                Position = AcftGeoUtil.CalculateNextLatLon(Position, Heading, GroundSpeed, 0, nextUpdateTimeMs);
             }
         }
 
@@ -108,7 +109,15 @@ namespace VatsimAtcTrainingSimulator.Core
                     Thread.Sleep(5000);
                 }
             }
-            catch (ThreadAbortException) { }
+            catch (Exception ex)
+            {
+                if (ex is ThreadAbortException)
+                {
+                    return;
+                }
+
+                throw ex;
+            }
         }
 
         public void HandleRequest(string command, string requestee, string requester)
@@ -163,7 +172,7 @@ namespace VatsimAtcTrainingSimulator.Core
             HandleRequest("ACC", Callsign, "@94836");
 
             // TEST
-            await GeoTools.GetWindsAloft(Callsign, Position);
+            await GribUtil.GetWindsAloft(Position);
 
             // Start Position Update Thread
             posUpdThread = new Thread(new ThreadStart(AircraftPositionWorker));
@@ -172,10 +181,6 @@ namespace VatsimAtcTrainingSimulator.Core
 
         public async Task Disconnect()
         {
-            // Abort pos update thread
-            try { posUpdThread.Abort(); } catch (Exception) { }
-            posUpdThread = null;
-
             // Send Disconnect Message
             await ConnHandler.RemoveClient(CLIENT_TYPE.PILOT, Callsign, NetworkId);
             await ConnHandler.Disconnect();
@@ -183,7 +188,7 @@ namespace VatsimAtcTrainingSimulator.Core
 
         ~VatsimClientPilot()
         {
-            Disconnect();
+            Disconnect().ConfigureAwait(false);
         }
     }
 }

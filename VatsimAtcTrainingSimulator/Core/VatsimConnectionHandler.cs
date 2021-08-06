@@ -109,16 +109,21 @@ namespace VatsimAtcTrainingSimulator.Core
             try
             {
                 string line;
-                while ((line = Reader.ReadLine()) != null)
+                while (Status == CONN_STATUS.CONNECTED && (line = Reader.ReadLine()) != null)
                 {
                     if (line.StartsWith("$") || line.StartsWith("#"))
                     {
                         Logger?.Invoke(line);
                     }
                 }
-            } catch (ThreadAbortException)
+            } catch (Exception ex)
             {
-                // Exit the loop
+                if (ex is ThreadAbortException || ex is IOException)
+                {
+                    return;
+                }
+
+                throw ex;
             }
         }
 
@@ -141,13 +146,16 @@ namespace VatsimAtcTrainingSimulator.Core
                     // Send data
                     await Writer.WriteLineAsync(msg);
                 }
-                catch (InvalidOperationException)
+                catch (Exception ex)
                 {
-                    await Task.Delay(100);
-                }
-                catch (IOException)
-                {
-                    await Disconnect();
+                    if (ex is ObjectDisposedException || ex is InvalidOperationException)
+                    {
+
+                        writingData = false;
+                        return;
+                    }
+
+                    throw ex;
                 }
             }
 
@@ -174,7 +182,11 @@ namespace VatsimAtcTrainingSimulator.Core
 
         public async Task Disconnect()
         {
-            // Wait until lock opens up
+            // Disconnect
+            Logger?.Invoke("STATUS: Disconnected");
+            Status = CONN_STATUS.DISCONNECTED;
+
+            // Wait until lock opens up and thread has finished
             await Task.Run(() =>
             {
                 while (writingData) { Thread.Sleep(100); }
@@ -183,20 +195,29 @@ namespace VatsimAtcTrainingSimulator.Core
             // acquire lock
             writingData = true;
 
-            // Disconnect
-            Logger?.Invoke("STATUS: Disconnected");
-            Status = CONN_STATUS.DISCONNECTED;
-            try { Reader.Close(); } catch (Exception) { }
-            try { Writer.Close(); } catch (Exception) { }
-            try { Client.Close(); } catch (Exception) { }
-            Reader = null;
-            Writer = null;
-            Client = null;
-            try { recvThread.Abort(); } catch (Exception) { }
-            recvThread = null;
+            if (Reader != null)
+            {
+                Reader.Close();
+            }
+
+            if (Writer != null)
+            {
+                Writer.Close();
+            }
+
+            if (Client != null)
+            {
+                Client.Close();
+            }
 
             // Release Lock
             writingData = false;
+        }
+
+        ~VatsimConnectionHandler()
+        {
+            // Disconnect
+            Disconnect().ConfigureAwait(false);
         }
     }
 }

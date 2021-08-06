@@ -41,20 +41,6 @@ namespace VatsimAtcTrainingSimulator
             catch (InvalidOperationException) { }
         }
 
-        private async void addAcftBtn_Click(object sender, EventArgs e)
-        {
-            VatsimClientPilot pilot = new VatsimClientPilot()
-            {
-                Logger = logMsg
-            };
-            if (await pilot.Connect(Properties.Settings.Default.server, Properties.Settings.Default.port, "UAL" + clients.Count, Properties.Settings.Default.cid, Properties.Settings.Default.password, "Simulator Pilot", Properties.Settings.Default.vatsimServer))
-            {
-                connectionsList.Items.Add(pilot.Callsign);
-                connectionsList.Refresh();
-                clients.Add(pilot);
-            }
-        }
-
         private async void MainForm_FormClosing(object sender, FormClosingEventArgs e)
         {
             // Disconnect all clients first
@@ -62,7 +48,6 @@ namespace VatsimAtcTrainingSimulator
             {
                 await client.Disconnect();
             }
-            clients = new List<IVatsimClient>();
             connectionsList.Clear();
         }
 
