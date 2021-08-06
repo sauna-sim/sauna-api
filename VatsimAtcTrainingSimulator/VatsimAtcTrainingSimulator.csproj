@@ -75,7 +75,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Core\AccConfig.cs" />
+    <Compile Include="Core\GeoTools\AcftData.cs" />
     <Compile Include="Core\GeoTools\AcftGeoUtil.cs" />
+    <Compile Include="Core\GeoTools\GribDataPoint.cs" />
     <Compile Include="Core\GeoTools\GribTile.cs" />
     <Compile Include="Core\GeoTools\GribUtil.cs" />
     <Compile Include="Core\VatsimConnectionHandler.cs" />

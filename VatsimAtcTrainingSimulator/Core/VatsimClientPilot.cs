@@ -29,11 +29,9 @@ namespace VatsimAtcTrainingSimulator.Core
         public XpdrMode XpdrMode { get; private set; }
         public int Squawk { get; private set; }
         public int Rating { get; private set; }
-        public AcftPosition Position { get; private set; }
-        public double GroundSpeed { get; private set; }
+        public AcftData Position { get; private set; }
         public double Pitch { get; private set; }
         public double Bank { get; private set; }
-        public double Heading { get; private set; }
         private bool _onGround = false;
         public bool OnGround
         {
@@ -79,7 +77,7 @@ namespace VatsimAtcTrainingSimulator.Core
         {
             if (!Paused)
             {
-                Position = AcftGeoUtil.CalculateNextLatLon(Position, Heading, GroundSpeed, 0, nextUpdateTimeMs);
+                AcftGeoUtil.CalculateNextLatLon(Position, 0, nextUpdateTimeMs);
             }
         }
 
@@ -95,12 +93,12 @@ namespace VatsimAtcTrainingSimulator.Core
                     {
                         posdata += 2;
                     }
-                    posdata += Convert.ToInt32(Heading * 1024.0 / 360.0) << 2;
+                    posdata += Convert.ToInt32(Position.Heading_Mag * 1024.0 / 360.0) << 2;
                     posdata += Convert.ToInt32(Bank * 512.0 / 180.0) << 12;
                     posdata += Convert.ToInt32(Pitch * 256.0 / 90.0) << 22;
 
                     // Send Position
-                    string posStr = $"@{(char)XpdrMode}:{Callsign}:{Squawk}:{Rating}:{Position.Latitude}:{Position.Longitude}:{Position.Altitude}:{GroundSpeed}:{posdata}:{PresAltDiff}";
+                    string posStr = $"@{(char)XpdrMode}:{Callsign}:{Squawk}:{Rating}:{Position.Latitude}:{Position.Longitude}:{Position.Altitude}:{Position.GroundSpeed}:{posdata}:{PresAltDiff}";
                     ConnHandler.SendData(posStr);
 
                     // Calculate next position
@@ -140,27 +138,21 @@ namespace VatsimAtcTrainingSimulator.Core
             }
         }
 
-        public async void SetInitialData(XpdrMode xpdrMode, int squawk, int rating, double lat, double lon, double alt, double gs, int posdata, int presAltDiff)
+        public void SetInitialData(XpdrMode xpdrMode, int squawk, int rating, double lat, double lon, double alt, double gs, int posdata, int presAltDiff)
         {
             XpdrMode = xpdrMode;
             Squawk = squawk;
             Rating = rating;
-            Position = new AcftPosition()
-            {
-                Latitude = lat,
-                Longitude = lon,
-                Altitude = alt
-            };
+            Position = new AcftData();
 
-            GroundSpeed = gs;
             PresAltDiff = presAltDiff;
 
             // Read position data
             posdata >>= 1;
             OnGround = (posdata & 0x1) != 0;
             posdata >>= 1;
-            Heading = posdata & 0x3FF;
-            Heading = (Heading * 360.0) / 1024.0;
+            double hdg = posdata & 0x3FF;
+            hdg = (hdg * 360.0) / 1024.0;
             posdata >>= 10;
             Bank = posdata & 0x3FF;
             Bank = (Bank * 180.0) / 512;
@@ -168,11 +160,11 @@ namespace VatsimAtcTrainingSimulator.Core
             Pitch = posdata & 0x3FF;
             Pitch = (Pitch * 90.0) / 256.0;
 
+            // Set initial position
+            Position.UpdatePosition(lat, lon, alt, hdg, 250);
+
             // Send initial configuration
             HandleRequest("ACC", Callsign, "@94836");
-
-            // TEST
-            await GribUtil.GetWindsAloft(Position);
 
             // Start Position Update Thread
             posUpdThread = new Thread(new ThreadStart(AircraftPositionWorker));
