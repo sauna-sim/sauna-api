@@ -29,6 +29,7 @@ namespace VatsimAtcTrainingSimulator
             Properties.Settings.Default.password = passTxtBx.Text;
             Properties.Settings.Default.vatsimServer = vatsimServerChxBx.Checked;
             Properties.Settings.Default.port = Convert.ToInt32(portNumBx.Value);
+            Properties.Settings.Default.Save();
             this.Close();
         }
     }
