@@ -26,16 +26,20 @@ namespace VatsimAtcTrainingSimulator.Core.GeoTools
             lock (GribTileListLock)
             {
                 // Look for tile
-                foundTile = GribTileList.Find(t => t.IsAcftInside(pos) && t.IsValid(now));
-            }
-
-            // Create if not found
-            if (foundTile == null)
-            {
-                foundTile = new GribTile(pos.Latitude, pos.Longitude, now);
-
-                lock (GribTileListLock)
+                foundTile = null;
+                foreach (GribTile tile in GribTileList)
                 {
+                    if (tile.IsAcftInside(pos) && tile.IsValid(now))
+                    {
+                        foundTile = tile;
+                        break;
+                    }
+                }
+
+                // Create if not found
+                if (foundTile == null)
+                {
+                    foundTile = new GribTile(pos.Latitude, pos.Longitude, now);
                     GribTileList.Add(foundTile);
                 }
             }
@@ -59,8 +63,6 @@ namespace VatsimAtcTrainingSimulator.Core.GeoTools
         private string GribDateString => OffsetDateUtc.ToString("yyyyMMdd");
         private string CycleString => Cycle.ToString("00");
         private string ForecastHourString => ForecastHour.ToString("000");
-        private bool Downloading { get; set; }
-        private TaskCompletionSource<bool> WaitForDownload { get; set; }
         private List<GribDataPoint> dataPoints;
         private readonly object GribDataListLock = new object();
 
@@ -68,7 +70,6 @@ namespace VatsimAtcTrainingSimulator.Core.GeoTools
         {
             dataPoints = new List<GribDataPoint>();
             Downloaded = false;
-            Downloading = false;
 
             // Create Tile Bounds
             LeftLongitude = Math.Max(Convert.ToInt16(longitude), (short)-180);
@@ -78,10 +79,14 @@ namespace VatsimAtcTrainingSimulator.Core.GeoTools
 
             // Convert to UTC
             ForecastDateUtc = dateTime.ToUniversalTime();
+
+            DownloadTile();
         }
 
         private void ExtractData()
         {
+            List<GribDataPoint> sfcValues = new List<GribDataPoint>();
+
             // Extract Data From Grib File
             using (GribFile file = new GribFile(GribFileName))
             {
@@ -128,42 +133,85 @@ namespace VatsimAtcTrainingSimulator.Core.GeoTools
                                 case "rh":
                                     foundPoint.RelativeHumidity = val.Value;
                                     break;
+                                default:
+                                    Console.WriteLine($"{msg.ShortName}: {val.Value} {msg.Units}");
+                                    break;
                             }
                         }
+                    }
+                    else if (msg.TypeOfLevel.Equals("meanSea"))
+                    {
+                        switch (msg.ShortName)
+                        {
+                            case "prmsl":
+                                foreach (GeoSpatialValue val in msg.GeoSpatialValues)
+                                {
+                                    // Get GRID Point if it exists
+                                    GribDataPoint foundPoint = null;
+
+                                    foreach (GribDataPoint pt in sfcValues)
+                                    {
+                                        if (pt.Latitude == val.Latitude && pt.Longitude == val.Longitude && msg.Level == 0)
+                                        {
+                                            foundPoint = pt;
+                                            break;
+                                        }
+                                    }
+
+                                    // Otherwise, create new point
+                                    if (foundPoint == null)
+                                    {
+                                        foundPoint = new GribDataPoint(val.Latitude, val.Longitude, msg.Level);
+                                        dataPoints.Add(foundPoint);
+                                    }
+
+                                    foundPoint.SfcPress_hPa = val.Value / 100.0;
+                                }
+                                break;
+                        }
+                    }
+                }
+            }
+
+            // Add Surface Pressures
+            foreach (GribDataPoint point in dataPoints)
+            {
+                foreach (GribDataPoint sfc in sfcValues)
+                {
+                    if (sfc.Longitude == point.Longitude && sfc.Latitude == point.Latitude)
+                    {
+                        point.SfcPress_hPa = sfc.SfcPress_hPa;
+                        break;
                     }
                 }
             }
         }
 
-        public async Task DownloadTile()
+        private async Task DownloadTile()
         {
             if (!Downloaded)
             {
-                // If another thread is already downloading, just wait for that to finish
-                if (Downloading)
+                if (File.Exists(GribFileName))
                 {
-                    await WaitForDownload?.Task;
-                    return;
+                    File.Delete(GribFileName);
                 }
 
-                Downloading = true;
-                WaitForDownload = new TaskCompletionSource<bool>();
                 using (WebClient wc = new WebClient())
                 {
                     // Generate URL
-                    string url = $"https://nomads.ncep.noaa.gov/cgi-bin/filter_gfs_0p25.pl?file=gfs.t{CycleString}z.pgrb2.0p25.f{ForecastHourString}&lev_1000_mb=on&lev_100_mb=on&lev_150_mb=on&lev_200_mb=on&lev_250_mb=on&lev_300_mb=on&lev_350_mb=on&lev_400_mb=on&lev_450_mb=on&lev_500_mb=on&lev_550_mb=on&lev_600_mb=on&lev_650_mb=on&lev_700_mb=on&lev_750_mb=on&lev_800_mb=on&lev_850_mb=on&lev_900_mb=on&lev_925_mb=on&lev_950_mb=on&lev_975_mb=on&lev_mean_sea_level=on&lev_surface=on&var_HGT=on&var_PRES=on&var_TMP=on&var_UGRD=on&var_VGRD=on&subregion=&leftlon={LeftLongitude}&rightlon={RightLongitude}&toplat={TopLatitude}&bottomlat={BottomLatitude}&dir=%2Fgfs.{GribDateString}%2F{CycleString}%2Fatmos";
+                    string url = $"https://nomads.ncep.noaa.gov/cgi-bin/filter_gfs_0p25.pl?file=gfs.t{CycleString}z.pgrb2.0p25.f{ForecastHourString}&lev_1000_mb=on&lev_100_mb=on&lev_150_mb=on&lev_200_mb=on&lev_250_mb=on&lev_300_mb=on&lev_350_mb=on&lev_400_mb=on&lev_450_mb=on&lev_500_mb=on&lev_550_mb=on&lev_600_mb=on&lev_650_mb=on&lev_700_mb=on&lev_750_mb=on&lev_800_mb=on&lev_850_mb=on&lev_900_mb=on&lev_925_mb=on&lev_950_mb=on&lev_975_mb=on&lev_mean_sea_level=on&lev_surface=on&var_HGT=on&var_PRES=on&var_TMP=on&var_UGRD=on&var_VGRD=on&var_PRMSL=on&subregion=&leftlon={LeftLongitude}&rightlon={RightLongitude}&toplat={TopLatitude}&bottomlat={BottomLatitude}&dir=%2Fgfs.{GribDateString}%2F{CycleString}%2Fatmos";
 
                     // Download File
                     try
                     {
                         await wc.DownloadFileTaskAsync(new System.Uri(url), GribFileName);
                     }
-                    catch (WebException)
+                    catch (WebException we)
                     {
+                        Console.WriteLine(we.Message + ": " + we.StackTrace.ToString());
+
                         // Set Downloaded Flag
                         Downloaded = false;
-                        Downloading = false;
-                        WaitForDownload?.TrySetResult(true);
                         return;
                     }
 
@@ -172,8 +220,6 @@ namespace VatsimAtcTrainingSimulator.Core.GeoTools
 
                     // Set Downloaded Flag
                     Downloaded = true;
-                    Downloading = false;
-                    WaitForDownload?.TrySetResult(true);
                 }
             }
         }
@@ -201,7 +247,7 @@ namespace VatsimAtcTrainingSimulator.Core.GeoTools
 
         public bool IsValid(DateTime dateTime)
         {
-            return (ForecastDateUtc - dateTime.ToUniversalTime()).TotalHours == 0;
+            return Math.Abs((ForecastDateUtc - dateTime.ToUniversalTime()).TotalHours) < 1;
         }
 
         public bool IsAcftInside(AcftData pos)
@@ -241,7 +287,6 @@ namespace VatsimAtcTrainingSimulator.Core.GeoTools
 
         ~GribTile()
         {
-            WaitForDownload?.TrySetResult(true);
             if (Downloaded)
             {
                 try

@@ -23,6 +23,7 @@ namespace VatsimAtcTrainingSimulator.Core.GeoTools
         public double WDir_rads => Math.Atan2(V_mpers, U_mpers);
         public double WDir_deg => (WDir_rads * 180.0) / Math.PI;
         public double RelativeHumidity { get; set; }
+        public double SfcPress_hPa { get; set; }
 
         public GribDataPoint(double lat, double lon, int level_hPa)
         {

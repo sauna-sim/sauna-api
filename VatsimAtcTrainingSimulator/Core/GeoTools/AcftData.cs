@@ -47,26 +47,33 @@ namespace VatsimAtcTrainingSimulator.Core.GeoTools
 
         public double GroundSpeed => TrueAirSpeed - WindHComp;
 
-        public async void UpdatePosition(double lat, double lon, double alt, double hdg, double ias)
+        public void UpdatePosition(double lat, double lon, double alt, double hdg, double ias)
         {
             Latitude = lat;
             Longitude = lon;
             Altitude = alt;
             Heading_Mag = hdg;
             IndicatedAirSpeed = ias;
-            AltimeterSetting_hPa = 1013;
 
-            GribDataPoint point = await GribUtil.GetClosestGribPoint(this);
+            GribDataPoint point = GribUtil.GetClosestGribPoint(this);
             if (point == null)
             {
                 WindDirection = 0;
                 WindSpeed = 0;
+                AltimeterSetting_hPa = 1013;
                 StaticAirTemperature = AcftGeoUtil.CalculateIsaTemp(alt);
             }
             else
             {
                 WindDirection = point.WDir_deg;
                 WindSpeed = point.WSpeed_kts;
+                if (point.SfcPress_hPa != 0)
+                {
+                    AltimeterSetting_hPa = point.SfcPress_hPa;
+                } else
+                {
+                    AltimeterSetting_hPa = 1013;
+                }
                 StaticAirTemperature = point.Temp_C;
             }
         }

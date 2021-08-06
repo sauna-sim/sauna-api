@@ -8,14 +8,9 @@ namespace VatsimAtcTrainingSimulator.Core.GeoTools
 {
     public static class GribUtil
     {
-        public async static Task<GribDataPoint> GetClosestGribPoint(AcftData pos)
+        public static GribDataPoint GetClosestGribPoint(AcftData pos)
         {
             GribTile tile = GribTile.FindOrCreateGribTile(pos, DateTime.UtcNow);
-
-            if (!tile.Downloaded)
-            {
-                await tile.DownloadTile();
-            }
 
             return tile.GetClosestPoint(pos);
         }
