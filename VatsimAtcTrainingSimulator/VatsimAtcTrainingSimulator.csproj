@@ -74,6 +74,12 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CommandWindow.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="CommandWindow.Designer.cs">
+      <DependentUpon>CommandWindow.cs</DependentUpon>
+    </Compile>
     <Compile Include="Core\AccConfig.cs" />
     <Compile Include="Core\GeoTools\AcftData.cs" />
     <Compile Include="Core\GeoTools\AcftGeoUtil.cs" />
@@ -98,6 +104,9 @@
     <Compile Include="SettingsForm.Designer.cs">
       <DependentUpon>SettingsForm.cs</DependentUpon>
     </Compile>
+    <EmbeddedResource Include="CommandWindow.resx">
+      <DependentUpon>CommandWindow.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="MainForm.resx">
       <DependentUpon>MainForm.cs</DependentUpon>
     </EmbeddedResource>

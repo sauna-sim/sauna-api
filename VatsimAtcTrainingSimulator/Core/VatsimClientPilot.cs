@@ -51,7 +51,7 @@ namespace VatsimAtcTrainingSimulator.Core
             NetworkId = cid;
 
             // Establish Connection
-            ConnHandler = new VatsimConnectionHandler()
+            ConnHandler = new VatsimConnectionHandler(Callsign)
             {
                 Logger = Logger,
                 RequestCommand = HandleRequest
@@ -168,6 +168,7 @@ namespace VatsimAtcTrainingSimulator.Core
 
             // Start Position Update Thread
             posUpdThread = new Thread(new ThreadStart(AircraftPositionWorker));
+            posUpdThread.Name = $"{Callsign} Position Worker";
             posUpdThread.Start();
         }
 

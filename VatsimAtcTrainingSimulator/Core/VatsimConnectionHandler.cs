@@ -24,6 +24,7 @@ namespace VatsimAtcTrainingSimulator.Core
         private Thread recvThread;
         private CONN_STATUS _status;
         private bool writingData;
+        private string callsign;
 
         public TcpClient Client { get; private set; }
         public StreamReader Reader { get; private set; }
@@ -42,8 +43,9 @@ namespace VatsimAtcTrainingSimulator.Core
             }
         }
 
-        public VatsimConnectionHandler()
+        public VatsimConnectionHandler(string callsign)
         {
+            this.callsign = callsign;
             Status = CONN_STATUS.DISCONNECTED;
             writingData = false;
         }
@@ -84,6 +86,7 @@ namespace VatsimAtcTrainingSimulator.Core
 
             // Start Receive Thread
             recvThread = new Thread(new ThreadStart(RecvData));
+            recvThread.Name = $"{callsign} TCP Receiver";
             recvThread.Start();
 
             // Set Status to Connected

@@ -16,11 +16,15 @@ namespace VatsimAtcTrainingSimulator
     {
         private List<IVatsimClient> clients;
         private bool AllPaused = true;
+        private CommandWindow commandWindow;
 
         public MainForm()
         {
             InitializeComponent();
             clients = new List<IVatsimClient>();
+            commandWindow = new CommandWindow();
+            commandWindow.Show(this);
+            commandWindow.FormCloseEvent += commandWindow_Closed;
         }
 
         private void settingsBtn_Click(object sender, EventArgs e)
@@ -39,16 +43,6 @@ namespace VatsimAtcTrainingSimulator
                 });
             }
             catch (InvalidOperationException) { }
-        }
-
-        private async void MainForm_FormClosing(object sender, FormClosingEventArgs e)
-        {
-            // Disconnect all clients first
-            foreach (IVatsimClient client in clients)
-            {
-                await client.Disconnect();
-            }
-            connectionsList.Clear();
         }
 
         private async void euroscopeToolStripMenuItem_Click(object sender, EventArgs e)
@@ -130,6 +124,49 @@ namespace VatsimAtcTrainingSimulator
                 AllPaused = true;
                 pauseAllBtn.Text = "Unpause";
             }
+        }
+
+        private void commandWindowMenuItem_CheckedChanged(object sender, EventArgs e)
+        {
+            if (commandWindowMenuItem.Checked)
+            {
+                commandWindow.Show(this);
+            } else
+            {
+                commandWindow.Hide();
+            }
+        }
+
+        private void commandWindow_Closed(object sender, EventArgs e)
+        {
+            commandWindowMenuItem.Checked = false;
+        }
+
+        private void MainForm_LocationChanged(object sender, EventArgs e)
+        {
+            if (commandWindow.Docked && commandWindowMenuItem.Checked)
+            {
+                commandWindow.Left = this.Right;
+                commandWindow.Top = this.Top;
+            }
+        }
+
+        private void MainForm_SizeChanged(object sender, EventArgs e)
+        {
+            if (commandWindow.Docked && commandWindowMenuItem.Checked)
+            {
+                commandWindow.Height = this.Height;
+            }
+        }
+
+        private void MainForm_FormClosed(object sender, FormClosedEventArgs e)
+        {
+            // Disconnect all clients first
+            foreach (IVatsimClient client in clients)
+            {
+                client.Disconnect();
+            }
+            connectionsList.Clear();
         }
     }
 }
