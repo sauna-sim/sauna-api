@@ -40,6 +40,7 @@ namespace VatsimAtcTrainingSimulator.Core
 
         private string NetworkId { get; set; }
         private Thread posUpdThread;
+        private Thread posSendThread;
 
         public string Callsign { get; private set; }
 
@@ -63,7 +64,7 @@ namespace VatsimAtcTrainingSimulator.Core
                 _ = ConnHandler.SendData($"$CQ{Callsign}:@94836:ACC:{obj}");
             }
         }
-        public int PresAltDiff { get; private set; }
+        public int PresAltDiff => (int) (((Position.AltimeterSetting_hPa == 0 ? AcftGeoUtil.STD_PRES_HPA : Position.AltimeterSetting_hPa) - AcftGeoUtil.STD_PRES_HPA) * AcftGeoUtil.STD_PRES_DROP);
 
         // Assigned values
         private int _assignedHeading = 0;
@@ -101,21 +102,7 @@ namespace VatsimAtcTrainingSimulator.Core
             return true;
         }
 
-        private void CalculateNextPosition(int nextUpdateTimeMs)
-        {
-            if (!Paused)
-            {
-                // TODO: Make this less instant
-                if (Assigned_IAS != -1)
-                {
-                    Position.IndicatedAirSpeed = Assigned_IAS;
-                }
-
-                AcftGeoUtil.CalculateNextLatLon(Position, 0, Assigned_Heading, nextUpdateTimeMs);
-            }
-        }
-
-        private void AircraftPositionWorker()
+        private void AircraftPositionSender()
         {
             try
             {
@@ -132,13 +119,89 @@ namespace VatsimAtcTrainingSimulator.Core
                     posdata += Convert.ToInt32(Pitch * 256.0 / 90.0) << 22;
 
                     // Send Position
-                    string posStr = $"@{(char)XpdrMode}:{Callsign}:{Squawk}:{Rating}:{Position.Latitude}:{Position.Longitude}:{Position.Altitude}:{Position.GroundSpeed}:{posdata}:{PresAltDiff}";
+                    string posStr = $"@{(char)XpdrMode}:{Callsign}:{Squawk}:{Rating}:{Position.Latitude}:{Position.Longitude}:{Position.IndicatedAltitude}:{Position.GroundSpeed}:{posdata}:{PresAltDiff}";
                     _ = ConnHandler.SendData(posStr);
 
-                    // Calculate next position
-                    CalculateNextPosition(5000);
+                    Thread.Sleep(POS_SEND_INTERVAL);
+                }
+            }
+            catch (Exception ex)
+            {
+                if (ex is ThreadAbortException)
+                {
+                    return;
+                }
 
-                    Thread.Sleep(5000);
+                throw ex;
+            }
+        }
+
+        private void AircraftPositionWorker()
+        {
+            try
+            {
+                while (ConnHandler.Status == CONN_STATUS.CONNECTED)
+                {
+                    // Calculate position
+                    if (!Paused)
+                    {
+                        int slowDownKts = -2;
+                        int speedUpKts = 5;
+
+                        // Calculate Speed Change
+                        if (Assigned_IAS != -1)
+                        {
+                            if (Assigned_IAS <= Position.IndicatedAirSpeed)
+                            {
+                                Position.IndicatedAirSpeed = Math.Max(Assigned_IAS, Position.IndicatedAirSpeed + (slowDownKts * POS_CALC_INVERVAL / 1000.0));
+                            } else
+                            {
+                                Position.IndicatedAirSpeed = Math.Min(Assigned_IAS, Position.IndicatedAirSpeed + (speedUpKts * POS_CALC_INVERVAL / 1000.0));
+                            }
+                        }
+
+                        // Calculate next altitude
+                        double nextAlt = Position.IndicatedAltitude + ((POS_CALC_INVERVAL / 1000.0) * (0 / 60.0));
+
+                        // Calculate next position and heading
+                        double turnAmount = AcftGeoUtil.CalculateTurnAmount(Position.Heading_Mag, Assigned_Heading);
+                        double distanceTravelledNMi = AcftGeoUtil.CalculateDistanceTravelledNMi(Position.GroundSpeed, POS_CALC_INVERVAL);
+
+                        if (Math.Abs(turnAmount) > 1)
+                        {
+                            // Calculate bank angle
+                            double bankAngle = AcftGeoUtil.CalculateBankAngle(Position.GroundSpeed, 25, 3);
+
+                            // Calculate radius of turn
+                            double radiusOfTurn = AcftGeoUtil.CalculateRadiusOfTurn(bankAngle, Position.GroundSpeed);
+
+                            // Calculate degrees to turn
+                            double degreesToTurn = Math.Min(Math.Abs(turnAmount), AcftGeoUtil.CalculateDegreesTurned(distanceTravelledNMi, radiusOfTurn));
+
+                            // Figure out turn direction
+                            bool isRightTurn = (Assigned_TurnDirection == TurnDirection.SHORTEST) ? 
+                                (isRightTurn = turnAmount > 0) : 
+                                (isRightTurn = Assigned_TurnDirection == TurnDirection.RIGHT);
+                            
+                            // Calculate end heading
+                            double endHeading = AcftGeoUtil.CalculateEndHeading(Position.Heading_Mag, degreesToTurn, isRightTurn);
+
+                            // Calculate chord line data
+                            Tuple<double, double> chordLine = AcftGeoUtil.CalculateChordHeadingAndDistance(Position.Heading_Mag, degreesToTurn, radiusOfTurn, isRightTurn);
+
+                            // Calculate new position
+                            Position.Heading_Mag = chordLine.Item1;
+                            AcftGeoUtil.CalculateNextLatLon(Position, nextAlt, chordLine.Item2);
+                            Position.Heading_Mag = endHeading;
+                        } else
+                        {
+                            Position.Heading_Mag = Assigned_Heading;
+                            // Calculate new position
+                            AcftGeoUtil.CalculateNextLatLon(Position, nextAlt, distanceTravelledNMi);
+                        }
+                    }
+
+                    Thread.Sleep(POS_CALC_INVERVAL);
                 }
             }
             catch (Exception ex)
@@ -179,8 +242,6 @@ namespace VatsimAtcTrainingSimulator.Core
             Rating = rating;
             Position = new AcftData();
 
-            PresAltDiff = presAltDiff;
-
             // Read position data
             posdata >>= 1;
             OnGround = (posdata & 0x1) != 0;
@@ -195,7 +256,9 @@ namespace VatsimAtcTrainingSimulator.Core
             Pitch = (Pitch * 90.0) / 256.0;
 
             // Set initial position
-            Position.UpdatePosition(lat, lon, alt, hdg, 250);
+            Position.Heading_Mag = hdg;
+            Position.IndicatedAirSpeed = 250;
+            Position.UpdatePosition(lat, lon, alt);
 
             // Set initial assignments
             Assigned_Heading = Convert.ToInt32(hdg);
@@ -210,6 +273,11 @@ namespace VatsimAtcTrainingSimulator.Core
             posUpdThread = new Thread(new ThreadStart(AircraftPositionWorker));
             posUpdThread.Name = $"{Callsign} Position Worker";
             posUpdThread.Start();
+
+            // Start Position Send Thread
+            posSendThread = new Thread(new ThreadStart(AircraftPositionSender));
+            posSendThread.Name = $"{Callsign} Position Sender";
+            posSendThread.Start();
         }
 
         public async Task Disconnect()

@@ -8,21 +8,23 @@ namespace VatsimAtcTrainingSimulator.Core.GeoTools
     {
         public double Latitude { get; private set; }
         public double Longitude { get; private set; }
-        public double Altitude { get; private set; }
+        public double IndicatedAltitude { get; private set; }
         public double StaticAirTemperature { get; private set; }
         public double WindDirection { get; private set; }
         public double WindSpeed { get; private set; }
-        public double PressureAltitude => AcftGeoUtil.CalculatePressureAlt(Altitude, AltimeterSetting_hPa);
+        public double PressureAltitude => AcftGeoUtil.CalculatePressureAlt(IndicatedAltitude, AltimeterSetting_hPa);
         public double DensityAltitude => AcftGeoUtil.CalculateDensityAlt(PressureAltitude, StaticAirTemperature);
+        public double AbsoluteAltitude => AcftGeoUtil.CalculateAbsoluteAlt(IndicatedAltitude, AltimeterSetting_hPa, SurfacePressure_hPa);
         public double Heading_Mag { get; set; }
-        public double AltimeterSetting_hPa { get; set; }
+        public double AltimeterSetting_hPa { get; set; } = AcftGeoUtil.STD_PRES_HPA;
+        public double SurfacePressure_hPa { get; set; } = AcftGeoUtil.STD_PRES_HPA;
 
         public double Heading_True
         {
             get
             {
                 Coordinate coord = new Coordinate(Latitude, Longitude, DateTime.UtcNow);
-                Magnetic m = new Magnetic(coord, Altitude / 3.28084, DataModel.WMM2020);
+                Magnetic m = new Magnetic(coord, IndicatedAltitude / 3.28084, DataModel.WMM2020);
                 double declin = Math.Round(m.MagneticFieldElements.Declination, 1);
                 return Heading_Mag - declin;
             }
@@ -43,24 +45,22 @@ namespace VatsimAtcTrainingSimulator.Core.GeoTools
 
         public double IndicatedAirSpeed { get; set; }
 
-        public double TrueAirSpeed => AcftGeoUtil.CalculateTAS(IndicatedAirSpeed, AltimeterSetting_hPa, Altitude, StaticAirTemperature);
+        public double TrueAirSpeed => AcftGeoUtil.CalculateTAS(IndicatedAirSpeed, AltimeterSetting_hPa, IndicatedAltitude, StaticAirTemperature);
 
         public double GroundSpeed => TrueAirSpeed - WindHComp;
 
-        public void UpdatePosition(double lat, double lon, double alt, double hdg, double ias)
+        public void UpdatePosition(double lat, double lon, double alt)
         {
             Latitude = lat;
             Longitude = lon;
-            Altitude = alt;
-            Heading_Mag = hdg >= 360 ? hdg - 360 : hdg;
-            IndicatedAirSpeed = ias;
+            IndicatedAltitude = alt;
 
             GribDataPoint point = GribUtil.GetClosestGribPoint(this);
             if (point == null)
             {
                 WindDirection = 0;
                 WindSpeed = 0;
-                AltimeterSetting_hPa = 1013;
+                SurfacePressure_hPa = AcftGeoUtil.STD_PRES_HPA;
                 StaticAirTemperature = AcftGeoUtil.CalculateIsaTemp(alt);
             }
             else
@@ -69,10 +69,10 @@ namespace VatsimAtcTrainingSimulator.Core.GeoTools
                 WindSpeed = point.WSpeed_kts;
                 if (point.SfcPress_hPa != 0)
                 {
-                    AltimeterSetting_hPa = point.SfcPress_hPa;
+                    SurfacePressure_hPa = point.SfcPress_hPa;
                 } else
                 {
-                    AltimeterSetting_hPa = 1013;
+                    SurfacePressure_hPa = AcftGeoUtil.STD_PRES_HPA;
                 }
                 StaticAirTemperature = point.Temp_C;
             }

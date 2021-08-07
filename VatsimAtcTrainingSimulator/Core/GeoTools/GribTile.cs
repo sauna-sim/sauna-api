@@ -162,7 +162,7 @@ namespace VatsimAtcTrainingSimulator.Core.GeoTools
                                     if (foundPoint == null)
                                     {
                                         foundPoint = new GribDataPoint(val.Latitude, val.Longitude, msg.Level);
-                                        dataPoints.Add(foundPoint);
+                                        sfcValues.Add(foundPoint);
                                     }
 
                                     foundPoint.SfcPress_hPa = val.Value / 100.0;
