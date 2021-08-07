@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 namespace VatsimAtcTrainingSimulator.Core
 {
-    interface IVatsimClient
+    public interface IVatsimClient
     {
         VatsimConnectionHandler ConnHandler { get; }
 

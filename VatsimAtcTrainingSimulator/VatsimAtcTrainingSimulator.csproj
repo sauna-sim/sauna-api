@@ -86,6 +86,11 @@
     <Compile Include="Core\GeoTools\GribDataPoint.cs" />
     <Compile Include="Core\GeoTools\GribTile.cs" />
     <Compile Include="Core\GeoTools\GribUtil.cs" />
+    <Compile Include="Core\Simulator\FlyHeadingCommand.cs" />
+    <Compile Include="Core\Simulator\IAircraftCommand.cs" />
+    <Compile Include="Core\Simulator\SpeedCommand.cs" />
+    <Compile Include="Core\Simulator\TurnLeftHeadingCommand.cs" />
+    <Compile Include="Core\Simulator\TurnRightHeadingCommand.cs" />
     <Compile Include="Core\VatsimConnectionHandler.cs" />
     <Compile Include="Core\VatsimClientPilot.cs" />
     <Compile Include="Core\IVatsimClient.cs" />

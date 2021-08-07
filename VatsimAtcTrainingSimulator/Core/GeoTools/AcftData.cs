@@ -14,8 +14,8 @@ namespace VatsimAtcTrainingSimulator.Core.GeoTools
         public double WindSpeed { get; private set; }
         public double PressureAltitude => AcftGeoUtil.CalculatePressureAlt(Altitude, AltimeterSetting_hPa);
         public double DensityAltitude => AcftGeoUtil.CalculateDensityAlt(PressureAltitude, StaticAirTemperature);
-        public double Heading_Mag { get; private set; }
-        public double AltimeterSetting_hPa { get; private set; }
+        public double Heading_Mag { get; set; }
+        public double AltimeterSetting_hPa { get; set; }
 
         public double Heading_True
         {
@@ -52,7 +52,7 @@ namespace VatsimAtcTrainingSimulator.Core.GeoTools
             Latitude = lat;
             Longitude = lon;
             Altitude = alt;
-            Heading_Mag = hdg;
+            Heading_Mag = hdg >= 360 ? hdg - 360 : hdg;
             IndicatedAirSpeed = ias;
 
             GribDataPoint point = GribUtil.GetClosestGribPoint(this);

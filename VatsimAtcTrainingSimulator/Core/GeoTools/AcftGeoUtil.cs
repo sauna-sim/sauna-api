@@ -18,13 +18,13 @@ namespace VatsimAtcTrainingSimulator.Core.GeoTools
         public const double CONV_FACTOR_KELVIN_C = 273.15;
         public const double CONV_FACTOR_M_FT = 3.28084;
 
-        public static void CalculateNextLatLon(AcftData pos, double vsFtMin, double timeMs)
+        public static void CalculateNextLatLon(AcftData pos, double vsFtMin, double nextHeading, double timeMs)
         {
             Coordinate start = new Coordinate(pos.Latitude, pos.Longitude);
             double distanceNMi = (timeMs / 1000.0) * (pos.GroundSpeed / 60.0 / 60.0);
             double distanceM = distanceNMi * 1852;
             start.Move(distanceM, pos.Track_True, Shape.Ellipsoid);
-            pos.UpdatePosition(start.Latitude.ToDouble(), start.Longitude.ToDouble(), pos.Altitude + ((timeMs / 1000.0) * (vsFtMin / 60.0)), pos.Heading_Mag, pos.IndicatedAirSpeed);
+            pos.UpdatePosition(start.Latitude.ToDouble(), start.Longitude.ToDouble(), pos.Altitude + ((timeMs / 1000.0) * (vsFtMin / 60.0)), nextHeading, pos.IndicatedAirSpeed);
         }
 
         public static double CalculatePressureAlt(double alt_ind_ft, double pres_set_hpa)
@@ -58,6 +58,26 @@ namespace VatsimAtcTrainingSimulator.Core.GeoTools
             double tasCoeff = 1 / (Math.Sqrt(densityRatio));
 
             return tasCoeff * ias;
+        }
+
+        public static double CalculateTurnAmount(double currentHeading, double desiredHeading)
+        {
+            double headingDifference = desiredHeading - currentHeading;
+
+            // Normalize for across 360 or 0
+            if (headingDifference < 0)
+            {
+                headingDifference += 360;
+            }
+
+            // Right turn less than 180 degrees
+            if (headingDifference <= 180)
+            {
+                return headingDifference;
+            }
+
+            // Otherwise it's a left turn
+            return -1 * (headingDifference - 180);
         }
     }
 }

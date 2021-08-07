@@ -22,7 +22,7 @@ namespace VatsimAtcTrainingSimulator
         {
             InitializeComponent();
             clients = new List<IVatsimClient>();
-            commandWindow = new CommandWindow();
+            commandWindow = new CommandWindow(clients);
             commandWindow.Show(this);
             commandWindow.FormCloseEvent += commandWindow_Closed;
         }

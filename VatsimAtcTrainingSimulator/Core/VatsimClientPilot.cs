@@ -14,8 +14,28 @@ namespace VatsimAtcTrainingSimulator.Core
         IDENT = 'Y'
     }
 
-    class VatsimClientPilot : IVatsimClient
+    public enum TurnDirection
     {
+        LEFT = -1,
+        RIGHT = 1,
+        SHORTEST = 0
+    }
+
+    public enum AssignedIASType
+    {
+        FREE = -2,
+        LESS = -1,
+        EXACT = 0,
+        MORE = 1
+    }
+
+    public class VatsimClientPilot : IVatsimClient
+    {
+        // Constants
+        private const int POS_SEND_INTERVAL = 5000;
+        private const int POS_CALC_INVERVAL = 500;
+
+        // Properties
         public VatsimConnectionHandler ConnHandler { get; private set; }
 
         private string NetworkId { get; set; }
@@ -40,10 +60,18 @@ namespace VatsimAtcTrainingSimulator.Core
             {
                 _onGround = value;
                 JObject obj = new JObject(new JProperty("on_ground", _onGround));
-                ConnHandler.SendData($"$CQ{Callsign}:@94836:ACC:{obj}");
+                _ = ConnHandler.SendData($"$CQ{Callsign}:@94836:ACC:{obj}");
             }
         }
         public int PresAltDiff { get; private set; }
+
+        // Assigned values
+        private int _assignedHeading = 0;
+        public int Assigned_Heading { get => _assignedHeading; set => _assignedHeading = (value >= 360) ? value - 360 : value; }
+        public TurnDirection Assigned_TurnDirection { get; set; } = TurnDirection.SHORTEST;
+        public int Assigned_IAS { get; set; } = -1;
+        public AssignedIASType Assigned_IAS_Type { get; set; } = AssignedIASType.FREE;
+        public int Assigned_Altitude { get; set; }
 
         public async Task<bool> Connect(string hostname, int port, string callsign, string cid, string password, string fullname, bool vatsim)
         {
@@ -77,7 +105,13 @@ namespace VatsimAtcTrainingSimulator.Core
         {
             if (!Paused)
             {
-                AcftGeoUtil.CalculateNextLatLon(Position, 0, nextUpdateTimeMs);
+                // TODO: Make this less instant
+                if (Assigned_IAS != -1)
+                {
+                    Position.IndicatedAirSpeed = Assigned_IAS;
+                }
+
+                AcftGeoUtil.CalculateNextLatLon(Position, 0, Assigned_Heading, nextUpdateTimeMs);
             }
         }
 
@@ -99,7 +133,7 @@ namespace VatsimAtcTrainingSimulator.Core
 
                     // Send Position
                     string posStr = $"@{(char)XpdrMode}:{Callsign}:{Squawk}:{Rating}:{Position.Latitude}:{Position.Longitude}:{Position.Altitude}:{Position.GroundSpeed}:{posdata}:{PresAltDiff}";
-                    ConnHandler.SendData(posStr);
+                    _ = ConnHandler.SendData(posStr);
 
                     // Calculate next position
                     CalculateNextPosition(5000);
@@ -132,7 +166,7 @@ namespace VatsimAtcTrainingSimulator.Core
                         };
                         string jsonOut = JsonConvert.SerializeObject(config);
 
-                        ConnHandler.SendData($"$CQ{Callsign}:{requester}:{command}:{jsonOut}");
+                        _ = ConnHandler.SendData($"$CQ{Callsign}:{requester}:{command}:{jsonOut}");
                         break;
                 }
             }
@@ -162,6 +196,12 @@ namespace VatsimAtcTrainingSimulator.Core
 
             // Set initial position
             Position.UpdatePosition(lat, lon, alt, hdg, 250);
+
+            // Set initial assignments
+            Assigned_Heading = Convert.ToInt32(hdg);
+            Assigned_Altitude = Convert.ToInt32(alt);
+            Assigned_TurnDirection = TurnDirection.SHORTEST;
+
 
             // Send initial configuration
             HandleRequest("ACC", Callsign, "@94836");
