@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace VatsimAtcTrainingSimulator.Core.Simulator
@@ -27,10 +28,23 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator
             try
             {
                 // Parse heading
-                aircraft.Assigned_Heading = Convert.ToInt32(headingString);
+                int hdg = Convert.ToInt32(headingString);
 
-                // Set turn direction
-                aircraft.Assigned_TurnDirection = TurnDirection.RIGHT;
+                Thread t = new Thread(
+                () =>
+                {
+                    // Generate random delay
+                    int delay = new Random().Next(0, 3000);
+                    Thread.Sleep(delay);
+
+                    // Parse heading
+                    aircraft.Assigned_Heading = hdg;
+
+                    // Set turn direction
+                    aircraft.Assigned_TurnDirection = TurnDirection.RIGHT;
+                });
+
+                t.Start();                
 
                 Logger?.Invoke($"{aircraft.Callsign} turning right heading {aircraft.Assigned_Heading} degrees.");
 
