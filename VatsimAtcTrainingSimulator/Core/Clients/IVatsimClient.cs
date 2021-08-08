@@ -5,7 +5,7 @@ namespace VatsimAtcTrainingSimulator.Core
 {
     public interface IVatsimClient
     {
-        VatsimConnectionHandler ConnHandler { get; }
+        VatsimClientConnectionHandler ConnHandler { get; }
 
         Action<string> Logger { get; set; }
 

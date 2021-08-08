@@ -71,7 +71,10 @@ namespace VatsimAtcTrainingSimulator
 
                         VatsimClientPilot pilot = new VatsimClientPilot()
                         {
-                            Logger = logMsg
+                            Logger = (string msg) => {
+                                logMsg($"{callsign}: {msg}");
+                                //Console.WriteLine($"{callsign}: {msg}");
+                            }
                         };
 
                         if (await pilot.Connect(Properties.Settings.Default.server, Properties.Settings.Default.port, callsign, Properties.Settings.Default.cid, Properties.Settings.Default.password, "Simulator Pilot", Properties.Settings.Default.vatsimServer))
@@ -161,7 +164,7 @@ namespace VatsimAtcTrainingSimulator
 
         private void MainForm_FormClosed(object sender, FormClosedEventArgs e)
         {
-            // Disconnect all clients first
+            // Disconnect all clients
             foreach (IVatsimClient client in clients)
             {
                 client.Disconnect();

@@ -17,5 +17,14 @@
     <Setting Name="port" Type="System.Int32" Scope="User">
       <Value Profile="(Default)">6809</Value>
     </Setting>
+    <Setting Name="protocol" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">9</Value>
+    </Setting>
+    <Setting Name="updateRate" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">5000</Value>
+    </Setting>
+    <Setting Name="commandFrequency" Type="System.Decimal" Scope="User">
+      <Value Profile="(Default)">199.998</Value>
+    </Setting>
   </Settings>
 </SettingsFile>

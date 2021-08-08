@@ -82,5 +82,41 @@ namespace VatsimAtcTrainingSimulator.Properties {
                 this["port"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("9")]
+        public int protocol {
+            get {
+                return ((int)(this["protocol"]));
+            }
+            set {
+                this["protocol"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("5000")]
+        public int updateRate {
+            get {
+                return ((int)(this["updateRate"]));
+            }
+            set {
+                this["updateRate"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("199.998")]
+        public decimal commandFrequency {
+            get {
+                return ((decimal)(this["commandFrequency"]));
+            }
+            set {
+                this["commandFrequency"] = value;
+            }
+        }
     }
 }

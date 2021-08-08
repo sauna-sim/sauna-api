@@ -41,11 +41,11 @@ namespace VatsimAtcTrainingSimulator
             this.fileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.openScenarioToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.euroscopeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.viewToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.commandWindowMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.mainSplitContainer = new System.Windows.Forms.SplitContainer();
             this.connectionsList = new System.Windows.Forms.ListView();
             this.msgBox = new System.Windows.Forms.TextBox();
-            this.viewToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.commandWindowMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.headerPnl.SuspendLayout();
             this.menuStrip.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.mainSplitContainer)).BeginInit();
@@ -68,7 +68,7 @@ namespace VatsimAtcTrainingSimulator
             // pauseAllBtn
             // 
             this.pauseAllBtn.FlatStyle = System.Windows.Forms.FlatStyle.System;
-            this.pauseAllBtn.Location = new System.Drawing.Point(12, 28);
+            this.pauseAllBtn.Location = new System.Drawing.Point(12, 27);
             this.pauseAllBtn.Name = "pauseAllBtn";
             this.pauseAllBtn.Size = new System.Drawing.Size(75, 23);
             this.pauseAllBtn.TabIndex = 2;
@@ -79,7 +79,7 @@ namespace VatsimAtcTrainingSimulator
             // settingsBtn
             // 
             this.settingsBtn.FlatStyle = System.Windows.Forms.FlatStyle.System;
-            this.settingsBtn.Location = new System.Drawing.Point(93, 28);
+            this.settingsBtn.Location = new System.Drawing.Point(93, 27);
             this.settingsBtn.Name = "settingsBtn";
             this.settingsBtn.Size = new System.Drawing.Size(75, 23);
             this.settingsBtn.TabIndex = 1;
@@ -111,15 +111,33 @@ namespace VatsimAtcTrainingSimulator
             this.openScenarioToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.euroscopeToolStripMenuItem});
             this.openScenarioToolStripMenuItem.Name = "openScenarioToolStripMenuItem";
-            this.openScenarioToolStripMenuItem.Size = new System.Drawing.Size(151, 22);
+            this.openScenarioToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
             this.openScenarioToolStripMenuItem.Text = "Open Scenario";
             // 
             // euroscopeToolStripMenuItem
             // 
             this.euroscopeToolStripMenuItem.Name = "euroscopeToolStripMenuItem";
-            this.euroscopeToolStripMenuItem.Size = new System.Drawing.Size(129, 22);
+            this.euroscopeToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
             this.euroscopeToolStripMenuItem.Text = "Euroscope";
             this.euroscopeToolStripMenuItem.Click += new System.EventHandler(this.euroscopeToolStripMenuItem_Click);
+            // 
+            // viewToolStripMenuItem
+            // 
+            this.viewToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.commandWindowMenuItem});
+            this.viewToolStripMenuItem.Name = "viewToolStripMenuItem";
+            this.viewToolStripMenuItem.Size = new System.Drawing.Size(44, 20);
+            this.viewToolStripMenuItem.Text = "View";
+            // 
+            // commandWindowMenuItem
+            // 
+            this.commandWindowMenuItem.Checked = true;
+            this.commandWindowMenuItem.CheckOnClick = true;
+            this.commandWindowMenuItem.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.commandWindowMenuItem.Name = "commandWindowMenuItem";
+            this.commandWindowMenuItem.Size = new System.Drawing.Size(178, 22);
+            this.commandWindowMenuItem.Text = "Command Window";
+            this.commandWindowMenuItem.CheckedChanged += new System.EventHandler(this.commandWindowMenuItem_CheckedChanged);
             // 
             // mainSplitContainer
             // 
@@ -158,24 +176,6 @@ namespace VatsimAtcTrainingSimulator
             this.msgBox.ScrollBars = System.Windows.Forms.ScrollBars.Both;
             this.msgBox.Size = new System.Drawing.Size(386, 304);
             this.msgBox.TabIndex = 0;
-            // 
-            // viewToolStripMenuItem
-            // 
-            this.viewToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.commandWindowMenuItem});
-            this.viewToolStripMenuItem.Name = "viewToolStripMenuItem";
-            this.viewToolStripMenuItem.Size = new System.Drawing.Size(44, 20);
-            this.viewToolStripMenuItem.Text = "View";
-            // 
-            // commandWindowMenuItem
-            // 
-            this.commandWindowMenuItem.Checked = true;
-            this.commandWindowMenuItem.CheckOnClick = true;
-            this.commandWindowMenuItem.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.commandWindowMenuItem.Name = "commandWindowMenuItem";
-            this.commandWindowMenuItem.Size = new System.Drawing.Size(178, 22);
-            this.commandWindowMenuItem.Text = "Command Window";
-            this.commandWindowMenuItem.CheckedChanged += new System.EventHandler(this.commandWindowMenuItem_CheckedChanged);
             // 
             // MainForm
             // 

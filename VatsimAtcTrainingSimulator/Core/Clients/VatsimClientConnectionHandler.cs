@@ -1,8 +1,11 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
+using VatsimAtcTrainingSimulator.Core.Simulator;
 
 namespace VatsimAtcTrainingSimulator.Core
 {
@@ -19,12 +22,13 @@ namespace VatsimAtcTrainingSimulator.Core
         ATC
     }
 
-    public class VatsimConnectionHandler
+    public class VatsimClientConnectionHandler
     {
         private Thread recvThread;
         private CONN_STATUS _status;
         private bool writingData;
         private string callsign;
+        private IVatsimClient parentClient;
 
         public TcpClient Client { get; private set; }
         public StreamReader Reader { get; private set; }
@@ -43,9 +47,10 @@ namespace VatsimAtcTrainingSimulator.Core
             }
         }
 
-        public VatsimConnectionHandler(string callsign)
+        public VatsimClientConnectionHandler(IVatsimClient parentClient)
         {
-            this.callsign = callsign;
+            this.parentClient = parentClient;
+            this.callsign = parentClient.Callsign;
             Status = CONN_STATUS.DISCONNECTED;
             writingData = false;
         }
@@ -53,7 +58,10 @@ namespace VatsimAtcTrainingSimulator.Core
         public async Task Connect(string hostname, int port)
         {
             // Disconnect first
-            await Disconnect();
+            if (Status == CONN_STATUS.CONNECTED || (Client != null && Client.Connected))
+            {
+                await Disconnect();
+            }
 
             // Change Status to Connecting and Create Client
             Logger("STATUS: Connecting");
@@ -84,27 +92,16 @@ namespace VatsimAtcTrainingSimulator.Core
                 AutoFlush = true
             };
 
-            // Start Receive Thread
-            recvThread = new Thread(new ThreadStart(RecvData));
-            recvThread.Name = $"{callsign} TCP Receiver";
-            recvThread.Start();
-
             // Set Status to Connected
             Logger?.Invoke("STATUS: Connected");
             Status = CONN_STATUS.CONNECTED;
-        }
 
-        private void HandleData(string line)
-        {
-            // Handle request
-            if (line.StartsWith("$CQ"))
+            // Start Receive Thread
+            recvThread = new Thread(new ThreadStart(RecvData))
             {
-                string[] items = line.Split(':');
-                string requester = items[0].Replace("$CQ", "");
-                string command = items[2];
-
-                RequestCommand?.Invoke(command, items[1], requester);
-            }
+                Name = $"{callsign} TCP Receiver"
+            };
+            recvThread.Start();
         }
 
         private void RecvData()
@@ -116,10 +113,12 @@ namespace VatsimAtcTrainingSimulator.Core
                 {
                     if (line.StartsWith("$") || line.StartsWith("#"))
                     {
+                        HandleData(line);
                         Logger?.Invoke(line);
                     }
                 }
-            } catch (Exception ex)
+            }
+            catch (Exception ex)
             {
                 if (ex is ThreadAbortException || ex is IOException)
                 {
@@ -127,6 +126,43 @@ namespace VatsimAtcTrainingSimulator.Core
                 }
 
                 throw ex;
+            }
+        }
+
+        private void HandleData(string line)
+        {
+            string cmdFreqStr = $"@{((Properties.Settings.Default.commandFrequency - 100) * 1000).ToString("00000")}";
+
+            // Handle request
+            if (line.StartsWith("$CQ"))
+            {
+                string[] items = line.Split(':');
+                string requester = items[0].Replace("$CQ", "");
+                string command = items[2];
+
+                RequestCommand?.Invoke(command, items[1], requester);
+            } else if (line.StartsWith("#TM"))
+            {                
+                string[] items = line.Split(':');
+
+                // Handle text commands sent to pilot
+                if (items.Length >= 3 && items[1].Equals(cmdFreqStr) && parentClient is VatsimClientPilot && items[2].StartsWith($"{callsign}, "))
+                {
+                    List<string> split = items[2].Replace($"{callsign}, ", "").Split(' ').ToList();
+
+                    // Loop through command list
+                    while (split.Count > 0)
+                    {
+                        // Get command name
+                        string command = split[0].ToLower();
+                        split.RemoveAt(0);
+
+                        split = CommandHandler.HandleCommand(command, (VatsimClientPilot)parentClient, split, (string msg) => {
+                            _ = SendData($"#TM{callsign}:{cmdFreqStr}:{msg.Replace($"{callsign} ", "")}");
+                        });
+                    }
+                }
+                
             }
         }
 
@@ -169,9 +205,9 @@ namespace VatsimAtcTrainingSimulator.Core
         public async Task AddClient(CLIENT_TYPE type, string callsign, string fullname, string networkId, string password)
         {
             if (type == CLIENT_TYPE.PILOT)
-                await SendData($"#AP{callsign}:SERVER:{networkId}:{password}:1:9:1:{fullname}");
+                await SendData($"#AP{callsign}:SERVER:{networkId}:{password}:1:{Properties.Settings.Default.protocol}:1:{fullname}");
             else if (type == CLIENT_TYPE.ATC)
-                await SendData($"#AA{callsign}:SERVER:{fullname}:{networkId}:{password}:1:9");
+                await SendData($"#AA{callsign}:SERVER:{fullname}:{networkId}:{password}:1:{Properties.Settings.Default.protocol}");
 
         }
 
@@ -217,7 +253,7 @@ namespace VatsimAtcTrainingSimulator.Core
             writingData = false;
         }
 
-        ~VatsimConnectionHandler()
+        ~VatsimClientConnectionHandler()
         {
             // Disconnect
             Disconnect().ConfigureAwait(false);

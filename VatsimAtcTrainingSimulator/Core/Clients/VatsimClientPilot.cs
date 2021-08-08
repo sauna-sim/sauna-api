@@ -32,11 +32,10 @@ namespace VatsimAtcTrainingSimulator.Core
     public class VatsimClientPilot : IVatsimClient
     {
         // Constants
-        private const int POS_SEND_INTERVAL = 5000;
         private const int POS_CALC_INVERVAL = 500;
 
         // Properties
-        public VatsimConnectionHandler ConnHandler { get; private set; }
+        public VatsimClientConnectionHandler ConnHandler { get; private set; }
 
         private string NetworkId { get; set; }
         private Thread posUpdThread;
@@ -80,7 +79,7 @@ namespace VatsimAtcTrainingSimulator.Core
             NetworkId = cid;
 
             // Establish Connection
-            ConnHandler = new VatsimConnectionHandler(Callsign)
+            ConnHandler = new VatsimClientConnectionHandler(this)
             {
                 Logger = Logger,
                 RequestCommand = HandleRequest
@@ -122,7 +121,7 @@ namespace VatsimAtcTrainingSimulator.Core
                     string posStr = $"@{(char)XpdrMode}:{Callsign}:{Squawk}:{Rating}:{Position.Latitude}:{Position.Longitude}:{Position.IndicatedAltitude}:{Position.GroundSpeed}:{posdata}:{PresAltDiff}";
                     _ = ConnHandler.SendData(posStr);
 
-                    Thread.Sleep(POS_SEND_INTERVAL);
+                    Thread.Sleep(Properties.Settings.Default.updateRate);
                 }
             }
             catch (Exception ex)

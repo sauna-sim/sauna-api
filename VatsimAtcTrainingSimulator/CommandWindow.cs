@@ -17,26 +17,12 @@ namespace VatsimAtcTrainingSimulator
         public event EventHandler FormCloseEvent;
         public bool Docked { get; set; }
         private List<IVatsimClient> Clients { get; set; } = new List<IVatsimClient>();
-        private Dictionary<string, IAircraftCommand> Commands = new Dictionary<string, IAircraftCommand>();
         private int snapDist = 30;
 
         public CommandWindow(List<IVatsimClient> clients)
         {
             Clients = clients;
-            InitializeComponent();
-
-            // Get types
-            List<Type> types = AppDomain.CurrentDomain.GetAssemblies()
-                .SelectMany(s => s.GetTypes())
-                .Where(p => typeof(IAircraftCommand).IsAssignableFrom(p) && p.GetInterfaces().Contains(typeof(IAircraftCommand)))
-                .ToList();
-
-            foreach (Type type in types)
-            {
-                IAircraftCommand cmd = (IAircraftCommand)Activator.CreateInstance(type);
-                cmd.Logger = LogMessage;
-                Commands.Add(cmd.CommandName, cmd);
-            }
+            InitializeComponent();            
         }
 
         public void LogMessage(string msg)
@@ -127,15 +113,7 @@ namespace VatsimAtcTrainingSimulator
                         string command = split[0].ToLower();
                         split.RemoveAt(0);
 
-                        // Get command
-                        if (Commands.TryGetValue(command, out IAircraftCommand cmd))
-                        {
-                            split = cmd.HandleCommand(aircraft, split);
-                        }
-                        else
-                        {
-                            outputWindow.AppendText($"ERROR: Command {command} not valid!\r\n");
-                        }
+                        split = CommandHandler.HandleCommand(command, aircraft, split, LogMessage);
                     }
                 }
 

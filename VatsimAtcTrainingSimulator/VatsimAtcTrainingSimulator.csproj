@@ -80,20 +80,21 @@
     <Compile Include="CommandWindow.Designer.cs">
       <DependentUpon>CommandWindow.cs</DependentUpon>
     </Compile>
-    <Compile Include="Core\AccConfig.cs" />
+    <Compile Include="Core\Clients\AccConfig.cs" />
     <Compile Include="Core\GeoTools\AcftData.cs" />
     <Compile Include="Core\GeoTools\AcftGeoUtil.cs" />
     <Compile Include="Core\GeoTools\GribDataPoint.cs" />
     <Compile Include="Core\GeoTools\GribTile.cs" />
     <Compile Include="Core\GeoTools\GribUtil.cs" />
+    <Compile Include="Core\Simulator\CommandHandler.cs" />
     <Compile Include="Core\Simulator\FlyHeadingCommand.cs" />
     <Compile Include="Core\Simulator\IAircraftCommand.cs" />
     <Compile Include="Core\Simulator\SpeedCommand.cs" />
     <Compile Include="Core\Simulator\TurnLeftHeadingCommand.cs" />
     <Compile Include="Core\Simulator\TurnRightHeadingCommand.cs" />
-    <Compile Include="Core\VatsimConnectionHandler.cs" />
-    <Compile Include="Core\VatsimClientPilot.cs" />
-    <Compile Include="Core\IVatsimClient.cs" />
+    <Compile Include="Core\Clients\VatsimClientConnectionHandler.cs" />
+    <Compile Include="Core\Clients\VatsimClientPilot.cs" />
+    <Compile Include="Core\Clients\IVatsimClient.cs" />
     <Compile Include="MainForm.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -152,6 +153,9 @@
       <ProductName>.NET Framework 3.5 SP1</ProductName>
       <Install>false</Install>
     </BootstrapperPackage>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Core\Network\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="..\packages\Grib.Api.0.7.1\build\Grib.Api.targets" Condition="Exists('..\packages\Grib.Api.0.7.1\build\Grib.Api.targets')" />
