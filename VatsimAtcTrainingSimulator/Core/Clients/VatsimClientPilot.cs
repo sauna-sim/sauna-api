@@ -50,8 +50,6 @@ namespace VatsimAtcTrainingSimulator.Core
         public int Squawk { get; private set; }
         public int Rating { get; private set; }
         public AcftData Position { get; private set; }
-        public double Pitch { get; private set; }
-        public double Bank { get; private set; }
         private bool _onGround = false;
         public bool OnGround
         {
@@ -114,11 +112,15 @@ namespace VatsimAtcTrainingSimulator.Core
                         posdata += 2;
                     }
                     posdata += Convert.ToInt32(Position.Heading_Mag * 1024.0 / 360.0) << 2;
-                    posdata += Convert.ToInt32(Bank * 512.0 / 180.0) << 12;
-                    posdata += Convert.ToInt32(Pitch * 256.0 / 90.0) << 22;
+                    posdata += Convert.ToInt32(Position.Bank * 512.0 / 180.0) << 12;
+                    posdata += Convert.ToInt32(Position.Pitch * 256.0 / 90.0) << 22;
 
                     // Send Position
                     string posStr = $"@{(char)XpdrMode}:{Callsign}:{Squawk}:{Rating}:{Position.Latitude}:{Position.Longitude}:{Position.IndicatedAltitude}:{Position.GroundSpeed}:{posdata}:{PresAltDiff}";
+                    if (Properties.Settings.Default.sendIas)
+                    {
+                        posStr += $":{Position.IndicatedAirSpeed}";
+                    }
                     _ = ConnHandler.SendData(posStr);
 
                     Thread.Sleep(Properties.Settings.Default.updateRate);
@@ -248,11 +250,11 @@ namespace VatsimAtcTrainingSimulator.Core
             double hdg = posdata & 0x3FF;
             hdg = (hdg * 360.0) / 1024.0;
             posdata >>= 10;
-            Bank = posdata & 0x3FF;
-            Bank = (Bank * 180.0) / 512;
+            double bank = posdata & 0x3FF;
+            Position.Bank = (bank * 180.0) / 512;
             posdata >>= 10;
-            Pitch = posdata & 0x3FF;
-            Pitch = (Pitch * 90.0) / 256.0;
+            double pitch = posdata & 0x3FF;
+            Position.Pitch = (pitch * 90.0) / 256.0;
 
             // Set initial position
             Position.Heading_Mag = hdg;

@@ -30,6 +30,10 @@
         {
             this.closeBtn = new System.Windows.Forms.Button();
             this.ntwkSetGrpBx = new System.Windows.Forms.GroupBox();
+            this.posSendIntblBxLbl = new System.Windows.Forms.Label();
+            this.posSendIntvlBx = new System.Windows.Forms.NumericUpDown();
+            this.protocolVersionInputBx = new System.Windows.Forms.NumericUpDown();
+            this.protocolVerInputBxLbl = new System.Windows.Forms.Label();
             this.portNumBx = new System.Windows.Forms.NumericUpDown();
             this.portTxtBxLbl = new System.Windows.Forms.Label();
             this.vatsimServerChxBx = new System.Windows.Forms.CheckBox();
@@ -40,17 +44,14 @@
             this.cidTxtBxLbl = new System.Windows.Forms.Label();
             this.serverTxtBxLbl = new System.Windows.Forms.Label();
             this.cmdSettingsGrpBx = new System.Windows.Forms.GroupBox();
-            this.protocolVerInputBxLbl = new System.Windows.Forms.Label();
-            this.protocolVersionInputBx = new System.Windows.Forms.NumericUpDown();
-            this.posSendIntvlBx = new System.Windows.Forms.NumericUpDown();
-            this.posSendIntblBxLbl = new System.Windows.Forms.Label();
-            this.cmdFreqInput = new System.Windows.Forms.NumericUpDown();
             this.cmdFreqLbl = new System.Windows.Forms.Label();
+            this.cmdFreqInput = new System.Windows.Forms.NumericUpDown();
+            this.sendIasChkBx = new System.Windows.Forms.CheckBox();
             this.ntwkSetGrpBx.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.posSendIntvlBx)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.protocolVersionInputBx)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.portNumBx)).BeginInit();
             this.cmdSettingsGrpBx.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.protocolVersionInputBx)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.posSendIntvlBx)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.cmdFreqInput)).BeginInit();
             this.SuspendLayout();
             // 
@@ -69,6 +70,7 @@
             // 
             this.ntwkSetGrpBx.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
+            this.ntwkSetGrpBx.Controls.Add(this.sendIasChkBx);
             this.ntwkSetGrpBx.Controls.Add(this.posSendIntblBxLbl);
             this.ntwkSetGrpBx.Controls.Add(this.posSendIntvlBx);
             this.ntwkSetGrpBx.Controls.Add(this.protocolVersionInputBx);
@@ -88,6 +90,55 @@
             this.ntwkSetGrpBx.TabIndex = 10;
             this.ntwkSetGrpBx.TabStop = false;
             this.ntwkSetGrpBx.Text = "Network Settings";
+            // 
+            // posSendIntblBxLbl
+            // 
+            this.posSendIntblBxLbl.AutoSize = true;
+            this.posSendIntblBxLbl.Location = new System.Drawing.Point(124, 96);
+            this.posSendIntblBxLbl.Name = "posSendIntblBxLbl";
+            this.posSendIntblBxLbl.Size = new System.Drawing.Size(68, 13);
+            this.posSendIntblBxLbl.TabIndex = 12;
+            this.posSendIntblBxLbl.Text = "Update Rate";
+            // 
+            // posSendIntvlBx
+            // 
+            this.posSendIntvlBx.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.posSendIntvlBx.Location = new System.Drawing.Point(196, 94);
+            this.posSendIntvlBx.Maximum = new decimal(new int[] {
+            20000,
+            0,
+            0,
+            0});
+            this.posSendIntvlBx.Minimum = new decimal(new int[] {
+            100,
+            0,
+            0,
+            0});
+            this.posSendIntvlBx.Name = "posSendIntvlBx";
+            this.posSendIntvlBx.Size = new System.Drawing.Size(58, 20);
+            this.posSendIntvlBx.TabIndex = 11;
+            this.posSendIntvlBx.Value = new decimal(new int[] {
+            100,
+            0,
+            0,
+            0});
+            // 
+            // protocolVersionInputBx
+            // 
+            this.protocolVersionInputBx.Location = new System.Drawing.Point(65, 94);
+            this.protocolVersionInputBx.Name = "protocolVersionInputBx";
+            this.protocolVersionInputBx.Size = new System.Drawing.Size(53, 20);
+            this.protocolVersionInputBx.TabIndex = 10;
+            // 
+            // protocolVerInputBxLbl
+            // 
+            this.protocolVerInputBxLbl.AutoSize = true;
+            this.protocolVerInputBxLbl.Location = new System.Drawing.Point(6, 96);
+            this.protocolVerInputBxLbl.Name = "protocolVerInputBxLbl";
+            this.protocolVerInputBxLbl.Size = new System.Drawing.Size(46, 13);
+            this.protocolVerInputBxLbl.TabIndex = 0;
+            this.protocolVerInputBxLbl.Text = "Protocol";
             // 
             // portNumBx
             // 
@@ -190,54 +241,14 @@
             this.cmdSettingsGrpBx.TabStop = false;
             this.cmdSettingsGrpBx.Text = "Command Input Settings";
             // 
-            // protocolVerInputBxLbl
+            // cmdFreqLbl
             // 
-            this.protocolVerInputBxLbl.AutoSize = true;
-            this.protocolVerInputBxLbl.Location = new System.Drawing.Point(6, 96);
-            this.protocolVerInputBxLbl.Name = "protocolVerInputBxLbl";
-            this.protocolVerInputBxLbl.Size = new System.Drawing.Size(46, 13);
-            this.protocolVerInputBxLbl.TabIndex = 0;
-            this.protocolVerInputBxLbl.Text = "Protocol";
-            // 
-            // protocolVersionInputBx
-            // 
-            this.protocolVersionInputBx.Location = new System.Drawing.Point(65, 94);
-            this.protocolVersionInputBx.Name = "protocolVersionInputBx";
-            this.protocolVersionInputBx.Size = new System.Drawing.Size(53, 20);
-            this.protocolVersionInputBx.TabIndex = 10;
-            // 
-            // posSendIntvlBx
-            // 
-            this.posSendIntvlBx.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.posSendIntvlBx.Location = new System.Drawing.Point(196, 94);
-            this.posSendIntvlBx.Maximum = new decimal(new int[] {
-            20000,
-            0,
-            0,
-            0});
-            this.posSendIntvlBx.Minimum = new decimal(new int[] {
-            100,
-            0,
-            0,
-            0});
-            this.posSendIntvlBx.Name = "posSendIntvlBx";
-            this.posSendIntvlBx.Size = new System.Drawing.Size(58, 20);
-            this.posSendIntvlBx.TabIndex = 11;
-            this.posSendIntvlBx.Value = new decimal(new int[] {
-            100,
-            0,
-            0,
-            0});
-            // 
-            // posSendIntblBxLbl
-            // 
-            this.posSendIntblBxLbl.AutoSize = true;
-            this.posSendIntblBxLbl.Location = new System.Drawing.Point(124, 96);
-            this.posSendIntblBxLbl.Name = "posSendIntblBxLbl";
-            this.posSendIntblBxLbl.Size = new System.Drawing.Size(68, 13);
-            this.posSendIntblBxLbl.TabIndex = 12;
-            this.posSendIntblBxLbl.Text = "Update Rate";
+            this.cmdFreqLbl.AutoSize = true;
+            this.cmdFreqLbl.Location = new System.Drawing.Point(6, 21);
+            this.cmdFreqLbl.Name = "cmdFreqLbl";
+            this.cmdFreqLbl.Size = new System.Drawing.Size(107, 13);
+            this.cmdFreqLbl.TabIndex = 1;
+            this.cmdFreqLbl.Text = "Command Frequency";
             // 
             // cmdFreqInput
             // 
@@ -264,20 +275,21 @@
             0,
             196608});
             // 
-            // cmdFreqLbl
+            // sendIasChkBx
             // 
-            this.cmdFreqLbl.AutoSize = true;
-            this.cmdFreqLbl.Location = new System.Drawing.Point(6, 21);
-            this.cmdFreqLbl.Name = "cmdFreqLbl";
-            this.cmdFreqLbl.Size = new System.Drawing.Size(107, 13);
-            this.cmdFreqLbl.TabIndex = 1;
-            this.cmdFreqLbl.Text = "Command Frequency";
+            this.sendIasChkBx.AutoSize = true;
+            this.sendIasChkBx.Location = new System.Drawing.Point(65, 119);
+            this.sendIasChkBx.Name = "sendIasChkBx";
+            this.sendIasChkBx.Size = new System.Drawing.Size(77, 17);
+            this.sendIasChkBx.TabIndex = 13;
+            this.sendIasChkBx.Text = "Send IAS?";
+            this.sendIasChkBx.UseVisualStyleBackColor = true;
             // 
             // SettingsForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(284, 261);
+            this.ClientSize = new System.Drawing.Size(284, 284);
             this.ControlBox = false;
             this.Controls.Add(this.cmdSettingsGrpBx);
             this.Controls.Add(this.ntwkSetGrpBx);
@@ -288,11 +300,11 @@
             this.Text = "Settings";
             this.ntwkSetGrpBx.ResumeLayout(false);
             this.ntwkSetGrpBx.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.posSendIntvlBx)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.protocolVersionInputBx)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.portNumBx)).EndInit();
             this.cmdSettingsGrpBx.ResumeLayout(false);
             this.cmdSettingsGrpBx.PerformLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.protocolVersionInputBx)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.posSendIntvlBx)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.cmdFreqInput)).EndInit();
             this.ResumeLayout(false);
 
@@ -318,5 +330,6 @@
         private System.Windows.Forms.GroupBox cmdSettingsGrpBx;
         private System.Windows.Forms.Label cmdFreqLbl;
         private System.Windows.Forms.NumericUpDown cmdFreqInput;
+        private System.Windows.Forms.CheckBox sendIasChkBx;
     }
 }

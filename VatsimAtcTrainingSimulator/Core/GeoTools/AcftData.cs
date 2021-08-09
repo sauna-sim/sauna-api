@@ -16,6 +16,8 @@ namespace VatsimAtcTrainingSimulator.Core.GeoTools
         public double DensityAltitude => AcftGeoUtil.CalculateDensityAlt(PressureAltitude, StaticAirTemperature);
         public double AbsoluteAltitude => AcftGeoUtil.CalculateAbsoluteAlt(IndicatedAltitude, AltimeterSetting_hPa, SurfacePressure_hPa);
         public double Heading_Mag { get; set; }
+        public double Bank { get; set; }
+        public double Pitch { get; set; }
         public double AltimeterSetting_hPa { get; set; } = AcftGeoUtil.STD_PRES_HPA;
         public double SurfacePressure_hPa { get; set; } = AcftGeoUtil.STD_PRES_HPA;
 

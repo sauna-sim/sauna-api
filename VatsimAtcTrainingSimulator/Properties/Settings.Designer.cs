@@ -118,5 +118,17 @@ namespace VatsimAtcTrainingSimulator.Properties {
                 this["commandFrequency"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool sendIas {
+            get {
+                return ((bool)(this["sendIas"]));
+            }
+            set {
+                this["sendIas"] = value;
+            }
+        }
     }
 }

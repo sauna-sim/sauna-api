@@ -46,7 +46,7 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator
 
                 t.Start();                
 
-                Logger?.Invoke($"{aircraft.Callsign} turning right heading {aircraft.Assigned_Heading} degrees.");
+                Logger?.Invoke($"{aircraft.Callsign} turning right heading {headingString} degrees.");
 
                 // Check > 180 deg
                 double headingDifference = aircraft.Position.Heading_Mag - aircraft.Assigned_Heading;

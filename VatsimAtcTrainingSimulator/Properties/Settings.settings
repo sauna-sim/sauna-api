@@ -26,5 +26,8 @@
     <Setting Name="commandFrequency" Type="System.Decimal" Scope="User">
       <Value Profile="(Default)">199.998</Value>
     </Setting>
+    <Setting Name="sendIas" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">False</Value>
+    </Setting>
   </Settings>
 </SettingsFile>
