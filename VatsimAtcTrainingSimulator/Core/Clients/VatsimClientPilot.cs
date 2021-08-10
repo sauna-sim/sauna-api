@@ -112,7 +112,7 @@ namespace VatsimAtcTrainingSimulator.Core
                     {
                         posdata += 2;
                     }
-                    posdata += Convert.ToInt32(Position.Heading_Mag * 1024.0 / 360.0) << 2;
+                    posdata += Convert.ToInt32(Position.Heading_True * 1024.0 / 360.0) << 2;
                     posdata += Convert.ToInt32(Position.Bank * 512.0 / 180.0) << 12;
                     posdata += Convert.ToInt32(Position.Pitch * 256.0 / 90.0) << 22;
 
