@@ -41,11 +41,19 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator
         public static List<string> HandleCommand(string commandName, VatsimClientPilot aircraft, List<string> args, Action<string> logger)
         {
             string cmdNameNormalized = commandName.ToLower();
-            IAircraftCommand cmd;
+            IAircraftCommand cmd = null;
 
             // Get Command
             switch (cmdNameNormalized)
             {
+                case "pause":
+                case "p":
+                    aircraft.Paused = true;
+                    break;
+                case "unpause":
+                case "up":
+                    aircraft.Paused = false;
+                    break;
                 case "fh":
                     cmd = new FlyHeadingCommand();
                     break;
@@ -72,22 +80,25 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator
                     return args;
             }
 
-            // Get new args after processing command
-            cmd.Aircraft = aircraft;
-            cmd.Logger = logger;
-
-            // Make sure command is valid before running.
-            if (cmd.HandleCommand(ref args))
+            if (cmd != null)
             {
-                // Add to Queue
-                lock (commandQueueLock)
-                {
-                    commandQueue.Enqueue(cmd);
-                }
+                // Get new args after processing command
+                cmd.Aircraft = aircraft;
+                cmd.Logger = logger;
 
-                // Launch thread to execute queue
-                Thread t = new Thread(ProcessNextCommand);
-                t.Start();
+                // Make sure command is valid before running.
+                if (cmd.HandleCommand(ref args))
+                {
+                    // Add to Queue
+                    lock (commandQueueLock)
+                    {
+                        commandQueue.Enqueue(cmd);
+                    }
+
+                    // Launch thread to execute queue
+                    Thread t = new Thread(ProcessNextCommand);
+                    t.Start();
+                }
             }
 
             // Return args
