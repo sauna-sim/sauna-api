@@ -17,6 +17,7 @@ namespace VatsimAtcTrainingSimulator.Core.GeoTools
         public const double STD_PRES_DROP = 30.0;
         public const double CONV_FACTOR_KELVIN_C = 273.15;
         public const double CONV_FACTOR_M_FT = 3.28084;
+        public const double CONV_FACTOR_INHG_HPA = 33.86;
 
         public static void CalculateNextLatLon(AcftData pos, double nextAlt, double distanceNMi)
         {
@@ -101,6 +102,12 @@ namespace VatsimAtcTrainingSimulator.Core.GeoTools
         {
             double pressDiff = pres_set_hpa - sfc_pres_hpa;
             return alt_ind_ft - (STD_PRES_DROP * pressDiff);
+        }
+
+        public static double CalculateIndicatedAlt(double alt_abs_ft, double pres_set_hpa, double sfc_pres_hpa)
+        {
+            double pressDiff = pres_set_hpa - sfc_pres_hpa;
+            return alt_abs_ft + (STD_PRES_DROP * pressDiff);
         }
 
         public static double CalculatePressureAlt(double alt_ind_ft, double pres_set_hpa)

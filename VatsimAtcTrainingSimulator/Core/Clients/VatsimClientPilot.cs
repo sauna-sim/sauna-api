@@ -62,7 +62,6 @@ namespace VatsimAtcTrainingSimulator.Core
                 _ = ConnHandler.SendData($"$CQ{Callsign}:@94836:ACC:{obj}");
             }
         }
-        public int PresAltDiff => (int) (((Position.AltimeterSetting_hPa == 0 ? AcftGeoUtil.STD_PRES_HPA : Position.AltimeterSetting_hPa) - AcftGeoUtil.STD_PRES_HPA) * AcftGeoUtil.STD_PRES_DROP);
 
         // Assigned values
         private int _assignedHeading = 0;
@@ -118,7 +117,7 @@ namespace VatsimAtcTrainingSimulator.Core
                     posdata += Convert.ToInt32(Position.Pitch * 256.0 / 90.0) << 22;
 
                     // Send Position
-                    string posStr = $"@{(char)XpdrMode}:{Callsign}:{Squawk}:{Rating}:{Position.Latitude}:{Position.Longitude}:{Position.IndicatedAltitude}:{Position.GroundSpeed}:{posdata}:{PresAltDiff}";
+                    string posStr = $"@{(char)XpdrMode}:{Callsign}:{Squawk}:{Rating}:{Position.Latitude}:{Position.Longitude}:{Position.AbsoluteAltitude}:{Position.GroundSpeed}:{posdata}:{Position.PresAltDiff}";
                     if (Properties.Settings.Default.sendIas)
                     {
                         posStr += $":{Position.IndicatedAirSpeed}";
@@ -164,7 +163,15 @@ namespace VatsimAtcTrainingSimulator.Core
                         }
 
                         // Calculate next altitude
-                        double nextAlt = Position.IndicatedAltitude + ((POS_CALC_INVERVAL / 1000.0) * (0 / 60.0));
+                        double nextAlt = Position.IndicatedAltitude;
+                        double toChange = Math.Min(Math.Abs(Position.IndicatedAltitude - Assigned_Altitude), ((POS_CALC_INVERVAL / 1000.0) * (1000 / 60.0)));
+                        if (Assigned_Altitude < Position.IndicatedAltitude)
+                        {
+                            nextAlt -= toChange;
+                        } else if (Assigned_Altitude > Position.IndicatedAltitude)
+                        {
+                            nextAlt += toChange;
+                        }
 
                         // Calculate next position and heading
                         double turnAmount = AcftGeoUtil.CalculateTurnAmount(Position.Heading_Mag, Assigned_Heading);

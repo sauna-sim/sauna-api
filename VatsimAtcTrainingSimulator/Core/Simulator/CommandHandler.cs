@@ -44,21 +44,32 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator
             IAircraftCommand cmd;
 
             // Get Command
-            if (cmdNameNormalized.Equals("fh"))
+            switch (cmdNameNormalized)
             {
-                cmd = new FlyHeadingCommand();
-            } else if (cmdNameNormalized.Equals("tl"))
-            {
-                cmd = new TurnLeftHeadingCommand();
-            } else if (cmdNameNormalized.Equals("tr")){
-                cmd = new TurnRightHeadingCommand();
-            } else if (cmdNameNormalized.Equals("speed") || cmdNameNormalized.Equals("spd"))
-            {
-                cmd = new SpeedCommand();
-            } else
-            {
-                logger($"ERROR: Command {commandName} not valid!");
-                return args;
+                case "fh":
+                    cmd = new FlyHeadingCommand();
+                    break;
+                case "tl":
+                    cmd = new TurnLeftHeadingCommand();
+                    break;
+                case "tr":
+                    cmd = new TurnRightHeadingCommand();
+                    break;
+                case "speed":
+                case "spd":
+                    cmd = new SpeedCommand();
+                    break;
+                case "alt":
+                case "cm":
+                case "dm":
+                case "climb":
+                case "des":
+                case "descend":
+                    cmd = new AltitudeCommand();
+                    break;
+                default:
+                    logger($"ERROR: Command {commandName} not valid!");
+                    return args;
             }
 
             // Get new args after processing command

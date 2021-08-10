@@ -76,8 +76,8 @@ namespace VatsimAtcTrainingSimulator
                             {
                                 if (status == CONN_STATUS.DISCONNECTED)
                                 {
-                                    connectionsList.Items.RemoveByKey(callsign);
-                                    connectionsList.Refresh();
+                                    connectionsList.Invoke(new MethodInvoker(delegate { connectionsList.Items.RemoveByKey(callsign); }));
+                                    connectionsList.Invoke(new MethodInvoker(delegate { connectionsList.Refresh(); }));
 
                                     ClientsHandler.RemoveClientByCallsign(callsign);
                                 }

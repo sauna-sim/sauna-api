@@ -113,9 +113,15 @@ namespace VatsimAtcTrainingSimulator
         {
             lock (clientsLock)
             {
-                foreach (IVatsimClient client in clients)
+                try
                 {
-                    client.Disconnect();
+                    foreach (IVatsimClient client in clients)
+                    {
+                        client.Disconnect();
+                    }
+                } catch (InvalidOperationException)
+                {
+                    return;
                 }
             }
         }

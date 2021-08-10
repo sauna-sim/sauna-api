@@ -87,6 +87,7 @@
     <Compile Include="Core\GeoTools\GribDataPoint.cs" />
     <Compile Include="Core\GeoTools\GribTile.cs" />
     <Compile Include="Core\GeoTools\GribUtil.cs" />
+    <Compile Include="Core\Simulator\AltitudeCommand.cs" />
     <Compile Include="Core\Simulator\CommandHandler.cs" />
     <Compile Include="Core\Simulator\FlyHeadingCommand.cs" />
     <Compile Include="Core\Simulator\IAircraftCommand.cs" />

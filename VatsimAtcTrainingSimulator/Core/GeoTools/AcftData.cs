@@ -18,8 +18,18 @@ namespace VatsimAtcTrainingSimulator.Core.GeoTools
         public double Heading_Mag { get; set; }
         public double Bank { get; set; }
         public double Pitch { get; set; }
-        public double AltimeterSetting_hPa { get; set; } = AcftGeoUtil.STD_PRES_HPA;
+        private double _altSetting_hPa = AcftGeoUtil.STD_PRES_HPA;
+        public double AltimeterSetting_hPa
+        {
+            get => _altSetting_hPa; set
+            {
+                _altSetting_hPa = value;
+                // Backwards compute new Indicated Alt
+                IndicatedAltitude = AcftGeoUtil.CalculateIndicatedAlt(AbsoluteAltitude, value, SurfacePressure_hPa);
+            }
+        }
         public double SurfacePressure_hPa { get; set; } = AcftGeoUtil.STD_PRES_HPA;
+        public int PresAltDiff => (int)((AcftGeoUtil.STD_PRES_HPA - (SurfacePressure_hPa == 0 ? AcftGeoUtil.STD_PRES_HPA : SurfacePressure_hPa)) * AcftGeoUtil.STD_PRES_DROP);
 
         public double Heading_True
         {
@@ -72,7 +82,8 @@ namespace VatsimAtcTrainingSimulator.Core.GeoTools
                 if (point.SfcPress_hPa != 0)
                 {
                     SurfacePressure_hPa = point.SfcPress_hPa;
-                } else
+                }
+                else
                 {
                     SurfacePressure_hPa = AcftGeoUtil.STD_PRES_HPA;
                 }
