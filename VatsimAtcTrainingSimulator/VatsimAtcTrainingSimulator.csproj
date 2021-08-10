@@ -74,6 +74,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ClientsHandler.cs" />
     <Compile Include="CommandWindow.cs">
       <SubType>Form</SubType>
     </Compile>

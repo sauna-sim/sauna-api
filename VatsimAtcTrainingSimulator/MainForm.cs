@@ -13,16 +13,13 @@ using VatsimAtcTrainingSimulator.Core;
 namespace VatsimAtcTrainingSimulator
 {
     public partial class MainForm : Form
-    {
-        private List<IVatsimClient> clients;
-        private bool AllPaused = true;
+    {        
         private CommandWindow commandWindow;
 
         public MainForm()
         {
             InitializeComponent();
-            clients = new List<IVatsimClient>();
-            commandWindow = new CommandWindow(clients);
+            commandWindow = new CommandWindow();
             commandWindow.Show(this);
             commandWindow.FormCloseEvent += commandWindow_Closed;
         }
@@ -67,13 +64,23 @@ namespace VatsimAtcTrainingSimulator
                     {
                         string[] items = line.Split(':');
                         string callsign = items[1];
-                        XpdrMode xpdrMode = (XpdrMode) items[0].ToCharArray()[1];
+                        XpdrMode xpdrMode = (XpdrMode)items[0].ToCharArray()[1];
 
                         VatsimClientPilot pilot = new VatsimClientPilot()
                         {
-                            Logger = (string msg) => {
+                            Logger = (string msg) =>
+                            {
                                 logMsg($"{callsign}: {msg}");
-                                //Console.WriteLine($"{callsign}: {msg}");
+                            },
+                            StatusChangeAction = (CONN_STATUS status) =>
+                            {
+                                if (status == CONN_STATUS.DISCONNECTED)
+                                {
+                                    connectionsList.Items.RemoveByKey(callsign);
+                                    connectionsList.Refresh();
+
+                                    ClientsHandler.RemoveClientByCallsign(callsign);
+                                }
                             }
                         };
 
@@ -81,21 +88,17 @@ namespace VatsimAtcTrainingSimulator
                         {
                             connectionsList.Items.Add(pilot.Callsign);
                             connectionsList.Refresh();
-                            clients.Add(pilot);
+                            ClientsHandler.AddClient(pilot);
 
                             // Send init position
                             pilot.SetInitialData(xpdrMode, Convert.ToInt32(items[2]), Convert.ToInt32(items[3]), Convert.ToDouble(items[4]), Convert.ToDouble(items[5]), Convert.ToDouble(items[6]), 250, Convert.ToInt32(items[8]), Convert.ToInt32(items[9]));
                         }
-                    } else if (line.StartsWith("$FP"))
+                    }
+                    else if (line.StartsWith("$FP"))
                     {
                         string callsign = line.Split(':')[0].Replace("$FP", "");
-                        foreach (IVatsimClient client in clients)
-                        {
-                            if (client.Callsign.Equals(callsign))
-                            {
-                                await client.ConnHandler.SendData(line);
-                            }
-                        }
+
+                        ClientsHandler.SendDataForClient(callsign, line);
                     }
                 }
             }
@@ -103,28 +106,14 @@ namespace VatsimAtcTrainingSimulator
 
         private void pauseAllBtn_Click(object sender, EventArgs e)
         {
-            if (AllPaused)
+            if (ClientsHandler.AllPaused)
             {
-                foreach (IVatsimClient client in clients){
-                    if (client is VatsimClientPilot)
-                    {
-                        ((VatsimClientPilot)client).Paused = false;
-                    }
-                }
-
-                AllPaused = false;
+                ClientsHandler.AllPaused = false;
                 pauseAllBtn.Text = "Pause";
-            } else
+            }
+            else
             {
-                foreach (IVatsimClient client in clients)
-                {
-                    if (client is VatsimClientPilot)
-                    {
-                        ((VatsimClientPilot)client).Paused = true;
-                    }
-                }
-
-                AllPaused = true;
+                ClientsHandler.AllPaused = true;
                 pauseAllBtn.Text = "Unpause";
             }
         }
@@ -134,7 +123,8 @@ namespace VatsimAtcTrainingSimulator
             if (commandWindowMenuItem.Checked)
             {
                 commandWindow.Show(this);
-            } else
+            }
+            else
             {
                 commandWindow.Hide();
             }
@@ -164,11 +154,7 @@ namespace VatsimAtcTrainingSimulator
 
         private void MainForm_FormClosed(object sender, FormClosedEventArgs e)
         {
-            // Disconnect all clients
-            foreach (IVatsimClient client in clients)
-            {
-                client.Disconnect();
-            }
+            ClientsHandler.DisconnectAllClients();
             connectionsList.Clear();
         }
     }

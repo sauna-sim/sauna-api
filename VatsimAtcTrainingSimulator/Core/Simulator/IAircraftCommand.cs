@@ -7,10 +7,13 @@ using System.Threading.Tasks;
 namespace VatsimAtcTrainingSimulator.Core.Simulator
 {
     public interface IAircraftCommand
-    { 
-        string CommandName { get;}
+    {
+        VatsimClientPilot Aircraft { get; set; }
+
         Action<string> Logger { get; set; }
 
-        List<string> HandleCommand(VatsimClientPilot aircraft, List<string> args);
+        void ExecuteCommand();
+
+        bool HandleCommand(ref List<string> args);
     }
 }

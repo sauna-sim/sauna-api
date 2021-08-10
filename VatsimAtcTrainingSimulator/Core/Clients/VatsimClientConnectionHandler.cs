@@ -26,7 +26,7 @@ namespace VatsimAtcTrainingSimulator.Core
     {
         private Thread recvThread;
         private CONN_STATUS _status;
-        private bool writingData;
+        private SemaphoreSlim streamLock = new SemaphoreSlim(1, 1);
         private string callsign;
         private IVatsimClient parentClient;
 
@@ -51,8 +51,7 @@ namespace VatsimAtcTrainingSimulator.Core
         {
             this.parentClient = parentClient;
             this.callsign = parentClient.Callsign;
-            Status = CONN_STATUS.DISCONNECTED;
-            writingData = false;
+            _status = CONN_STATUS.DISCONNECTED;
         }
 
         public async Task Connect(string hostname, int port)
@@ -60,7 +59,7 @@ namespace VatsimAtcTrainingSimulator.Core
             // Disconnect first
             if (Status == CONN_STATUS.CONNECTED || (Client != null && Client.Connected))
             {
-                await Disconnect();
+                Disconnect();
             }
 
             // Change Status to Connecting and Create Client
@@ -78,11 +77,11 @@ namespace VatsimAtcTrainingSimulator.Core
                 if (ex is SocketException || ex is NullReferenceException)
                 {
                     Logger?.Invoke("ERROR: Connection Failed: " + ex.Message + " - " + ex.StackTrace.ToString());
-                    Status = CONN_STATUS.DISCONNECTED;
+                    _ = Disconnect();
                     return;
                 }
 
-                throw;
+                throw ex;
             }
 
             // Create Reader and Writer
@@ -109,6 +108,7 @@ namespace VatsimAtcTrainingSimulator.Core
             try
             {
                 string line;
+
                 while (Status == CONN_STATUS.CONNECTED && (line = Reader.ReadLine()) != null)
                 {
                     if (line.StartsWith("$") || line.StartsWith("#"))
@@ -122,9 +122,11 @@ namespace VatsimAtcTrainingSimulator.Core
             {
                 if (ex is ThreadAbortException || ex is IOException)
                 {
+                    Logger?.Invoke($"Error Recieving Data: {ex.Message} - {ex.StackTrace}");
+                    _ = Disconnect();
                     return;
                 }
-
+                Logger?.Invoke($"Error Recieving Data: {ex.Message} - {ex.StackTrace}");
                 throw ex;
             }
         }
@@ -141,8 +143,9 @@ namespace VatsimAtcTrainingSimulator.Core
                 string command = items[2];
 
                 RequestCommand?.Invoke(command, items[1], requester);
-            } else if (line.StartsWith("#TM"))
-            {                
+            }
+            else if (line.StartsWith("#TM"))
+            {
                 string[] items = line.Split(':');
 
                 // Handle text commands sent to pilot
@@ -157,12 +160,13 @@ namespace VatsimAtcTrainingSimulator.Core
                         string command = split[0].ToLower();
                         split.RemoveAt(0);
 
-                        split = CommandHandler.HandleCommand(command, (VatsimClientPilot)parentClient, split, (string msg) => {
+                        split = CommandHandler.HandleCommand(command, (VatsimClientPilot)parentClient, split, (string msg) =>
+                        {
                             _ = SendData($"#TM{callsign}:{cmdFreqStr}:{msg.Replace($"{callsign} ", "")}");
                         });
                     }
                 }
-                
+
             }
         }
 
@@ -171,35 +175,30 @@ namespace VatsimAtcTrainingSimulator.Core
             // Check if connected
             if (Status == CONN_STATUS.CONNECTED)
             {
-                // Wait until lock opens up
-                await Task.Run(() =>
-                {
-                    while (writingData) { Thread.Sleep(100); }
-                });
-
-                // acquire lock
-                writingData = true;
-
+                await streamLock.WaitAsync();
                 try
                 {
                     // Send data
                     await Writer.WriteLineAsync(msg);
+
                 }
                 catch (Exception ex)
                 {
-                    if (ex is ObjectDisposedException || ex is InvalidOperationException)
+                    if (ex is ObjectDisposedException || ex is InvalidOperationException || ex is IOException)
                     {
-
-                        writingData = false;
+                        Logger?.Invoke($"Error Sending Data: {ex.Message} - {ex.StackTrace}");
+                        _ = Disconnect();
                         return;
                     }
 
+                    Logger?.Invoke($"Error Sending Data: {ex.Message} - {ex.StackTrace}");
                     throw ex;
                 }
+                finally
+                {
+                    streamLock.Release();
+                }
             }
-
-            // Release Lock
-            writingData = false;
         }
 
         public async Task AddClient(CLIENT_TYPE type, string callsign, string fullname, string networkId, string password)
@@ -219,20 +218,14 @@ namespace VatsimAtcTrainingSimulator.Core
                 await SendData($"#DA{callsign}:{networkId}");
         }
 
-        public async Task Disconnect()
+        public void Disconnect()
         {
             // Disconnect
-            Logger?.Invoke("STATUS: Disconnected");
-            Status = CONN_STATUS.DISCONNECTED;
-
-            // Wait until lock opens up and thread has finished
-            await Task.Run(() =>
+            if (Status != CONN_STATUS.DISCONNECTED)
             {
-                while (writingData) { Thread.Sleep(100); }
-            });
-
-            // acquire lock
-            writingData = true;
+                Logger?.Invoke("STATUS: Disconnected");
+                Status = CONN_STATUS.DISCONNECTED;
+            }
 
             if (Reader != null)
             {
@@ -248,15 +241,12 @@ namespace VatsimAtcTrainingSimulator.Core
             {
                 Client.Close();
             }
-
-            // Release Lock
-            writingData = false;
         }
 
         ~VatsimClientConnectionHandler()
         {
             // Disconnect
-            Disconnect().ConfigureAwait(false);
+            Disconnect();
         }
     }
 }

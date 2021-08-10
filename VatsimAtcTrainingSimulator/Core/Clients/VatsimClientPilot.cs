@@ -44,6 +44,7 @@ namespace VatsimAtcTrainingSimulator.Core
         public string Callsign { get; private set; }
 
         public Action<string> Logger { get; set; }
+        public Action<CONN_STATUS> StatusChangeAction { get; set; }
 
         public bool Paused { get; set; }
         public XpdrMode XpdrMode { get; private set; }
@@ -80,7 +81,8 @@ namespace VatsimAtcTrainingSimulator.Core
             ConnHandler = new VatsimClientConnectionHandler(this)
             {
                 Logger = Logger,
-                RequestCommand = HandleRequest
+                RequestCommand = HandleRequest,
+                StatusChangeAction = StatusChangeAction
             };
 
             await ConnHandler.Connect(hostname, port);
@@ -285,7 +287,7 @@ namespace VatsimAtcTrainingSimulator.Core
         {
             // Send Disconnect Message
             await ConnHandler.RemoveClient(CLIENT_TYPE.PILOT, Callsign, NetworkId);
-            await ConnHandler.Disconnect();
+            ConnHandler.Disconnect();
         }
 
         ~VatsimClientPilot()

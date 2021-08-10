@@ -16,12 +16,10 @@ namespace VatsimAtcTrainingSimulator
     {
         public event EventHandler FormCloseEvent;
         public bool Docked { get; set; }
-        private List<IVatsimClient> Clients { get; set; } = new List<IVatsimClient>();
         private int snapDist = 30;
 
-        public CommandWindow(List<IVatsimClient> clients)
+        public CommandWindow()
         {
-            Clients = clients;
             InitializeComponent();            
         }
 
@@ -85,23 +83,15 @@ namespace VatsimAtcTrainingSimulator
                 // Process Input
                 List<string> split = commandInputBx.Text.Split(' ').ToList();
 
-                VatsimClientPilot aircraft = null;
-                foreach (IVatsimClient client in Clients)
-                {
-                    if (client is VatsimClientPilot testPilot)
-                    {
-                        // Match callsign
-                        if (testPilot.Callsign.ToLower().Contains(split[0].ToLower())){
-                            aircraft = testPilot;
-                            break;
-                        }
-                    }
-                }
+                // Handle Pause/Unpause All
+
+
+                IVatsimClient aircraft = ClientsHandler.GetClientWhichContainsCallsign(split[0]);
 
                 split.RemoveAt(0);
 
                 // If we didn't find any aircraft
-                if (aircraft == null)
+                if (aircraft == null || !(aircraft is VatsimClientPilot))
                 {
                     outputWindow.AppendText($"ERROR: {split[0]} was not found in the aircraft list!\r\n");
                 } else
@@ -113,7 +103,7 @@ namespace VatsimAtcTrainingSimulator
                         string command = split[0].ToLower();
                         split.RemoveAt(0);
 
-                        split = CommandHandler.HandleCommand(command, aircraft, split, LogMessage);
+                        split = CommandHandler.HandleCommand(command, (VatsimClientPilot) aircraft, split, LogMessage);
                     }
                 }
 

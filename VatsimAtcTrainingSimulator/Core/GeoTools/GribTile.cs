@@ -54,8 +54,7 @@ namespace VatsimAtcTrainingSimulator.Core.GeoTools
         public short RightLongitude { get; private set; }
         public DateTime ForecastDateUtc { get; private set; }
         public string GribFileName => $"GribTile_{GribDateString}_t{CycleString}z_f{ForecastHourString}_l{LeftLongitude}_t{TopLatitude}_r{RightLongitude}_b{BottomLatitude}.grb";
-        public bool Downloaded { get; private set; }
-
+        
         // Helper Properties
         private DateTime OffsetDateUtc => ForecastDateUtc.AddHours(-6);
         private short Cycle => (short)((OffsetDateUtc.Hour / 6) * 6);
@@ -65,22 +64,22 @@ namespace VatsimAtcTrainingSimulator.Core.GeoTools
         private string ForecastHourString => ForecastHour.ToString("000");
         private List<GribDataPoint> dataPoints;
         private readonly object GribDataListLock = new object();
+        private bool Downloaded = false;
 
         public GribTile(double latitude, double longitude, DateTime dateTime)
         {
             dataPoints = new List<GribDataPoint>();
-            Downloaded = false;
 
             // Create Tile Bounds
-            LeftLongitude = Math.Max(Convert.ToInt16(longitude), (short)-180);
-            RightLongitude = Math.Min(Convert.ToInt16(longitude + 1), (short)180);
-            BottomLatitude = Math.Max(Convert.ToInt16(latitude), (short)-90);
-            TopLatitude = Math.Min(Convert.ToInt16(latitude + 1), (short)90);
+            LeftLongitude = Math.Max(Convert.ToInt16(Math.Floor(longitude)), (short)-180);
+            RightLongitude = Math.Min(Convert.ToInt16(Math.Ceiling(longitude)), (short)180);
+            BottomLatitude = Math.Max(Convert.ToInt16(Math.Floor(latitude)), (short)-90);
+            TopLatitude = Math.Min(Convert.ToInt16(Math.Ceiling(latitude)), (short)90);
 
             // Convert to UTC
             ForecastDateUtc = dateTime.ToUniversalTime();
 
-            DownloadTile();
+            _ = DownloadTile();
         }
 
         private void ExtractData()
