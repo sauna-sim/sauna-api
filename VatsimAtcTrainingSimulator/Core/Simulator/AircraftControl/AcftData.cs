@@ -1,8 +1,9 @@
 ﻿using CoordinateSharp;
 using CoordinateSharp.Magnetic;
 using System;
+using VatsimAtcTrainingSimulator.Core.GeoTools;
 
-namespace VatsimAtcTrainingSimulator.Core.GeoTools
+namespace VatsimAtcTrainingSimulator.Core.Simulator.AircraftControl
 {
     public class AcftData
     {

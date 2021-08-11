@@ -7,6 +7,8 @@ namespace VatsimAtcTrainingSimulator.Core
     {
         VatsimClientConnectionHandler ConnHandler { get; }
 
+        CONN_STATUS ConnectionStatus { get; }
+
         Action<string> Logger { get; set; }
 
         string Callsign { get; }

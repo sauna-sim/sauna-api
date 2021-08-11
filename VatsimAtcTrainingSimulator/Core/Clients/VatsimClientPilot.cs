@@ -4,6 +4,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using VatsimAtcTrainingSimulator.Core.GeoTools;
+using VatsimAtcTrainingSimulator.Core.Simulator.AircraftControl;
 
 namespace VatsimAtcTrainingSimulator.Core
 {
@@ -70,6 +71,8 @@ namespace VatsimAtcTrainingSimulator.Core
         public int Assigned_IAS { get; set; } = -1;
         public AssignedIASType Assigned_IAS_Type { get; set; } = AssignedIASType.FREE;
         public int Assigned_Altitude { get; set; }
+
+        public CONN_STATUS ConnectionStatus => ConnHandler == null ? CONN_STATUS.DISCONNECTED : ConnHandler.Status;
 
         public async Task<bool> Connect(string hostname, int port, string callsign, string cid, string password, string fullname, bool vatsim)
         {

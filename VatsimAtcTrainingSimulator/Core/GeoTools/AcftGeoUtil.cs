@@ -6,6 +6,7 @@ using System.Linq;
 using System.Net;
 using System.Text;
 using System.Threading.Tasks;
+using VatsimAtcTrainingSimulator.Core.Simulator.AircraftControl;
 
 namespace VatsimAtcTrainingSimulator.Core.GeoTools
 {    

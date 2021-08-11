@@ -1,14 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using VatsimAtcTrainingSimulator.Core;
+using VatsimAtcTrainingSimulator.Core.Clients;
 
 namespace VatsimAtcTrainingSimulator
 {
     public static class ClientsHandler
     {
+        public static BindingList<VatsimClientDisplayable> DisplayableList { get; private set; }
         private static List<IVatsimClient> clients;
         private static object clientsLock = new object();
         private static bool _allPaused = true;
@@ -33,6 +36,7 @@ namespace VatsimAtcTrainingSimulator
 
         static ClientsHandler()
         {
+            DisplayableList = new BindingList<VatsimClientDisplayable>();
             lock (clientsLock)
             {
                 clients = new List<IVatsimClient>();
@@ -48,6 +52,14 @@ namespace VatsimAtcTrainingSimulator
                     if (client.Callsign.Equals(callsign))
                     {
                         clients.Remove(client);
+                        foreach (VatsimClientDisplayable disp in DisplayableList)
+                        {
+                            if (disp.client == client)
+                            {
+                                DisplayableList.Remove(disp);
+                                break;
+                            }
+                        }
                         break;
                     }
                 }
@@ -58,16 +70,39 @@ namespace VatsimAtcTrainingSimulator
         {
             lock (clientsLock)
             {
-                foreach (IVatsimClient c in clients)
+                List<int> deletionList = new List<int>();
+
+                for (int i = 0; i < clients.Count; i++)
                 {
-                    if (c.Callsign.Equals(client.Callsign))
+                    IVatsimClient c = clients[i];
+                    if (c.ConnectionStatus == CONN_STATUS.DISCONNECTED)
+                    {
+                        deletionList.Add(i);
+                    }
+                    else if (c.Callsign.Equals(client.Callsign))
                     {
                         return false;
                     }
                 }
+
+                foreach (int i in deletionList)
+                {
+                    foreach (VatsimClientDisplayable disp in DisplayableList)
+                    {
+                        if (disp.client == clients[i])
+                        {
+                            DisplayableList.Remove(disp);
+                            break;
+                        }
+                    }
+                    clients.RemoveAt(i);
+                }
+
                 clients.Add(client);
-                return true;
             }
+
+            DisplayableList.Add(new VatsimClientDisplayable(client));
+            return true;
         }
 
         public static IVatsimClient GetClientWhichContainsCallsign(string callsignMatch)
@@ -127,7 +162,8 @@ namespace VatsimAtcTrainingSimulator
                     {
                         client.Disconnect();
                     }
-                } catch (InvalidOperationException)
+                }
+                catch (InvalidOperationException)
                 {
                     return;
                 }

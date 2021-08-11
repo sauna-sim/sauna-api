@@ -78,7 +78,6 @@
             this.MinimumSize = new System.Drawing.Size(300, 300);
             this.Name = "CommandWindow";
             this.ShowIcon = false;
-            this.ShowInTaskbar = false;
             this.SizeGripStyle = System.Windows.Forms.SizeGripStyle.Hide;
             this.Text = "Command Window";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.CommandWindow_FormClosing);

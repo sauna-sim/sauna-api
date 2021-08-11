@@ -17,13 +17,21 @@ namespace VatsimAtcTrainingSimulator
     public partial class MainForm : Form
     {
         private CommandWindow commandWindow;
+        private DebugWindow debugWindow;
 
         public MainForm()
         {
             InitializeComponent();
+
             commandWindow = new CommandWindow();
             commandWindow.Show(this);
             commandWindow.FormCloseEvent += commandWindow_Closed;
+
+            debugWindow = new DebugWindow();
+            debugWindow.Show(this);
+            debugWindow.FormCloseEvent += debugWindow_Closed;
+
+            clientsDataGridView.DataSource = ClientsHandler.DisplayableList;
         }
 
         private void settingsBtn_Click(object sender, EventArgs e)
@@ -36,9 +44,12 @@ namespace VatsimAtcTrainingSimulator
         {
             try
             {
-                msgBox.Invoke((MethodInvoker)delegate ()
+                debugWindow.Invoke((MethodInvoker)delegate ()
                 {
-                    msgBox.AppendText(msg + "\r\n");
+                    if (debugWindow.Visible)
+                    {
+                        debugWindow.LogMessage(msg);
+                    }
                 });
             }
             catch (InvalidOperationException) { }
@@ -73,32 +84,11 @@ namespace VatsimAtcTrainingSimulator
                             Logger = (string msg) =>
                             {
                                 logMsg($"{callsign}: {msg}");
-                            },
-                            StatusChangeAction = (CONN_STATUS status) =>
-                            {
-                                if (status == CONN_STATUS.DISCONNECTED)
-                                {
-                                    connectionsList.Invoke(new MethodInvoker(delegate {
-                                        for (int i = 0; i < connectionsList.Items.Count; i++)
-                                        {
-                                            if (connectionsList.Items[i].Text == callsign)
-                                            {
-                                                connectionsList.Items.RemoveAt(i);
-                                                break;
-                                            }
-                                        }
-                                    }));
-                                    connectionsList.Invoke(new MethodInvoker(delegate { connectionsList.Refresh(); }));
-
-                                    ClientsHandler.RemoveClientByCallsign(callsign);
-                                }
                             }
                         };
 
-                        if (ClientsHandler.GetClientByCallsign(pilot.Callsign) == null && await pilot.Connect(Properties.Settings.Default.server, Properties.Settings.Default.port, callsign, Properties.Settings.Default.cid, Properties.Settings.Default.password, "Simulator Pilot", Properties.Settings.Default.vatsimServer))
+                        if (ClientsHandler.GetClientByCallsign(callsign) == null && await pilot.Connect(Properties.Settings.Default.server, Properties.Settings.Default.port, callsign, Properties.Settings.Default.cid, Properties.Settings.Default.password, "Simulator Pilot", Properties.Settings.Default.vatsimServer))
                         {
-                            connectionsList.Items.Add(pilot.Callsign);
-                            connectionsList.Refresh();
                             ClientsHandler.AddClient(pilot);
 
                             // Send init position
@@ -146,6 +136,11 @@ namespace VatsimAtcTrainingSimulator
             commandWindowMenuItem.Checked = false;
         }
 
+        private void debugWindow_Closed(object sender, EventArgs e)
+        {
+            debugConsoleToolStripMenuItem.Checked = false;
+        }
+
         private void MainForm_LocationChanged(object sender, EventArgs e)
         {
             if (commandWindow.Docked && commandWindowMenuItem.Checked)
@@ -166,7 +161,6 @@ namespace VatsimAtcTrainingSimulator
         private void MainForm_FormClosed(object sender, FormClosedEventArgs e)
         {
             ClientsHandler.DisconnectAllClients();
-            connectionsList.Clear();
         }
 
         private void loadSectorFileToolStripMenuItem_Click(object sender, EventArgs e)
@@ -240,6 +234,18 @@ namespace VatsimAtcTrainingSimulator
                         }
                     }
                 }
+            }
+        }
+
+        private void debugConsoleToolStripMenuItem_CheckedChanged(object sender, EventArgs e)
+        {
+            if (debugConsoleToolStripMenuItem.Checked)
+            {
+                debugWindow.Show(this);
+            }
+            else
+            {
+                debugWindow.Hide();
             }
         }
     }

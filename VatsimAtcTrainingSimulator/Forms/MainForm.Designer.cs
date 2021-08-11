@@ -43,17 +43,13 @@ namespace VatsimAtcTrainingSimulator
             this.euroscopeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.viewToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.commandWindowMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.mainSplitContainer = new System.Windows.Forms.SplitContainer();
-            this.connectionsList = new System.Windows.Forms.ListView();
-            this.msgBox = new System.Windows.Forms.TextBox();
             this.dataToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.loadSectorFileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.debugConsoleToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.clientsDataGridView = new System.Windows.Forms.DataGridView();
             this.headerPnl.SuspendLayout();
             this.menuStrip.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.mainSplitContainer)).BeginInit();
-            this.mainSplitContainer.Panel1.SuspendLayout();
-            this.mainSplitContainer.Panel2.SuspendLayout();
-            this.mainSplitContainer.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.clientsDataGridView)).BeginInit();
             this.SuspendLayout();
             // 
             // headerPnl
@@ -114,20 +110,21 @@ namespace VatsimAtcTrainingSimulator
             this.openScenarioToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.euroscopeToolStripMenuItem});
             this.openScenarioToolStripMenuItem.Name = "openScenarioToolStripMenuItem";
-            this.openScenarioToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.openScenarioToolStripMenuItem.Size = new System.Drawing.Size(151, 22);
             this.openScenarioToolStripMenuItem.Text = "Open Scenario";
             // 
             // euroscopeToolStripMenuItem
             // 
             this.euroscopeToolStripMenuItem.Name = "euroscopeToolStripMenuItem";
-            this.euroscopeToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.euroscopeToolStripMenuItem.Size = new System.Drawing.Size(129, 22);
             this.euroscopeToolStripMenuItem.Text = "Euroscope";
             this.euroscopeToolStripMenuItem.Click += new System.EventHandler(this.euroscopeToolStripMenuItem_Click);
             // 
             // viewToolStripMenuItem
             // 
             this.viewToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.commandWindowMenuItem});
+            this.commandWindowMenuItem,
+            this.debugConsoleToolStripMenuItem});
             this.viewToolStripMenuItem.Name = "viewToolStripMenuItem";
             this.viewToolStripMenuItem.Size = new System.Drawing.Size(44, 20);
             this.viewToolStripMenuItem.Text = "View";
@@ -141,44 +138,6 @@ namespace VatsimAtcTrainingSimulator
             this.commandWindowMenuItem.Size = new System.Drawing.Size(178, 22);
             this.commandWindowMenuItem.Text = "Command Window";
             this.commandWindowMenuItem.CheckedChanged += new System.EventHandler(this.commandWindowMenuItem_CheckedChanged);
-            // 
-            // mainSplitContainer
-            // 
-            this.mainSplitContainer.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.mainSplitContainer.Location = new System.Drawing.Point(0, 57);
-            this.mainSplitContainer.Name = "mainSplitContainer";
-            // 
-            // mainSplitContainer.Panel1
-            // 
-            this.mainSplitContainer.Panel1.Controls.Add(this.connectionsList);
-            // 
-            // mainSplitContainer.Panel2
-            // 
-            this.mainSplitContainer.Panel2.Controls.Add(this.msgBox);
-            this.mainSplitContainer.Size = new System.Drawing.Size(584, 304);
-            this.mainSplitContainer.SplitterDistance = 194;
-            this.mainSplitContainer.TabIndex = 1;
-            // 
-            // connectionsList
-            // 
-            this.connectionsList.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.connectionsList.Location = new System.Drawing.Point(0, 0);
-            this.connectionsList.Name = "connectionsList";
-            this.connectionsList.Size = new System.Drawing.Size(194, 304);
-            this.connectionsList.TabIndex = 0;
-            this.connectionsList.UseCompatibleStateImageBehavior = false;
-            this.connectionsList.View = System.Windows.Forms.View.List;
-            // 
-            // msgBox
-            // 
-            this.msgBox.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.msgBox.Location = new System.Drawing.Point(0, 0);
-            this.msgBox.Multiline = true;
-            this.msgBox.Name = "msgBox";
-            this.msgBox.ReadOnly = true;
-            this.msgBox.ScrollBars = System.Windows.Forms.ScrollBars.Both;
-            this.msgBox.Size = new System.Drawing.Size(386, 304);
-            this.msgBox.TabIndex = 0;
             // 
             // dataToolStripMenuItem
             // 
@@ -195,12 +154,34 @@ namespace VatsimAtcTrainingSimulator
             this.loadSectorFileToolStripMenuItem.Text = "Load From Sector File";
             this.loadSectorFileToolStripMenuItem.Click += new System.EventHandler(this.loadSectorFileToolStripMenuItem_Click);
             // 
+            // debugConsoleToolStripMenuItem
+            // 
+            this.debugConsoleToolStripMenuItem.Checked = true;
+            this.debugConsoleToolStripMenuItem.CheckOnClick = true;
+            this.debugConsoleToolStripMenuItem.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.debugConsoleToolStripMenuItem.Name = "debugConsoleToolStripMenuItem";
+            this.debugConsoleToolStripMenuItem.Size = new System.Drawing.Size(178, 22);
+            this.debugConsoleToolStripMenuItem.Text = "Debug Console";
+            this.debugConsoleToolStripMenuItem.CheckedChanged += new System.EventHandler(this.debugConsoleToolStripMenuItem_CheckedChanged);
+            // 
+            // clientsDataGridView
+            // 
+            this.clientsDataGridView.AllowUserToAddRows = false;
+            this.clientsDataGridView.AllowUserToDeleteRows = false;
+            this.clientsDataGridView.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            this.clientsDataGridView.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.clientsDataGridView.Location = new System.Drawing.Point(0, 57);
+            this.clientsDataGridView.Name = "clientsDataGridView";
+            this.clientsDataGridView.ReadOnly = true;
+            this.clientsDataGridView.Size = new System.Drawing.Size(584, 304);
+            this.clientsDataGridView.TabIndex = 1;
+            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(584, 361);
-            this.Controls.Add(this.mainSplitContainer);
+            this.Controls.Add(this.clientsDataGridView);
             this.Controls.Add(this.headerPnl);
             this.MainMenuStrip = this.menuStrip;
             this.MinimumSize = new System.Drawing.Size(600, 300);
@@ -215,11 +196,7 @@ namespace VatsimAtcTrainingSimulator
             this.headerPnl.PerformLayout();
             this.menuStrip.ResumeLayout(false);
             this.menuStrip.PerformLayout();
-            this.mainSplitContainer.Panel1.ResumeLayout(false);
-            this.mainSplitContainer.Panel2.ResumeLayout(false);
-            this.mainSplitContainer.Panel2.PerformLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.mainSplitContainer)).EndInit();
-            this.mainSplitContainer.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)(this.clientsDataGridView)).EndInit();
             this.ResumeLayout(false);
 
         }
@@ -228,9 +205,6 @@ namespace VatsimAtcTrainingSimulator
 
         private Panel headerPnl;
         private Button settingsBtn;
-        private SplitContainer mainSplitContainer;
-        private ListView connectionsList;
-        private TextBox msgBox;
         private Button pauseAllBtn;
         private MenuStrip menuStrip;
         private ToolStripMenuItem fileToolStripMenuItem;
@@ -240,6 +214,8 @@ namespace VatsimAtcTrainingSimulator
         private ToolStripMenuItem commandWindowMenuItem;
         private ToolStripMenuItem dataToolStripMenuItem;
         private ToolStripMenuItem loadSectorFileToolStripMenuItem;
+        private ToolStripMenuItem debugConsoleToolStripMenuItem;
+        private DataGridView clientsDataGridView;
     }
 }
 
