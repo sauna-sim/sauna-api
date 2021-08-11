@@ -248,5 +248,10 @@ namespace VatsimAtcTrainingSimulator
                 debugWindow.Hide();
             }
         }
+
+        private void dataGridUpdateTimer_Tick(object sender, EventArgs e)
+        {
+            clientsDataGridView.Invalidate();
+        }
     }
 }

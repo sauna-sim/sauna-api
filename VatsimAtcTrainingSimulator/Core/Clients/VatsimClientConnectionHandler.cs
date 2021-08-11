@@ -109,7 +109,7 @@ namespace VatsimAtcTrainingSimulator.Core
             {
                 string line;
 
-                while (Status == CONN_STATUS.CONNECTED && (line = Reader.ReadLine()) != null)
+                while (Status == CONN_STATUS.CONNECTED && Reader != null && (line = Reader.ReadLine()) != null)
                 {
                     if (line.StartsWith("$") || line.StartsWith("#"))
                     {
@@ -118,16 +118,16 @@ namespace VatsimAtcTrainingSimulator.Core
                     }
                 }
             }
-            catch (Exception ex)
+            catch (ThreadAbortException ex)
             {
-                if (ex is ThreadAbortException || ex is IOException)
-                {
-                    Logger?.Invoke($"Error Recieving Data: {ex.Message} - {ex.StackTrace}");
-                    Disconnect();
-                    return;
-                }
                 Logger?.Invoke($"Error Recieving Data: {ex.Message} - {ex.StackTrace}");
-                throw ex;
+                Disconnect();
+                return;
+            } catch (IOException ex)
+            {
+                Logger?.Invoke($"Error Recieving Data: {ex.Message} - {ex.StackTrace}");
+                Disconnect();
+                return;
             }
         }
 

@@ -34,6 +34,7 @@ namespace VatsimAtcTrainingSimulator
         /// </summary>
         private void InitializeComponent()
         {
+            this.components = new System.ComponentModel.Container();
             this.headerPnl = new System.Windows.Forms.Panel();
             this.pauseAllBtn = new System.Windows.Forms.Button();
             this.settingsBtn = new System.Windows.Forms.Button();
@@ -47,6 +48,7 @@ namespace VatsimAtcTrainingSimulator
             this.loadSectorFileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.debugConsoleToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.clientsDataGridView = new System.Windows.Forms.DataGridView();
+            this.dataGridUpdateTimer = new System.Windows.Forms.Timer(this.components);
             this.headerPnl.SuspendLayout();
             this.menuStrip.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.clientsDataGridView)).BeginInit();
@@ -176,6 +178,12 @@ namespace VatsimAtcTrainingSimulator
             this.clientsDataGridView.Size = new System.Drawing.Size(584, 304);
             this.clientsDataGridView.TabIndex = 1;
             // 
+            // dataGridUpdateTimer
+            // 
+            this.dataGridUpdateTimer.Enabled = true;
+            this.dataGridUpdateTimer.Interval = 1000;
+            this.dataGridUpdateTimer.Tick += new System.EventHandler(this.dataGridUpdateTimer_Tick);
+            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -216,6 +224,7 @@ namespace VatsimAtcTrainingSimulator
         private ToolStripMenuItem loadSectorFileToolStripMenuItem;
         private ToolStripMenuItem debugConsoleToolStripMenuItem;
         private DataGridView clientsDataGridView;
+        private Timer dataGridUpdateTimer;
     }
 }
 

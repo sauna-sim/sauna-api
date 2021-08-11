@@ -147,7 +147,6 @@
       <DependentUpon>SettingsForm.cs</DependentUpon>
     </EmbeddedResource>
     <None Include="packages.config" />
-    <None Include="Properties\DataSources\ClientsHandler.datasource" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
@@ -176,6 +175,7 @@
   <ItemGroup>
     <Folder Include="Core\Network\" />
     <Folder Include="Core\Performance\" />
+    <Folder Include="Properties\DataSources\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="..\packages\Grib.Api.0.7.1\build\Grib.Api.targets" Condition="Exists('..\packages\Grib.Api.0.7.1\build\Grib.Api.targets')" />

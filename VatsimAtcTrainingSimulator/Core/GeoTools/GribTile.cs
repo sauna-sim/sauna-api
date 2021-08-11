@@ -69,7 +69,10 @@ namespace VatsimAtcTrainingSimulator.Core.GeoTools
 
         public GribTile(double latitude, double longitude, DateTime dateTime)
         {
-            dataPoints = new List<GribDataPoint>();
+            lock (GribDataListLock)
+            {
+                dataPoints = new List<GribDataPoint>();
+            }
 
             // Create Tile Bounds
             LeftLongitude = Math.Max(Convert.ToInt16(Math.Floor(longitude)), (short)-180);
@@ -99,12 +102,15 @@ namespace VatsimAtcTrainingSimulator.Core.GeoTools
                             // Get GRID Point if it exists
                             GribDataPoint foundPoint = null;
 
-                            foreach (GribDataPoint pt in dataPoints)
+                            lock (GribDataListLock)
                             {
-                                if (pt.Latitude == val.Latitude && pt.Longitude == val.Longitude && pt.Level_hPa == msg.Level)
+                                foreach (GribDataPoint pt in dataPoints)
                                 {
-                                    foundPoint = pt;
-                                    break;
+                                    if (pt.Latitude == val.Latitude && pt.Longitude == val.Longitude && pt.Level_hPa == msg.Level)
+                                    {
+                                        foundPoint = pt;
+                                        break;
+                                    }
                                 }
                             }
 
@@ -112,7 +118,10 @@ namespace VatsimAtcTrainingSimulator.Core.GeoTools
                             if (foundPoint == null)
                             {
                                 foundPoint = new GribDataPoint(val.Latitude, val.Longitude, msg.Level);
-                                dataPoints.Add(foundPoint);
+                                lock (GribDataListLock)
+                                {
+                                    dataPoints.Add(foundPoint);
+                                }
                             }
 
                             // Add data
@@ -174,14 +183,17 @@ namespace VatsimAtcTrainingSimulator.Core.GeoTools
             }
 
             // Add Surface Pressures
-            foreach (GribDataPoint point in dataPoints)
+            lock (GribDataListLock)
             {
-                foreach (GribDataPoint sfc in sfcValues)
+                foreach (GribDataPoint point in dataPoints)
                 {
-                    if (sfc.Longitude == point.Longitude && sfc.Latitude == point.Latitude)
+                    foreach (GribDataPoint sfc in sfcValues)
                     {
-                        point.SfcPress_hPa = sfc.SfcPress_hPa;
-                        break;
+                        if (sfc.Longitude == point.Longitude && sfc.Latitude == point.Latitude)
+                        {
+                            point.SfcPress_hPa = sfc.SfcPress_hPa;
+                            break;
+                        }
                     }
                 }
             }

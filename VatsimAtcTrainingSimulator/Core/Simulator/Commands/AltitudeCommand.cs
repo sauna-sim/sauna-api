@@ -21,7 +21,7 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Commands
             {
                 Aircraft.Position.AltimeterSetting_hPa = AcftGeoUtil.STD_PRES_HPA;
             }
-            else if (!isFlightLevel && Aircraft.Position.AltimeterSetting_hPa == AcftGeoUtil.STD_PRES_HPA)
+            else if (!isFlightLevel)
             {
                 if (altimSetting >= 0)
                 {

@@ -217,14 +217,9 @@ namespace VatsimAtcTrainingSimulator.Core
                     Thread.Sleep(POS_CALC_INVERVAL);
                 }
             }
-            catch (Exception ex)
+            catch (ThreadAbortException ex)
             {
-                if (ex is ThreadAbortException)
-                {
-                    return;
-                }
-
-                throw ex;
+                return;
             }
         }
 
