@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace VatsimAtcTrainingSimulator.Core.Simulator
+namespace VatsimAtcTrainingSimulator.Core.Simulator.Commands
 {
     public static class CommandHandler
     {

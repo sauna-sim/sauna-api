@@ -81,6 +81,7 @@
             this.ShowInTaskbar = false;
             this.SizeGripStyle = System.Windows.Forms.SizeGripStyle.Hide;
             this.Text = "Command Window";
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.CommandWindow_FormClosing);
             this.LocationChanged += new System.EventHandler(this.CommandWindow_LocationChanged);
             this.SizeChanged += new System.EventHandler(this.CommandWindow_SizeChanged);
             this.Move += new System.EventHandler(this.CommandWindow_Move);

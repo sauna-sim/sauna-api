@@ -5,9 +5,9 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace VatsimAtcTrainingSimulator.Core.Simulator
+namespace VatsimAtcTrainingSimulator.Core.Simulator.Commands
 {
-    public class FlyHeadingCommand : IAircraftCommand
+    public class TurnRightHeadingCommand : IAircraftCommand
     {
         public Action<string> Logger { get; set; }
 
@@ -21,7 +21,7 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator
             Aircraft.Assigned_Heading = Hdg;
 
             // Set turn direction
-            Aircraft.Assigned_TurnDirection = TurnDirection.SHORTEST;
+            Aircraft.Assigned_TurnDirection = TurnDirection.RIGHT;
         }
 
         public bool HandleCommand(ref List<string> args)
@@ -29,7 +29,7 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator
             // Check argument length
             if (args.Count < 1)
             {
-                Logger?.Invoke($"ERROR: Fly Heading requires at least 1 argument!");
+                Logger?.Invoke($"ERROR: Turn Right Heading requires at least 1 argument!");
                 return false;
             }
 
@@ -42,12 +42,18 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator
                 // Parse heading
                 Hdg = Convert.ToInt32(headingString);
 
-                Logger?.Invoke($"{Aircraft.Callsign} flying heading {headingString} degrees.");
+                Logger?.Invoke($"{Aircraft.Callsign} turning right heading {headingString} degrees.");
+
+                // Check > 180 deg
+                if (GeoTools.AcftGeoUtil.CalculateTurnAmount(Aircraft.Position.Heading_Mag, Hdg) < 0)
+                {
+                    Logger?.Invoke($"WARNING: {Aircraft.Callsign} right turn exceeds 180 degrees!!");
+                }
             } catch (Exception)
             {
                 Logger?.Invoke($"ERROR: Heading {headingString} not valid!");
                 return false;
-            }            
+            }
 
             return true;
         }

@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using VatsimAtcTrainingSimulator.Core.GeoTools;
 
-namespace VatsimAtcTrainingSimulator.Core.Simulator
+namespace VatsimAtcTrainingSimulator.Core.Simulator.Commands
 {
     public class AltitudeCommand : IAircraftCommand
     {

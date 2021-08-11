@@ -90,13 +90,13 @@
     <Compile Include="Core\GeoTools\GribDataPoint.cs" />
     <Compile Include="Core\GeoTools\GribTile.cs" />
     <Compile Include="Core\GeoTools\GribUtil.cs" />
-    <Compile Include="Core\Simulator\AltitudeCommand.cs" />
-    <Compile Include="Core\Simulator\CommandHandler.cs" />
-    <Compile Include="Core\Simulator\FlyHeadingCommand.cs" />
-    <Compile Include="Core\Simulator\IAircraftCommand.cs" />
-    <Compile Include="Core\Simulator\SpeedCommand.cs" />
-    <Compile Include="Core\Simulator\TurnLeftHeadingCommand.cs" />
-    <Compile Include="Core\Simulator\TurnRightHeadingCommand.cs" />
+    <Compile Include="Core\Simulator\Commands\AltitudeCommand.cs" />
+    <Compile Include="Core\Simulator\Commands\CommandHandler.cs" />
+    <Compile Include="Core\Simulator\Commands\FlyHeadingCommand.cs" />
+    <Compile Include="Core\Simulator\Commands\IAircraftCommand.cs" />
+    <Compile Include="Core\Simulator\Commands\SpeedCommand.cs" />
+    <Compile Include="Core\Simulator\Commands\TurnLeftHeadingCommand.cs" />
+    <Compile Include="Core\Simulator\Commands\TurnRightHeadingCommand.cs" />
     <Compile Include="Core\Clients\VatsimClientConnectionHandler.cs" />
     <Compile Include="Core\Clients\VatsimClientPilot.cs" />
     <Compile Include="Core\Clients\IVatsimClient.cs" />
@@ -162,6 +162,7 @@
   <ItemGroup>
     <Folder Include="Core\Network\" />
     <Folder Include="Core\Performance\" />
+    <Folder Include="Core\Simulator\AircraftControl\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="..\packages\Grib.Api.0.7.1\build\Grib.Api.targets" Condition="Exists('..\packages\Grib.Api.0.7.1\build\Grib.Api.targets')" />

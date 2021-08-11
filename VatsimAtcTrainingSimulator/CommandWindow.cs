@@ -8,7 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using VatsimAtcTrainingSimulator.Core;
-using VatsimAtcTrainingSimulator.Core.Simulator;
+using VatsimAtcTrainingSimulator.Core.Simulator.Commands;
 
 namespace VatsimAtcTrainingSimulator
 {
@@ -30,7 +30,12 @@ namespace VatsimAtcTrainingSimulator
 
         private void CommandWindow_FormClosing(object sender, FormClosingEventArgs e)
         {
-
+            if (e.CloseReason == CloseReason.UserClosing)
+            {
+                e.Cancel = true;
+                Hide();
+                FormCloseEvent.Invoke(this, new EventArgs());
+            }
         }
 
         private void CommandWindow_LocationChanged(object sender, EventArgs e)

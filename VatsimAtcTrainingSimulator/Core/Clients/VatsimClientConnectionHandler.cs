@@ -5,7 +5,7 @@ using System.Linq;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
-using VatsimAtcTrainingSimulator.Core.Simulator;
+using VatsimAtcTrainingSimulator.Core.Simulator.Commands;
 
 namespace VatsimAtcTrainingSimulator.Core
 {
