@@ -82,6 +82,9 @@
       <DependentUpon>CommandWindow.cs</DependentUpon>
     </Compile>
     <Compile Include="Core\Clients\AccConfig.cs" />
+    <Compile Include="Core\Data\DataHandler.cs" />
+    <Compile Include="Core\Data\Waypoint.cs" />
+    <Compile Include="Core\Data\WaypointNavaid.cs" />
     <Compile Include="Core\GeoTools\AcftData.cs" />
     <Compile Include="Core\GeoTools\AcftGeoUtil.cs" />
     <Compile Include="Core\GeoTools\GribDataPoint.cs" />

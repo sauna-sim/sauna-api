@@ -9,11 +9,13 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using VatsimAtcTrainingSimulator.Core;
+using VatsimAtcTrainingSimulator.Core.Data;
+using VatsimAtcTrainingSimulator.Core.GeoTools;
 
 namespace VatsimAtcTrainingSimulator
 {
     public partial class MainForm : Form
-    {        
+    {
         private CommandWindow commandWindow;
 
         public MainForm()
@@ -76,7 +78,16 @@ namespace VatsimAtcTrainingSimulator
                             {
                                 if (status == CONN_STATUS.DISCONNECTED)
                                 {
-                                    connectionsList.Invoke(new MethodInvoker(delegate { connectionsList.Items.RemoveByKey(callsign); }));
+                                    connectionsList.Invoke(new MethodInvoker(delegate {
+                                        for (int i = 0; i < connectionsList.Items.Count; i++)
+                                        {
+                                            if (connectionsList.Items[i].Text == callsign)
+                                            {
+                                                connectionsList.Items.RemoveAt(i);
+                                                break;
+                                            }
+                                        }
+                                    }));
                                     connectionsList.Invoke(new MethodInvoker(delegate { connectionsList.Refresh(); }));
 
                                     ClientsHandler.RemoveClientByCallsign(callsign);
@@ -84,7 +95,7 @@ namespace VatsimAtcTrainingSimulator
                             }
                         };
 
-                        if (await pilot.Connect(Properties.Settings.Default.server, Properties.Settings.Default.port, callsign, Properties.Settings.Default.cid, Properties.Settings.Default.password, "Simulator Pilot", Properties.Settings.Default.vatsimServer))
+                        if (ClientsHandler.GetClientByCallsign(pilot.Callsign) == null && await pilot.Connect(Properties.Settings.Default.server, Properties.Settings.Default.port, callsign, Properties.Settings.Default.cid, Properties.Settings.Default.password, "Simulator Pilot", Properties.Settings.Default.vatsimServer))
                         {
                             connectionsList.Items.Add(pilot.Callsign);
                             connectionsList.Refresh();
@@ -156,6 +167,80 @@ namespace VatsimAtcTrainingSimulator
         {
             ClientsHandler.DisconnectAllClients();
             connectionsList.Clear();
+        }
+
+        private void loadSectorFileToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            // Create and open file dialog
+            OpenFileDialog fileDialog = new OpenFileDialog()
+            {
+                Title = "Open Sector File",
+                Filter = "Sector File|*.sct2|Sector File (Old)|*.sct"
+            };
+
+            if (fileDialog.ShowDialog() == DialogResult.OK)
+            {
+                // Read file
+                string filename = fileDialog.FileName;
+                string[] filelines = File.ReadAllLines(filename);
+
+                string sectionName = "";
+
+                // Loop through sector file
+                foreach (string line in filelines)
+                {
+                    // Ignore comments
+                    if (line.Trim().StartsWith(";"))
+                    {
+                        continue;
+                    }
+
+                    if (line.StartsWith("["))
+                    {
+                        // Get section name
+                        sectionName = line.Replace("[", "").Replace("]", "").Trim();
+                    }
+                    else
+                    {
+                        NavaidType type = NavaidType.VOR;
+                        string[] items;
+                        switch (sectionName)
+                        {
+                            case "VOR":
+                                type = NavaidType.VOR;
+                                goto case "AIRPORT";
+                            case "NDB":
+                                type = NavaidType.NDB;
+                                goto case "AIRPORT";
+                            case "AIRPORT":
+                                type = NavaidType.AIRPORT;
+
+                                items = line.Split(' ');
+
+                                if (items.Length >= 4)
+                                {
+                                    decimal freq = 0;
+                                    try
+                                    {
+                                        freq = Convert.ToDecimal(items[1]);
+                                    }
+                                    catch (Exception) { }
+
+                                    DataHandler.AddWaypoint(new WaypointNavaid(items[0], AcftGeoUtil.ConvertSectorFileDegMinSecToDecimalDeg(items[2]), AcftGeoUtil.ConvertSectorFileDegMinSecToDecimalDeg(items[3]), "", freq, type));
+                                }
+                                break;
+                            case "FIXES":
+                                items = line.Split(' ');
+
+                                if (items.Length >= 3)
+                                {
+                                    DataHandler.AddWaypoint(new Waypoint(items[0], AcftGeoUtil.ConvertSectorFileDegMinSecToDecimalDeg(items[1]), AcftGeoUtil.ConvertSectorFileDegMinSecToDecimalDeg(items[2])));
+                                }
+                                break;
+                        }
+                    }
+                }
+            }
         }
     }
 }

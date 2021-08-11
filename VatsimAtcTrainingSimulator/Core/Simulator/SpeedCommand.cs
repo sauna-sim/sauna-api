@@ -68,7 +68,7 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator
                     Logger?.Invoke($"{Aircraft.Callsign} maintaining {Ias}kts.");
                 }                
             }
-            catch (InvalidCastException)
+            catch (Exception)
             {
                 Logger?.Invoke($"ERROR: Speed {speed} not valid!");
                 return false;

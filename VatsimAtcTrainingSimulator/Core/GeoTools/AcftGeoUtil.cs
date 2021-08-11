@@ -27,6 +27,45 @@ namespace VatsimAtcTrainingSimulator.Core.GeoTools
             pos.UpdatePosition(start.Latitude.ToDouble(), start.Longitude.ToDouble(), nextAlt);
         }
 
+        public static double CalculateFlatDistanceNMi(double lat1, double lon1, double lat2, double lon2)
+        {
+            Coordinate coord1 = new Coordinate(lat1, lon1);
+            Coordinate coord2 = new Coordinate(lat2, lon2);
+            return coord1.Get_Distance_From_Coordinate(coord2, Shape.Ellipsoid).NauticalMiles;
+        }
+
+        public static double ConvertSectorFileDegMinSecToDecimalDeg(string input)
+        {
+            double retVal = 0;
+            string[] items = input.Split('.');
+
+            try
+            {
+                // Get degrees
+                retVal = Convert.ToDouble(items[0].Substring(1));
+
+                // Negate if South or West
+                switch (items[0].Substring(0, 1))
+                {
+                    case "S":
+                    case "W":
+                        retVal *= -1;
+                        break;
+                }
+
+                // Add minutes
+                retVal += Convert.ToInt32(items[1]) / 60.0;
+
+                // Add seconds
+                retVal += Convert.ToDouble(items[2] + items[3]) / (60.0 * 60.0);
+
+                return retVal;
+            } catch (Exception)
+            {
+                return 0;
+            }
+        }
+
         public static double CalculateBankAngle(double groundSpeed, double bankLimit, double turnRate)
         {
             double bankAngle = Math.Atan2(turnRate * groundSpeed,1091) * 180.0 / Math.PI;

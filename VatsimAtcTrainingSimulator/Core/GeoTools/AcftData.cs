@@ -36,7 +36,7 @@ namespace VatsimAtcTrainingSimulator.Core.GeoTools
             get
             {
                 Coordinate coord = new Coordinate(Latitude, Longitude, DateTime.UtcNow);
-                Magnetic m = new Magnetic(coord, IndicatedAltitude / 3.28084, DataModel.WMM2020);
+                Magnetic m = new Magnetic(coord, IndicatedAltitude / 3.28084, DataModel.WMM2015);
                 double declin = Math.Round(m.MagneticFieldElements.Declination, 1);
                 return Heading_Mag + declin;
             }

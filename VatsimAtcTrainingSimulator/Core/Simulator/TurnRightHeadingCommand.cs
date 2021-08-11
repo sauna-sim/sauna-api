@@ -49,7 +49,7 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator
                 {
                     Logger?.Invoke($"WARNING: {Aircraft.Callsign} right turn exceeds 180 degrees!!");
                 }
-            } catch (InvalidCastException)
+            } catch (Exception)
             {
                 Logger?.Invoke($"ERROR: Heading {headingString} not valid!");
                 return false;

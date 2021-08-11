@@ -46,6 +46,8 @@ namespace VatsimAtcTrainingSimulator
             this.mainSplitContainer = new System.Windows.Forms.SplitContainer();
             this.connectionsList = new System.Windows.Forms.ListView();
             this.msgBox = new System.Windows.Forms.TextBox();
+            this.dataToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.loadSectorFileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.headerPnl.SuspendLayout();
             this.menuStrip.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.mainSplitContainer)).BeginInit();
@@ -91,7 +93,8 @@ namespace VatsimAtcTrainingSimulator
             // 
             this.menuStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.fileToolStripMenuItem,
-            this.viewToolStripMenuItem});
+            this.viewToolStripMenuItem,
+            this.dataToolStripMenuItem});
             this.menuStrip.Location = new System.Drawing.Point(0, 0);
             this.menuStrip.Name = "menuStrip";
             this.menuStrip.Size = new System.Drawing.Size(584, 24);
@@ -177,6 +180,21 @@ namespace VatsimAtcTrainingSimulator
             this.msgBox.Size = new System.Drawing.Size(386, 304);
             this.msgBox.TabIndex = 0;
             // 
+            // dataToolStripMenuItem
+            // 
+            this.dataToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.loadSectorFileToolStripMenuItem});
+            this.dataToolStripMenuItem.Name = "dataToolStripMenuItem";
+            this.dataToolStripMenuItem.Size = new System.Drawing.Size(43, 20);
+            this.dataToolStripMenuItem.Text = "Data";
+            // 
+            // loadSectorFileToolStripMenuItem
+            // 
+            this.loadSectorFileToolStripMenuItem.Name = "loadSectorFileToolStripMenuItem";
+            this.loadSectorFileToolStripMenuItem.Size = new System.Drawing.Size(188, 22);
+            this.loadSectorFileToolStripMenuItem.Text = "Load From Sector File";
+            this.loadSectorFileToolStripMenuItem.Click += new System.EventHandler(this.loadSectorFileToolStripMenuItem_Click);
+            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -220,6 +238,8 @@ namespace VatsimAtcTrainingSimulator
         private ToolStripMenuItem euroscopeToolStripMenuItem;
         private ToolStripMenuItem viewToolStripMenuItem;
         private ToolStripMenuItem commandWindowMenuItem;
+        private ToolStripMenuItem dataToolStripMenuItem;
+        private ToolStripMenuItem loadSectorFileToolStripMenuItem;
     }
 }
 

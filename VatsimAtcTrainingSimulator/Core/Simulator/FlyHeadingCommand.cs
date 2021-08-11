@@ -43,7 +43,7 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator
                 Hdg = Convert.ToInt32(headingString);
 
                 Logger?.Invoke($"{Aircraft.Callsign} flying heading {headingString} degrees.");
-            } catch (InvalidCastException)
+            } catch (Exception)
             {
                 Logger?.Invoke($"ERROR: Heading {headingString} not valid!");
                 return false;

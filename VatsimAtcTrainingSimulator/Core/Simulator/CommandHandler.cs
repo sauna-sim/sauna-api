@@ -54,6 +54,11 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator
                 case "up":
                     aircraft.Paused = false;
                     break;
+                case "remove":
+                case "delete":
+                case "del":
+                    _ = aircraft.Disconnect();
+                    break;
                 case "fh":
                     cmd = new FlyHeadingCommand();
                     break;

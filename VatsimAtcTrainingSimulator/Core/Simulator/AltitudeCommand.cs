@@ -51,11 +51,11 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator
 
             try
             {
-                if (altStr.StartsWith("FL"))
+                if (altStr.ToUpper().StartsWith("FL"))
                 {
                     isFlightLevel = true;
                     alt = Convert.ToInt32(altStr.Substring(2)) * 100;
-                } else if (altStr.StartsWith("A"))
+                } else if (altStr.ToUpper().StartsWith("A"))
                 {
                     isFlightLevel = false;
                     alt = Convert.ToInt32(altStr.Substring(1));
@@ -66,7 +66,7 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator
                 }
                 Logger?.Invoke($"{Aircraft.Callsign} maintaining {altStr}.");
             }
-            catch (InvalidCastException)
+            catch (Exception)
             {
                 Logger?.Invoke($"ERROR: Altitude {altStr} not valid!");
                 return false;

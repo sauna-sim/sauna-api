@@ -54,11 +54,19 @@ namespace VatsimAtcTrainingSimulator
             }
         }
 
-        public static void AddClient(IVatsimClient client)
+        public static bool AddClient(IVatsimClient client)
         {
             lock (clientsLock)
             {
+                foreach (IVatsimClient c in clients)
+                {
+                    if (c.Callsign.Equals(client.Callsign))
+                    {
+                        return false;
+                    }
+                }
                 clients.Add(client);
+                return true;
             }
         }
 

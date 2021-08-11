@@ -77,7 +77,7 @@ namespace VatsimAtcTrainingSimulator.Core
                 if (ex is SocketException || ex is NullReferenceException)
                 {
                     Logger?.Invoke("ERROR: Connection Failed: " + ex.Message + " - " + ex.StackTrace.ToString());
-                    _ = Disconnect();
+                    Disconnect();
                     return;
                 }
 
@@ -123,7 +123,7 @@ namespace VatsimAtcTrainingSimulator.Core
                 if (ex is ThreadAbortException || ex is IOException)
                 {
                     Logger?.Invoke($"Error Recieving Data: {ex.Message} - {ex.StackTrace}");
-                    _ = Disconnect();
+                    Disconnect();
                     return;
                 }
                 Logger?.Invoke($"Error Recieving Data: {ex.Message} - {ex.StackTrace}");
@@ -187,7 +187,7 @@ namespace VatsimAtcTrainingSimulator.Core
                     if (ex is ObjectDisposedException || ex is InvalidOperationException || ex is IOException)
                     {
                         Logger?.Invoke($"Error Sending Data: {ex.Message} - {ex.StackTrace}");
-                        _ = Disconnect();
+                        Disconnect();
                         return;
                     }
 
