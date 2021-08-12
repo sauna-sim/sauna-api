@@ -37,10 +37,10 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Commands
             int vs = 0;
             if (alt < Aircraft.Position.IndicatedAltitude)
             {
-                vs = 1000;
+                vs = -1000;
             } else if (alt > Aircraft.Position.IndicatedAltitude)
             {
-                vs = -1000;
+                vs = 1000;
             }
             Aircraft.Control.CurrentVerticalInstruction = new VerticalSpeedInstruction(vs);
             Aircraft.Control.AddArmedVerticalInstruction(new AltitudeHoldInstruction(alt));

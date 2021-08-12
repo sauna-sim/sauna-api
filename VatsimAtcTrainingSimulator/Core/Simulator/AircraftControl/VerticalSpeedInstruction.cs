@@ -26,6 +26,12 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.AircraftControl
         {
             // Calculate next altitude
             position.IndicatedAltitude += AssignedVerticalSpeed * posCalcInterval / (60.0 * 1000.0);
+            position.VerticalSpeed = AssignedVerticalSpeed;
+        }
+
+        public override string ToString()
+        {
+            return $"V/S Hold: {AssignedVerticalSpeed}fpm";
         }
     }
 }

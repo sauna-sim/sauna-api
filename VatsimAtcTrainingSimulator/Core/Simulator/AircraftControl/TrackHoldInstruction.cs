@@ -69,5 +69,10 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.AircraftControl
         {
             return true;
         }
+
+        public override string ToString()
+        {
+            return $"TRK Hold: {AssignedTrack}";
+        }
     }
 }

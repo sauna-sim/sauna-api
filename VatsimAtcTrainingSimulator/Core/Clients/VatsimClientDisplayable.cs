@@ -38,7 +38,7 @@ namespace VatsimAtcTrainingSimulator.Core.Clients
         {
             get
             {
-                if (client is VatsimClientPilot && ((VatsimClientPilot)client).Paused)
+                if (client is VatsimClientPilot pilot && pilot.Paused)
                 {
                     return "Paused";
                 }
@@ -56,9 +56,9 @@ namespace VatsimAtcTrainingSimulator.Core.Clients
         {
             get
             {
-                if (client is VatsimClientPilot)
+                if (client is VatsimClientPilot pilot)
                 {
-                    return RoundDoubles(((VatsimClientPilot)client).Position.Heading_Mag);
+                    return RoundDoubles(pilot.Position.Heading_Mag);
                 }
                 return -1;
             }
@@ -69,9 +69,9 @@ namespace VatsimAtcTrainingSimulator.Core.Clients
         {
             get
             {
-                if (client is VatsimClientPilot)
+                if (client is VatsimClientPilot pilot)
                 {
-                    return RoundDoubles(((VatsimClientPilot)client).Position.IndicatedAirSpeed);
+                    return RoundDoubles(pilot.Position.IndicatedAirSpeed);
                 }
                 return -1;
             }
@@ -82,9 +82,9 @@ namespace VatsimAtcTrainingSimulator.Core.Clients
         {
             get
             {
-                if (client is VatsimClientPilot)
+                if (client is VatsimClientPilot pilot)
                 {
-                    return RoundDoubles(((VatsimClientPilot)client).Position.IndicatedAltitude);
+                    return RoundDoubles(pilot.Position.IndicatedAltitude);
                 }
                 return -1;
             }
@@ -95,9 +95,48 @@ namespace VatsimAtcTrainingSimulator.Core.Clients
         {
             get
             {
-                if (client is VatsimClientPilot)
+                if (client is VatsimClientPilot pilot)
                 {
-                    return $"{RoundDoubles(((VatsimClientPilot)client).Position.AltimeterSetting_hPa)}hPa";
+                    return $"{RoundDoubles(pilot.Position.AltimeterSetting_hPa)}hPa";
+                }
+                return "";
+            }
+        }
+
+        [DisplayName("Wind")]
+        public string Wind
+        {
+            get
+            {
+                if (client is VatsimClientPilot pilot)
+                {
+                    return $"{RoundDoubles(pilot.Position.WindDirection)} @ {RoundDoubles(pilot.Position.WindSpeed)}kts";
+                }
+                return "";
+            }
+        }
+
+        [DisplayName("Lateral Mode")]
+        public string LatMode
+        {
+            get
+            {
+                if (client is VatsimClientPilot pilot && pilot.Control != null)
+                {
+                    return pilot.Control.CurrentLateralInstruction.ToString();
+                }
+                return "";
+            }
+        }
+
+        [DisplayName("Vertical Mode")]
+        public string VertMode
+        {
+            get
+            {
+                if (client is VatsimClientPilot pilot && pilot.Control != null)
+                {
+                    return pilot.Control.CurrentVerticalInstruction.ToString();
                 }
                 return "";
             }

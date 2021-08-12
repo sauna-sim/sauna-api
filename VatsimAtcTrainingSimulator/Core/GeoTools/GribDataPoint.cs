@@ -21,8 +21,8 @@ namespace VatsimAtcTrainingSimulator.Core.GeoTools
         public double U_mpers { get; set; }
         public double WSpeed_mpers => Math.Sqrt(Math.Pow(U_mpers, 2) + Math.Pow(V_mpers, 2));
         public double WSpeed_kts => WSpeed_mpers * 1.943844;
-        public double WDir_rads => Math.Atan2(V_mpers, U_mpers);
-        public double WDir_deg => (WDir_rads * 180.0) / Math.PI;
+        public double WDir_rads => Math.Atan2(-U_mpers, -V_mpers);
+        public double WDir_deg => AcftGeoUtil.NormalizeHeading(AcftGeoUtil.RadiansToDegrees(WDir_rads));
         public double RelativeHumidity { get; set; }
         public double SfcPress_hPa { get; set; }
 

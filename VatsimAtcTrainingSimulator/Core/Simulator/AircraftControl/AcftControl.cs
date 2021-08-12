@@ -12,27 +12,35 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.AircraftControl
         public ILateralControlInstruction ArmedLateralInstruction { get; set; }
         public IVerticalControlInstruction CurrentVerticalInstruction { get; set; }
         private List<IVerticalControlInstruction> ArmedVerticalInstructions { get; set; }
+        private object ArmedVerticalLock = new object();
 
         public AcftControl(ILateralControlInstruction lateralInstruction, IVerticalControlInstruction verticalInstruction)
         {
             CurrentLateralInstruction = lateralInstruction;
             CurrentVerticalInstruction = verticalInstruction;
-            ArmedVerticalInstructions = new List<IVerticalControlInstruction>();
+
+            lock (ArmedVerticalLock)
+            {
+                ArmedVerticalInstructions = new List<IVerticalControlInstruction>();
+            }
         }
 
         public AcftControl() : this(new HeadingHoldInstruction(0), new AltitudeHoldInstruction(10000)) { }
 
         public bool AddArmedVerticalInstruction(IVerticalControlInstruction instr)
         {
-            foreach (IVerticalControlInstruction elem in ArmedVerticalInstructions)
+            lock (ArmedVerticalLock)
             {
-                if (elem.Type == instr.Type)
+                foreach (IVerticalControlInstruction elem in ArmedVerticalInstructions)
                 {
-                    return false;
+                    if (elem.Type == instr.Type)
+                    {
+                        return false;
+                    }
                 }
-            }
 
-            ArmedVerticalInstructions.Add(instr);
+                ArmedVerticalInstructions.Add(instr);
+            }
             return true;
         }
 
@@ -45,12 +53,16 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.AircraftControl
                 ArmedLateralInstruction = null;
             }
 
-            foreach (IVerticalControlInstruction armedInstr in ArmedVerticalInstructions)
+            lock (ArmedVerticalLock)
             {
-                if (armedInstr.ShouldActivateInstruction(position, posCalcInterval))
+                foreach (IVerticalControlInstruction armedInstr in ArmedVerticalInstructions)
                 {
-                    CurrentVerticalInstruction = armedInstr;
-                    ArmedVerticalInstructions.Remove(armedInstr);
+                    if (armedInstr.ShouldActivateInstruction(position, posCalcInterval))
+                    {
+                        CurrentVerticalInstruction = armedInstr;
+                        ArmedVerticalInstructions.Remove(armedInstr);
+                        break;
+                    }
                 }
             }
 

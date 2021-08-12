@@ -251,7 +251,7 @@ namespace VatsimAtcTrainingSimulator
 
         private void dataGridUpdateTimer_Tick(object sender, EventArgs e)
         {
-            //clientsDataGridView.Invalidate();
+            clientsDataGridView.Refresh();
         }
     }
 }

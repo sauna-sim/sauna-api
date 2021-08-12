@@ -55,5 +55,10 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.AircraftControl
         {
             return ShouldCaptureAltitude(position.IndicatedAltitude, position.VerticalSpeed, posCalcInterval);
         }
+
+        public override string ToString()
+        {
+            return $"ALT Hold: {AssignedAltitude}";
+        }
     }
 }

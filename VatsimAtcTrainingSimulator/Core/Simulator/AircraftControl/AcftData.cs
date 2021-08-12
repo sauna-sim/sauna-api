@@ -16,7 +16,27 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.AircraftControl
         public double PressureAltitude => AcftGeoUtil.CalculatePressureAlt(IndicatedAltitude, AltimeterSetting_hPa);
         public double DensityAltitude => AcftGeoUtil.CalculateDensityAlt(PressureAltitude, StaticAirTemperature);
         public double AbsoluteAltitude => AcftGeoUtil.CalculateAbsoluteAlt(IndicatedAltitude, AltimeterSetting_hPa, SurfacePressure_hPa);
-        public double Heading_Mag { get; set; }
+
+        private double _magneticHdg;
+        public double Heading_Mag
+        {
+            get => _magneticHdg;
+
+            set
+            {
+                _magneticHdg = value;
+
+                // Calculate True Heading
+                Coordinate coord = new Coordinate(Latitude, Longitude, DateTime.UtcNow);
+                Magnetic m = new Magnetic(coord, IndicatedAltitude / 3.28084, DataModel.WMM2015);
+                double declin = Math.Round(m.MagneticFieldElements.Declination, 1);
+                _trueHdg = AcftGeoUtil.NormalizeHeading(_magneticHdg + declin);
+
+                // Calculate True Track
+                double wca = TrueAirSpeed == 0 ? 0 : Math.Acos(WindXComp / TrueAirSpeed);
+                _trueTrack = AcftGeoUtil.NormalizeHeading(_trueHdg + wca);
+            }
+        }
         public double Bank { get; set; }
         public double Pitch { get; set; }
         public double VerticalSpeed { get; set; }
@@ -34,22 +54,24 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.AircraftControl
         public double SurfacePressure_hPa { get; set; } = AcftGeoUtil.STD_PRES_HPA;
         public int PresAltDiff => (int)((AcftGeoUtil.STD_PRES_HPA - (SurfacePressure_hPa == 0 ? AcftGeoUtil.STD_PRES_HPA : SurfacePressure_hPa)) * AcftGeoUtil.STD_PRES_DROP);
 
+        private double _trueHdg;
         public double Heading_True
         {
-            get
-            {
-                Coordinate coord = new Coordinate(Latitude, Longitude, DateTime.UtcNow);
-                Magnetic m = new Magnetic(coord, IndicatedAltitude / 3.28084, DataModel.WMM2015);
-                double declin = Math.Round(m.MagneticFieldElements.Declination, 1);
-                return Heading_Mag + declin;
-            }
+            get => _trueHdg;
 
             set
             {
+                _trueHdg = value;
+
+                // Set Magnetic Heading
                 Coordinate coord = new Coordinate(Latitude, Longitude, DateTime.UtcNow);
                 Magnetic m = new Magnetic(coord, IndicatedAltitude / 3.28084, DataModel.WMM2015);
                 double declin = Math.Round(m.MagneticFieldElements.Declination, 1);
-                Heading_Mag = value - declin;
+                _magneticHdg = AcftGeoUtil.NormalizeHeading(_trueHdg - declin);
+
+                // Calculate True Track
+                double wca = Math.Acos(WindXComp / TrueAirSpeed);
+                _trueTrack = AcftGeoUtil.NormalizeHeading(_trueHdg + wca);
             }
         }
 
@@ -57,18 +79,24 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.AircraftControl
 
         public double WindHComp => WindSpeed * Math.Cos((Heading_True - WindDirection) * Math.PI / 180.0);
 
+        private double _trueTrack;
         public double Track_True
         {
-            get
-            {
-                double wca = Math.Acos(WindXComp / TrueAirSpeed);
-                return Heading_True + wca;
-            }
+            get => _trueTrack;
 
             set
             {
+                _trueTrack = value;
+
+                // Calculate True Heading
                 double wca = Math.Acos(WindXComp / TrueAirSpeed);
-                Heading_True = value - wca;
+                _trueHdg = AcftGeoUtil.NormalizeHeading(_trueTrack - wca);
+
+                // Set Magnetic Heading
+                Coordinate coord = new Coordinate(Latitude, Longitude, DateTime.UtcNow);
+                Magnetic m = new Magnetic(coord, IndicatedAltitude / 3.28084, DataModel.WMM2015);
+                double declin = Math.Round(m.MagneticFieldElements.Declination, 1);
+                _magneticHdg = AcftGeoUtil.NormalizeHeading(_trueHdg - declin);
             }
         }
 
@@ -87,11 +115,22 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.AircraftControl
                 WindSpeed = 0;
                 SurfacePressure_hPa = AcftGeoUtil.STD_PRES_HPA;
                 StaticAirTemperature = AcftGeoUtil.CalculateIsaTemp(AbsoluteAltitude);
+
+                // Calculate True Track
+                double wca = TrueAirSpeed == 0 ? 0 : Math.Acos(WindXComp / TrueAirSpeed);
+                _trueTrack = AcftGeoUtil.NormalizeHeading(_trueHdg + wca);
             }
             else
             {
-                WindDirection = point.WDir_deg;
-                WindSpeed = point.WSpeed_kts;
+                if (WindDirection != point.WDir_deg || WindSpeed != point.WSpeed_kts)
+                {
+                    WindDirection = point.WDir_deg;
+                    WindSpeed = point.WSpeed_kts;
+
+                    // Calculate True Track
+                    double wca = TrueAirSpeed == 0 ? 0 : Math.Acos(WindXComp / TrueAirSpeed);
+                    _trueTrack = AcftGeoUtil.NormalizeHeading(_trueHdg + wca);
+                }
                 if (point.SfcPress_hPa != 0)
                 {
                     SurfacePressure_hPa = point.SfcPress_hPa;

@@ -42,8 +42,8 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.AircraftControl
 
                 // Figure out turn direction
                 bool isRightTurn = (TurnDir == TurnDirection.SHORTEST) ?
-                    (isRightTurn = turnAmount > 0) :
-                    (isRightTurn = TurnDir == TurnDirection.RIGHT);
+                    (turnAmount > 0) :
+                    (TurnDir == TurnDirection.RIGHT);
 
                 // Calculate end heading
                 double endHeading = AcftGeoUtil.CalculateEndHeading(position.Heading_Mag, degreesToTurn, isRightTurn);
@@ -58,7 +58,10 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.AircraftControl
             }
             else
             {
-                position.Heading_Mag = AssignedHeading;
+                if (position.Heading_Mag != AssignedHeading)
+                {
+                    position.Heading_Mag = AssignedHeading;
+                }
 
                 // Calculate new position
                 AcftGeoUtil.CalculateNextLatLon(ref position, distanceTravelledNMi);
@@ -68,6 +71,11 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.AircraftControl
         public bool ShouldActivateInstruction(AcftData position, int posCalcInterval)
         {
             return true;
+        }
+
+        public override string ToString()
+        {
+            return $"HDG Hold: {AssignedHeading}";
         }
     }
 }

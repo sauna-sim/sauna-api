@@ -26,7 +26,7 @@ namespace VatsimAtcTrainingSimulator.Core
     public class VatsimClientPilot : IVatsimClient
     {
         // Constants
-        private const int POS_CALC_INVERVAL = 500;
+        private const int POS_CALC_INVERVAL = 1000;
 
         // Properties
         public VatsimClientConnectionHandler ConnHandler { get; private set; }

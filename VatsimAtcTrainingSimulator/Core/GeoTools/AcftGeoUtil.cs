@@ -12,6 +12,7 @@ namespace VatsimAtcTrainingSimulator.Core.GeoTools
 {    
     public static class AcftGeoUtil
     {
+        private const double EARTH_RADIUS_M = 6371e3;
         public const double STD_PRES_HPA = 1013.25;
         public const double STD_TEMP_C = 15;
         public const double STD_LAPSE_RATE = 2.0 / 1000.0;
@@ -22,11 +23,54 @@ namespace VatsimAtcTrainingSimulator.Core.GeoTools
 
         public static void CalculateNextLatLon(ref AcftData pos, double distanceNMi)
         {
-            Coordinate start = new Coordinate(pos.Latitude, pos.Longitude);
-            double distanceM = distanceNMi * 1852;
-            start.Move(distanceM, pos.Track_True, Shape.Ellipsoid);
-            pos.Latitude = start.Latitude.ToDouble();
-            pos.Longitude = start.Longitude.ToDouble();
+            //Coordinate start = new Coordinate(pos.Latitude, pos.Longitude);
+            double d = distanceNMi * 1852;
+            //start.Move(d, pos.Track_True, Shape.Sphere);
+            //pos.Latitude = start.Latitude.ToDouble();
+            //pos.Longitude = start.Longitude.ToDouble();
+
+
+            double R = EARTH_RADIUS_M + (pos.AbsoluteAltitude * CONV_FACTOR_M_FT);
+            double bearingRads = DegreesToRadians(pos.Track_True);
+            double lat1 = DegreesToRadians(pos.Latitude);
+            double lon1 = DegreesToRadians(pos.Longitude);
+
+            double lat2 = Math.Asin(Math.Sin(lat1) * Math.Cos(d / R) + 
+                Math.Cos(lat1) * Math.Sin(d / R) * Math.Cos(bearingRads));
+            double lon2 = lon1 + Math.Atan2(Math.Sin(bearingRads) * Math.Sin(d / R) * Math.Cos(lat1), 
+                Math.Cos(d / R) - Math.Sin(lat1) * Math.Sin(lat2));
+
+            pos.Latitude = RadiansToDegrees(lat2);
+            pos.Longitude = NormalizeLongitude(RadiansToDegrees(lon2));
+            //Console.WriteLine($"{pos.Latitude} {pos.Longitude} | {RadiansToDegrees(lat2)} {NormalizeLongitude(RadiansToDegrees(lon2))}");
+        }
+
+        public static double NormalizeLongitude(double lon)
+        {
+            return (lon + 540) % 360 - 180;
+        }
+
+        public static double NormalizeHeading(double hdg)
+        {
+            if (hdg >= 360)
+            {
+                return hdg - 360;
+            }
+            if (hdg < 0)
+            {
+                return hdg + 360;
+            }
+            return hdg;
+        }
+
+        public static double DegreesToRadians(double degrees)
+        {
+            return Math.PI * degrees / 180.0;
+        }
+
+        public static double RadiansToDegrees(double radians)
+        {
+            return 180.0 * radians / Math.PI;
         }
 
         public static double CalculateFlatDistanceNMi(double lat1, double lon1, double lat2, double lon2)
