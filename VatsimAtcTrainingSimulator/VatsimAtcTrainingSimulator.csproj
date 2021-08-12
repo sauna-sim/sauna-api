@@ -76,6 +76,13 @@
   <ItemGroup>
     <Compile Include="ClientsHandler.cs" />
     <Compile Include="Core\Clients\VatsimClientDisplayable.cs" />
+    <Compile Include="Core\Simulator\AircraftControl\AltitudeHoldInstruction.cs" />
+    <Compile Include="Core\Simulator\AircraftControl\HeadingHoldInstruction.cs" />
+    <Compile Include="Core\Simulator\AircraftControl\IControlInstruction.cs" />
+    <Compile Include="Core\Simulator\AircraftControl\ILateralControlInstruction.cs" />
+    <Compile Include="Core\Simulator\AircraftControl\IVerticalControlInstruction.cs" />
+    <Compile Include="Core\Simulator\AircraftControl\TrackHoldInstruction.cs" />
+    <Compile Include="Core\Simulator\AircraftControl\VerticalSpeedInstruction.cs" />
     <Compile Include="Forms\CommandWindow.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -92,8 +99,6 @@
     <Compile Include="Core\GeoTools\GribDataPoint.cs" />
     <Compile Include="Core\GeoTools\GribTile.cs" />
     <Compile Include="Core\GeoTools\GribUtil.cs" />
-    <Compile Include="Core\Simulator\AircraftControl\IControlMode.cs" />
-    <Compile Include="Core\Simulator\AircraftControl\IHorizontalControlMode.cs" />
     <Compile Include="Core\Simulator\Commands\AltitudeCommand.cs" />
     <Compile Include="Core\Simulator\Commands\CommandHandler.cs" />
     <Compile Include="Core\Simulator\Commands\FlyHeadingCommand.cs" />

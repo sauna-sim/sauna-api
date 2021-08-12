@@ -123,7 +123,14 @@ namespace VatsimAtcTrainingSimulator.Core
                 Logger?.Invoke($"Error Recieving Data: {ex.Message} - {ex.StackTrace}");
                 Disconnect();
                 return;
-            } catch (IOException ex)
+            }
+            catch (IOException ex)
+            {
+                Logger?.Invoke($"Error Recieving Data: {ex.Message} - {ex.StackTrace}");
+                Disconnect();
+                return;
+            }
+            catch (NullReferenceException ex)
             {
                 Logger?.Invoke($"Error Recieving Data: {ex.Message} - {ex.StackTrace}");
                 Disconnect();

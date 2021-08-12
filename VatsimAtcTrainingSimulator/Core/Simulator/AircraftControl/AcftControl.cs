@@ -6,17 +6,60 @@ using System.Threading.Tasks;
 
 namespace VatsimAtcTrainingSimulator.Core.Simulator.AircraftControl
 {
-    public enum VerticalControlMode
-    {
-        ALT_HOLD,
-        VERTICAL_SPEED,
-        FLIGHT_PATH_ANGLE,
-        GLIDESLOPE,
-        VERTICAL_NAV
-    }
-
     public class AcftControl
     {
-        
+        public ILateralControlInstruction CurrentLateralInstruction { get; set; }
+        public ILateralControlInstruction ArmedLateralInstruction { get; set; }
+        public IVerticalControlInstruction CurrentVerticalInstruction { get; set; }
+        private List<IVerticalControlInstruction> ArmedVerticalInstructions { get; set; }
+
+        public AcftControl(ILateralControlInstruction lateralInstruction, IVerticalControlInstruction verticalInstruction)
+        {
+            CurrentLateralInstruction = lateralInstruction;
+            CurrentVerticalInstruction = verticalInstruction;
+            ArmedVerticalInstructions = new List<IVerticalControlInstruction>();
+        }
+
+        public AcftControl() : this(new HeadingHoldInstruction(0), new AltitudeHoldInstruction(10000)) { }
+
+        public bool AddArmedVerticalInstruction(IVerticalControlInstruction instr)
+        {
+            foreach (IVerticalControlInstruction elem in ArmedVerticalInstructions)
+            {
+                if (elem.Type == instr.Type)
+                {
+                    return false;
+                }
+            }
+
+            ArmedVerticalInstructions.Add(instr);
+            return true;
+        }
+
+        public void UpdatePosition(ref AcftData position, int posCalcInterval)
+        {
+            // Check if we should activate armed instructions
+            if (ArmedLateralInstruction != null && ArmedLateralInstruction.ShouldActivateInstruction(position, posCalcInterval))
+            {
+                CurrentLateralInstruction = ArmedLateralInstruction;
+                ArmedLateralInstruction = null;
+            }
+
+            foreach (IVerticalControlInstruction armedInstr in ArmedVerticalInstructions)
+            {
+                if (armedInstr.ShouldActivateInstruction(position, posCalcInterval))
+                {
+                    CurrentVerticalInstruction = armedInstr;
+                    ArmedVerticalInstructions.Remove(armedInstr);
+                }
+            }
+
+            // Update position
+            CurrentLateralInstruction.UpdatePosition(ref position, posCalcInterval);
+            CurrentVerticalInstruction.UpdatePosition(ref position, posCalcInterval);
+
+            // Recalculate values
+            position.UpdatePosition();
+        }
     }
 }

@@ -15,13 +15,6 @@ namespace VatsimAtcTrainingSimulator.Core
         IDENT = 'Y'
     }
 
-    public enum TurnDirection
-    {
-        LEFT = -1,
-        RIGHT = 1,
-        SHORTEST = 0
-    }
-
     public enum AssignedIASType
     {
         FREE = -2,
@@ -51,7 +44,8 @@ namespace VatsimAtcTrainingSimulator.Core
         public XpdrMode XpdrMode { get; private set; }
         public int Squawk { get; private set; }
         public int Rating { get; private set; }
-        public AcftData Position { get; private set; }
+        private AcftData _position;
+        public AcftData Position { get => _position; private set => _position = value; }
         private bool _onGround = false;
         public bool OnGround
         {
@@ -65,14 +59,18 @@ namespace VatsimAtcTrainingSimulator.Core
         }
 
         // Assigned values
-        private int _assignedHeading = 0;
-        public int Assigned_Heading { get => _assignedHeading; set => _assignedHeading = (value >= 360) ? value - 360 : value; }
-        public TurnDirection Assigned_TurnDirection { get; set; } = TurnDirection.SHORTEST;
+        public AcftControl Control { get; private set; }
         public int Assigned_IAS { get; set; } = -1;
         public AssignedIASType Assigned_IAS_Type { get; set; } = AssignedIASType.FREE;
-        public int Assigned_Altitude { get; set; }
 
         public CONN_STATUS ConnectionStatus => ConnHandler == null ? CONN_STATUS.DISCONNECTED : ConnHandler.Status;
+
+        public VatsimClientPilot()
+        {
+            Position = new AcftData();
+            Control = new AcftControl();
+            ConnHandler = new VatsimClientConnectionHandler(this);
+        }
 
         public async Task<bool> Connect(string hostname, int port, string callsign, string cid, string password, string fullname, bool vatsim)
         {
@@ -165,53 +163,7 @@ namespace VatsimAtcTrainingSimulator.Core
                             }
                         }
 
-                        // Calculate next altitude
-                        double nextAlt = Position.IndicatedAltitude;
-                        double toChange = Math.Min(Math.Abs(Position.IndicatedAltitude - Assigned_Altitude), ((POS_CALC_INVERVAL / 1000.0) * (1000 / 60.0)));
-                        if (Assigned_Altitude < Position.IndicatedAltitude)
-                        {
-                            nextAlt -= toChange;
-                        } else if (Assigned_Altitude > Position.IndicatedAltitude)
-                        {
-                            nextAlt += toChange;
-                        }
-
-                        // Calculate next position and heading
-                        double turnAmount = AcftGeoUtil.CalculateTurnAmount(Position.Heading_Mag, Assigned_Heading);
-                        double distanceTravelledNMi = AcftGeoUtil.CalculateDistanceTravelledNMi(Position.GroundSpeed, POS_CALC_INVERVAL);
-
-                        if (Math.Abs(turnAmount) > 1)
-                        {
-                            // Calculate bank angle
-                            double bankAngle = AcftGeoUtil.CalculateBankAngle(Position.GroundSpeed, 25, 3);
-
-                            // Calculate radius of turn
-                            double radiusOfTurn = AcftGeoUtil.CalculateRadiusOfTurn(bankAngle, Position.GroundSpeed);
-
-                            // Calculate degrees to turn
-                            double degreesToTurn = Math.Min(Math.Abs(turnAmount), AcftGeoUtil.CalculateDegreesTurned(distanceTravelledNMi, radiusOfTurn));
-
-                            // Figure out turn direction
-                            bool isRightTurn = (Assigned_TurnDirection == TurnDirection.SHORTEST) ? 
-                                (isRightTurn = turnAmount > 0) : 
-                                (isRightTurn = Assigned_TurnDirection == TurnDirection.RIGHT);
-                            
-                            // Calculate end heading
-                            double endHeading = AcftGeoUtil.CalculateEndHeading(Position.Heading_Mag, degreesToTurn, isRightTurn);
-
-                            // Calculate chord line data
-                            Tuple<double, double> chordLine = AcftGeoUtil.CalculateChordHeadingAndDistance(Position.Heading_Mag, degreesToTurn, radiusOfTurn, isRightTurn);
-
-                            // Calculate new position
-                            Position.Heading_Mag = chordLine.Item1;
-                            AcftGeoUtil.CalculateNextLatLon(Position, nextAlt, chordLine.Item2);
-                            Position.Heading_Mag = endHeading;
-                        } else
-                        {
-                            Position.Heading_Mag = Assigned_Heading;
-                            // Calculate new position
-                            AcftGeoUtil.CalculateNextLatLon(Position, nextAlt, distanceTravelledNMi);
-                        }
+                        Control.UpdatePosition(ref _position, POS_CALC_INVERVAL);
                     }
 
                     Thread.Sleep(POS_CALC_INVERVAL);
@@ -266,13 +218,13 @@ namespace VatsimAtcTrainingSimulator.Core
             // Set initial position
             Position.Heading_Mag = hdg;
             Position.IndicatedAirSpeed = 250;
-            Position.UpdatePosition(lat, lon, alt);
+            Position.Latitude = lat;
+            Position.Longitude = lon;
+            Position.IndicatedAltitude = alt;
+            Position.UpdatePosition();
 
             // Set initial assignments
-            Assigned_Heading = Convert.ToInt32(hdg);
-            Assigned_Altitude = Convert.ToInt32(alt);
-            Assigned_TurnDirection = TurnDirection.SHORTEST;
-
+            Control = new AcftControl(new HeadingHoldInstruction(Convert.ToInt32(hdg)), new AltitudeHoldInstruction(Convert.ToInt32(alt)));
 
             // Send initial configuration
             HandleRequest("ACC", Callsign, "@94836");
@@ -291,8 +243,11 @@ namespace VatsimAtcTrainingSimulator.Core
         public async Task Disconnect()
         {
             // Send Disconnect Message
-            await ConnHandler.RemoveClient(CLIENT_TYPE.PILOT, Callsign, NetworkId);
-            ConnHandler.Disconnect();
+            if (ConnHandler != null)
+            {
+                await ConnHandler.RemoveClient(CLIENT_TYPE.PILOT, Callsign, NetworkId);
+                ConnHandler.Disconnect();
+            }
         }
 
         ~VatsimClientPilot()

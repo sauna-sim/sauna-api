@@ -7,9 +7,9 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.AircraftControl
 {
     public class AcftData
     {
-        public double Latitude { get; private set; }
-        public double Longitude { get; private set; }
-        public double IndicatedAltitude { get; private set; }
+        public double Latitude { get; set; }
+        public double Longitude { get; set; }
+        public double IndicatedAltitude { get; set; }
         public double StaticAirTemperature { get; private set; }
         public double WindDirection { get; private set; }
         public double WindSpeed { get; private set; }
@@ -19,12 +19,14 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.AircraftControl
         public double Heading_Mag { get; set; }
         public double Bank { get; set; }
         public double Pitch { get; set; }
+        public double VerticalSpeed { get; set; }
         private double _altSetting_hPa = AcftGeoUtil.STD_PRES_HPA;
         public double AltimeterSetting_hPa
         {
             get => _altSetting_hPa; set
             {
                 _altSetting_hPa = value;
+
                 // Backwards compute new Indicated Alt
                 IndicatedAltitude = AcftGeoUtil.CalculateIndicatedAlt(AbsoluteAltitude, value, SurfacePressure_hPa);
             }
@@ -41,6 +43,14 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.AircraftControl
                 double declin = Math.Round(m.MagneticFieldElements.Declination, 1);
                 return Heading_Mag + declin;
             }
+
+            set
+            {
+                Coordinate coord = new Coordinate(Latitude, Longitude, DateTime.UtcNow);
+                Magnetic m = new Magnetic(coord, IndicatedAltitude / 3.28084, DataModel.WMM2015);
+                double declin = Math.Round(m.MagneticFieldElements.Declination, 1);
+                Heading_Mag = value - declin;
+            }
         }
 
         public double WindXComp => WindSpeed * Math.Sin((Heading_True - WindDirection) * Math.PI / 180.0);
@@ -54,6 +64,12 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.AircraftControl
                 double wca = Math.Acos(WindXComp / TrueAirSpeed);
                 return Heading_True + wca;
             }
+
+            set
+            {
+                double wca = Math.Acos(WindXComp / TrueAirSpeed);
+                Heading_True = value - wca;
+            }
         }
 
         public double IndicatedAirSpeed { get; set; }
@@ -62,19 +78,15 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.AircraftControl
 
         public double GroundSpeed => TrueAirSpeed - WindHComp;
 
-        public void UpdatePosition(double lat, double lon, double alt)
+        public void UpdatePosition()
         {
-            Latitude = lat;
-            Longitude = lon;
-            IndicatedAltitude = alt;
-
             GribDataPoint point = GribUtil.GetClosestGribPoint(this);
             if (point == null)
             {
                 WindDirection = 0;
                 WindSpeed = 0;
                 SurfacePressure_hPa = AcftGeoUtil.STD_PRES_HPA;
-                StaticAirTemperature = AcftGeoUtil.CalculateIsaTemp(alt);
+                StaticAirTemperature = AcftGeoUtil.CalculateIsaTemp(AbsoluteAltitude);
             }
             else
             {

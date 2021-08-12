@@ -8,10 +8,16 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.AircraftControl
 {
     public enum LateralControlMode
     {
-        HEADING,
-        TRACK,
-        VOR_LOCALIZER,
-        GPS
+        HEADING_HOLD,
+        TRACK_HOLD,
+        COURSE_INTERCEPT
+    }
+
+    public enum TurnDirection
+    {
+        LEFT = -1,
+        RIGHT = 1,
+        SHORTEST = 0
     }
 
     public interface ILateralControlInstruction : IControlInstruction

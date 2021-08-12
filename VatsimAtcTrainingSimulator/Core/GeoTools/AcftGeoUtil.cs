@@ -20,12 +20,13 @@ namespace VatsimAtcTrainingSimulator.Core.GeoTools
         public const double CONV_FACTOR_M_FT = 3.28084;
         public const double CONV_FACTOR_INHG_HPA = 33.86;
 
-        public static void CalculateNextLatLon(AcftData pos, double nextAlt, double distanceNMi)
+        public static void CalculateNextLatLon(ref AcftData pos, double distanceNMi)
         {
             Coordinate start = new Coordinate(pos.Latitude, pos.Longitude);
             double distanceM = distanceNMi * 1852;
             start.Move(distanceM, pos.Track_True, Shape.Ellipsoid);
-            pos.UpdatePosition(start.Latitude.ToDouble(), start.Longitude.ToDouble(), nextAlt);
+            pos.Latitude = start.Latitude.ToDouble();
+            pos.Longitude = start.Longitude.ToDouble();
         }
 
         public static double CalculateFlatDistanceNMi(double lat1, double lon1, double lat2, double lon2)

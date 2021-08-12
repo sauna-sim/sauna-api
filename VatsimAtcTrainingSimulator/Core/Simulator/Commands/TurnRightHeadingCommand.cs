@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using VatsimAtcTrainingSimulator.Core.Simulator.AircraftControl;
 
 namespace VatsimAtcTrainingSimulator.Core.Simulator.Commands
 {
@@ -17,11 +18,7 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Commands
 
         public void ExecuteCommand()
         {
-            // Set heading
-            Aircraft.Assigned_Heading = Hdg;
-
-            // Set turn direction
-            Aircraft.Assigned_TurnDirection = TurnDirection.RIGHT;
+            Aircraft.Control.CurrentLateralInstruction = new HeadingHoldInstruction(TurnDirection.RIGHT, Hdg);
         }
 
         public bool HandleCommand(ref List<string> args)
