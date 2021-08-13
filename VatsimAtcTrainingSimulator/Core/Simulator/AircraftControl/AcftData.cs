@@ -106,41 +106,53 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.AircraftControl
 
         public double GroundSpeed => TrueAirSpeed - WindHComp;
 
-        public void UpdatePosition()
+        private GribDataPoint _gribPoint;
+        public GribDataPoint GribPoint
         {
-            GribDataPoint point = GribUtil.GetClosestGribPoint(this);
-            if (point == null)
+            get => _gribPoint;
+            set
             {
-                WindDirection = 0;
-                WindSpeed = 0;
-                SurfacePressure_hPa = AcftGeoUtil.STD_PRES_HPA;
-                StaticAirTemperature = AcftGeoUtil.CalculateIsaTemp(AbsoluteAltitude);
-
-                // Calculate True Track
-                double wca = TrueAirSpeed == 0 ? 0 : Math.Acos(WindXComp / TrueAirSpeed);
-                _trueTrack = AcftGeoUtil.NormalizeHeading(_trueHdg + wca);
-            }
-            else
-            {
-                if (WindDirection != point.WDir_deg || WindSpeed != point.WSpeed_kts)
+                if (value == null)
                 {
-                    WindDirection = point.WDir_deg;
-                    WindSpeed = point.WSpeed_kts;
+                    _gribPoint = value;
+
+                    WindDirection = 0;
+                    WindSpeed = 0;
+                    SurfacePressure_hPa = AcftGeoUtil.STD_PRES_HPA;
+                    StaticAirTemperature = AcftGeoUtil.CalculateIsaTemp(AbsoluteAltitude);
 
                     // Calculate True Track
                     double wca = TrueAirSpeed == 0 ? 0 : Math.Acos(WindXComp / TrueAirSpeed);
                     _trueTrack = AcftGeoUtil.NormalizeHeading(_trueHdg + wca);
-                }
-                if (point.SfcPress_hPa != 0)
+                } else if (_gribPoint != value)
                 {
-                    SurfacePressure_hPa = point.SfcPress_hPa;
+                    _gribPoint = value;
+
+                    if (WindDirection != _gribPoint.WDir_deg || WindSpeed != _gribPoint.WSpeed_kts)
+                    {
+                        WindDirection = _gribPoint.WDir_deg;
+                        WindSpeed = _gribPoint.WSpeed_kts;
+
+                        // Calculate True Track
+                        double wca = TrueAirSpeed == 0 ? 0 : Math.Acos(WindXComp / TrueAirSpeed);
+                        _trueTrack = AcftGeoUtil.NormalizeHeading(_trueHdg + wca);
+                    }
+                    if (_gribPoint.SfcPress_hPa != 0)
+                    {
+                        SurfacePressure_hPa = _gribPoint.SfcPress_hPa;
+                    }
+                    else
+                    {
+                        SurfacePressure_hPa = AcftGeoUtil.STD_PRES_HPA;
+                    }
+                    StaticAirTemperature = _gribPoint.Temp_C;
                 }
-                else
-                {
-                    SurfacePressure_hPa = AcftGeoUtil.STD_PRES_HPA;
-                }
-                StaticAirTemperature = point.Temp_C;
             }
+        }
+
+        public void UpdatePosition()
+        {
+            GribPoint = GribUtil.GetClosestGribPoint(this);
         }
     }
 }

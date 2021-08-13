@@ -12,7 +12,7 @@ namespace VatsimAtcTrainingSimulator.Core.GeoTools
 {    
     public static class AcftGeoUtil
     {
-        private const double EARTH_RADIUS_M = 6371e3;
+        public const double EARTH_RADIUS_M = 6371e3;
         public const double STD_PRES_HPA = 1013.25;
         public const double STD_TEMP_C = 15;
         public const double STD_LAPSE_RATE = 2.0 / 1000.0;
@@ -20,16 +20,11 @@ namespace VatsimAtcTrainingSimulator.Core.GeoTools
         public const double CONV_FACTOR_KELVIN_C = 273.15;
         public const double CONV_FACTOR_M_FT = 3.28084;
         public const double CONV_FACTOR_INHG_HPA = 33.86;
+        public const double CONV_FACTOR_NMI_M = 1852;
 
         public static void CalculateNextLatLon(ref AcftData pos, double distanceNMi)
         {
-            //Coordinate start = new Coordinate(pos.Latitude, pos.Longitude);
             double d = distanceNMi * 1852;
-            //start.Move(d, pos.Track_True, Shape.Sphere);
-            //pos.Latitude = start.Latitude.ToDouble();
-            //pos.Longitude = start.Longitude.ToDouble();
-
-
             double R = EARTH_RADIUS_M + (pos.AbsoluteAltitude * CONV_FACTOR_M_FT);
             double bearingRads = DegreesToRadians(pos.Track_True);
             double lat1 = DegreesToRadians(pos.Latitude);
@@ -42,7 +37,6 @@ namespace VatsimAtcTrainingSimulator.Core.GeoTools
 
             pos.Latitude = RadiansToDegrees(lat2);
             pos.Longitude = NormalizeLongitude(RadiansToDegrees(lon2));
-            //Console.WriteLine($"{pos.Latitude} {pos.Longitude} | {RadiansToDegrees(lat2)} {NormalizeLongitude(RadiansToDegrees(lon2))}");
         }
 
         public static double NormalizeLongitude(double lon)
@@ -75,9 +69,20 @@ namespace VatsimAtcTrainingSimulator.Core.GeoTools
 
         public static double CalculateFlatDistanceNMi(double lat1, double lon1, double lat2, double lon2)
         {
-            Coordinate coord1 = new Coordinate(lat1, lon1);
-            Coordinate coord2 = new Coordinate(lat2, lon2);
-            return coord1.Get_Distance_From_Coordinate(coord2, Shape.Ellipsoid).NauticalMiles;
+            double phi1 = DegreesToRadians(lat1);
+            double phi2 = DegreesToRadians(lat2);
+            double deltaPhi = DegreesToRadians(lat2 - lat1);
+            double deltaLambda = DegreesToRadians(lon2 - lon1);
+
+            double a = Math.Pow(Math.Sin(deltaPhi / 2), 2) + 
+                Math.Cos(phi1) * Math.Cos(phi2) * 
+                Math.Pow(Math.Sin(deltaLambda / 2), 2);
+
+            double c = 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
+
+            double d = EARTH_RADIUS_M * c;
+
+            return d / CONV_FACTOR_M_FT;
         }
 
         public static double ConvertSectorFileDegMinSecToDecimalDeg(string input)

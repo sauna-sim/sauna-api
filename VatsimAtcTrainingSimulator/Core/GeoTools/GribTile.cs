@@ -21,8 +21,6 @@ namespace VatsimAtcTrainingSimulator.Core.GeoTools
 
         public static GribTile FindOrCreateGribTile(AcftData pos, DateTime dateTime)
         {
-            DateTime now = DateTime.UtcNow;
-
             GribTile foundTile = null;
             lock (GribTileListLock)
             {
@@ -30,7 +28,7 @@ namespace VatsimAtcTrainingSimulator.Core.GeoTools
                 foundTile = null;
                 foreach (GribTile tile in GribTileList)
                 {
-                    if (tile.IsAcftInside(pos) && tile.IsValid(now))
+                    if (tile.IsAcftInside(pos) && tile.IsValid(dateTime))
                     {
                         foundTile = tile;
                         break;
@@ -40,7 +38,7 @@ namespace VatsimAtcTrainingSimulator.Core.GeoTools
                 // Create if not found
                 if (foundTile == null)
                 {
-                    foundTile = new GribTile(pos.Latitude, pos.Longitude, now);
+                    foundTile = new GribTile(pos.Latitude, pos.Longitude, dateTime);
                     GribTileList.Add(foundTile);
                 }
             }

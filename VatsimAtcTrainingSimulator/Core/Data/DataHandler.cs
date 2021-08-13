@@ -23,7 +23,7 @@ namespace VatsimAtcTrainingSimulator.Core.Data
         public static Waypoint GetClosestWaypointByIdentifier(string wpId, double lat, double lon)
         {
             Waypoint foundWp = null;
-            double minDistance = Double.MaxValue;
+            double minDistance = double.MaxValue;
 
             lock (waypointsLock)
             {

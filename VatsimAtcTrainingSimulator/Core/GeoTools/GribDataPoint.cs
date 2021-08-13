@@ -35,7 +35,11 @@ namespace VatsimAtcTrainingSimulator.Core.GeoTools
 
         public double GetDistanceFrom(AcftData pos)
         {
-            return Math.Sqrt(Math.Pow(pos.Latitude - Latitude, 2) + Math.Pow(pos.Longitude - Longitude_Norm, 2) + Math.Pow(pos.DensityAltitude - GeoPotentialHeight_Ft, 2));
+            double absHeightM = pos.AbsoluteAltitude / AcftGeoUtil.CONV_FACTOR_M_FT;
+            double geoPotHeightM = AcftGeoUtil.EARTH_RADIUS_M * absHeightM / (AcftGeoUtil.EARTH_RADIUS_M + absHeightM);
+            double flatDistNMi = AcftGeoUtil.CalculateFlatDistanceNMi(pos.Latitude, pos.Longitude, Latitude, Longitude_Norm);
+            double altDistNMi = Math.Abs(geoPotHeightM - GeoPotentialHeight_M) / AcftGeoUtil.CONV_FACTOR_NMI_M;
+            return Math.Sqrt(Math.Pow(flatDistNMi, 2) + Math.Pow(altDistNMi, 2));
         }
 
         public override string ToString()
