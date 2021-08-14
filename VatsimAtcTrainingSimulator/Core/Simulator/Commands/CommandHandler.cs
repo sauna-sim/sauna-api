@@ -68,6 +68,15 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Commands
                 case "tr":
                     cmd = new TurnRightHeadingCommand();
                     break;
+                case "tlb":
+                    cmd = new TurnLeftByHeadingCommand();
+                    break;
+                case "trb":
+                    cmd = new TurnRightByHeadingCommand();
+                    break;
+                case "fph":
+                    cmd = new FlyPresentHeadingCommand();
+                    break;
                 case "intercept":
                     cmd = new InterceptCourseCommand();
                     break;
@@ -78,6 +87,7 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Commands
                 case "alt":
                 case "cm":
                 case "dm":
+                case "clm":
                 case "climb":
                 case "des":
                 case "descend":
