@@ -31,7 +31,7 @@ namespace VatsimAtcTrainingSimulator.Core.Data
                 {
                     double dist = AcftGeoUtil.CalculateFlatDistanceNMi(lat, lon, wp.Latitude, wp.Longitude);
 
-                    if (foundWp.Identifier == wpId.ToUpper() && (foundWp == null || dist < minDistance))
+                    if (wp.Identifier == wpId.ToUpper() && (foundWp == null || dist < minDistance))
                     {
                         foundWp = wp;
                         minDistance = dist;

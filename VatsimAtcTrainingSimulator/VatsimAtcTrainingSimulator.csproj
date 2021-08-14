@@ -8,7 +8,7 @@
     <OutputType>WinExe</OutputType>
     <RootNamespace>VatsimAtcTrainingSimulator</RootNamespace>
     <AssemblyName>VatsimAtcTrainingSimulator</AssemblyName>
-    <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <NuGetPackageImportStamp>
@@ -28,6 +28,7 @@
     <IsWebBootstrapper>false</IsWebBootstrapper>
     <UseApplicationTrust>false</UseApplicationTrust>
     <BootstrapperEnabled>true</BootstrapperEnabled>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -76,14 +77,17 @@
   <ItemGroup>
     <Compile Include="Core\Clients\ClientsHandler.cs" />
     <Compile Include="Core\Clients\VatsimClientDisplayable.cs" />
+    <Compile Include="Core\GeoTools\Helpers\LatLonAltPoint.cs" />
     <Compile Include="Core\Simulator\AircraftControl\AltitudeHoldInstruction.cs" />
     <Compile Include="Core\Simulator\AircraftControl\DirectWaypointInstruction.cs" />
     <Compile Include="Core\Simulator\AircraftControl\HeadingHoldInstruction.cs" />
     <Compile Include="Core\Simulator\AircraftControl\IControlInstruction.cs" />
     <Compile Include="Core\Simulator\AircraftControl\ILateralControlInstruction.cs" />
+    <Compile Include="Core\Simulator\AircraftControl\InterceptCourseInstruction.cs" />
     <Compile Include="Core\Simulator\AircraftControl\IVerticalControlInstruction.cs" />
     <Compile Include="Core\Simulator\AircraftControl\TrackHoldInstruction.cs" />
     <Compile Include="Core\Simulator\AircraftControl\VerticalSpeedInstruction.cs" />
+    <Compile Include="Core\Simulator\Commands\InterceptCourseCommand.cs" />
     <Compile Include="Forms\CommandWindow.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -148,6 +152,7 @@
     <Compile Include="Properties\Resources.Designer.cs">
       <AutoGen>True</AutoGen>
       <DependentUpon>Resources.resx</DependentUpon>
+      <DesignTime>True</DesignTime>
     </Compile>
     <EmbeddedResource Include="Forms\SettingsForm.resx">
       <DependentUpon>SettingsForm.cs</DependentUpon>

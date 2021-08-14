@@ -129,6 +129,23 @@ namespace VatsimAtcTrainingSimulator.Core.Clients
             }
         }
 
+        [DisplayName("Armed Lateral Mode")]
+        public string ArmedLatMode
+        {
+            get
+            {
+                if (client is VatsimClientPilot pilot && pilot.Control != null)
+                {
+                    if (pilot.Control.ArmedLateralInstruction != null)
+                    {
+                        return pilot.Control.ArmedLateralInstruction.ToString();
+                    }
+                    return "None";
+                }
+                return "";
+            }
+        }
+
         [DisplayName("Vertical Mode")]
         public string VertMode
         {

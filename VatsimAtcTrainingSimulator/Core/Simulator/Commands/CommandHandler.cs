@@ -68,6 +68,9 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Commands
                 case "tr":
                     cmd = new TurnRightHeadingCommand();
                     break;
+                case "intercept":
+                    cmd = new InterceptCourseCommand();
+                    break;
                 case "speed":
                 case "spd":
                     cmd = new SpeedCommand();

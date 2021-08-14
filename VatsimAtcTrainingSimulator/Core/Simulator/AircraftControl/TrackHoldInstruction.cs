@@ -11,17 +11,17 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.AircraftControl
     {
         public LateralControlMode Type => LateralControlMode.TRACK_HOLD;
 
-        public int AssignedTrack { get; private set; }
+        public double AssignedTrack { get; private set; }
 
         public TurnDirection TurnDir { get; private set; }
 
-        public TrackHoldInstruction(TurnDirection turnDir, int assignedTrack)
+        public TrackHoldInstruction(TurnDirection turnDir, double assignedTrack)
         {
             this.TurnDir = turnDir;
             this.AssignedTrack = (assignedTrack >= 360) ? assignedTrack - 360 : assignedTrack; ;
         }
 
-        public TrackHoldInstruction(int assignedTrack) : this(TurnDirection.SHORTEST, assignedTrack) { }
+        public TrackHoldInstruction(double assignedTrack) : this(TurnDirection.SHORTEST, assignedTrack) { }
 
         public void UpdatePosition(ref AcftData position, int posCalcInterval)
         {
