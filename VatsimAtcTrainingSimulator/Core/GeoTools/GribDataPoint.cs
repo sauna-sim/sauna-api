@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using VatsimAtcTrainingSimulator.Core.GeoTools.Helpers;
 using VatsimAtcTrainingSimulator.Core.Simulator.AircraftControl;
 
 namespace VatsimAtcTrainingSimulator.Core.GeoTools
@@ -37,7 +38,7 @@ namespace VatsimAtcTrainingSimulator.Core.GeoTools
         {
             double absHeightM = pos.AbsoluteAltitude / AcftGeoUtil.CONV_FACTOR_M_FT;
             double geoPotHeightM = AcftGeoUtil.EARTH_RADIUS_M * absHeightM / (AcftGeoUtil.EARTH_RADIUS_M + absHeightM);
-            double flatDistNMi = AcftGeoUtil.CalculateFlatDistanceNMi(pos.Latitude, pos.Longitude, Latitude, Longitude_Norm);
+            double flatDistNMi = GeoPoint.FlatDistanceNMi(new GeoPoint(pos.Latitude, pos.Longitude), new GeoPoint(Latitude, Longitude_Norm));
             double altDistNMi = Math.Abs(geoPotHeightM - GeoPotentialHeight_M) / AcftGeoUtil.CONV_FACTOR_NMI_M;
             return Math.Sqrt(Math.Pow(flatDistNMi, 2) + Math.Pow(altDistNMi, 2));
         }

@@ -15,7 +15,7 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.AircraftControl
     {
         private double previousTrack;
         private double leadInDistance;
-        private LatLonAltPoint intersection;
+        private GeoPoint intersection;
         public Waypoint AssignedWaypoint { get; private set; }
         public double Course { get; private set;}
 
@@ -56,10 +56,10 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.AircraftControl
                 return false;
             }
 
-            LatLonAltPoint aircraftPoint = new LatLonAltPoint(position.Latitude, position.Longitude, position.AbsoluteAltitude);
+            GeoPoint aircraftPoint = new GeoPoint(position.Latitude, position.Longitude, position.AbsoluteAltitude);
             aircraftPoint.MoveByNMi(position.Track_True, AcftGeoUtil.CalculateDistanceTravelledNMi(position.GroundSpeed, posCalcInterval));
 
-            double dist = AcftGeoUtil.CalculateFlatDistanceNMi(aircraftPoint.Lat, aircraftPoint.Lon, intersection.Lat, intersection.Lon);
+            double dist = GeoPoint.FlatDistanceNMi(aircraftPoint, intersection);
 
             return dist < leadInDistance;
         }

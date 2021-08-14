@@ -31,14 +31,14 @@ namespace VatsimAtcTrainingSimulator.Core.GeoTools
         /// <param name="distanceNMi">Distance (Nautical Miles) that the aircraft should be moved</param>
         public static void CalculateNextLatLon(ref AcftData pos, double distanceNMi)
         {
-            LatLonAltPoint point = new LatLonAltPoint(pos.Latitude, pos.Longitude, pos.AbsoluteAltitude);
+            GeoPoint point = new GeoPoint(pos.Latitude, pos.Longitude, pos.AbsoluteAltitude);
             point.MoveByNMi(pos.Track_True, distanceNMi);
 
             pos.Latitude = point.Lat;
             pos.Longitude = point.Lon;
         }
 
-        public static double CalculateTurnLeadDistance(LatLonAltPoint point, double theta, double r)
+        public static double CalculateTurnLeadDistance(GeoPoint point, double theta, double r)
         {
             if (point == null)
             {
@@ -64,7 +64,7 @@ namespace VatsimAtcTrainingSimulator.Core.GeoTools
         public static double CalculateTurnLeadDistance(AcftData pos, Waypoint wp, double course)
         {
             // Find intersection
-            LatLonAltPoint intersection = FindIntersection(pos, wp, course);            
+            GeoPoint intersection = FindIntersection(pos, wp, course);            
 
             // Find degrees to turn
             double theta = Math.Abs(CalculateTurnAmount(pos.Track_True, course));
@@ -82,14 +82,14 @@ namespace VatsimAtcTrainingSimulator.Core.GeoTools
         /// <param name="wp">Waypoint</param>
         /// <param name="course">Course To/From Waypoint</param>
         /// <returns>Whether or not an intersection exists.</returns>
-        public static LatLonAltPoint FindIntersection(AcftData position, Waypoint wp, double course)
+        public static GeoPoint FindIntersection(AcftData position, Waypoint wp, double course)
         {
-            LatLonAltPoint point1 = new LatLonAltPoint(position.Latitude, position.Longitude);
-            LatLonAltPoint point2 = new LatLonAltPoint(wp.Latitude, wp.Longitude);
+            GeoPoint point1 = new GeoPoint(position.Latitude, position.Longitude);
+            GeoPoint point2 = new GeoPoint(wp.Latitude, wp.Longitude);
 
             // Try both radials and see which one works
-            LatLonAltPoint intersection1 = LatLonAltPoint.Intersection(point1, position.Track_True, point2, course);
-            LatLonAltPoint intersection2 = LatLonAltPoint.Intersection(point1, position.Track_True, point2, (course + 180) % 360);
+            GeoPoint intersection1 = GeoPoint.Intersection(point1, position.Track_True, point2, course);
+            GeoPoint intersection2 = GeoPoint.Intersection(point1, position.Track_True, point2, (course + 180) % 360);
 
             if (intersection1 == null)
             {
@@ -101,8 +101,8 @@ namespace VatsimAtcTrainingSimulator.Core.GeoTools
                 return intersection1;
             }
 
-            double dist1 = CalculateFlatDistanceNMi(position.Latitude, position.Longitude, intersection1.Lat, intersection1.Lon);
-            double dist2 = CalculateFlatDistanceNMi(position.Latitude, position.Longitude, intersection2.Lat, intersection2.Lon);
+            double dist1 = GeoPoint.FlatDistanceNMi(point1, intersection1);
+            double dist2 = GeoPoint.FlatDistanceNMi(point1, intersection2);
 
             if (dist1 < dist2)
             {
@@ -150,57 +150,6 @@ namespace VatsimAtcTrainingSimulator.Core.GeoTools
         public static double RadiansToDegrees(double radians)
         {
             return 180.0 * radians / Math.PI;
-        }
-
-        /// <summary>
-        /// Calculates distance across the Earth's surface between two points.
-        /// Assumes that Earth is a sphere.
-        /// </summary>
-        /// <param name="lat1">Point 1 Latitude (degrees)</param>
-        /// <param name="lon1">Point 1 Longitude (degrees)</param>
-        /// <param name="lat2">Point 2 Latitude (degrees)</param>
-        /// <param name="lon2">Point 2 Longitude (degrees)</param>
-        /// <returns></returns>
-        public static double CalculateFlatDistanceNMi(double lat1, double lon1, double lat2, double lon2)
-        {
-            double phi1 = DegreesToRadians(lat1);
-            double phi2 = DegreesToRadians(lat2);
-            double deltaPhi = DegreesToRadians(lat2 - lat1);
-            double deltaLambda = DegreesToRadians(lon2 - lon1);
-
-            double a = Math.Pow(Math.Sin(deltaPhi / 2), 2) +
-                Math.Cos(phi1) * Math.Cos(phi2) *
-                Math.Pow(Math.Sin(deltaLambda / 2), 2);
-
-            double c = 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
-
-            double d = EARTH_RADIUS_M * c;
-
-            return d / CONV_FACTOR_NMI_M;
-        }
-
-        public static double CalculateInitialBearing(double lat1, double lon1, double lat2, double lon2)
-        {
-            // Convert to Radians
-            double phi1 = DegreesToRadians(lat1);
-            double phi2 = DegreesToRadians(lat2);
-            double lambda1 = DegreesToRadians(lon1);
-            double lambda2 = DegreesToRadians(lon2);
-
-            // Find angle between the two
-            double y = Math.Sin(lambda2 - lambda1) * Math.Cos(phi2);
-            double x = Math.Cos(phi1) * Math.Sin(phi2) - Math.Sin(phi1) * Math.Cos(phi2) * Math.Cos(lambda2 - lambda1);
-
-            double theta = Math.Atan2(y, x);
-
-            // Convert from -180, +180 to 0, 359
-            return NormalizeHeading(RadiansToDegrees(theta));
-        }
-
-        public static double CalculateFinalBearing(double lat1, double lon1, double lat2, double lon2)
-        {
-            // Calculate initial bearing from end to start and reverse
-            return (CalculateInitialBearing(lat2, lon2, lat1, lon1) + 180) % 360;
         }
 
         public static double ConvertSectorFileDegMinSecToDecimalDeg(string input)

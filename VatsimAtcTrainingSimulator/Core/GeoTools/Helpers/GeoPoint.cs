@@ -9,20 +9,20 @@ namespace VatsimAtcTrainingSimulator.Core.GeoTools.Helpers
     /// <summary>
     /// A Class to contain a point on Earth
     /// </summary>
-    public class LatLonAltPoint
+    public class GeoPoint
     {
         private double _lat;
         private double _lon;
         private double _alt;
 
-        public LatLonAltPoint(double lat, double lon, double alt)
+        public GeoPoint(double lat, double lon, double alt)
         {
             Lat = lat;
             Lon = lon;
             _alt = alt;
         }
 
-        public LatLonAltPoint(double lat, double lon) : this(lat, lon, 0) { }
+        public GeoPoint(double lat, double lon) : this(lat, lon, 0) { }
 
         /// <summary>
         /// Latitude (degrees). -90 to +90.
@@ -83,6 +83,70 @@ namespace VatsimAtcTrainingSimulator.Core.GeoTools.Helpers
         }
 
         /// <summary>
+        /// Calculates distance across the Earth's surface between two points.
+        /// Assumes that Earth is a sphere.
+        /// </summary>
+        /// <param name="point1">First Point</param>
+        /// <param name="point2">Second Point</param>
+        /// <returns><c>double</c> distance in meters</returns>
+        public static double FlatDistanceM(GeoPoint point1, GeoPoint point2)
+        {
+            double phi1 = AcftGeoUtil.DegreesToRadians(point1.Lat);
+            double phi2 = AcftGeoUtil.DegreesToRadians(point2.Lat);
+            double deltaPhi = AcftGeoUtil.DegreesToRadians(point2.Lat - point1.Lat);
+            double deltaLambda = AcftGeoUtil.DegreesToRadians(point2.Lon - point1.Lon);
+
+            double a = Math.Pow(Math.Sin(deltaPhi / 2), 2) +
+                Math.Cos(phi1) * Math.Cos(phi2) *
+                Math.Pow(Math.Sin(deltaLambda / 2), 2);
+
+            double c = 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
+
+            double d = AcftGeoUtil.EARTH_RADIUS_M * c;
+
+            return d;
+        }
+
+        /// <summary>
+        /// Calculates distance across the Earth's surface between two points.
+        /// Assumes that Earth is a sphere.
+        /// </summary>
+        /// <param name="point1">First Point</param>
+        /// <param name="point2">Second Point</param>
+        /// <returns><c>double</c> distance in nautical miles</returns>
+        public static double FlatDistanceNMi(GeoPoint point1, GeoPoint point2)
+        {
+            return FlatDistanceM(point1, point2) / AcftGeoUtil.CONV_FACTOR_NMI_M;
+        }
+
+        /// <summary>
+        /// Calculates spherical distance between two points.
+        /// Assumes that Earth is a sphere.
+        /// </summary>
+        /// <param name="point1">First Point</param>
+        /// <param name="point2">Second Point</param>
+        /// <returns><c>double</c> distance in meters</returns>
+        public static double DistanceM(GeoPoint point1, GeoPoint point2)
+        {
+            double flatDist = FlatDistanceM(point1, point2);
+            double altDist = Math.Abs(point2.Alt - point1.Alt) / AcftGeoUtil.CONV_FACTOR_M_FT;
+
+            return Math.Sqrt(Math.Pow(flatDist, 2) + Math.Pow(altDist, 2));
+        }
+
+        /// <summary>
+        /// Calculates spherical distance between two points.
+        /// Assumes that Earth is a sphere.
+        /// </summary>
+        /// <param name="point1">First Point</param>
+        /// <param name="point2">Second Point</param>
+        /// <returns><c>double</c> distance in nautical miles</returns>
+        public static double DistanceNMi(GeoPoint point1, GeoPoint point2)
+        {
+            return DistanceM(point1, point2) / AcftGeoUtil.CONV_FACTOR_NMI_M;
+        }
+
+        /// <summary>
         /// Calculates the intersection between 2 points and their bearings.
         /// </summary>
         /// <param name="point1">First Point</param>
@@ -90,7 +154,7 @@ namespace VatsimAtcTrainingSimulator.Core.GeoTools.Helpers
         /// <param name="point2">Second Point</param>
         /// <param name="bearing2">Bearing from second point (degrees)</param>
         /// <returns><c>LatLonAltPoint</c> intersection or <c>null</c> if one does not exist.</returns>
-        public static LatLonAltPoint Intersection(LatLonAltPoint point1, double bearing1, LatLonAltPoint point2, double bearing2)
+        public static GeoPoint Intersection(GeoPoint point1, double bearing1, GeoPoint point2, double bearing2)
         {
             // Conversions to radians
             double phi1 = AcftGeoUtil.DegreesToRadians(point1.Lat);
@@ -146,7 +210,37 @@ namespace VatsimAtcTrainingSimulator.Core.GeoTools.Helpers
 
             double lambda3 = lambda1 + deltaLambda13;
 
-            return new LatLonAltPoint(AcftGeoUtil.RadiansToDegrees(phi3), AcftGeoUtil.RadiansToDegrees(lambda3));
+            return new GeoPoint(AcftGeoUtil.RadiansToDegrees(phi3), AcftGeoUtil.RadiansToDegrees(lambda3));
+        }
+
+        /// <summary>
+        /// Calculates the initial great circle bearing between two points.
+        /// </summary>
+        /// <param name="point1">First Point</param>
+        /// <param name="point2">Second Point</param>
+        /// <returns><c>double</c> bearing in degrees (0 to 360).</returns>
+        public static double InitialBearing(GeoPoint point1, GeoPoint point2)
+        {
+            // Convert to Radians
+            double phi1 = AcftGeoUtil.DegreesToRadians(point1.Lat);
+            double phi2 = AcftGeoUtil.DegreesToRadians(point2.Lat);
+            double lambda1 = AcftGeoUtil.DegreesToRadians(point1.Lon);
+            double lambda2 = AcftGeoUtil.DegreesToRadians(point2.Lon);
+
+            // Find angle between the two
+            double y = Math.Sin(lambda2 - lambda1) * Math.Cos(phi2);
+            double x = Math.Cos(phi1) * Math.Sin(phi2) - Math.Sin(phi1) * Math.Cos(phi2) * Math.Cos(lambda2 - lambda1);
+
+            double theta = Math.Atan2(y, x);
+
+            // Convert from -180, +180 to 0, 359
+            return AcftGeoUtil.NormalizeHeading(AcftGeoUtil.RadiansToDegrees(theta));
+        }
+
+        public static double FinalBearing(GeoPoint point1, GeoPoint point2)
+        {
+            // Calculate initial bearing from end to start and reverse
+            return (InitialBearing(point2, point1) + 180) % 360;
         }
 
         // override object.Equals
@@ -157,7 +251,7 @@ namespace VatsimAtcTrainingSimulator.Core.GeoTools.Helpers
                 return false;
             }
 
-            LatLonAltPoint o = (LatLonAltPoint)obj;
+            GeoPoint o = (GeoPoint)obj;
             return _lat == o.Lat && _lon == o.Lon;
         }
 

@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using VatsimAtcTrainingSimulator.Core.GeoTools;
+using VatsimAtcTrainingSimulator.Core.GeoTools.Helpers;
 
 namespace VatsimAtcTrainingSimulator.Core.Data
 {
@@ -29,7 +30,7 @@ namespace VatsimAtcTrainingSimulator.Core.Data
             {
                 foreach (Waypoint wp in waypoints)
                 {
-                    double dist = AcftGeoUtil.CalculateFlatDistanceNMi(lat, lon, wp.Latitude, wp.Longitude);
+                    double dist = GeoPoint.FlatDistanceNMi(new GeoPoint(lat, lon), new GeoPoint(wp.Latitude, wp.Longitude));
 
                     if (wp.Identifier == wpId.ToUpper() && (foundWp == null || dist < minDistance))
                     {
