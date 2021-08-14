@@ -20,7 +20,7 @@ namespace VatsimAtcTrainingSimulator
 
         public CommandWindow()
         {
-            InitializeComponent();            
+            InitializeComponent();
         }
 
         public void LogMessage(string msg)
@@ -48,7 +48,8 @@ namespace VatsimAtcTrainingSimulator
                     Left = Owner.Right;
                     Top = Owner.Top;
                     Height = Owner.Height;
-                } else
+                }
+                else
                 {
                     Docked = false;
                 }
@@ -88,32 +89,35 @@ namespace VatsimAtcTrainingSimulator
                 // Process Input
                 List<string> split = commandInputBx.Text.Split(' ').ToList();
 
-                // Handle Pause/Unpause All
-
-
-                IVatsimClient aircraft = ClientsHandler.GetClientWhichContainsCallsign(split[0]);
-
-                split.RemoveAt(0);
-
-                // If we didn't find any aircraft
-                if (aircraft == null || !(aircraft is VatsimClientPilot))
+                if (split.Count >= 1)
                 {
-                    outputWindow.AppendText($"ERROR: {split[0]} was not found in the aircraft list!\r\n");
-                } else
-                {
-                    // Loop through command list
-                    while (split.Count > 0)
+                    // Handle Pause/Unpause All
+
+                    IVatsimClient aircraft = ClientsHandler.GetClientWhichContainsCallsign(split[0]);
+
+                    split.RemoveAt(0);
+
+                    // If we didn't find any aircraft
+                    if (aircraft == null || !(aircraft is VatsimClientPilot))
                     {
-                        // Get command name
-                        string command = split[0].ToLower();
-                        split.RemoveAt(0);
-
-                        split = CommandHandler.HandleCommand(command, (VatsimClientPilot) aircraft, split, LogMessage);
+                        outputWindow.AppendText($"ERROR: {split[0]} was not found in the aircraft list!\r\n");
                     }
-                }
+                    else
+                    {
+                        // Loop through command list
+                        while (split.Count > 0)
+                        {
+                            // Get command name
+                            string command = split[0].ToLower();
+                            split.RemoveAt(0);
 
-                // Clear command box
-                commandInputBx.ResetText();
+                            split = CommandHandler.HandleCommand(command, (VatsimClientPilot)aircraft, split, LogMessage);
+                        }
+                    }
+
+                    // Clear command box
+                    commandInputBx.ResetText();
+                }
             }
         }
     }
