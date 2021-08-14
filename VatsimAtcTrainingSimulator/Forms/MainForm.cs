@@ -100,6 +100,21 @@ namespace VatsimAtcTrainingSimulator
                         string callsign = line.Split(':')[0].Replace("$FP", "");
 
                         ClientsHandler.SendDataForClient(callsign, line);
+                    } else if (line.StartsWith("ILS"))
+                    {
+                        string[] items = line.Split(':');
+                        string wpId = items[0];
+
+                        try
+                        {
+                            double lat = Convert.ToDouble(items[1]);
+                            double lon = Convert.ToDouble(items[2]);
+
+                            DataHandler.AddWaypoint(new Waypoint(wpId, lat, lon));
+                        } catch (Exception)
+                        {
+                            Console.WriteLine("Well that didn't work did it.");
+                        }
                     }
                 }
             }

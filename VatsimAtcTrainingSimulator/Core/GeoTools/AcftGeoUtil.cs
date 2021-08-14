@@ -45,18 +45,12 @@ namespace VatsimAtcTrainingSimulator.Core.GeoTools
                 return -1;
             }
 
-            double halfAngle = DegreesToRadians(90 - (theta / 2));
+            double halfAngle = DegreesToRadians(theta / 2);
 
             double halfTan = Math.Tan(halfAngle);
 
-            // If sin of theta is 0, return null. This indicates that the turn must begin NOW
-            if (halfTan == 0)
-            {
-                return -1;
-            }
-
             // Find lead in distance
-            double leadDist = r / halfTan;
+            double leadDist = r * halfTan;
 
             return leadDist;
         }
