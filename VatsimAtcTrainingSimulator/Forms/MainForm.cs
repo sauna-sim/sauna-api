@@ -11,6 +11,7 @@ using System.Windows.Forms;
 using VatsimAtcTrainingSimulator.Core;
 using VatsimAtcTrainingSimulator.Core.Data;
 using VatsimAtcTrainingSimulator.Core.GeoTools;
+using VatsimAtcTrainingSimulator.Core.Simulator.Commands;
 
 namespace VatsimAtcTrainingSimulator
 {
@@ -70,6 +71,8 @@ namespace VatsimAtcTrainingSimulator
                 string filename = fileDialog.FileName;
                 string[] filelines = File.ReadAllLines(filename);
 
+                string lastCallsign = "";
+
                 foreach (string line in filelines)
                 {
                     // Create pilot and update position
@@ -87,6 +90,8 @@ namespace VatsimAtcTrainingSimulator
                             }
                         };
 
+                        lastCallsign = callsign;
+
                         if (ClientsHandler.GetClientByCallsign(callsign) == null && await pilot.Connect(Properties.Settings.Default.server, Properties.Settings.Default.port, callsign, Properties.Settings.Default.cid, Properties.Settings.Default.password, "Simulator Pilot", Properties.Settings.Default.vatsimServer))
                         {
                             ClientsHandler.AddClient(pilot);
@@ -100,7 +105,28 @@ namespace VatsimAtcTrainingSimulator
                         string callsign = line.Split(':')[0].Replace("$FP", "");
 
                         ClientsHandler.SendDataForClient(callsign, line);
-                    } else if (line.StartsWith("ILS"))
+                    } else if (line.StartsWith("REQALT"))
+                    {
+                        IVatsimClient acft = ClientsHandler.GetClientByCallsign(lastCallsign);
+
+                        string[] items = line.Split(':');
+
+                        if (acft is VatsimClientPilot pilot && pilot != null && items.Length >= 3)
+                        {
+                            try
+                            {
+                                int reqAlt = Convert.ToInt32(items[2]);
+                                reqAlt /= 100;
+
+                                List<string> args = new List<string>
+                                {
+                                    $"FL{reqAlt}"
+                                };
+                                CommandHandler.HandleCommand("dm", pilot, args, logMsg);
+                            } catch (Exception) { }
+                        }
+                    }                    
+                    else if (line.StartsWith("ILS"))
                     {
                         string[] items = line.Split(':');
                         string wpId = items[0];
