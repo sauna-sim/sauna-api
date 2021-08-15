@@ -87,16 +87,18 @@ namespace VatsimAtcTrainingSimulator.Core.GeoTools
             return NormalizeHeading(turnDirBearing);
         }
 
-        public static double CalculateCrossTrackErrorM(GeoPoint aircraft, GeoPoint waypoint, double course)
+        public static double CalculateCrossTrackErrorM(GeoPoint aircraft, GeoPoint waypoint, double course, ref double requiredCourse)
         {
             // Set waypoint's altitude to aircraft's altitude to minimize error
             waypoint.Alt = aircraft.Alt;
 
             // Find radial
             double finalDirBearing = GeoPoint.FinalBearing(aircraft, waypoint);
-            double dist = GeoPoint.DistanceM(aircraft, waypoint);
+            double dist = GeoPoint.FlatDistanceM(aircraft, waypoint);
 
-            double radial = Math.Abs(CalculateTurnAmount(course, finalDirBearing)) < 90 ? NormalizeHeading(course + 180) : course;
+            double turnAmt = CalculateTurnAmount(course, finalDirBearing);
+
+            double radial = Math.Abs(turnAmt) < 90 ? NormalizeHeading(course + 180) : course;
 
             // Calculate radius
             double R = EARTH_RADIUS_M + (aircraft.Alt / CONV_FACTOR_M_FT);
@@ -112,7 +114,18 @@ namespace VatsimAtcTrainingSimulator.Core.GeoTools
 
             double xTrackM = Math.Asin(Math.Sin(sigma13) * Math.Sin(theta13 - theta12)) * R;
 
-            return xTrackM;
+            // Calculate along track distance
+            double aTrackM = Math.Acos(Math.Cos(sigma13) / Math.Cos(xTrackM / R)) * R;
+
+            // Find along track waypoint
+            GeoPoint aTrackPoint = new GeoPoint(waypoint.Lat, waypoint.Lon, waypoint.Alt);
+            aTrackPoint.MoveByM(radial, aTrackM);
+
+            // Calculate required course
+            double initialCourse = GeoPoint.InitialBearing(aTrackPoint, waypoint);
+            requiredCourse = Math.Abs(turnAmt) < 90 ? initialCourse : NormalizeHeading(initialCourse + 180);
+
+            return Math.Abs(turnAmt) < 90 ? -xTrackM : xTrackM;
         }
 
         public static double CalculateTurnLeadDistance(GeoPoint point, double theta, double r)

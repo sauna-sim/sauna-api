@@ -29,13 +29,7 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Commands
 
             if (course >= 0)
             {
-                // Get magnetic course
-                Coordinate coord = new Coordinate(Aircraft.Position.Latitude, Aircraft.Position.Longitude, DateTime.UtcNow);
-                Magnetic m = new Magnetic(coord, Aircraft.Position.IndicatedAltitude / 3.28084, DataModel.WMM2015);
-                double declin = Math.Round(m.MagneticFieldElements.Declination, 1);
-                double magCourse = AcftGeoUtil.NormalizeHeading(course - declin);
-
-                InterceptCourseInstruction instr = new InterceptCourseInstruction(wp, magCourse)
+                InterceptCourseInstruction instr = new InterceptCourseInstruction(wp)
                 {
                     TrueCourse = course
                 };
