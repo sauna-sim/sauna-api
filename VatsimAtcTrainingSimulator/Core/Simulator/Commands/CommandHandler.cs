@@ -80,6 +80,11 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Commands
                 case "intercept":
                     cmd = new InterceptCourseCommand();
                     break;
+                case "direct":
+                case "dct":
+                case "dir":
+                    cmd = new DirectWaypointCommand();
+                    break;
                 case "speed":
                 case "spd":
                     cmd = new SpeedCommand();

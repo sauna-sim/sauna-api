@@ -17,14 +17,14 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.AircraftControl
         private double leadInDistance;
         private GeoPoint intersection;
         public Waypoint AssignedWaypoint { get; private set; }
-        public double Course { get; private set;}
+        public double MagneticCourse { get; private set;}
 
-        private double trueCourse;
+        public double TrueCourse { get; set; }
 
         public InterceptCourseInstruction(Waypoint assignedWp, double course)
         {
             AssignedWaypoint = assignedWp;
-            Course = course;
+            MagneticCourse = course;
         }
 
         public LateralControlMode Type => LateralControlMode.COURSE_INTERCEPT;
@@ -37,13 +37,13 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.AircraftControl
                 Coordinate coord = new Coordinate(position.Latitude, position.Longitude, DateTime.UtcNow);
                 Magnetic m = new Magnetic(coord, position.IndicatedAltitude / 3.28084, DataModel.WMM2015);
                 double declin = Math.Round(m.MagneticFieldElements.Declination, 1);
-                trueCourse = AcftGeoUtil.NormalizeHeading(Course + declin);
+                TrueCourse = AcftGeoUtil.NormalizeHeading(MagneticCourse + declin);
 
                 previousTrack = position.Track_True;
-                intersection = AcftGeoUtil.FindIntersection(position, AssignedWaypoint, trueCourse);
+                intersection = AcftGeoUtil.FindIntersection(position, AssignedWaypoint, TrueCourse);
 
                 // Find degrees to turn
-                double theta = Math.Abs(AcftGeoUtil.CalculateTurnAmount(position.Track_True, trueCourse));
+                double theta = Math.Abs(AcftGeoUtil.CalculateTurnAmount(position.Track_True, TrueCourse));
 
                 // Calculate radius of turn
                 double r = AcftGeoUtil.CalculateRadiusOfTurn(AcftGeoUtil.CalculateBankAngle(position.GroundSpeed, 25, 3), position.GroundSpeed);
@@ -66,12 +66,12 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.AircraftControl
 
         public void UpdatePosition(ref AcftData position, int posCalcInterval)
         {
-            new TrackHoldInstruction(trueCourse).UpdatePosition(ref position, posCalcInterval);
+            new TrackHoldInstruction(TrueCourse).UpdatePosition(ref position, posCalcInterval);
         }
 
         public override string ToString()
         {
-            return $"NAV {AssignedWaypoint.Identifier} - {Course} ({leadInDistance})";
+            return $"NAV {AssignedWaypoint.Identifier} - {MagneticCourse} ({leadInDistance})";
         }
     }
 }

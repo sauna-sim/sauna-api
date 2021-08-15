@@ -38,6 +38,83 @@ namespace VatsimAtcTrainingSimulator.Core.GeoTools
             pos.Longitude = point.Lon;
         }
 
+        /// <summary>
+        /// Calculates the direct course to intercept towards a waypoint.
+        /// Returns -1 if direct course is not possible to achieve.
+        /// </summary>
+        /// <param name="aircraft">Aircraft position</param>
+        /// <param name="waypoint">Waypoint position</param>
+        /// <param name="r">Radius of Turn</param>
+        /// <param name="curBearing">Aircraft's current bearing</param>
+        /// <returns><c>double</c> Direct bearing to waypoint after turn</returns>
+        public static double CalculateDirectBearingAfterTurn(GeoPoint aircraft, GeoPoint waypoint, double r, double curBearing)
+        {
+            // Set waypoint's altitude to aircraft's altitude to minimize error
+            waypoint.Alt = aircraft.Alt;
+
+            // Get direct bearing to waypoint from aircraft. Use this to figure out right or left turn.
+            bool isRightTurn = CalculateTurnAmount(curBearing, GeoPoint.InitialBearing(aircraft, waypoint)) > 0;
+
+            // If distance is less than the diameter or turn, direct is impossible
+            double dirDist = GeoPoint.DistanceNMi(aircraft, waypoint);
+
+            if (dirDist < r * 2)
+            {
+                return -1;
+            } else if (dirDist == r * 2)
+            {
+                // Make a 180 degree turn
+                return NormalizeHeading(isRightTurn ? curBearing + 180 : curBearing - 180);
+            }
+
+            // Calculate bearing to circle center point
+            double bearingToC = NormalizeHeading(isRightTurn ? curBearing + 90 : curBearing - 90);
+
+            // Find center point
+            GeoPoint c = aircraft;
+            c.MoveByNMi(bearingToC, r);
+
+            // Find distance and bearing from c to waypoint
+            double finalBearingC = GeoPoint.FinalBearing(c, waypoint);
+            double distC = GeoPoint.DistanceNMi(c, waypoint);
+
+            // Find angle between finalBearingC and desired bearing
+            double ang = RadiansToDegrees(Math.Asin(r / distC));
+
+            // Calculate final bearing to waypoint
+            double turnDirBearing = isRightTurn ? finalBearingC + ang : finalBearingC - ang;
+
+            return NormalizeHeading(turnDirBearing);
+        }
+
+        public static double CalculateCrossTrackErrorM(GeoPoint aircraft, GeoPoint waypoint, double course)
+        {
+            // Set waypoint's altitude to aircraft's altitude to minimize error
+            waypoint.Alt = aircraft.Alt;
+
+            // Find radial
+            double finalDirBearing = GeoPoint.FinalBearing(aircraft, waypoint);
+            double dist = GeoPoint.DistanceM(aircraft, waypoint);
+
+            double radial = Math.Abs(CalculateTurnAmount(course, finalDirBearing)) < 90 ? NormalizeHeading(course + 180) : course;
+
+            // Calculate radius
+            double R = EARTH_RADIUS_M + (aircraft.Alt / CONV_FACTOR_M_FT);
+
+            // Calculate angular distance between aircraft and waypoint
+            double sigma13 = dist / R;
+
+            // Initial bearing from waypoint to aircraft
+            double theta13 = DegreesToRadians(NormalizeHeading(finalDirBearing + 180));
+
+            // Radial in radians
+            double theta12 = DegreesToRadians(radial);
+
+            double xTrackM = Math.Asin(Math.Sin(sigma13) * Math.Sin(theta13 - theta12)) * R;
+
+            return xTrackM;
+        }
+
         public static double CalculateTurnLeadDistance(GeoPoint point, double theta, double r)
         {
             if (point == null)

@@ -87,7 +87,10 @@
     <Compile Include="Core\Simulator\AircraftControl\IVerticalControlInstruction.cs" />
     <Compile Include="Core\Simulator\AircraftControl\TrackHoldInstruction.cs" />
     <Compile Include="Core\Simulator\AircraftControl\VerticalSpeedInstruction.cs" />
+    <Compile Include="Core\Simulator\Commands\DirectWaypointCommand.cs" />
     <Compile Include="Core\Simulator\Commands\InterceptCourseCommand.cs" />
+    <Compile Include="Core\Simulator\Commands\TurnLeftByHeadingCommand.cs" />
+    <Compile Include="Core\Simulator\Commands\TurnRightByHeadingCommand.cs" />
     <Compile Include="Forms\CommandWindow.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -157,6 +160,7 @@
     <EmbeddedResource Include="Forms\SettingsForm.resx">
       <DependentUpon>SettingsForm.cs</DependentUpon>
     </EmbeddedResource>
+    <Compile Include="Core\Simulator\Commands\FlyPresentHeadingCommand.cs" />
     <None Include="packages.config" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
