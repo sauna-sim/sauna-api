@@ -1,4 +1,6 @@
-﻿using System;
+﻿using CoordinateSharp;
+using CoordinateSharp.Magnetic;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -11,6 +13,8 @@ using System.Windows.Forms;
 using VatsimAtcTrainingSimulator.Core;
 using VatsimAtcTrainingSimulator.Core.Data;
 using VatsimAtcTrainingSimulator.Core.GeoTools;
+using VatsimAtcTrainingSimulator.Core.GeoTools.Helpers;
+using VatsimAtcTrainingSimulator.Core.Simulator.AircraftControl;
 using VatsimAtcTrainingSimulator.Core.Simulator.Commands;
 
 namespace VatsimAtcTrainingSimulator
@@ -105,7 +109,8 @@ namespace VatsimAtcTrainingSimulator
                         string callsign = line.Split(':')[0].Replace("$FP", "");
 
                         ClientsHandler.SendDataForClient(callsign, line);
-                    } else if (line.StartsWith("REQALT"))
+                    }
+                    else if (line.StartsWith("REQALT"))
                     {
                         IVatsimClient acft = ClientsHandler.GetClientByCallsign(lastCallsign);
 
@@ -123,9 +128,54 @@ namespace VatsimAtcTrainingSimulator
                                     $"FL{reqAlt}"
                                 };
                                 CommandHandler.HandleCommand("dm", pilot, args, logMsg);
-                            } catch (Exception) { }
+                            }
+                            catch (Exception) { }
                         }
-                    }                    
+                    }
+                    else if (line.StartsWith("$ROUTE"))
+                    {
+                        IVatsimClient acft = ClientsHandler.GetClientByCallsign(lastCallsign);
+
+                        string[] items = line.Split(':');
+
+                        if (acft is VatsimClientPilot pilot && pilot != null && items.Length >= 2)
+                        {
+                            string[] waypoints = items[1].Split(' ');
+
+                            foreach (string wp in waypoints)
+                            {
+                                pilot.Position.Route.Enqueue(wp);
+                            }
+
+                            Waypoint nextWp = DataHandler.GetClosestWaypointByIdentifier(pilot.Position.Route.Peek(), pilot.Position.Latitude, pilot.Position.Longitude);
+
+                            if (nextWp != null)
+                            {
+                                pilot.Position.Route.Dequeue();
+                                double course = AcftGeoUtil.CalculateDirectBearingAfterTurn(
+                                    new GeoPoint(pilot.Position.Latitude, pilot.Position.Longitude, pilot.Position.AbsoluteAltitude),
+                                    new GeoPoint(nextWp.Latitude, nextWp.Longitude),
+                                    AcftGeoUtil.CalculateRadiusOfTurn(AcftGeoUtil.CalculateBankAngle(pilot.Position.GroundSpeed, 25, 3), pilot.Position.GroundSpeed),
+                                    pilot.Position.Track_True);
+
+                                if (course >= 0)
+                                {
+                                    // Get magnetic course
+                                    Coordinate coord = new Coordinate(pilot.Position.Latitude, pilot.Position.Longitude, DateTime.UtcNow);
+                                    Magnetic m = new Magnetic(coord, pilot.Position.IndicatedAltitude / 3.28084, DataModel.WMM2015);
+                                    double declin = Math.Round(m.MagneticFieldElements.Declination, 1);
+                                    double magCourse = AcftGeoUtil.NormalizeHeading(course - declin);
+
+                                    InterceptCourseInstruction instr = new InterceptCourseInstruction(nextWp, magCourse)
+                                    {
+                                        TrueCourse = course
+                                    };
+
+                                    pilot.Control.CurrentLateralInstruction = instr;
+                                }
+                            }
+                        }
+                    }
                     else if (line.StartsWith("ILS"))
                     {
                         string[] items = line.Split(':');
@@ -137,7 +187,8 @@ namespace VatsimAtcTrainingSimulator
                             double lon = Convert.ToDouble(items[2]);
 
                             DataHandler.AddWaypoint(new Waypoint(wpId, lat, lon));
-                        } catch (Exception)
+                        }
+                        catch (Exception)
                         {
                             Console.WriteLine("Well that didn't work did it.");
                         }

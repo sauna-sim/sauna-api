@@ -1,6 +1,8 @@
 ﻿using CoordinateSharp;
 using CoordinateSharp.Magnetic;
 using System;
+using System.Collections.Generic;
+using VatsimAtcTrainingSimulator.Core.Data;
 using VatsimAtcTrainingSimulator.Core.GeoTools;
 
 namespace VatsimAtcTrainingSimulator.Core.Simulator.AircraftControl
@@ -149,6 +151,8 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.AircraftControl
                 }
             }
         }
+
+        public Queue<string> Route { get; } = new Queue<string>();
 
         public void UpdatePosition()
         {

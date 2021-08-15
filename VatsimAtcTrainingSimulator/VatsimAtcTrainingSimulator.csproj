@@ -79,7 +79,6 @@
     <Compile Include="Core\Clients\VatsimClientDisplayable.cs" />
     <Compile Include="Core\GeoTools\Helpers\GeoPoint.cs" />
     <Compile Include="Core\Simulator\AircraftControl\AltitudeHoldInstruction.cs" />
-    <Compile Include="Core\Simulator\AircraftControl\DirectWaypointInstruction.cs" />
     <Compile Include="Core\Simulator\AircraftControl\HeadingHoldInstruction.cs" />
     <Compile Include="Core\Simulator\AircraftControl\IControlInstruction.cs" />
     <Compile Include="Core\Simulator\AircraftControl\ILateralControlInstruction.cs" />
