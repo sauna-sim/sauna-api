@@ -144,14 +144,13 @@ namespace VatsimAtcTrainingSimulator
 
                             foreach (string wp in waypoints)
                             {
-                                pilot.Position.Route.Enqueue(wp);
+                                pilot.Position.Route.AddLast(wp);
                             }
 
-                            Waypoint nextWp = DataHandler.GetClosestWaypointByIdentifier(pilot.Position.Route.Peek(), pilot.Position.Latitude, pilot.Position.Longitude);
+                            Waypoint nextWp = DataHandler.GetClosestWaypointByIdentifier(pilot.Position.Route.First.Value, pilot.Position.Latitude, pilot.Position.Longitude);
 
                             if (nextWp != null)
                             {
-                                pilot.Position.Route.Dequeue();
                                 double course = AcftGeoUtil.CalculateDirectBearingAfterTurn(
                                     new GeoPoint(pilot.Position.Latitude, pilot.Position.Longitude, pilot.Position.AbsoluteAltitude),
                                     new GeoPoint(nextWp.Latitude, nextWp.Longitude),
@@ -160,9 +159,10 @@ namespace VatsimAtcTrainingSimulator
 
                                 if (course >= 0)
                                 {
-                                    InterceptCourseInstruction instr = new InterceptCourseInstruction(nextWp)
+                                    // Activate LNAV instruction
+                                    LnavRouteInstruction instr = new LnavRouteInstruction
                                     {
-                                        TrueCourse = course
+                                        InitialTrueCourse = course
                                     };
 
                                     pilot.Control.CurrentLateralInstruction = instr;

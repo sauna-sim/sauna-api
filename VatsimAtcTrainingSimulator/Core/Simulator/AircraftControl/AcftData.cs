@@ -152,7 +152,7 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.AircraftControl
             }
         }
 
-        public Queue<string> Route { get; } = new Queue<string>();
+        public LinkedList<string> Route { get; } = new LinkedList<string>();
 
         public void UpdatePosition()
         {

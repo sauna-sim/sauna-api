@@ -84,6 +84,7 @@
     <Compile Include="Core\Simulator\AircraftControl\ILateralControlInstruction.cs" />
     <Compile Include="Core\Simulator\AircraftControl\InterceptCourseInstruction.cs" />
     <Compile Include="Core\Simulator\AircraftControl\IVerticalControlInstruction.cs" />
+    <Compile Include="Core\Simulator\AircraftControl\LnavRouteInstruction.cs" />
     <Compile Include="Core\Simulator\AircraftControl\TrackHoldInstruction.cs" />
     <Compile Include="Core\Simulator\AircraftControl\VerticalSpeedInstruction.cs" />
     <Compile Include="Core\Simulator\Commands\DirectWaypointCommand.cs" />

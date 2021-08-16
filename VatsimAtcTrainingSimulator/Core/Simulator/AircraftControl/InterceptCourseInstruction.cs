@@ -13,7 +13,6 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.AircraftControl
 {
     public class InterceptCourseInstruction : ILateralControlInstruction
     {
-        private const double MIN_INTERCEPT_ANGLE = 0.1;
         private const double MAX_INTERCEPT_ANGLE = 45;
         private const double MIN_XTK_THRESHOLD_M = 3;
         private const double MAX_INTERCEPT_XTK_M = 1852;
@@ -52,7 +51,7 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.AircraftControl
             get => _trueCourse;
             set
             {
-                _trueCourse = Math.Round(value, 1, MidpointRounding.AwayFromZero);
+                _trueCourse = AcftGeoUtil.NormalizeHeading(Math.Round(value, 1, MidpointRounding.AwayFromZero));
 
                 // Calculate Magnetic Course
                 Coordinate coord = new Coordinate(AssignedWaypoint.Latitude, AssignedWaypoint.Longitude, DateTime.UtcNow);
@@ -176,7 +175,7 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.AircraftControl
 
         public override string ToString()
         {
-            return $"NAV {AssignedWaypoint.Identifier} - {_magneticCourse:000.0} | {_trueCourse:000.0} | {requiredTrueCourse:000.0} | {trackToHold:000.0} | {xTk:0.0}m";
+            return $"NAV {AssignedWaypoint.Identifier} - {_magneticCourse:000.0} | {xTk:0.0}m";
         }
     }
 }

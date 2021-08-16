@@ -10,7 +10,8 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.AircraftControl
     {
         HEADING_HOLD,
         TRACK_HOLD,
-        COURSE_INTERCEPT
+        COURSE_INTERCEPT,
+        NAV_ROUTE
     }
 
     public enum TurnDirection
