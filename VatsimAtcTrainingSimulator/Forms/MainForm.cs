@@ -14,7 +14,8 @@ using VatsimAtcTrainingSimulator.Core;
 using VatsimAtcTrainingSimulator.Core.Data;
 using VatsimAtcTrainingSimulator.Core.GeoTools;
 using VatsimAtcTrainingSimulator.Core.GeoTools.Helpers;
-using VatsimAtcTrainingSimulator.Core.Simulator.AircraftControl;
+using VatsimAtcTrainingSimulator.Core.Simulator.Aircraft;
+using VatsimAtcTrainingSimulator.Core.Simulator.Aircraft.Control.FMS;
 using VatsimAtcTrainingSimulator.Core.Simulator.Commands;
 
 namespace VatsimAtcTrainingSimulator
@@ -142,31 +143,28 @@ namespace VatsimAtcTrainingSimulator
                         {
                             string[] waypoints = items[1].Split(' ');
 
+                            List<FmsPoint> wps = new List<FmsPoint>();
+
                             foreach (string wp in waypoints)
                             {
-                                pilot.Position.Route.AddLast(wp);
+                                Waypoint nextWp = DataHandler.GetClosestWaypointByIdentifier(wp, pilot.Position.Latitude, pilot.Position.Longitude);
+
+                                if (nextWp != null)
+                                {
+                                    wps.Add(new FmsPoint(new RouteWaypoint(nextWp), RoutePointTypeEnum.FLY_BY));
+                                }
                             }
 
-                            Waypoint nextWp = DataHandler.GetClosestWaypointByIdentifier(pilot.Position.Route.First.Value, pilot.Position.Latitude, pilot.Position.Longitude);
-
-                            if (nextWp != null)
+                            for (int i = 0; i < wps.Count - 1; i++)
                             {
-                                double course = AcftGeoUtil.CalculateDirectBearingAfterTurn(
-                                    new GeoPoint(pilot.Position.Latitude, pilot.Position.Longitude, pilot.Position.AbsoluteAltitude),
-                                    new GeoPoint(nextWp.Latitude, nextWp.Longitude),
-                                    AcftGeoUtil.CalculateRadiusOfTurn(AcftGeoUtil.CalculateBankAngle(pilot.Position.GroundSpeed, 25, 3), pilot.Position.GroundSpeed),
-                                    pilot.Position.Track_True);
+                                pilot.Control.FMS.AddRouteLeg(new PointToPointLeg(wps[i], wps[i + 1]));
+                            }
 
-                                if (course >= 0)
-                                {
-                                    // Activate LNAV instruction
-                                    LnavRouteInstruction instr = new LnavRouteInstruction
-                                    {
-                                        InitialTrueCourse = course
-                                    };
-
-                                    pilot.Control.CurrentLateralInstruction = instr;
-                                }
+                            if (wps.Count > 0)
+                            {
+                                pilot.Control.FMS.ActivateDirectTo(wps[0].Point, pilot.Position);
+                                LnavRouteInstruction instr = new LnavRouteInstruction();
+                                pilot.Control.CurrentLateralInstruction = instr;
                             }
                         }
                     }

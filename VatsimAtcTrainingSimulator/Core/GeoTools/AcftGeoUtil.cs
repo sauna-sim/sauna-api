@@ -1,4 +1,5 @@
 ﻿using CoordinateSharp;
+using CoordinateSharp.Magnetic;
 using Grib.Api;
 using System;
 using System.Collections.Generic;
@@ -8,7 +9,7 @@ using System.Text;
 using System.Threading.Tasks;
 using VatsimAtcTrainingSimulator.Core.Data;
 using VatsimAtcTrainingSimulator.Core.GeoTools.Helpers;
-using VatsimAtcTrainingSimulator.Core.Simulator.AircraftControl;
+using VatsimAtcTrainingSimulator.Core.Simulator.Aircraft;
 
 namespace VatsimAtcTrainingSimulator.Core.GeoTools
 {
@@ -29,13 +30,41 @@ namespace VatsimAtcTrainingSimulator.Core.GeoTools
         /// </summary>
         /// <param name="pos">Aircraft Position</param>
         /// <param name="distanceNMi">Distance (Nautical Miles) that the aircraft should be moved</param>
-        public static void CalculateNextLatLon(ref AcftData pos, double distanceNMi)
+        public static void CalculateNextLatLon(ref AircraftPosition pos, double distanceNMi)
         {
             GeoPoint point = new GeoPoint(pos.Latitude, pos.Longitude, pos.AbsoluteAltitude);
             point.MoveByNMi(pos.Track_True, distanceNMi);
 
             pos.Latitude = point.Lat;
             pos.Longitude = point.Lon;
+        }
+
+        /// <summary>
+        /// Converts Magnetic Bearings to True Bearings at a position
+        /// </summary>
+        /// <param name="magneticBearing"><c>double</c> Magnetic Bearing (degrees)</param>
+        /// <param name="position"><c>GeoPoint</c> Position</param>
+        /// <returns><c>double</c> True Bearing (degrees)</returns>
+        public static double MagneticToTrue(double magneticBearing, GeoPoint position)
+        {
+            Coordinate coord = new Coordinate(position.Lat, position.Lon, DateTime.UtcNow);
+            Magnetic m = new Magnetic(coord, DataModel.WMM2020);
+            double declin = Math.Round(m.MagneticFieldElements.Declination, 1);
+            return NormalizeHeading(magneticBearing + declin);
+        }
+
+        /// <summary>
+        /// Converts True Bearings to Magnetic Bearings at a position
+        /// </summary>
+        /// <param name="trueBearing"><c>double</c> True Bearing (degrees)</param>
+        /// <param name="position"><c>GeoPoint</c> Position</param>
+        /// <returns><c>double</c> Magnetic Bearing (degrees)</returns>
+        public static double TrueToMagnetic(double trueBearing, GeoPoint position)
+        {
+            Coordinate coord = new Coordinate(position.Lat, position.Lon, DateTime.UtcNow);
+            Magnetic m = new Magnetic(coord, DataModel.WMM2020);
+            double declin = Math.Round(m.MagneticFieldElements.Declination, 1);
+            return NormalizeHeading(trueBearing - declin);
         }
 
         /// <summary>
@@ -87,7 +116,7 @@ namespace VatsimAtcTrainingSimulator.Core.GeoTools
             return NormalizeHeading(turnDirBearing);
         }
 
-        public static double CalculateCrossTrackErrorM(GeoPoint aircraft, GeoPoint waypoint, double course, ref double requiredCourse)
+        public static double CalculateCrossTrackErrorM(GeoPoint aircraft, GeoPoint waypoint, double course, out double requiredCourse, out double alongTrackDistanceM)
         {
             // Set waypoint's altitude to aircraft's altitude to minimize error
             waypoint.Alt = aircraft.Alt;
@@ -125,6 +154,8 @@ namespace VatsimAtcTrainingSimulator.Core.GeoTools
             double initialCourse = GeoPoint.InitialBearing(aTrackPoint, waypoint);
             requiredCourse = Math.Abs(turnAmt) < 90 ? initialCourse : NormalizeHeading(initialCourse + 180);
 
+            alongTrackDistanceM = Math.Abs(turnAmt) < 90 ? aTrackM : -aTrackM;
+
             return Math.Abs(turnAmt) < 90 ? -xTrackM : xTrackM;
         }
 
@@ -145,10 +176,10 @@ namespace VatsimAtcTrainingSimulator.Core.GeoTools
             return leadDist;
         }
 
-        public static double CalculateTurnLeadDistance(AcftData pos, Waypoint wp, double course)
+        public static double CalculateTurnLeadDistance(AircraftPosition pos, Waypoint wp, double course)
         {
             // Find intersection
-            GeoPoint intersection = FindIntersection(pos, wp, course);            
+            GeoPoint intersection = FindIntersection(pos, wp.Location, course);            
 
             // Find degrees to turn
             double theta = Math.Abs(CalculateTurnAmount(pos.Track_True, course));
@@ -166,14 +197,13 @@ namespace VatsimAtcTrainingSimulator.Core.GeoTools
         /// <param name="wp">Waypoint</param>
         /// <param name="course">Course To/From Waypoint</param>
         /// <returns>Whether or not an intersection exists.</returns>
-        public static GeoPoint FindIntersection(AcftData position, Waypoint wp, double course)
+        public static GeoPoint FindIntersection(AircraftPosition position, GeoPoint wp, double course)
         {
             GeoPoint point1 = new GeoPoint(position.Latitude, position.Longitude);
-            GeoPoint point2 = new GeoPoint(wp.Latitude, wp.Longitude);
 
             // Try both radials and see which one works
-            GeoPoint intersection1 = GeoPoint.Intersection(point1, position.Track_True, point2, course);
-            GeoPoint intersection2 = GeoPoint.Intersection(point1, position.Track_True, point2, (course + 180) % 360);
+            GeoPoint intersection1 = GeoPoint.Intersection(point1, position.Track_True, wp, course);
+            GeoPoint intersection2 = GeoPoint.Intersection(point1, position.Track_True, wp, (course + 180) % 360);
 
             if (intersection1 == null)
             {

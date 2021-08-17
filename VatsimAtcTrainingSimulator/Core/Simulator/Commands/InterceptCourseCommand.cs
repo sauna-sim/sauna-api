@@ -4,7 +4,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using VatsimAtcTrainingSimulator.Core.Data;
-using VatsimAtcTrainingSimulator.Core.Simulator.AircraftControl;
+using VatsimAtcTrainingSimulator.Core.Simulator.Aircraft;
+using VatsimAtcTrainingSimulator.Core.Simulator.Aircraft.Control.FMS;
 
 namespace VatsimAtcTrainingSimulator.Core.Simulator.Commands
 {
@@ -18,7 +19,7 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Commands
 
         public void ExecuteCommand()
         {
-            Aircraft.Control.ArmedLateralInstruction = new InterceptCourseInstruction(wp, course);
+            Aircraft.Control.ArmedLateralInstruction = new InterceptCourseInstruction(new RouteWaypoint(wp), course);
         }
 
         public bool HandleCommand(ref List<string> args)

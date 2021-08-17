@@ -4,8 +4,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using VatsimAtcTrainingSimulator.Core.GeoTools;
+using VatsimAtcTrainingSimulator.Core.Simulator.Aircraft.Control;
+using VatsimAtcTrainingSimulator.Core.Simulator.Aircraft.Control.FMS;
 
-namespace VatsimAtcTrainingSimulator.Core.Simulator.AircraftControl
+namespace VatsimAtcTrainingSimulator.Core.Simulator.Aircraft
 {
     public class HeadingHoldInstruction : ILateralControlInstruction
     {
@@ -23,7 +25,7 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.AircraftControl
 
         public HeadingHoldInstruction(int assignedHeading) : this(TurnDirection.SHORTEST, assignedHeading) { }
 
-        public void UpdatePosition(ref AcftData position, int posCalcInterval)
+        public void UpdatePosition(ref AircraftPosition position, ref AircraftFms fms, int posCalcInterval)
         {
             // Calculate next position and heading
             double turnAmount = AcftGeoUtil.CalculateTurnAmount(position.Heading_Mag, AssignedHeading);
@@ -68,7 +70,7 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.AircraftControl
             }
         }
 
-        public bool ShouldActivateInstruction(AcftData position, int posCalcInterval)
+        public bool ShouldActivateInstruction(AircraftPosition position, AircraftFms fms, int posCalcInterval)
         {
             return true;
         }

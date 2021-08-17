@@ -8,7 +8,8 @@ using System.Threading.Tasks;
 using VatsimAtcTrainingSimulator.Core.Data;
 using VatsimAtcTrainingSimulator.Core.GeoTools;
 using VatsimAtcTrainingSimulator.Core.GeoTools.Helpers;
-using VatsimAtcTrainingSimulator.Core.Simulator.AircraftControl;
+using VatsimAtcTrainingSimulator.Core.Simulator.Aircraft;
+using VatsimAtcTrainingSimulator.Core.Simulator.Aircraft.Control.FMS;
 
 namespace VatsimAtcTrainingSimulator.Core.Simulator.Commands
 {
@@ -21,73 +22,12 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Commands
 
         public void ExecuteCommand()
         {
-            // Calculate direct course
-            double course = AcftGeoUtil.CalculateDirectBearingAfterTurn(
-                new GeoPoint(Aircraft.Position.Latitude, Aircraft.Position.Longitude, Aircraft.Position.AbsoluteAltitude),
-                new GeoPoint(wp.Latitude, wp.Longitude),
-                AcftGeoUtil.CalculateRadiusOfTurn(AcftGeoUtil.CalculateBankAngle(Aircraft.Position.GroundSpeed, 25, 3), Aircraft.Position.GroundSpeed),
-                Aircraft.Position.Track_True);            
+            RouteWaypoint rwp = new RouteWaypoint(wp);
 
-            if (course >= 0)
-            {
-                // Check if waypoint exists in route
-                bool foundWaypoint = false;
-                LinkedListNode<string> node = null;
-                while (Aircraft.Position.Route.Count > 0)
-                {
-                    if (node == null)
-                    {
-                        node = Aircraft.Position.Route.First;
-                    }
+            Aircraft.Control.FMS.ActivateDirectTo(rwp, Aircraft.Position);
 
-                    Waypoint foundWp = DataHandler.GetClosestWaypointByIdentifier(node.Value, Aircraft.Position.Latitude, Aircraft.Position.Longitude);
-
-                    LinkedListNode<string> nextNode = node.Next;
-
-                    if (foundWp == null)
-                    {
-                        Aircraft.Position.Route.Remove(node);
-                    }
-                    else if (foundWp == wp)
-                    {
-                        foundWaypoint = true;
-                        break;
-                    }
-
-                    if (nextNode == null)
-                    {
-                        break;
-                    }
-
-                    node = nextNode;
-                }
-
-                if (foundWaypoint && node != null)
-                {
-                    // Remove all other preceding waypoints
-                    while (Aircraft.Position.Route.First != node)
-                    {
-                        Aircraft.Position.Route.RemoveFirst();
-                    }
-
-                    // Activate LNAV instruction
-                    LnavRouteInstruction instr = new LnavRouteInstruction
-                    {
-                        InitialTrueCourse = course
-                    };
-
-                    Aircraft.Control.CurrentLateralInstruction = instr;
-                }
-                else
-                {
-                    InterceptCourseInstruction instr = new InterceptCourseInstruction(wp)
-                    {
-                        TrueCourse = course
-                    };
-
-                    Aircraft.Control.CurrentLateralInstruction = instr;
-                }                
-            }
+            LnavRouteInstruction instr = new LnavRouteInstruction();
+            Aircraft.Control.CurrentLateralInstruction = instr;
         }
 
         public bool HandleCommand(ref List<string> args)

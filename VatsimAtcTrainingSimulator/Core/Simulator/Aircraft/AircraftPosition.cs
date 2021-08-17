@@ -4,10 +4,11 @@ using System;
 using System.Collections.Generic;
 using VatsimAtcTrainingSimulator.Core.Data;
 using VatsimAtcTrainingSimulator.Core.GeoTools;
+using VatsimAtcTrainingSimulator.Core.GeoTools.Helpers;
 
-namespace VatsimAtcTrainingSimulator.Core.Simulator.AircraftControl
+namespace VatsimAtcTrainingSimulator.Core.Simulator.Aircraft
 {
-    public class AcftData
+    public class AircraftPosition
     {
         public double Latitude { get; set; }
         public double Longitude { get; set; }
@@ -152,7 +153,7 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.AircraftControl
             }
         }
 
-        public LinkedList<string> Route { get; } = new LinkedList<string>();
+        public GeoPoint PositionGeoPoint => new GeoPoint(Latitude, Longitude, AbsoluteAltitude);
 
         public void UpdatePosition()
         {

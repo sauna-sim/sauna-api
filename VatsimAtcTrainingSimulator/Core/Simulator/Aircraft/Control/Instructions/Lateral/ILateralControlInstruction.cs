@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace VatsimAtcTrainingSimulator.Core.Simulator.AircraftControl
+namespace VatsimAtcTrainingSimulator.Core.Simulator.Aircraft
 {
     public enum LateralControlMode
     {

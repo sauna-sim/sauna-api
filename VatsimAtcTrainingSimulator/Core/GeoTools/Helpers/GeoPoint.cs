@@ -15,6 +15,8 @@ namespace VatsimAtcTrainingSimulator.Core.GeoTools.Helpers
         private double _lon;
         private double _alt;
 
+        public GeoPoint(GeoPoint point) : this(point.Lat, point.Lon, point.Alt) { }
+
         public GeoPoint(double lat, double lon, double alt)
         {
             Lat = lat;

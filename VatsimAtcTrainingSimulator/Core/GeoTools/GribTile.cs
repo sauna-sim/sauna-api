@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Threading.Tasks;
-using VatsimAtcTrainingSimulator.Core.Simulator.AircraftControl;
+using VatsimAtcTrainingSimulator.Core.Simulator.Aircraft;
 
 namespace VatsimAtcTrainingSimulator.Core.GeoTools
 {
@@ -19,7 +19,7 @@ namespace VatsimAtcTrainingSimulator.Core.GeoTools
             GribTileList = new List<GribTile>();
         }
 
-        public static GribTile FindOrCreateGribTile(AcftData pos, DateTime dateTime)
+        public static GribTile FindOrCreateGribTile(AircraftPosition pos, DateTime dateTime)
         {
             GribTile foundTile = null;
             lock (GribTileListLock)
@@ -234,7 +234,7 @@ namespace VatsimAtcTrainingSimulator.Core.GeoTools
             }
         }
 
-        public GribDataPoint GetClosestPoint(AcftData acftPos)
+        public GribDataPoint GetClosestPoint(AircraftPosition acftPos)
         {
             double minDist = -1;
             GribDataPoint pt = null;
@@ -260,7 +260,7 @@ namespace VatsimAtcTrainingSimulator.Core.GeoTools
             return Math.Abs((ForecastDateUtc - dateTime.ToUniversalTime()).TotalHours) < 1;
         }
 
-        public bool IsAcftInside(AcftData pos)
+        public bool IsAcftInside(AircraftPosition pos)
         {
             return pos.Latitude >= BottomLatitude && pos.Latitude <= TopLatitude
                 && pos.Longitude >= LeftLongitude && pos.Longitude <= RightLongitude;

@@ -4,7 +4,8 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using VatsimAtcTrainingSimulator.Core.GeoTools;
-using VatsimAtcTrainingSimulator.Core.Simulator.AircraftControl;
+using VatsimAtcTrainingSimulator.Core.Simulator.Aircraft;
+using VatsimAtcTrainingSimulator.Core.Simulator.Aircraft.Control;
 
 namespace VatsimAtcTrainingSimulator.Core
 {
@@ -15,7 +16,7 @@ namespace VatsimAtcTrainingSimulator.Core
         IDENT = 'Y'
     }
 
-    public enum AssignedIASType
+    public enum ConstraintType
     {
         FREE = -2,
         LESS = -1,
@@ -44,8 +45,8 @@ namespace VatsimAtcTrainingSimulator.Core
         public XpdrMode XpdrMode { get; private set; }
         public int Squawk { get; private set; }
         public int Rating { get; private set; }
-        private AcftData _position;
-        public AcftData Position { get => _position; private set => _position = value; }
+        private AircraftPosition _position;
+        public AircraftPosition Position { get => _position; private set => _position = value; }
         private bool _onGround = false;
         public bool OnGround
         {
@@ -59,16 +60,16 @@ namespace VatsimAtcTrainingSimulator.Core
         }
 
         // Assigned values
-        public AcftControl Control { get; private set; }
+        public AircraftControl Control { get; private set; }
         public int Assigned_IAS { get; set; } = -1;
-        public AssignedIASType Assigned_IAS_Type { get; set; } = AssignedIASType.FREE;
+        public ConstraintType Assigned_IAS_Type { get; set; } = ConstraintType.FREE;
 
         public CONN_STATUS ConnectionStatus => ConnHandler == null ? CONN_STATUS.DISCONNECTED : ConnHandler.Status;
 
         public VatsimClientPilot()
         {
-            Position = new AcftData();
-            Control = new AcftControl();
+            Position = new AircraftPosition();
+            Control = new AircraftControl();
             ConnHandler = new VatsimClientConnectionHandler(this);
         }
 
@@ -200,7 +201,7 @@ namespace VatsimAtcTrainingSimulator.Core
             XpdrMode = xpdrMode;
             Squawk = squawk;
             Rating = rating;
-            Position = new AcftData();
+            Position = new AircraftPosition();
 
             // Read position data
             posdata >>= 1;
@@ -224,7 +225,7 @@ namespace VatsimAtcTrainingSimulator.Core
             Position.UpdatePosition();
 
             // Set initial assignments
-            Control = new AcftControl(new HeadingHoldInstruction(Convert.ToInt32(hdg)), new AltitudeHoldInstruction(Convert.ToInt32(alt)));
+            Control = new AircraftControl(new HeadingHoldInstruction(Convert.ToInt32(hdg)), new AltitudeHoldInstruction(Convert.ToInt32(alt)));
 
             // Send initial configuration
             HandleRequest("ACC", Callsign, "@94836");

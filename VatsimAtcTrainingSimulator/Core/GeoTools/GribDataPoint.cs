@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using VatsimAtcTrainingSimulator.Core.GeoTools.Helpers;
-using VatsimAtcTrainingSimulator.Core.Simulator.AircraftControl;
+using VatsimAtcTrainingSimulator.Core.Simulator.Aircraft;
 
 namespace VatsimAtcTrainingSimulator.Core.GeoTools
 {
@@ -34,7 +34,7 @@ namespace VatsimAtcTrainingSimulator.Core.GeoTools
             Level_hPa = level_hPa;
         }
 
-        public double GetDistanceFrom(AcftData pos)
+        public double GetDistanceFrom(AircraftPosition pos)
         {
             double absHeightM = pos.AbsoluteAltitude / AcftGeoUtil.CONV_FACTOR_M_FT;
             double geoPotHeightM = AcftGeoUtil.EARTH_RADIUS_M * absHeightM / (AcftGeoUtil.EARTH_RADIUS_M + absHeightM);

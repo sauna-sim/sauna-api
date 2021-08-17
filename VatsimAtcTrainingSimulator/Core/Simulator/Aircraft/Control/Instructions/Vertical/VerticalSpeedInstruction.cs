@@ -3,8 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using VatsimAtcTrainingSimulator.Core.Simulator.Aircraft.Control.FMS;
 
-namespace VatsimAtcTrainingSimulator.Core.Simulator.AircraftControl
+namespace VatsimAtcTrainingSimulator.Core.Simulator.Aircraft
 {
     public class VerticalSpeedInstruction : IVerticalControlInstruction
     {
@@ -17,21 +18,21 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.AircraftControl
             this.AssignedVerticalSpeed = assignedVerticalSpeed;
         }
 
-        public bool ShouldActivateInstruction(AcftData position, int posCalcInterval)
+        public override string ToString()
+        {
+            return $"V/S Hold: {AssignedVerticalSpeed}fpm";
+        }
+
+        public bool ShouldActivateInstruction(AircraftPosition position, AircraftFms fms, int posCalcInterval)
         {
             return true;
         }
 
-        public void UpdatePosition(ref AcftData position, int posCalcInterval)
+        public void UpdatePosition(ref AircraftPosition position, ref AircraftFms fms, int posCalcInterval)
         {
             // Calculate next altitude
             position.IndicatedAltitude += AssignedVerticalSpeed * posCalcInterval / (60.0 * 1000.0);
             position.VerticalSpeed = AssignedVerticalSpeed;
-        }
-
-        public override string ToString()
-        {
-            return $"V/S Hold: {AssignedVerticalSpeed}fpm";
         }
     }
 }

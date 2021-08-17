@@ -12,7 +12,7 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Commands
 
         public VatsimClientPilot Aircraft { get; set; }
 
-        private AssignedIASType Type { get; set; }
+        private ConstraintType Type { get; set; }
 
         private int Ias { get; set; }
 
@@ -41,28 +41,28 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Commands
             {
                 if (speed.ToLower().Equals("none"))
                 {
-                    Type = AssignedIASType.FREE;
+                    Type = ConstraintType.FREE;
                     Ias = -1;
 
                     Logger?.Invoke($"{Aircraft.Callsign} resuming normal speed.");
                 }
                 else if (speed.StartsWith(">"))
                 {
-                    Type = AssignedIASType.MORE;
+                    Type = ConstraintType.MORE;
                     Ias = Convert.ToInt32(speed.Substring(1));
 
                     Logger?.Invoke($"{Aircraft.Callsign} maintaining {Ias}kts or greater.");
                 }
                 else if (speed.StartsWith("<"))
                 {
-                    Type = AssignedIASType.LESS;
+                    Type = ConstraintType.LESS;
                     Ias = Convert.ToInt32(speed.Substring(1));
 
                     Logger?.Invoke($"{Aircraft.Callsign} maintaining {Ias}kts or less.");
                 }
                 else
                 {
-                    Type = AssignedIASType.EXACT;
+                    Type = ConstraintType.EXACT;
                     Ias = Convert.ToInt32(speed);
 
                     Logger?.Invoke($"{Aircraft.Callsign} maintaining {Ias}kts.");

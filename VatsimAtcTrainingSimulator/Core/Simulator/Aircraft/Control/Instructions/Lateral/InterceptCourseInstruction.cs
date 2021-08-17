@@ -5,11 +5,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using VatsimAtcTrainingSimulator.Core.Data;
 using VatsimAtcTrainingSimulator.Core.GeoTools;
 using VatsimAtcTrainingSimulator.Core.GeoTools.Helpers;
+using VatsimAtcTrainingSimulator.Core.Simulator.Aircraft.Control;
+using VatsimAtcTrainingSimulator.Core.Simulator.Aircraft.Control.FMS;
 
-namespace VatsimAtcTrainingSimulator.Core.Simulator.AircraftControl
+namespace VatsimAtcTrainingSimulator.Core.Simulator.Aircraft
 {
     public class InterceptCourseInstruction : ILateralControlInstruction
     {
@@ -25,11 +26,14 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.AircraftControl
         private double requiredTrueCourse;
         private double trackToHold = -1;
         private double xTk = 0;
+        private double aTk = 0;
         private double _magneticCourse = -1;
         private double _trueCourse = -1;
         private TrackHoldInstruction instr;
 
-        public Waypoint AssignedWaypoint { get; private set; }
+        public IRoutePoint AssignedWaypoint { get; private set; }
+
+        public event EventHandler<WaypointPassedEventArgs> WaypointCrossed;
 
         public double MagneticCourse
         {
@@ -39,10 +43,7 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.AircraftControl
                 _magneticCourse = AcftGeoUtil.NormalizeHeading(Math.Round(value, 1, MidpointRounding.AwayFromZero));
 
                 // Calculate True Course
-                Coordinate coord = new Coordinate(AssignedWaypoint.Latitude, AssignedWaypoint.Longitude, DateTime.UtcNow);
-                Magnetic m = new Magnetic(coord, DataModel.WMM2015);
-                double declin = Math.Round(m.MagneticFieldElements.Declination, 1);
-                _trueCourse = AcftGeoUtil.NormalizeHeading(_magneticCourse + declin);
+                _trueCourse = AcftGeoUtil.MagneticToTrue(_magneticCourse, AssignedWaypoint.PointPosition);
             }
         }
 
@@ -54,39 +55,36 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.AircraftControl
                 _trueCourse = AcftGeoUtil.NormalizeHeading(Math.Round(value, 1, MidpointRounding.AwayFromZero));
 
                 // Calculate Magnetic Course
-                Coordinate coord = new Coordinate(AssignedWaypoint.Latitude, AssignedWaypoint.Longitude, DateTime.UtcNow);
-                Magnetic m = new Magnetic(coord, DataModel.WMM2015);
-                double declin = Math.Round(m.MagneticFieldElements.Declination, 1);
-                _magneticCourse = AcftGeoUtil.NormalizeHeading(_trueCourse - declin);
+                _magneticCourse = AcftGeoUtil.TrueToMagnetic(_trueCourse, AssignedWaypoint.PointPosition);
             }
         }
 
-        public InterceptCourseInstruction(Waypoint assignedWp)
+        public InterceptCourseInstruction(IRoutePoint assignedWp)
         {
             AssignedWaypoint = assignedWp;
         }
 
-        public InterceptCourseInstruction(Waypoint assignedWp, double magneticCourse) : this(assignedWp)
+        public InterceptCourseInstruction(IRoutePoint assignedWp, double magneticCourse) : this(assignedWp)
         {
             MagneticCourse = magneticCourse;
         }
 
         public LateralControlMode Type => LateralControlMode.COURSE_INTERCEPT;
 
-        public bool ShouldActivateInstruction(AcftData position, int posCalcInterval)
+        public bool ShouldActivateInstruction(AircraftPosition position, AircraftFms fms, int posCalcInterval)
         {
             if (_trueCourse < 0)
             {
                 return false;
             }
 
-            UpdateInfo(position);
+            UpdateInfo(position, fms);
 
             if (previousTrack != position.Track_True || previousGroundSpeed != position.GroundSpeed)
             {
                 previousTrack = position.Track_True;
                 previousGroundSpeed = position.GroundSpeed;
-                intersection = AcftGeoUtil.FindIntersection(position, AssignedWaypoint, _trueCourse);
+                intersection = AcftGeoUtil.FindIntersection(position, AssignedWaypoint.PointPosition, _trueCourse);
 
                 // Find degrees to turn
                 double theta = Math.Abs(AcftGeoUtil.CalculateTurnAmount(previousTrack, _trueCourse));
@@ -110,7 +108,7 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.AircraftControl
             return dist < leadInDistance;
         }
 
-        private void UpdateInfo(AcftData pos)
+        private void UpdateInfo(AircraftPosition pos, AircraftFms fms)
         {
             if (_trueCourse < 0)
             {
@@ -119,17 +117,25 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.AircraftControl
 
             // Check cross track error
             GeoPoint aircraftPoint = new GeoPoint(pos.Latitude, pos.Longitude, pos.AbsoluteAltitude);
-            xTk = AcftGeoUtil.CalculateCrossTrackErrorM(aircraftPoint, new GeoPoint(AssignedWaypoint.Latitude, AssignedWaypoint.Longitude), _trueCourse, ref requiredTrueCourse);
+            double aTrackM;
+            xTk = AcftGeoUtil.CalculateCrossTrackErrorM(aircraftPoint, AssignedWaypoint.PointPosition, _trueCourse, out requiredTrueCourse, out aTrackM);
+
+            if (aTrackM <= MIN_XTK_THRESHOLD_M && MIN_XTK_THRESHOLD_M <= aTk)
+            {
+                WaypointCrossed?.Invoke(this, new WaypointPassedEventArgs(fms));
+            }
+
+            aTk = aTrackM;
         }
 
-        public void UpdatePosition(ref AcftData position, int posCalcInterval)
+        public void UpdatePosition(ref AircraftPosition position, ref AircraftFms fms, int posCalcInterval)
         {
             if (_trueCourse < 0)
             {
                 return;
             }
 
-            UpdateInfo(position);
+            UpdateInfo(position, fms);
 
             if (trackToHold == -1)
             {
@@ -148,7 +154,7 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.AircraftControl
             double courseDiff = AcftGeoUtil.CalculateTurnAmount(trackToHold, requiredTrueCourse);
 
             // Intercept if the conditions are met
-            if (Math.Abs(courseDiff) > Double.Epsilon && ShouldActivateInstruction(position, posCalcInterval))
+            if (Math.Abs(courseDiff) > Double.Epsilon && ShouldActivateInstruction(position, fms, posCalcInterval))
             {
                 trackToHold = requiredTrueCourse;
                 instr = new TrackHoldInstruction(trackToHold);
@@ -170,12 +176,12 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.AircraftControl
                 instr = new TrackHoldInstruction(trackToHold);
             }
 
-            instr.UpdatePosition(ref position, posCalcInterval);
+            instr.UpdatePosition(ref position, ref fms, posCalcInterval);
         }
 
         public override string ToString()
         {
-            return $"NAV {AssignedWaypoint.Identifier} - {_magneticCourse:000.0} | {xTk:0.0}m";
+            return $"NAV {AssignedWaypoint.PointName} - {_magneticCourse:000.0} | {xTk:0.0}m";
         }
     }
 }

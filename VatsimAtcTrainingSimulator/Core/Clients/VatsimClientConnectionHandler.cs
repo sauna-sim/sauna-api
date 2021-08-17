@@ -130,9 +130,8 @@ namespace VatsimAtcTrainingSimulator.Core
                 Disconnect();
                 return;
             }
-            catch (NullReferenceException ex)
+            catch (Exception)
             {
-                Logger?.Invoke($"Error Recieving Data: {ex.Message} - {ex.StackTrace}");
                 Disconnect();
                 return;
             }
