@@ -77,6 +77,12 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Commands
                 case "fph":
                     cmd = new FlyPresentHeadingCommand();
                     break;
+                case "dephdg":
+                case "dh":
+                case "lh":
+                case "leavehdg":
+                    cmd = new DepartOnHeadingCommand();
+                    break;
                 case "intercept":
                     cmd = new InterceptCourseCommand();
                     break;

@@ -63,6 +63,22 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Aircraft.Control.FMS
             }
         }
 
+        public IRouteLeg GetLegToPoint(IRoutePoint routePoint)
+        {
+            lock (_routeLegsLock)
+            {
+                foreach (IRouteLeg leg in _routeLegs)
+                {
+                    if (leg.EndPoint == routePoint)
+                    {
+                        return leg;
+                    }
+                }
+            }
+
+            return null;
+        }
+
         public void ActivateDirectTo(IRoutePoint routePoint, AircraftPosition pos)
         {
             lock (_routeLegsLock)
