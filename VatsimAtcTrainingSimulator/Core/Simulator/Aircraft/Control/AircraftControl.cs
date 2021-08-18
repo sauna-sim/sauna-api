@@ -58,12 +58,22 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Aircraft.Control
         {
             lock (_armedVerticalModesLock)
             {
+                List<int> deletionList = new List<int>();
+
+                int i = 0;
                 foreach (IVerticalControlInstruction elem in _armedVerticalModes)
                 {
                     if (elem.Type == instr.Type)
                     {
-                        return false;
+                        // Delete instruction
+                        deletionList.Add(i);
                     }
+                    i++;
+                }
+
+                foreach(int index in deletionList)
+                {
+                    _armedVerticalModes.RemoveAt(index);
                 }
 
                 _armedVerticalModes.Add(instr);

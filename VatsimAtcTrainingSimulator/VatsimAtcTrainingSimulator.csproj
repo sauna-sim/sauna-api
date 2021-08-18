@@ -68,6 +68,7 @@
     <Compile Include="Core\Data\PublishedHold.cs" />
     <Compile Include="Core\PauseableTimer.cs" />
     <Compile Include="Core\Simulator\Aircraft\Control\FMS\AircraftFms.cs" />
+    <Compile Include="Core\Simulator\Aircraft\Control\FMS\Legs\CourseToAltLeg.cs" />
     <Compile Include="Core\Simulator\Aircraft\Control\FMS\Legs\DirectToFixLeg.cs" />
     <Compile Include="Core\Simulator\Aircraft\Control\FMS\RouteWaypoint.cs" />
     <Compile Include="Core\GeoTools\Helpers\GeoPoint.cs" />
