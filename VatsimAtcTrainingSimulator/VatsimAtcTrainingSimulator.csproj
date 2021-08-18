@@ -50,6 +50,21 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="CoordinateSharp, Version=2.11.1.1, Culture=neutral, PublicKeyToken=f45e02df057b7725, processorArchitecture=MSIL">
+      <HintPath>..\packages\CoordinateSharp.2.11.1.1\lib\net40\CoordinateSharp.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="CoordinateSharp.Magnetic, Version=1.1.1.0, Culture=neutral, PublicKeyToken=f45e02df057b7725, processorArchitecture=MSIL">
+      <HintPath>..\packages\CoordinateSharp.Magnetic.1.1.1\lib\net40\CoordinateSharp.Magnetic.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Grib.Api, Version=0.7.1.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Grib.Api.0.7.1\lib\net40\Grib.Api.dll</HintPath>
+    </Reference>
+    <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>..\packages\Newtonsoft.Json.13.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
