@@ -61,7 +61,7 @@ namespace VatsimAtcTrainingSimulator
             catch (InvalidOperationException) { }
         }
 
-        private async void euroscopeToolStripMenuItem_Click(object sender, EventArgs e)
+        private void euroscopeToolStripMenuItem_Click(object sender, EventArgs e)
         {
             // Create and open file dialog
             OpenFileDialog fileDialog = new OpenFileDialog()

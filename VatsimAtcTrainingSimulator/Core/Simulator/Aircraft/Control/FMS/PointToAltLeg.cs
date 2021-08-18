@@ -32,6 +32,7 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Aircraft.Control.FMS
                 _instr = new InterceptCourseInstruction(_startPoint.Point, course);
                 _trueCourse = _instr.TrueCourse;
             }
+            _endAlt = endAlt;
         }
 
         public FmsPoint StartPoint => _startPoint;
