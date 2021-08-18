@@ -23,6 +23,7 @@ namespace VatsimAtcTrainingSimulator
             protocolVersionInputBx.Value = Properties.Settings.Default.protocol;
             posSendIntvlBx.Value = Properties.Settings.Default.updateRate;
             sendIasChkBx.Checked = Properties.Settings.Default.sendIas;
+            posCalcNumBx.Value = Properties.Settings.Default.posCalcRate;
 
             cmdFreqInput.Value = Properties.Settings.Default.commandFrequency;
         }
@@ -41,6 +42,10 @@ namespace VatsimAtcTrainingSimulator
 
             // Command Input Settings
             Properties.Settings.Default.commandFrequency = cmdFreqInput.Value;
+
+            // Simulation Settings
+            Properties.Settings.Default.posCalcRate = Convert.ToInt32(posCalcNumBx.Value);
+
             Properties.Settings.Default.Save();
             this.Close();
         }

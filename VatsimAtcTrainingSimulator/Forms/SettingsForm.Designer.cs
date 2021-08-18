@@ -30,6 +30,7 @@
         {
             this.closeBtn = new System.Windows.Forms.Button();
             this.ntwkSetGrpBx = new System.Windows.Forms.GroupBox();
+            this.sendIasChkBx = new System.Windows.Forms.CheckBox();
             this.posSendIntblBxLbl = new System.Windows.Forms.Label();
             this.posSendIntvlBx = new System.Windows.Forms.NumericUpDown();
             this.protocolVersionInputBx = new System.Windows.Forms.NumericUpDown();
@@ -46,19 +47,23 @@
             this.cmdSettingsGrpBx = new System.Windows.Forms.GroupBox();
             this.cmdFreqLbl = new System.Windows.Forms.Label();
             this.cmdFreqInput = new System.Windows.Forms.NumericUpDown();
-            this.sendIasChkBx = new System.Windows.Forms.CheckBox();
+            this.simSetGrpBx = new System.Windows.Forms.GroupBox();
+            this.posCalcLbl = new System.Windows.Forms.Label();
+            this.posCalcNumBx = new System.Windows.Forms.NumericUpDown();
             this.ntwkSetGrpBx.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.posSendIntvlBx)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.protocolVersionInputBx)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.portNumBx)).BeginInit();
             this.cmdSettingsGrpBx.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.cmdFreqInput)).BeginInit();
+            this.simSetGrpBx.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.posCalcNumBx)).BeginInit();
             this.SuspendLayout();
             // 
             // closeBtn
             // 
             this.closeBtn.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.closeBtn.Location = new System.Drawing.Point(197, 226);
+            this.closeBtn.Location = new System.Drawing.Point(197, 274);
             this.closeBtn.Name = "closeBtn";
             this.closeBtn.Size = new System.Drawing.Size(75, 23);
             this.closeBtn.TabIndex = 5;
@@ -90,6 +95,16 @@
             this.ntwkSetGrpBx.TabIndex = 10;
             this.ntwkSetGrpBx.TabStop = false;
             this.ntwkSetGrpBx.Text = "Network Settings";
+            // 
+            // sendIasChkBx
+            // 
+            this.sendIasChkBx.AutoSize = true;
+            this.sendIasChkBx.Location = new System.Drawing.Point(65, 119);
+            this.sendIasChkBx.Name = "sendIasChkBx";
+            this.sendIasChkBx.Size = new System.Drawing.Size(77, 17);
+            this.sendIasChkBx.TabIndex = 13;
+            this.sendIasChkBx.Text = "Send IAS?";
+            this.sendIasChkBx.UseVisualStyleBackColor = true;
             // 
             // posSendIntblBxLbl
             // 
@@ -275,22 +290,59 @@
             0,
             196608});
             // 
-            // sendIasChkBx
+            // simSetGrpBx
             // 
-            this.sendIasChkBx.AutoSize = true;
-            this.sendIasChkBx.Location = new System.Drawing.Point(65, 119);
-            this.sendIasChkBx.Name = "sendIasChkBx";
-            this.sendIasChkBx.Size = new System.Drawing.Size(77, 17);
-            this.sendIasChkBx.TabIndex = 13;
-            this.sendIasChkBx.Text = "Send IAS?";
-            this.sendIasChkBx.UseVisualStyleBackColor = true;
+            this.simSetGrpBx.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.simSetGrpBx.Controls.Add(this.posCalcNumBx);
+            this.simSetGrpBx.Controls.Add(this.posCalcLbl);
+            this.simSetGrpBx.Location = new System.Drawing.Point(12, 217);
+            this.simSetGrpBx.Name = "simSetGrpBx";
+            this.simSetGrpBx.Size = new System.Drawing.Size(259, 51);
+            this.simSetGrpBx.TabIndex = 12;
+            this.simSetGrpBx.TabStop = false;
+            this.simSetGrpBx.Text = "Simulation Settings";
+            // 
+            // posCalcLbl
+            // 
+            this.posCalcLbl.AutoSize = true;
+            this.posCalcLbl.Location = new System.Drawing.Point(6, 21);
+            this.posCalcLbl.Name = "posCalcLbl";
+            this.posCalcLbl.Size = new System.Drawing.Size(97, 13);
+            this.posCalcLbl.TabIndex = 1;
+            this.posCalcLbl.Text = "Calculation Interval";
+            // 
+            // posCalcNumBx
+            // 
+            this.posCalcNumBx.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.posCalcNumBx.Location = new System.Drawing.Point(109, 19);
+            this.posCalcNumBx.Maximum = new decimal(new int[] {
+            20000,
+            0,
+            0,
+            0});
+            this.posCalcNumBx.Minimum = new decimal(new int[] {
+            100,
+            0,
+            0,
+            0});
+            this.posCalcNumBx.Name = "posCalcNumBx";
+            this.posCalcNumBx.Size = new System.Drawing.Size(58, 20);
+            this.posCalcNumBx.TabIndex = 14;
+            this.posCalcNumBx.Value = new decimal(new int[] {
+            100,
+            0,
+            0,
+            0});
             // 
             // SettingsForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(284, 284);
+            this.ClientSize = new System.Drawing.Size(284, 309);
             this.ControlBox = false;
+            this.Controls.Add(this.simSetGrpBx);
             this.Controls.Add(this.cmdSettingsGrpBx);
             this.Controls.Add(this.ntwkSetGrpBx);
             this.Controls.Add(this.closeBtn);
@@ -306,6 +358,9 @@
             this.cmdSettingsGrpBx.ResumeLayout(false);
             this.cmdSettingsGrpBx.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.cmdFreqInput)).EndInit();
+            this.simSetGrpBx.ResumeLayout(false);
+            this.simSetGrpBx.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.posCalcNumBx)).EndInit();
             this.ResumeLayout(false);
 
         }
@@ -331,5 +386,8 @@
         private System.Windows.Forms.Label cmdFreqLbl;
         private System.Windows.Forms.NumericUpDown cmdFreqInput;
         private System.Windows.Forms.CheckBox sendIasChkBx;
+        private System.Windows.Forms.GroupBox simSetGrpBx;
+        private System.Windows.Forms.NumericUpDown posCalcNumBx;
+        private System.Windows.Forms.Label posCalcLbl;
     }
 }

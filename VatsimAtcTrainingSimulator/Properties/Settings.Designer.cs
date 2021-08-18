@@ -130,5 +130,17 @@ namespace VatsimAtcTrainingSimulator.Properties {
                 this["sendIas"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("1000")]
+        public int posCalcRate {
+            get {
+                return ((int)(this["posCalcRate"]));
+            }
+            set {
+                this["posCalcRate"] = value;
+            }
+        }
     }
 }

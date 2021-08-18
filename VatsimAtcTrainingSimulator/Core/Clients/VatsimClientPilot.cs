@@ -28,9 +28,6 @@ namespace VatsimAtcTrainingSimulator.Core
 
     public class VatsimClientPilot : IVatsimClient
     {
-        // Constants
-        private const int POS_CALC_INVERVAL = 1000;
-
         // Properties
         public VatsimClientConnectionHandler ConnHandler { get; private set; }
 
@@ -264,18 +261,18 @@ namespace VatsimAtcTrainingSimulator.Core
                         {
                             if (Assigned_IAS <= Position.IndicatedAirSpeed)
                             {
-                                Position.IndicatedAirSpeed = Math.Max(Assigned_IAS, Position.IndicatedAirSpeed + (slowDownKts * POS_CALC_INVERVAL / 1000.0));
+                                Position.IndicatedAirSpeed = Math.Max(Assigned_IAS, Position.IndicatedAirSpeed + (slowDownKts * Properties.Settings.Default.posCalcRate / 1000.0));
                             }
                             else
                             {
-                                Position.IndicatedAirSpeed = Math.Min(Assigned_IAS, Position.IndicatedAirSpeed + (speedUpKts * POS_CALC_INVERVAL / 1000.0));
+                                Position.IndicatedAirSpeed = Math.Min(Assigned_IAS, Position.IndicatedAirSpeed + (speedUpKts * Properties.Settings.Default.posCalcRate / 1000.0));
                             }
                         }
 
-                        Control.UpdatePosition(ref _position, POS_CALC_INVERVAL);
+                        Control.UpdatePosition(ref _position, Properties.Settings.Default.posCalcRate);
                     }
 
-                    Thread.Sleep(POS_CALC_INVERVAL);
+                    Thread.Sleep(Properties.Settings.Default.posCalcRate);
                 }
             }
             catch (ThreadAbortException)
