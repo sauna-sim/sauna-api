@@ -65,6 +65,10 @@
   <ItemGroup>
     <Compile Include="Core\Clients\ClientsHandler.cs" />
     <Compile Include="Core\Clients\VatsimClientDisplayable.cs" />
+    <Compile Include="Core\Data\Procedures\Approaches\ApproachMinimums.cs" />
+    <Compile Include="Core\Data\Procedures\Approaches\ApproachProcedure.cs" />
+    <Compile Include="Core\Data\Localizer.cs" />
+    <Compile Include="Core\Data\Procedures\Approaches\ProcedureSegment.cs" />
     <Compile Include="Core\Data\PublishedHold.cs" />
     <Compile Include="Core\PauseableTimer.cs" />
     <Compile Include="Core\Simulator\Aircraft\Control\FMS\AircraftFms.cs" />
@@ -90,6 +94,7 @@
     <Compile Include="Core\Simulator\Aircraft\AircraftData.cs" />
     <Compile Include="Core\Simulator\Commands\DepartOnHeadingCommand.cs" />
     <Compile Include="Core\Simulator\Commands\DirectWaypointCommand.cs" />
+    <Compile Include="Core\Simulator\Commands\IlsCommand.cs" />
     <Compile Include="Core\Simulator\Commands\InterceptCourseCommand.cs" />
     <Compile Include="Core\Simulator\Commands\TurnLeftByHeadingCommand.cs" />
     <Compile Include="Core\Simulator\Commands\TurnRightByHeadingCommand.cs" />

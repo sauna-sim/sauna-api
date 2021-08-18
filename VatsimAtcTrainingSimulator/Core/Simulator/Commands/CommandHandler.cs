@@ -83,6 +83,11 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Commands
                 case "leavehdg":
                     cmd = new DepartOnHeadingCommand();
                     break;
+                case "loc":
+                case "ils":
+                    cmd = new IlsCommand();
+                    break;
+                case "int":
                 case "intercept":
                     cmd = new InterceptCourseCommand();
                     break;

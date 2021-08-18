@@ -20,6 +20,7 @@ Several commands can be on the simulator program. These can either be submitted 
 | `trb` | Turn Right By | `<Degrees To Turn>` | Turns right by a certain amount |
 | `fph` | Fly Present Heading | none | Flies present heading |
 | `dh`, `lh`, `dephdg`, `leavehdg` | Depart/Leave On Heading | `<Waypoint Name>` `<Magnetic Heading>` | Departs waypoint on specified heading |
-| `intercept` | Intercept Course | `<Waypoint Name>` `<Magnetic Course>` | Intercepts and tracks a course to a specific waypoint |
+| `int`, `intercept` | Intercept Course | `<Waypoint Name>` `<Magnetic Course>` | Intercepts and tracks a course to a specific waypoint |
+| `loc`, `ils` | Intercept ILS | `<Runway Designator>` | Intercepts and tracks a localizer to a specific runway |
 | `dct`, `dir`, `direct` | Direct To Waypoint | `<Waypoint Name>` | Instructs the navigation to go direct to a waypoint. Will amend the route if waypoint already existed in the flight plan. Otherwise, a discontinuity is inserted |
 | `alt`, `cm`, `dm`, `clm`, `des`, `climb`, `descend` | Change Altitude | `<Altitude (ft) or 'FLXXX' (100s of ft)>` | Aircraft will open climb or open descend to altitude |

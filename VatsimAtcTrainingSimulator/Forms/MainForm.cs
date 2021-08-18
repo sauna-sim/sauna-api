@@ -185,10 +185,18 @@ namespace VatsimAtcTrainingSimulator
 
                         try
                         {
-                            double lat = Convert.ToDouble(items[1]);
-                            double lon = Convert.ToDouble(items[2]);
+                            GeoPoint threshold = new GeoPoint(Convert.ToDouble(items[1]), Convert.ToDouble(items[2]));
+                            double course = 0;
+                            if (items.Length == 4)
+                            {
+                                course = Convert.ToDouble(items[3]);                                
+                            } else if (items.Length > 4)
+                            {
+                                GeoPoint otherThreshold = new GeoPoint(Convert.ToDouble(items[3]), Convert.ToDouble(items[4]));
+                                course = AcftGeoUtil.TrueToMagnetic(GeoPoint.InitialBearing(threshold, otherThreshold), threshold);
+                            }
 
-                            DataHandler.AddWaypoint(new Waypoint(wpId, lat, lon));
+                            DataHandler.AddWaypoint(new Localizer(wpId, threshold.Lat, threshold.Lon, wpId, 0, course));
                         }
                         catch (Exception)
                         {
