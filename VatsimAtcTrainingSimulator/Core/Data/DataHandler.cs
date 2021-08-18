@@ -12,6 +12,32 @@ namespace VatsimAtcTrainingSimulator.Core.Data
     {
         private static List<Waypoint> waypoints = new List<Waypoint>();
         private static object waypointsLock = new object();
+        private static List<PublishedHold> publishedHolds = new List<PublishedHold>();
+        private static object publishedHoldsLock = new object();
+
+        public static void AddPublishedHold(PublishedHold hold)
+        {
+            lock (publishedHoldsLock)
+            {
+                publishedHolds.Add(hold);
+            }
+        }
+
+        public static PublishedHold GetPublishedHold(string wp)
+        {
+            lock (publishedHoldsLock)
+            {
+                foreach (PublishedHold hold in publishedHolds)
+                {
+                    if (hold.Waypoint == wp)
+                    {
+                        return hold;
+                    }
+                }
+            }
+
+            return null;
+        }
 
         public static void AddWaypoint(Waypoint wp)
         {

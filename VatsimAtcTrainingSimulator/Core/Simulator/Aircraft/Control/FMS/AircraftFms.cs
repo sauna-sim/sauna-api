@@ -14,6 +14,7 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Aircraft.Control.FMS
         private Waypoint _depApt;
         private Waypoint _arrApt;
         private int _cruiseAlt;
+        private IRouteLeg _activeLeg;
         private List<IRouteLeg> _routeLegs;
         private object _routeLegsLock;
 
@@ -45,7 +46,10 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Aircraft.Control.FMS
             set => _arrApt = value;
         }
 
-
+        public IRouteLeg ActiveLeg
+        {
+            get => _activeLeg;
+        }
 
         public List<IRouteLeg> GetRouteLegs()
         {
@@ -63,13 +67,32 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Aircraft.Control.FMS
             }
         }
 
+        public IRouteLeg ActivateNextLeg()
+        {
+            lock (_routeLegsLock)
+            {
+                if (_routeLegs.Count > 0)
+                {
+                    _activeLeg = _routeLegs[0];
+                    _routeLegs.RemoveAt(0);
+                }
+            }
+
+            return _activeLeg;
+        }
+
         public IRouteLeg GetLegToPoint(IRoutePoint routePoint)
         {
             lock (_routeLegsLock)
             {
+                if (_activeLeg != null && _activeLeg.EndPoint.Point.Equals(routePoint))
+                {
+                    return _activeLeg;
+                }
+
                 foreach (IRouteLeg leg in _routeLegs)
                 {
-                    if (leg.EndPoint == routePoint)
+                    if (leg.EndPoint.Point.Equals(routePoint))
                     {
                         return leg;
                     }
@@ -87,7 +110,7 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Aircraft.Control.FMS
                 FmsPoint point = null;
                 foreach (IRouteLeg leg in _routeLegs)
                 {
-                    if (leg.StartPoint != null && leg.StartPoint.Point == routePoint)
+                    if (leg.StartPoint != null && leg.StartPoint.Point.Equals(routePoint))
                     {
                         index = _routeLegs.IndexOf(leg);
                         point = leg.StartPoint;

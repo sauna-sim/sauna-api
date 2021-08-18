@@ -80,7 +80,6 @@
     <Compile Include="Core\Simulator\Aircraft\Control\FMS\AircraftFms.cs" />
     <Compile Include="Core\Simulator\Aircraft\Control\FMS\RouteWaypoint.cs" />
     <Compile Include="Core\GeoTools\Helpers\GeoPoint.cs" />
-    <Compile Include="Core\Simulator\AircraftControl\AcftRouteManager.cs" />
     <Compile Include="Core\Simulator\Aircraft\Control\FMS\CourseToPointLeg.cs" />
     <Compile Include="Core\Simulator\Aircraft\Control\FMS\FmsPoint.cs" />
     <Compile Include="Core\Simulator\Aircraft\Control\FMS\IRouteLeg.cs" />

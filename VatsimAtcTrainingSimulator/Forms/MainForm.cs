@@ -184,6 +184,22 @@ namespace VatsimAtcTrainingSimulator
                         {
                             Console.WriteLine("Well that didn't work did it.");
                         }
+                    } else if (line.StartsWith("HOLDING"))
+                    {
+                        string[] items = line.Split(':');
+
+                        try
+                        {
+                            string wpId = items[1];
+                            double inboundCourse = Convert.ToDouble(items[2]);
+                            HoldTurnDirectionEnum turnDirection = (HoldTurnDirectionEnum)Convert.ToInt32(items[3]);
+
+                            DataHandler.AddPublishedHold(new PublishedHold(wpId, inboundCourse, turnDirection));
+                        }
+                        catch (Exception)
+                        {
+                            Console.WriteLine("Well that didn't work did it.");
+                        }
                     }
                 }
             }
