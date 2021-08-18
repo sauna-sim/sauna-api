@@ -2,7 +2,7 @@
 Several commands can be on the simulator program. These can either be submitted from the network via a "command frequency" or via the Command Window provided. There are both program commands as well as aircraft commands.
 
 ## Program Commands
-| Command Inputs | Command Name | Command Arguments | Command Description
+| Command Inputs | Command Name | Command Arguments | Command Description |
 |--|--|--|--|
 | `upall`, `unpauseall` | Unpause All | none | Unpauses all simulated aircraft |
 | `pall`, `pauseall` | Pause All | none | Pauses all simulated aircraft |
@@ -19,4 +19,7 @@ Several commands can be on the simulator program. These can either be submitted 
 | `tlb` | Turn Left By | `<Degrees To Turn>` | Turns left by a certain amount |
 | `trb` | Turn Right By | `<Degrees To Turn>` | Turns right by a certain amount |
 | `fph` | Fly Present Heading | none | Flies present heading |
-| `dh`, `lh`, `dephdg`, `leavehdg` | Depart/Leave On Heading | `<Waypoint Name` `Magnetic Heading` | Departs waypoint on specified heading |
+| `dh`, `lh`, `dephdg`, `leavehdg` | Depart/Leave On Heading | `<Waypoint Name>` `<Magnetic Heading>` | Departs waypoint on specified heading |
+| `intercept` | Intercept Course | `<Waypoint Name>` `<Magnetic Course>` | Intercepts and tracks a course to a specific waypoint |
+| `dct`, `dir`, `direct` | Direct To Waypoint | `<Waypoint Name>` | Instructs the navigation to go direct to a waypoint. Will amend the route if waypoint already existed in the flight plan. Otherwise, a discontinuity is inserted |
+| `alt`, `cm`, `dm`, `clm`, `des`, `climb`, `descend` | Change Altitude | `<Altitude (ft) or 'FLXXX' (100s of ft)>` | Aircraft will open climb or open descend to altitude |
