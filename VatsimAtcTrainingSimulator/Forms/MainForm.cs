@@ -16,6 +16,7 @@ using VatsimAtcTrainingSimulator.Core.GeoTools;
 using VatsimAtcTrainingSimulator.Core.GeoTools.Helpers;
 using VatsimAtcTrainingSimulator.Core.Simulator.Aircraft;
 using VatsimAtcTrainingSimulator.Core.Simulator.Aircraft.Control.FMS;
+using VatsimAtcTrainingSimulator.Core.Simulator.Aircraft.Control.FMS.Legs;
 using VatsimAtcTrainingSimulator.Core.Simulator.Commands;
 
 namespace VatsimAtcTrainingSimulator
@@ -153,12 +154,12 @@ namespace VatsimAtcTrainingSimulator
 
                             for (int i = 0; i < wps.Count - 1; i++)
                             {
-                                lastPilot.Control.FMS.AddRouteLeg(new PointToPointLeg(wps[i], wps[i + 1]));
+                                lastPilot.Control.FMS.AddRouteLeg(new TrackToFixLeg(wps[i], wps[i + 1]));
                             }
 
                             if (wps.Count > 0)
                             {
-                                lastPilot.Control.FMS.ActivateDirectTo(wps[0].Point, lastPilot.Position);
+                                lastPilot.Control.FMS.ActivateDirectTo(wps[0].Point);
                                 LnavRouteInstruction instr = new LnavRouteInstruction();
                                 lastPilot.Control.CurrentLateralInstruction = instr;
                             }

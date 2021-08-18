@@ -9,6 +9,7 @@ using VatsimAtcTrainingSimulator.Core.GeoTools;
 using VatsimAtcTrainingSimulator.Core.GeoTools.Helpers;
 using VatsimAtcTrainingSimulator.Core.Simulator.Aircraft.Control;
 using VatsimAtcTrainingSimulator.Core.Simulator.Aircraft.Control.FMS;
+using VatsimAtcTrainingSimulator.Core.Simulator.Aircraft.Control.FMS.Legs;
 
 namespace VatsimAtcTrainingSimulator.Core.Simulator.Aircraft
 {
@@ -32,8 +33,6 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Aircraft
         private TrackHoldInstruction instr;
 
         public IRoutePoint AssignedWaypoint { get; private set; }
-
-        public event EventHandler<WaypointPassedEventArgs> WaypointCrossed;
 
         public double MagneticCourse
         {
@@ -59,6 +58,8 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Aircraft
             }
         }
 
+        public double AlongTrackM => aTk;
+
         public InterceptCourseInstruction(IRoutePoint assignedWp)
         {
             AssignedWaypoint = assignedWp;
@@ -78,7 +79,7 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Aircraft
                 return false;
             }
 
-            UpdateInfo(position, fms);
+            UpdateInfo(position, ref fms);
 
             if (previousTrack != position.Track_True || previousGroundSpeed != position.GroundSpeed)
             {
@@ -108,7 +109,7 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Aircraft
             return dist < leadInDistance;
         }
 
-        private void UpdateInfo(AircraftPosition pos, AircraftFms fms)
+        public void UpdateInfo(AircraftPosition pos, ref AircraftFms fms)
         {
             if (_trueCourse < 0)
             {
@@ -122,7 +123,7 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Aircraft
 
             if (aTrackM <= MIN_XTK_THRESHOLD_M && MIN_XTK_THRESHOLD_M <= aTk)
             {
-                WaypointCrossed?.Invoke(this, new WaypointPassedEventArgs(fms));
+                fms.WaypointPassed?.Invoke(this, new WaypointPassedEventArgs(AssignedWaypoint));
             }
 
             aTk = aTrackM;
@@ -135,7 +136,7 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Aircraft
                 return;
             }
 
-            UpdateInfo(position, fms);
+            UpdateInfo(position, ref fms);
 
             if (trackToHold == -1)
             {

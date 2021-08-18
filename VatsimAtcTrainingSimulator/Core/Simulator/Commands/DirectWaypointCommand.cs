@@ -24,7 +24,7 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Commands
         {
             RouteWaypoint rwp = new RouteWaypoint(wp);
 
-            Aircraft.Control.FMS.ActivateDirectTo(rwp, Aircraft.Position);
+            Aircraft.Control.FMS.ActivateDirectTo(rwp);
 
             LnavRouteInstruction instr = new LnavRouteInstruction();
             Aircraft.Control.CurrentLateralInstruction = instr;

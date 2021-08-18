@@ -10,19 +10,18 @@ using VatsimAtcTrainingSimulator.Core.GeoTools;
 using VatsimAtcTrainingSimulator.Core.GeoTools.Helpers;
 using VatsimAtcTrainingSimulator.Core.Simulator.Aircraft.Control;
 using VatsimAtcTrainingSimulator.Core.Simulator.Aircraft.Control.FMS;
+using VatsimAtcTrainingSimulator.Core.Simulator.Aircraft.Control.FMS.Legs;
 
 namespace VatsimAtcTrainingSimulator.Core.Simulator.Aircraft
 {
     public class LnavRouteInstruction : ILateralControlInstruction
     {
-        private bool _suspended;
         private IRouteLeg _currentLeg;
 
         public LateralControlMode Type => LateralControlMode.NAV_ROUTE;
 
         public LnavRouteInstruction()
         {
-            _suspended = false;
         }
 
         public bool ShouldActivateInstruction(AircraftPosition position, AircraftFms fms, int posCalcInterval)
@@ -34,26 +33,7 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Aircraft
                 return false;
             }
 
-            return leg.ShouldActivateLeg(position, fms, posCalcInterval);
-        }
-
-        private void ActivateNextLeg(AircraftFms fms)
-        {
-            if (fms.ActiveLeg == null)
-            {
-                fms.ActivateNextLeg();
-                fms.ActiveLeg.WaypointPassed += OnWaypointPassed;
-            }
-            else
-            {
-                IRouteLeg nextLeg = fms.GetFirstLeg();
-                if (fms.ActiveLeg.EndPoint != null && nextLeg != null && nextLeg.StartPoint != null && _currentLeg.EndPoint.Point.Equals(nextLeg.StartPoint.Point))
-                {
-                    fms.ActiveLeg.WaypointPassed -= OnWaypointPassed;
-                    fms.ActivateNextLeg();
-                    fms.ActiveLeg.WaypointPassed += OnWaypointPassed;
-                }
-            }
+            return leg.ShouldBeginTurn(position, fms, posCalcInterval);
         }
 
         public void UpdatePosition(ref AircraftPosition position, ref AircraftFms fms, int posCalcInterval)
@@ -69,35 +49,13 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Aircraft
                     return;
                 }
 
-                ActivateNextLeg(fms);
+                fms.ActivateNextLeg();
             }
 
             _currentLeg = fms.ActiveLeg;
 
-            // Check if next leg should be activated
-            if (!_suspended)
-            {
-                IRouteLeg nextLeg = fms.GetFirstLeg();
-
-                // Activate next leg if applicable
-                if (fms.ActiveLeg.EndPoint != null && fms.ActiveLeg.EndPoint.PointType == RoutePointTypeEnum.FLY_BY && 
-                    nextLeg != null && nextLeg.ShouldActivateLeg(position, fms, posCalcInterval) && 
-                    nextLeg.StartPoint != null && Math.Abs(fms.ActiveLeg.FinalTrueCourse - nextLeg.InitialTrueCourse) > 0.5)
-                {
-                    ActivateNextLeg(fms);
-                }
-            }
-
             // Update position
-            fms.ActiveLeg.UpdatePosition(ref position, ref fms, posCalcInterval);
-        }
-
-        public void OnWaypointPassed(object sender, WaypointPassedEventArgs e)
-        {
-            if (!_suspended)
-            {
-                ActivateNextLeg(e.FMS);
-            }
+            fms.ActiveLeg.UpdateLateralPosition(ref position, ref fms, posCalcInterval);
         }
 
         public override string ToString()

@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using VatsimAtcTrainingSimulator.Core.Data;
 using VatsimAtcTrainingSimulator.Core.Simulator.Aircraft;
 using VatsimAtcTrainingSimulator.Core.Simulator.Aircraft.Control.FMS;
+using VatsimAtcTrainingSimulator.Core.Simulator.Aircraft.Control.FMS.Legs;
 
 namespace VatsimAtcTrainingSimulator.Core.Simulator.Commands
 {
@@ -15,12 +16,16 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Commands
         public Action<string> Logger { get; set; }
 
         private int hdg;
+        private IRoutePoint point;
 
         public void ExecuteCommand() { }
 
         public void OnReachingWaypoint(object sender, WaypointPassedEventArgs e)
         {
-            Aircraft.Control.CurrentLateralInstruction = new HeadingHoldInstruction(hdg);
+            if (e.RoutePoint.Equals(point))
+            {
+                Aircraft.Control.CurrentLateralInstruction = new HeadingHoldInstruction(hdg);
+            }
         }
 
         public bool HandleCommand(ref List<string> args)
@@ -64,7 +69,8 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Commands
                 hdg = Convert.ToInt32(headingString);
 
                 leg.EndPoint.PointType = RoutePointTypeEnum.FLY_OVER;
-                leg.WaypointPassed += OnReachingWaypoint;
+                point = leg.EndPoint.Point;
+                Aircraft.Control.FMS.WaypointPassed += OnReachingWaypoint;
 
                 Logger?.Invoke($"{Aircraft.Callsign} will depart {wpStr} heading {headingString} degrees.");
             }

@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using VatsimAtcTrainingSimulator.Core.Data;
 using VatsimAtcTrainingSimulator.Core.GeoTools;
 using VatsimAtcTrainingSimulator.Core.GeoTools.Helpers;
+using VatsimAtcTrainingSimulator.Core.Simulator.Aircraft.Control.FMS.Legs;
 
 namespace VatsimAtcTrainingSimulator.Core.Simulator.Aircraft.Control.FMS
 {
@@ -17,6 +18,9 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Aircraft.Control.FMS
         private IRouteLeg _activeLeg;
         private List<IRouteLeg> _routeLegs;
         private object _routeLegsLock;
+        private bool _suspended;
+
+        public EventHandler<WaypointPassedEventArgs> WaypointPassed;
 
         public AircraftFms()
         {
@@ -26,6 +30,14 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Aircraft.Control.FMS
             {
                 _routeLegs = new List<IRouteLeg>();
             }
+
+            _suspended = false;
+        }
+
+        public bool Suspended
+        {
+            get => _suspended;
+            set => _suspended = value;
         }
 
         public int CruiseAltitude
@@ -102,7 +114,7 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Aircraft.Control.FMS
             return null;
         }
 
-        public void ActivateDirectTo(IRoutePoint routePoint, AircraftPosition pos)
+        public void ActivateDirectTo(IRoutePoint routePoint)
         {
             lock (_routeLegsLock)
             {
@@ -110,10 +122,10 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Aircraft.Control.FMS
                 FmsPoint point = null;
                 foreach (IRouteLeg leg in _routeLegs)
                 {
-                    if (leg.StartPoint != null && leg.StartPoint.Point.Equals(routePoint))
+                    if (leg.EndPoint != null && leg.EndPoint.Point.Equals(routePoint))
                     {
-                        index = _routeLegs.IndexOf(leg);
-                        point = leg.StartPoint;
+                        index = _routeLegs.IndexOf(leg) + 1;
+                        point = leg.EndPoint;
                         break;
                     }
                 }
@@ -123,26 +135,14 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Aircraft.Control.FMS
                     point = new FmsPoint(routePoint, RoutePointTypeEnum.FLY_BY);
                 }
 
-                double dctCourse = AcftGeoUtil.CalculateDirectBearingAfterTurn(
-                        new GeoPoint(pos.Latitude, pos.Longitude, pos.AbsoluteAltitude),
-                        routePoint.PointPosition,
-                        AcftGeoUtil.CalculateRadiusOfTurn(AcftGeoUtil.CalculateBankAngle(pos.GroundSpeed, 25, 3), pos.GroundSpeed),
-                        pos.Track_True);
+                // Create direct leg
+                IRouteLeg dtoLeg = new DirectToFixLeg(point);
 
-                if (dctCourse >= 0)
-                {
-                    // Create direct leg
-                    IRouteLeg dtoLeg = new CourseToPointLeg(
-                        point,
-                        InterceptTypeEnum.TRUE_TRACK,
-                        dctCourse);
+                // Add leg
+                _routeLegs.Insert(index, dtoLeg);
 
-                    // Add leg
-                    _routeLegs.Insert(index, dtoLeg);
-
-                    // Remove everything before index
-                    _routeLegs.RemoveRange(0, index);
-                }
+                // Remove everything before index
+                _routeLegs.RemoveRange(0, index);
             }
         }
 
