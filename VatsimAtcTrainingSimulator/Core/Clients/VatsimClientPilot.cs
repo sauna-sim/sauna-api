@@ -1,8 +1,10 @@
 ﻿using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
+using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Timers;
 using VatsimAtcTrainingSimulator.Core.GeoTools;
 using VatsimAtcTrainingSimulator.Core.Simulator.Aircraft;
 using VatsimAtcTrainingSimulator.Core.Simulator.Aircraft.Control;
@@ -35,13 +37,81 @@ namespace VatsimAtcTrainingSimulator.Core
         private string NetworkId { get; set; }
         private Thread posUpdThread;
         private Thread posSendThread;
+        private string password;
+        private string fullname;
+        private string hostname;
+        private int port;
+        private bool vatsim;
+        private PauseableTimer _delayTimer;
+        private int delayMs;
+        private bool _paused;
+        private bool _initDataSet;
+        private bool _shouldSpawn;
+        private string _flightPlan;
+
+        public bool ShouldSpawn
+        {
+            get => _shouldSpawn; set
+            {
+                _shouldSpawn = value;
+                if (_shouldSpawn)
+                {
+                    if (delayMs <= 0)
+                    {
+                        OnTimerElapsed(this, null);
+                    }
+                    else
+                    {
+                        _delayTimer = new PauseableTimer(delayMs);
+                        _delayTimer.Elapsed += OnTimerElapsed;
+
+                        if (!_paused && _initDataSet)
+                        {
+                            _delayTimer.Start();
+                        }
+                    }
+                }
+            }
+        }
+
+        public string FlightPlan { get => _flightPlan;
+        set
+            {
+                _flightPlan = value;
+                if (ShouldSpawn && ConnectionStatus == CONN_STATUS.CONNECTED)
+                {
+                    _ = ConnHandler.SendData(_flightPlan);
+                }
+            }
+        }
 
         public string Callsign { get; private set; }
+
+        public int DelayMs { get => delayMs; set => delayMs = value; }
 
         public Action<string> Logger { get; set; }
         public Action<CONN_STATUS> StatusChangeAction { get; set; }
 
-        public bool Paused { get; set; }
+        public bool Paused
+        {
+            get => _paused;
+            set
+            {
+                _paused = value;
+                if (delayMs > 0 && _delayTimer != null && ShouldSpawn && _initDataSet)
+                {
+                    if (!_paused)
+                    {
+                        _delayTimer.Start();
+                    }
+                    else
+                    {
+                        _delayTimer.Pause();
+                    }
+                }
+            }
+        }
+
         public XpdrMode XpdrMode { get; private set; }
         public int Squawk { get; private set; }
         public int Rating { get; private set; }
@@ -54,8 +124,11 @@ namespace VatsimAtcTrainingSimulator.Core
             private set
             {
                 _onGround = value;
-                JObject obj = new JObject(new JProperty("on_ground", _onGround));
-                _ = ConnHandler.SendData($"$CQ{Callsign}:@94836:ACC:{obj}");
+                if (ConnHandler != null)
+                {
+                    JObject obj = new JObject(new JProperty("on_ground", _onGround));
+                    _ = ConnHandler.SendData($"$CQ{Callsign}:@94836:ACC:{obj}");
+                }
             }
         }
 
@@ -64,20 +137,57 @@ namespace VatsimAtcTrainingSimulator.Core
         public int Assigned_IAS { get; set; } = -1;
         public ConstraintType Assigned_IAS_Type { get; set; } = ConstraintType.FREE;
 
-        public CONN_STATUS ConnectionStatus => ConnHandler == null ? CONN_STATUS.DISCONNECTED : ConnHandler.Status;
+        public CONN_STATUS ConnectionStatus => ConnHandler == null ? CONN_STATUS.WAITING : ConnHandler.Status;
 
-        public VatsimClientPilot()
+        public VatsimClientPilot(string callsign, string networkId, string password, string fullname, string hostname, int port, bool vatsim)
         {
+            Callsign = callsign;
+            NetworkId = networkId;
+            this.password = password;
+            this.fullname = fullname;
+            this.hostname = hostname;
+            this.port = port;
+            this.vatsim = vatsim;
+            Paused = true;
             Position = new AircraftPosition();
             Control = new AircraftControl();
+            this.delayMs = 0;
+            _initDataSet = false;
+            _shouldSpawn = false;
+            _flightPlan = "";
+        }
+
+        private async void OnTimerElapsed(object sender, ElapsedEventArgs e)
+        {
+            delayMs = -1;
+            if (_delayTimer != null)
+            {
+                _delayTimer.Stop();
+            }
+
             ConnHandler = new VatsimClientConnectionHandler(this);
+            if (await Connect(hostname, port, Callsign, NetworkId, password, fullname, vatsim))
+            {
+                // Send initial configuration
+                HandleRequest("ACC", Callsign, "@94836");
+
+                // Start Position Update Thread
+                posUpdThread = new Thread(new ThreadStart(AircraftPositionWorker));
+                posUpdThread.Name = $"{Callsign} Position Worker";
+                posUpdThread.Start();
+
+                // Start Position Send Thread
+                posSendThread = new Thread(new ThreadStart(AircraftPositionSender));
+                posSendThread.Name = $"{Callsign} Position Sender";
+                posSendThread.Start();
+
+                // Send Flight Plan
+                await ConnHandler.SendData(_flightPlan);
+            }
         }
 
         public async Task<bool> Connect(string hostname, int port, string callsign, string cid, string password, string fullname, bool vatsim)
         {
-            Callsign = callsign;
-            NetworkId = cid;
-
             // Establish Connection
             ConnHandler = new VatsimClientConnectionHandler(this)
             {
@@ -95,9 +205,6 @@ namespace VatsimAtcTrainingSimulator.Core
 
             // Connect client
             await ConnHandler.AddClient(CLIENT_TYPE.PILOT, Callsign, fullname, cid, password);
-
-            // Prefill data
-            Paused = true;
 
             return true;
         }
@@ -158,7 +265,8 @@ namespace VatsimAtcTrainingSimulator.Core
                             if (Assigned_IAS <= Position.IndicatedAirSpeed)
                             {
                                 Position.IndicatedAirSpeed = Math.Max(Assigned_IAS, Position.IndicatedAirSpeed + (slowDownKts * POS_CALC_INVERVAL / 1000.0));
-                            } else
+                            }
+                            else
                             {
                                 Position.IndicatedAirSpeed = Math.Min(Assigned_IAS, Position.IndicatedAirSpeed + (speedUpKts * POS_CALC_INVERVAL / 1000.0));
                             }
@@ -227,18 +335,25 @@ namespace VatsimAtcTrainingSimulator.Core
             // Set initial assignments
             Control = new AircraftControl(new HeadingHoldInstruction(Convert.ToInt32(hdg)), new AltitudeHoldInstruction(Convert.ToInt32(alt)));
 
-            // Send initial configuration
-            HandleRequest("ACC", Callsign, "@94836");
+            // Connect if no delay, otherwise start timer
+            _initDataSet = true;
+            if (ShouldSpawn)
+            {
+                if (delayMs <= 0)
+                {
+                    OnTimerElapsed(this, null);
+                }
+                else
+                {
+                    _delayTimer = new PauseableTimer(delayMs);
+                    _delayTimer.Elapsed += OnTimerElapsed;
 
-            // Start Position Update Thread
-            posUpdThread = new Thread(new ThreadStart(AircraftPositionWorker));
-            posUpdThread.Name = $"{Callsign} Position Worker";
-            posUpdThread.Start();
-
-            // Start Position Send Thread
-            posSendThread = new Thread(new ThreadStart(AircraftPositionSender));
-            posSendThread.Name = $"{Callsign} Position Sender";
-            posSendThread.Start();
+                    if (!_paused)
+                    {
+                        _delayTimer.Start();
+                    }
+                }
+            }
         }
 
         public async Task Disconnect()

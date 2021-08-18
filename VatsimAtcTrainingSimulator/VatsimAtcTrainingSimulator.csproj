@@ -78,6 +78,7 @@
     <Compile Include="Core\Clients\ClientsHandler.cs" />
     <Compile Include="Core\Clients\VatsimClientDisplayable.cs" />
     <Compile Include="Core\Data\PublishedHold.cs" />
+    <Compile Include="Core\PauseableTimer.cs" />
     <Compile Include="Core\Simulator\Aircraft\Control\FMS\AircraftFms.cs" />
     <Compile Include="Core\Simulator\Aircraft\Control\FMS\PointToAltLeg.cs" />
     <Compile Include="Core\Simulator\Aircraft\Control\FMS\RouteWaypoint.cs" />

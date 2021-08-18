@@ -11,6 +11,7 @@ namespace VatsimAtcTrainingSimulator.Core
 {
     public enum CONN_STATUS
     {
+        WAITING,
         DISCONNECTED,
         CONNECTED,
         CONNECTING_TO_SERVER

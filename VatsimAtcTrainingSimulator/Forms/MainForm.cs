@@ -76,7 +76,9 @@ namespace VatsimAtcTrainingSimulator
                 string filename = fileDialog.FileName;
                 string[] filelines = File.ReadAllLines(filename);
 
-                string lastCallsign = "";
+                List<VatsimClientPilot> pilots = new List<VatsimClientPilot>();
+
+                VatsimClientPilot lastPilot = null;
 
                 foreach (string line in filelines)
                 {
@@ -87,37 +89,33 @@ namespace VatsimAtcTrainingSimulator
                         string callsign = items[1];
                         XpdrMode xpdrMode = (XpdrMode)items[0].ToCharArray()[1];
 
-                        VatsimClientPilot pilot = new VatsimClientPilot()
+                        lastPilot = new VatsimClientPilot(callsign, Properties.Settings.Default.cid, Properties.Settings.Default.password, "Simulator Pilot", Properties.Settings.Default.server, Properties.Settings.Default.port, Properties.Settings.Default.vatsimServer)
                         {
                             Logger = (string msg) =>
                             {
                                 logMsg($"{callsign}: {msg}");
                             }
                         };
+                        
+                        // Send init position
+                        lastPilot.SetInitialData(xpdrMode, Convert.ToInt32(items[2]), Convert.ToInt32(items[3]), Convert.ToDouble(items[4]), Convert.ToDouble(items[5]), Convert.ToDouble(items[6]), 250, Convert.ToInt32(items[8]), Convert.ToInt32(items[9]));
 
-                        lastCallsign = callsign;
-
-                        if (ClientsHandler.GetClientByCallsign(callsign) == null && await pilot.Connect(Properties.Settings.Default.server, Properties.Settings.Default.port, callsign, Properties.Settings.Default.cid, Properties.Settings.Default.password, "Simulator Pilot", Properties.Settings.Default.vatsimServer))
-                        {
-                            ClientsHandler.AddClient(pilot);
-
-                            // Send init position
-                            pilot.SetInitialData(xpdrMode, Convert.ToInt32(items[2]), Convert.ToInt32(items[3]), Convert.ToDouble(items[4]), Convert.ToDouble(items[5]), Convert.ToDouble(items[6]), 250, Convert.ToInt32(items[8]), Convert.ToInt32(items[9]));
-                        }
+                        // Add to temp list
+                        pilots.Add(lastPilot);
                     }
                     else if (line.StartsWith("$FP"))
                     {
-                        string callsign = line.Split(':')[0].Replace("$FP", "");
-
-                        ClientsHandler.SendDataForClient(callsign, line);
+                        if (lastPilot != null)
+                        {
+                            lastPilot.FlightPlan = line;
+                        }
                     }
                     else if (line.StartsWith("REQALT"))
                     {
-                        IVatsimClient acft = ClientsHandler.GetClientByCallsign(lastCallsign);
 
                         string[] items = line.Split(':');
 
-                        if (acft is VatsimClientPilot pilot && pilot != null && items.Length >= 3)
+                        if (lastPilot != null && items.Length >= 3)
                         {
                             try
                             {
@@ -128,18 +126,16 @@ namespace VatsimAtcTrainingSimulator
                                 {
                                     $"FL{reqAlt}"
                                 };
-                                CommandHandler.HandleCommand("dm", pilot, args, logMsg);
+                                CommandHandler.HandleCommand("dm", lastPilot, args, logMsg);
                             }
                             catch (Exception) { }
                         }
                     }
                     else if (line.StartsWith("$ROUTE"))
                     {
-                        IVatsimClient acft = ClientsHandler.GetClientByCallsign(lastCallsign);
-
                         string[] items = line.Split(':');
 
-                        if (acft is VatsimClientPilot pilot && pilot != null && items.Length >= 2)
+                        if (lastPilot != null && items.Length >= 2)
                         {
                             string[] waypoints = items[1].Split(' ');
 
@@ -147,7 +143,7 @@ namespace VatsimAtcTrainingSimulator
 
                             foreach (string wp in waypoints)
                             {
-                                Waypoint nextWp = DataHandler.GetClosestWaypointByIdentifier(wp, pilot.Position.Latitude, pilot.Position.Longitude);
+                                Waypoint nextWp = DataHandler.GetClosestWaypointByIdentifier(wp, lastPilot.Position.Latitude, lastPilot.Position.Longitude);
 
                                 if (nextWp != null)
                                 {
@@ -157,15 +153,28 @@ namespace VatsimAtcTrainingSimulator
 
                             for (int i = 0; i < wps.Count - 1; i++)
                             {
-                                pilot.Control.FMS.AddRouteLeg(new PointToPointLeg(wps[i], wps[i + 1]));
+                                lastPilot.Control.FMS.AddRouteLeg(new PointToPointLeg(wps[i], wps[i + 1]));
                             }
 
                             if (wps.Count > 0)
                             {
-                                pilot.Control.FMS.ActivateDirectTo(wps[0].Point, pilot.Position);
+                                lastPilot.Control.FMS.ActivateDirectTo(wps[0].Point, lastPilot.Position);
                                 LnavRouteInstruction instr = new LnavRouteInstruction();
-                                pilot.Control.CurrentLateralInstruction = instr;
+                                lastPilot.Control.CurrentLateralInstruction = instr;
                             }
+                        }
+                    }
+                    else if (line.StartsWith("START"))
+                    {
+                        string[] items = line.Split(':');
+
+                        if (lastPilot != null && items.Length >= 2)
+                        {
+                            try
+                            {
+                                int delay = Convert.ToInt32(items[1]) * 60000;
+                                lastPilot.DelayMs = delay;
+                            } catch (Exception) { }
                         }
                     }
                     else if (line.StartsWith("ILS"))
@@ -200,6 +209,15 @@ namespace VatsimAtcTrainingSimulator
                         {
                             Console.WriteLine("Well that didn't work did it.");
                         }
+                    }
+                }
+
+                foreach (VatsimClientPilot pilot in pilots)
+                {
+                    if (ClientsHandler.GetClientByCallsign(pilot.Callsign) == null)
+                    {
+                        ClientsHandler.AddClient(pilot);
+                        pilot.ShouldSpawn = true;
                     }
                 }
             }
