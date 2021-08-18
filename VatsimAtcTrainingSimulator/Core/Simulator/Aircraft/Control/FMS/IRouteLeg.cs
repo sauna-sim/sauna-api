@@ -37,6 +37,10 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Aircraft.Control.FMS
 
         FmsPoint EndPoint { get; }
 
+        double InitialTrueCourse { get; }
+
+        double FinalTrueCourse { get; }
+
         event EventHandler<WaypointPassedEventArgs> WaypointPassed;
 
         /// <summary>

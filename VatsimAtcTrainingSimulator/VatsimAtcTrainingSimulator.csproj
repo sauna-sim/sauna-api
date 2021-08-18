@@ -77,7 +77,9 @@
   <ItemGroup>
     <Compile Include="Core\Clients\ClientsHandler.cs" />
     <Compile Include="Core\Clients\VatsimClientDisplayable.cs" />
+    <Compile Include="Core\Data\PublishedHold.cs" />
     <Compile Include="Core\Simulator\Aircraft\Control\FMS\AircraftFms.cs" />
+    <Compile Include="Core\Simulator\Aircraft\Control\FMS\PointToAltLeg.cs" />
     <Compile Include="Core\Simulator\Aircraft\Control\FMS\RouteWaypoint.cs" />
     <Compile Include="Core\GeoTools\Helpers\GeoPoint.cs" />
     <Compile Include="Core\Simulator\Aircraft\Control\FMS\CourseToPointLeg.cs" />

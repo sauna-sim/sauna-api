@@ -52,6 +52,10 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Aircraft.Control.FMS
 
         public FmsPoint EndPoint => _endPoint;
 
+        public double InitialTrueCourse => -1;
+
+        public double FinalTrueCourse => _trueCourse;
+
         public bool ShouldActivateLeg(AircraftPosition pos, AircraftFms fms, int posCalcIntvl)
         {
             return _instr.ShouldActivateInstruction(pos, fms, posCalcIntvl);

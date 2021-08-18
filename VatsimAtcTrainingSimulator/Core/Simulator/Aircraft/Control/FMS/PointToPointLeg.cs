@@ -13,6 +13,7 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Aircraft.Control.FMS
     {
         private FmsPoint _startPoint;
         private FmsPoint _endPoint;
+        private double _initialBearing;
         private double _finalBearing;
         private InterceptCourseInstruction _instr;
 
@@ -22,6 +23,7 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Aircraft.Control.FMS
         {
             _startPoint = startPoint;
             _endPoint = endPoint;
+            _initialBearing = GeoPoint.InitialBearing(_startPoint.Point.PointPosition, _endPoint.Point.PointPosition);
             _finalBearing = GeoPoint.FinalBearing(_startPoint.Point.PointPosition, _endPoint.Point.PointPosition);
             _instr = new InterceptCourseInstruction(_endPoint.Point)
             {
@@ -37,6 +39,10 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Aircraft.Control.FMS
         public FmsPoint StartPoint => _startPoint;
 
         public FmsPoint EndPoint => _endPoint;
+
+        public double InitialTrueCourse => _initialBearing;
+
+        public double FinalTrueCourse => _finalBearing;
 
         public bool ShouldActivateLeg(AircraftPosition pos, AircraftFms fms, int posCalcIntvl)
         {

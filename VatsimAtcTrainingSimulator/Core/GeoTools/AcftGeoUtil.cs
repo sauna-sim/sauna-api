@@ -84,18 +84,6 @@ namespace VatsimAtcTrainingSimulator.Core.GeoTools
             // Get direct bearing to waypoint from aircraft. Use this to figure out right or left turn.
             bool isRightTurn = CalculateTurnAmount(curBearing, GeoPoint.InitialBearing(aircraft, waypoint)) > 0;
 
-            // If distance is less than the diameter or turn, direct is impossible
-            double dirDist = GeoPoint.DistanceNMi(aircraft, waypoint);
-
-            if (dirDist < r * 2)
-            {
-                return -1;
-            } else if (dirDist == r * 2)
-            {
-                // Make a 180 degree turn
-                return NormalizeHeading(isRightTurn ? curBearing + 180 : curBearing - 180);
-            }
-
             // Calculate bearing to circle center point
             double bearingToC = NormalizeHeading(isRightTurn ? curBearing + 90 : curBearing - 90);
 
@@ -112,6 +100,11 @@ namespace VatsimAtcTrainingSimulator.Core.GeoTools
 
             // Calculate final bearing to waypoint
             double turnDirBearing = isRightTurn ? finalBearingC + ang : finalBearingC - ang;
+
+            if (double.IsNaN(turnDirBearing))
+            {
+                return -1;
+            }
 
             return NormalizeHeading(turnDirBearing);
         }

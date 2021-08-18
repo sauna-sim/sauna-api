@@ -39,19 +39,19 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Aircraft
 
         private void ActivateNextLeg(AircraftFms fms)
         {
-            if (_currentLeg == null)
+            if (fms.ActiveLeg == null)
             {
-                _currentLeg = fms.ActivateNextLeg();
-                _currentLeg.WaypointPassed += OnWaypointPassed;
+                fms.ActivateNextLeg();
+                fms.ActiveLeg.WaypointPassed += OnWaypointPassed;
             }
             else
             {
                 IRouteLeg nextLeg = fms.GetFirstLeg();
-                if (_currentLeg.EndPoint != null && nextLeg != null && nextLeg.StartPoint != null && _currentLeg.EndPoint.Point.Equals(nextLeg.StartPoint.Point))
+                if (fms.ActiveLeg.EndPoint != null && nextLeg != null && nextLeg.StartPoint != null && _currentLeg.EndPoint.Point.Equals(nextLeg.StartPoint.Point))
                 {
-                    _currentLeg.WaypointPassed -= OnWaypointPassed;
-                    _currentLeg = fms.ActivateNextLeg();
-                    _currentLeg.WaypointPassed += OnWaypointPassed;
+                    fms.ActiveLeg.WaypointPassed -= OnWaypointPassed;
+                    fms.ActivateNextLeg();
+                    fms.ActiveLeg.WaypointPassed += OnWaypointPassed;
                 }
             }
         }
@@ -72,20 +72,24 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Aircraft
                 ActivateNextLeg(fms);
             }
 
+            _currentLeg = fms.ActiveLeg;
+
             // Check if next leg should be activated
             if (!_suspended)
             {
                 IRouteLeg nextLeg = fms.GetFirstLeg();
 
                 // Activate next leg if applicable
-                if (_currentLeg.EndPoint != null && _currentLeg.EndPoint.PointType == RoutePointTypeEnum.FLY_BY && nextLeg != null && nextLeg.ShouldActivateLeg(position, fms, posCalcInterval))
+                if (fms.ActiveLeg.EndPoint != null && fms.ActiveLeg.EndPoint.PointType == RoutePointTypeEnum.FLY_BY && 
+                    nextLeg != null && nextLeg.ShouldActivateLeg(position, fms, posCalcInterval) && 
+                    nextLeg.StartPoint != null && Math.Abs(fms.ActiveLeg.FinalTrueCourse - nextLeg.InitialTrueCourse) > 0.5)
                 {
                     ActivateNextLeg(fms);
                 }
             }
 
             // Update position
-            _currentLeg.UpdatePosition(ref position, ref fms, posCalcInterval);
+            fms.ActiveLeg.UpdatePosition(ref position, ref fms, posCalcInterval);
         }
 
         public void OnWaypointPassed(object sender, WaypointPassedEventArgs e)
