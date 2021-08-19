@@ -1,0 +1,216 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{79C1C8AD-F89B-42E4-A0B0-F00A9D277175}</ProjectGuid>
+    <OutputType>WinExe</OutputType>
+    <RootNamespace>VatsimAtcTrainingSimulator</RootNamespace>
+    <AssemblyName>VatsimAtcTrainingSimulator</AssemblyName>
+    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <NuGetPackageImportStamp>
+    </NuGetPackageImportStamp>
+    <PublishUrl>publish\</PublishUrl>
+    <Install>true</Install>
+    <InstallFrom>Disk</InstallFrom>
+    <UpdateEnabled>false</UpdateEnabled>
+    <UpdateMode>Foreground</UpdateMode>
+    <UpdateInterval>7</UpdateInterval>
+    <UpdateIntervalUnits>Days</UpdateIntervalUnits>
+    <UpdatePeriodically>false</UpdatePeriodically>
+    <UpdateRequired>false</UpdateRequired>
+    <MapFileExtensions>true</MapFileExtensions>
+    <ApplicationRevision>0</ApplicationRevision>
+    <ApplicationVersion>1.0.0.%2a</ApplicationVersion>
+    <IsWebBootstrapper>false</IsWebBootstrapper>
+    <UseApplicationTrust>false</UseApplicationTrust>
+    <BootstrapperEnabled>true</BootstrapperEnabled>
+    <TargetFrameworkProfile />
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>..\packages\Newtonsoft.Json.13.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Deployment" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Core\Clients\ClientsHandler.cs" />
+    <Compile Include="Core\Clients\VatsimClientDisplayable.cs" />
+    <Compile Include="Core\Data\Procedures\Approaches\ApproachMinimums.cs" />
+    <Compile Include="Core\Data\Procedures\Approaches\ApproachProcedure.cs" />
+    <Compile Include="Core\Data\Localizer.cs" />
+    <Compile Include="Core\Data\Procedures\Approaches\ProcedureSegment.cs" />
+    <Compile Include="Core\Data\PublishedHold.cs" />
+    <Compile Include="Core\Simulator\Aircraft\AircraftPositionUtil.cs" />
+    <Compile Include="Core\Simulator\Aircraft\Control\FMS\AircraftFms.cs" />
+    <Compile Include="Core\Simulator\Aircraft\Control\FMS\Legs\CourseToAltLeg.cs" />
+    <Compile Include="Core\Simulator\Aircraft\Control\FMS\Legs\DirectToFixLeg.cs" />
+    <Compile Include="Core\Simulator\Aircraft\Control\FMS\RouteWaypoint.cs" />
+    <Compile Include="Core\Simulator\Aircraft\Control\FMS\Legs\CourseToFixLeg.cs" />
+    <Compile Include="Core\Simulator\Aircraft\Control\FMS\FmsPoint.cs" />
+    <Compile Include="Core\Simulator\Aircraft\Control\FMS\Legs\IRouteLeg.cs" />
+    <Compile Include="Core\Simulator\Aircraft\Control\FMS\IRoutePoint.cs" />
+    <Compile Include="Core\Simulator\Aircraft\Control\FMS\Legs\TrackToFixLeg.cs" />
+    <Compile Include="Core\Simulator\Aircraft\Control\FMS\RoutePointPbd.cs" />
+    <Compile Include="Core\Simulator\Aircraft\Control\Instructions\Vertical\AltitudeHoldInstruction.cs" />
+    <Compile Include="Core\Simulator\Aircraft\Control\Instructions\Lateral\HeadingHoldInstruction.cs" />
+    <Compile Include="Core\Simulator\Aircraft\Control\Instructions\IControlInstruction.cs" />
+    <Compile Include="Core\Simulator\Aircraft\Control\Instructions\Lateral\ILateralControlInstruction.cs" />
+    <Compile Include="Core\Simulator\Aircraft\Control\Instructions\Lateral\InterceptCourseInstruction.cs" />
+    <Compile Include="Core\Simulator\Aircraft\Control\Instructions\Vertical\IVerticalControlInstruction.cs" />
+    <Compile Include="Core\Simulator\Aircraft\Control\Instructions\Lateral\LnavRouteInstruction.cs" />
+    <Compile Include="Core\Simulator\Aircraft\Control\Instructions\Lateral\TrackHoldInstruction.cs" />
+    <Compile Include="Core\Simulator\Aircraft\Control\Instructions\Vertical\VerticalSpeedInstruction.cs" />
+    <Compile Include="Core\Simulator\Aircraft\AircraftData.cs" />
+    <Compile Include="Core\Simulator\Commands\DepartOnHeadingCommand.cs" />
+    <Compile Include="Core\Simulator\Commands\DirectWaypointCommand.cs" />
+    <Compile Include="Core\Simulator\Commands\IlsCommand.cs" />
+    <Compile Include="Core\Simulator\Commands\InterceptCourseCommand.cs" />
+    <Compile Include="Core\Simulator\Commands\TurnLeftByHeadingCommand.cs" />
+    <Compile Include="Core\Simulator\Commands\TurnRightByHeadingCommand.cs" />
+    <Compile Include="Forms\CommandWindow.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\CommandWindow.Designer.cs">
+      <DependentUpon>CommandWindow.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Core\Clients\AccConfig.cs" />
+    <Compile Include="Core\Data\DataHandler.cs" />
+    <Compile Include="Core\Data\Waypoint.cs" />
+    <Compile Include="Core\Data\WaypointNavaid.cs" />
+    <Compile Include="Core\Simulator\Aircraft\Control\AircraftControl.cs" />
+    <Compile Include="Core\Simulator\Aircraft\AircraftPosition.cs" />
+    <Compile Include="Core\Simulator\Commands\AltitudeCommand.cs" />
+    <Compile Include="Core\Simulator\Commands\CommandHandler.cs" />
+    <Compile Include="Core\Simulator\Commands\FlyHeadingCommand.cs" />
+    <Compile Include="Core\Simulator\Commands\IAircraftCommand.cs" />
+    <Compile Include="Core\Simulator\Commands\SpeedCommand.cs" />
+    <Compile Include="Core\Simulator\Commands\TurnLeftHeadingCommand.cs" />
+    <Compile Include="Core\Simulator\Commands\TurnRightHeadingCommand.cs" />
+    <Compile Include="Core\Clients\VatsimClientConnectionHandler.cs" />
+    <Compile Include="Core\Clients\VatsimClientPilot.cs" />
+    <Compile Include="Core\Clients\IVatsimClient.cs" />
+    <Compile Include="Forms\DebugWindow.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\DebugWindow.Designer.cs">
+      <DependentUpon>DebugWindow.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\MainForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\MainForm.Designer.cs">
+      <DependentUpon>MainForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Program.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Settings.cs" />
+    <Compile Include="Forms\SettingsForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\SettingsForm.Designer.cs">
+      <DependentUpon>SettingsForm.cs</DependentUpon>
+    </Compile>
+    <EmbeddedResource Include="Forms\CommandWindow.resx">
+      <DependentUpon>CommandWindow.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\DebugWindow.resx">
+      <DependentUpon>DebugWindow.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\MainForm.resx">
+      <DependentUpon>MainForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <Compile Include="Properties\Resources.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Resources.resx</DependentUpon>
+      <DesignTime>True</DesignTime>
+    </Compile>
+    <EmbeddedResource Include="Forms\SettingsForm.resx">
+      <DependentUpon>SettingsForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <Compile Include="Core\Simulator\Commands\FlyPresentHeadingCommand.cs" />
+    <None Include="packages.config" />
+    <None Include="Properties\Settings.settings">
+      <Generator>SettingsSingleFileGenerator</Generator>
+      <LastGenOutput>Settings.Designer.cs</LastGenOutput>
+    </None>
+    <Compile Include="Properties\Settings.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Settings.settings</DependentUpon>
+      <DesignTimeSharedInput>True</DesignTimeSharedInput>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="App.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <BootstrapperPackage Include=".NETFramework,Version=v4.5.2">
+      <Visible>False</Visible>
+      <ProductName>Microsoft .NET Framework 4.5.2 %28x86 and x64%29</ProductName>
+      <Install>true</Install>
+    </BootstrapperPackage>
+    <BootstrapperPackage Include="Microsoft.Net.Framework.3.5.SP1">
+      <Visible>False</Visible>
+      <ProductName>.NET Framework 3.5 SP1</ProductName>
+      <Install>false</Install>
+    </BootstrapperPackage>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Core\Network\" />
+    <Folder Include="Core\Performance\" />
+    <Folder Include="Core\Simulator\Aircraft\Control\Instructions\Speed\" />
+    <Folder Include="Properties\DataSources\" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\aviation-simulation-util\AviationSimulationUtility.csproj">
+      <Project>{8aab7f5e-c5cd-4369-9de5-9ed688e37943}</Project>
+      <Name>AviationSimulationUtility</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <Import Project="..\packages\Grib.Api.0.7.1\build\Grib.Api.targets" Condition="Exists('..\packages\Grib.Api.0.7.1\build\Grib.Api.targets')" />
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('..\packages\Grib.Api.0.7.1\build\Grib.Api.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Grib.Api.0.7.1\build\Grib.Api.targets'))" />
+  </Target>
+</Project>
