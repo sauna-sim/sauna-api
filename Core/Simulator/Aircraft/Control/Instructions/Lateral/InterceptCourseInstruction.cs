@@ -149,7 +149,13 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Aircraft
             double trackDiff = GeoUtil.CalculateTurnAmount(position.Track_True, trackToHold);
 
             // Calculate course difference
-            double courseDiff = GeoUtil.CalculateTurnAmount(trackToHold, requiredTrueCourse);
+            double newInterceptCourse = GetNewInterceptCourse();
+            double courseDiff = GeoUtil.CalculateTurnAmount(trackToHold, newInterceptCourse);
+
+            //if (Math.Abs(xTk) > MIN_XTK_THRESHOLD_M)
+            //{
+            //    Console.WriteLine($"{_magneticCourse:000} to {AssignedWaypoint.PointName}:\tRequired:\t{requiredTrueCourse:000}\tActual:\t{position.Track_True:000}\tTo Hold:\t{trackToHold:000}xTk:\t{xTk}m");
+            //}
 
             // Intercept if the conditions are met
             if (Math.Abs(courseDiff) > Double.Epsilon && ShouldActivateInstruction(position, fms, posCalcInterval))
@@ -160,21 +166,26 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Aircraft
             else if (Math.Abs(xTk) > MIN_XTK_THRESHOLD_M && Math.Abs(trackDiff) <= Double.Epsilon &&
               (Math.Abs(courseDiff) < Double.Epsilon || (courseDiff < 0 && xTk > 0) || (courseDiff > 0 && xTk < 0)))
             {
-                // Recalculate intercept course
-                double offset = Math.Round(Math.Min((Math.Abs(xTk) / MAX_INTERCEPT_XTK_M) * MAX_INTERCEPT_ANGLE, MAX_INTERCEPT_ANGLE), 1, MidpointRounding.AwayFromZero);
-
-                if (xTk > 0)
-                {
-                    trackToHold = GeoUtil.NormalizeHeading(requiredTrueCourse - offset);
-                }
-                else
-                {
-                    trackToHold = GeoUtil.NormalizeHeading(requiredTrueCourse + offset);
-                }
+                trackToHold = newInterceptCourse;
                 instr = new TrackHoldInstruction(trackToHold);
             }
 
             instr.UpdatePosition(ref position, ref fms, posCalcInterval);
+        }
+
+        private double GetNewInterceptCourse()
+        {
+            // Recalculate intercept course
+            double offset = Math.Round(Math.Min((Math.Abs(xTk) / MAX_INTERCEPT_XTK_M) * MAX_INTERCEPT_ANGLE, MAX_INTERCEPT_ANGLE), 1, MidpointRounding.AwayFromZero);
+
+            if (xTk > 0)
+            {
+                return GeoUtil.NormalizeHeading(requiredTrueCourse - offset);
+            }
+            else
+            {
+                return GeoUtil.NormalizeHeading(requiredTrueCourse + offset);
+            }
         }
 
         public override string ToString()

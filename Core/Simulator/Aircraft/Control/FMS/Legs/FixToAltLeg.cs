@@ -1,5 +1,4 @@
-﻿using AviationSimulation.GeoTools;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -7,40 +6,47 @@ using System.Threading.Tasks;
 
 namespace VatsimAtcTrainingSimulator.Core.Simulator.Aircraft.Control.FMS.Legs
 {
-    public class CourseToAltLeg : IRouteLeg
+    public class FixToAltLeg : IRouteLeg
     {
+        private FmsPoint _startPoint;
         private double _magneticCourse;
         private double _trueCourse;
         private double _endAlt;
         private double _beginAlt;
-        private TrackHoldInstruction _instr;
+        private InterceptCourseInstruction _instr;
 
-        public CourseToAltLeg(double endAlt, BearingTypeEnum courseType, double course)
+        public FixToAltLeg(FmsPoint startPoint, BearingTypeEnum courseType, double course, double endAlt)
         {
+            _startPoint = startPoint;
             _endAlt = endAlt;
             _beginAlt = -1;
+
             if (courseType == BearingTypeEnum.TRUE)
             {
-                _trueCourse = course;
-                _magneticCourse = -1;
-            } else
+                _instr = new InterceptCourseInstruction(_startPoint.Point)
+                {
+                    TrueCourse = course
+                };
+                _magneticCourse = _instr.MagneticCourse;
+            }
+            else
             {
-                _magneticCourse = course;
-                _trueCourse = -1;
+                _instr = new InterceptCourseInstruction(_startPoint.Point, course);
+                _trueCourse = _instr.TrueCourse;
             }
         }
 
-        public FmsPoint StartPoint => null;
+        public FmsPoint StartPoint => _startPoint;
 
         public FmsPoint EndPoint => null;
 
         public double InitialTrueCourse => _trueCourse;
 
-        public double FinalTrueCourse => _trueCourse;
+        public double FinalTrueCourse => -1;
 
         public ILateralControlInstruction Instruction => _instr;
 
-        public RouteLegTypeEnum LegType => RouteLegTypeEnum.COURSE_TO_ALT;
+        public RouteLegTypeEnum LegType => RouteLegTypeEnum.FIX_TO_ALT;
 
         public bool HasLegTerminated(AircraftPosition pos, ref AircraftFms fms)
         {
@@ -58,24 +64,14 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Aircraft.Control.FMS.Legs
 
         public bool ShouldBeginTurn(AircraftPosition pos, AircraftFms fms, int posCalcIntvl)
         {
-            // Never preempt turn
-            return false;
+            return _instr.ShouldActivateInstruction(pos, fms, posCalcIntvl);
         }
 
         public void UpdateLateralPosition(ref AircraftPosition pos, ref AircraftFms fms, int posCalcIntvl)
         {
-            if (_beginAlt < 0 || _instr == null)
+            if (_beginAlt < 0)
             {
-                if (_trueCourse < 0)
-                {
-                    _trueCourse = GeoUtil.MagneticToTrue(_magneticCourse, pos.PositionGeoPoint);
-                } else if (_magneticCourse < 0)
-                {
-                    _magneticCourse = GeoUtil.TrueToMagnetic(_trueCourse, pos.PositionGeoPoint);
-                }
                 _beginAlt = pos.IndicatedAltitude;
-
-                _instr = new TrackHoldInstruction(_trueCourse);
             }
 
             IRouteLeg nextLeg = fms.GetFirstLeg();
@@ -101,7 +97,7 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Aircraft.Control.FMS.Legs
 
         public override string ToString()
         {
-            return $"{_magneticCourse:000} =(CA)=> {_endAlt}";
+            return $"{_startPoint.Point.PointName}-{_magneticCourse:000} =(FA)=> {_endAlt}";
         }
     }
 }

@@ -78,6 +78,8 @@
     <Compile Include="Core\Simulator\Aircraft\Control\FMS\AircraftFms.cs" />
     <Compile Include="Core\Simulator\Aircraft\Control\FMS\Legs\CourseToAltLeg.cs" />
     <Compile Include="Core\Simulator\Aircraft\Control\FMS\Legs\DirectToFixLeg.cs" />
+    <Compile Include="Core\Simulator\Aircraft\Control\FMS\Legs\FixToAltLeg.cs" />
+    <Compile Include="Core\Simulator\Aircraft\Control\FMS\Legs\FixToManualLeg.cs" />
     <Compile Include="Core\Simulator\Aircraft\Control\FMS\RouteWaypoint.cs" />
     <Compile Include="Core\Simulator\Aircraft\Control\FMS\Legs\CourseToFixLeg.cs" />
     <Compile Include="Core\Simulator\Aircraft\Control\FMS\FmsPoint.cs" />
@@ -194,7 +196,6 @@
     </BootstrapperPackage>
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="Core\Network\" />
     <Folder Include="Core\Performance\" />
     <Folder Include="Core\Simulator\Aircraft\Control\Instructions\Speed\" />
     <Folder Include="Properties\DataSources\" />

@@ -333,7 +333,7 @@ namespace VatsimAtcTrainingSimulator
                             case "AIRPORT":
                                 type = NavaidType.AIRPORT;
 
-                                items = line.Split(' ');
+                                items = line.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
 
                                 if (items.Length >= 4)
                                 {
