@@ -15,12 +15,14 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Aircraft.Control.FMS
         private double _bearing;
         private double _distance;
 
-        public RoutePointPbd(Waypoint waypoint, double bearing, double distance)
+        public RoutePointPbd(Waypoint waypoint, double bearing, double distance) : this(waypoint.Location, bearing, distance, waypoint.Identifier) { }
+
+        public RoutePointPbd(GeoPoint pos, double bearing, double distance, string name)
         {
-            _waypointName = waypoint.Identifier;
+            _waypointName = name;
             _bearing = GeoUtil.NormalizeHeading(bearing);
             _distance = distance;
-            _pointPosition = new GeoPoint(waypoint.Location);
+            _pointPosition = new GeoPoint(pos);
             _pointPosition.MoveByNMi(_bearing, _distance);
         }
 

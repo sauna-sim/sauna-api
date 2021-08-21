@@ -80,6 +80,7 @@
     <Compile Include="Core\Simulator\Aircraft\Control\FMS\Legs\DirectToFixLeg.cs" />
     <Compile Include="Core\Simulator\Aircraft\Control\FMS\Legs\FixToAltLeg.cs" />
     <Compile Include="Core\Simulator\Aircraft\Control\FMS\Legs\FixToManualLeg.cs" />
+    <Compile Include="Core\Simulator\Aircraft\Control\FMS\Legs\HoldToManualLeg.cs" />
     <Compile Include="Core\Simulator\Aircraft\Control\FMS\RouteWaypoint.cs" />
     <Compile Include="Core\Simulator\Aircraft\Control\FMS\Legs\CourseToFixLeg.cs" />
     <Compile Include="Core\Simulator\Aircraft\Control\FMS\FmsPoint.cs" />
@@ -87,6 +88,7 @@
     <Compile Include="Core\Simulator\Aircraft\Control\FMS\IRoutePoint.cs" />
     <Compile Include="Core\Simulator\Aircraft\Control\FMS\Legs\TrackToFixLeg.cs" />
     <Compile Include="Core\Simulator\Aircraft\Control\FMS\RoutePointPbd.cs" />
+    <Compile Include="Core\Simulator\Aircraft\Control\Instructions\Lateral\HoldingPatternInstruction.cs" />
     <Compile Include="Core\Simulator\Aircraft\Control\Instructions\Vertical\AltitudeHoldInstruction.cs" />
     <Compile Include="Core\Simulator\Aircraft\Control\Instructions\Lateral\HeadingHoldInstruction.cs" />
     <Compile Include="Core\Simulator\Aircraft\Control\Instructions\IControlInstruction.cs" />
@@ -99,6 +101,7 @@
     <Compile Include="Core\Simulator\Aircraft\AircraftData.cs" />
     <Compile Include="Core\Simulator\Commands\DepartOnHeadingCommand.cs" />
     <Compile Include="Core\Simulator\Commands\DirectWaypointCommand.cs" />
+    <Compile Include="Core\Simulator\Commands\HoldCommand.cs" />
     <Compile Include="Core\Simulator\Commands\IlsCommand.cs" />
     <Compile Include="Core\Simulator\Commands\InterceptCourseCommand.cs" />
     <Compile Include="Core\Simulator\Commands\TurnLeftByHeadingCommand.cs" />

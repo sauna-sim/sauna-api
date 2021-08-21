@@ -144,7 +144,36 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Aircraft.Control.FMS
             }
         }
 
-        public IRouteLeg GetFirstLeg()
+        public void AddHold(IRoutePoint rp, double magCourse, HoldTurnDirectionEnum turnDir, HoldLegLengthTypeEnum legLengthType, double legLength)
+        {
+            lock (_routeLegsLock)
+            {
+                int index = 0;
+                FmsPoint point = null;
+                foreach (IRouteLeg leg in _routeLegs)
+                {
+                    if (leg.EndPoint != null && leg.EndPoint.Point.Equals(rp))
+                    {
+                        index = _routeLegs.IndexOf(leg) + 1;
+                        point = leg.EndPoint;
+                        break;
+                    }
+                }
+
+                if (point == null)
+                {
+                    point = new FmsPoint(rp, RoutePointTypeEnum.FLY_OVER);
+                }
+
+                // Create hold leg
+                IRouteLeg holdLeg = new HoldToManualLeg(point, BearingTypeEnum.MAGNETIC, magCourse, turnDir, legLengthType, legLength);
+
+                // Add leg
+                _routeLegs.Insert(index, holdLeg);
+            }
+        }
+
+    public IRouteLeg GetFirstLeg()
         {
             lock (_routeLegsLock)
             {
