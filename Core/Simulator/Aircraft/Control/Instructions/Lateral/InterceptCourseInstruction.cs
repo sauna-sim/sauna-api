@@ -17,9 +17,12 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Aircraft
         private const double MAX_INTERCEPT_XTK_M = 1852;
 
         private double previousTrack;
-        private double previousGroundSpeed;
+        private double previousTas;
+        private double previousWindDir;
+        private double previousWindSpd;
 
         private double leadInDistance;
+        private double radiusOfTurn = -1;
         private GeoPoint intersection;
         private double requiredTrueCourse;
         private double trackToHold = -1;
@@ -78,19 +81,16 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Aircraft
 
             UpdateInfo(position, ref fms);
 
-            if (previousTrack != position.Track_True || previousGroundSpeed != position.GroundSpeed)
+            if (previousTrack != position.Track_True || previousTas != position.TrueAirSpeed ||
+                previousWindDir != position.WindDirection || previousWindSpd != position.WindSpeed)
             {
                 previousTrack = position.Track_True;
-                previousGroundSpeed = position.GroundSpeed;
-                intersection = GeoUtil.FindIntersection(position.PositionGeoPoint, AssignedWaypoint.PointPosition, previousTrack, _trueCourse);
+                previousTas = position.TrueAirSpeed;
+                previousWindDir = position.WindDirection;
+                previousWindSpd = position.WindSpeed;
 
-                // Find degrees to turn
-                double theta = Math.Abs(GeoUtil.CalculateTurnAmount(previousTrack, _trueCourse));
-
-                // Calculate radius of turn
-                double r = GeoUtil.CalculateRadiusOfTurn(GeoUtil.CalculateBankAngle(previousGroundSpeed, 25, 3), previousGroundSpeed);
-
-                leadInDistance = GeoUtil.CalculateTurnLeadDistance(intersection, theta, r);
+                leadInDistance = GeoUtil.CalculateTurnLeadDistance(position.PositionGeoPoint, AssignedWaypoint.PointPosition, previousTrack,
+                    previousTas, _trueCourse, previousWindDir, previousWindSpd, out radiusOfTurn, out intersection);
             }
 
             if (leadInDistance < 0)
@@ -142,7 +142,7 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Aircraft
 
             if (instr == null)
             {
-                instr = new TrackHoldInstruction(trackToHold);
+                instr = new TrackHoldInstruction(trackToHold, radiusOfTurn);
             }
 
             // Calculate track difference
@@ -152,16 +152,11 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Aircraft
             double newInterceptCourse = GetNewInterceptCourse();
             double courseDiff = GeoUtil.CalculateTurnAmount(trackToHold, newInterceptCourse);
 
-            //if (Math.Abs(xTk) > MIN_XTK_THRESHOLD_M)
-            //{
-            //    Console.WriteLine($"{_magneticCourse:000} to {AssignedWaypoint.PointName}:\tRequired:\t{requiredTrueCourse:000}\tActual:\t{position.Track_True:000}\tTo Hold:\t{trackToHold:000}xTk:\t{xTk}m");
-            //}
-
             // Intercept if the conditions are met
             if (Math.Abs(courseDiff) > Double.Epsilon && ShouldActivateInstruction(position, fms, posCalcInterval))
             {
                 trackToHold = requiredTrueCourse;
-                instr = new TrackHoldInstruction(trackToHold);
+                instr = new TrackHoldInstruction(trackToHold, radiusOfTurn);
             }
             else if (Math.Abs(xTk) > MIN_XTK_THRESHOLD_M && Math.Abs(trackDiff) <= Double.Epsilon &&
               (Math.Abs(courseDiff) < Double.Epsilon || (courseDiff < 0 && xTk > 0) || (courseDiff > 0 && xTk < 0)))

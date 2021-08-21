@@ -72,7 +72,7 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Aircraft
 
         public double WindXComp => WindSpeed * Math.Sin((Heading_True - WindDirection) * Math.PI / 180.0);
 
-        public double WindHComp => WindSpeed * Math.Cos((Heading_True - WindDirection) * Math.PI / 180.0);
+        public double WindHComp => GeoUtil.HeadwindComponent(WindSpeed, WindDirection, Heading_True);
 
         private double _trueTrack;
         public double Track_True

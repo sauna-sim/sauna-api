@@ -34,7 +34,7 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Aircraft
             if (Math.Abs(turnAmount) > 1)
             {
                 // Calculate bank angle
-                double bankAngle = GeoUtil.CalculateBankAngle(position.GroundSpeed, 25, 3);
+                double bankAngle = GeoUtil.CalculateMaxBankAngle(position.GroundSpeed, 25, 3);
 
                 // Calculate radius of turn
                 double radiusOfTurn = GeoUtil.CalculateRadiusOfTurn(bankAngle, position.GroundSpeed);

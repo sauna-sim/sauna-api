@@ -11,19 +11,25 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Aircraft
 {
     public class TrackHoldInstruction : ILateralControlInstruction
     {
+        private double _radiusOfTurn;
         public LateralControlMode Type => LateralControlMode.TRACK_HOLD;
 
         public double AssignedTrack { get; private set; }
 
         public TurnDirection TurnDir { get; private set; }
 
-        public TrackHoldInstruction(TurnDirection turnDir, double assignedTrack)
+        public TrackHoldInstruction(TurnDirection turnDir, double assignedTrack, double radiusOfTurn)
         {
-            this.TurnDir = turnDir;
-            this.AssignedTrack = (assignedTrack >= 360) ? assignedTrack - 360 : assignedTrack; ;
+            TurnDir = turnDir;
+            AssignedTrack = GeoUtil.NormalizeHeading(assignedTrack);
+            _radiusOfTurn = radiusOfTurn;
         }
 
+        public TrackHoldInstruction(TurnDirection turnDir, double assignedTrack) : this(turnDir, assignedTrack, -1) { }
+
         public TrackHoldInstruction(double assignedTrack) : this(TurnDirection.SHORTEST, assignedTrack) { }
+
+        public TrackHoldInstruction(double assignedTrack, double radiusOfTurn) : this(TurnDirection.SHORTEST, assignedTrack, radiusOfTurn) { }
 
         public void UpdatePosition(ref AircraftPosition position, ref AircraftFms fms, int posCalcInterval)
         {
@@ -33,14 +39,23 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Aircraft
 
             if (Math.Abs(turnAmount) > 1)
             {
-                // Calculate bank angle
-                double bankAngle = GeoUtil.CalculateBankAngle(position.GroundSpeed, 25, 3);
+                // Calculate bank angle & radius of turn
+                double bankAngle;
+                double r;
 
-                // Calculate radius of turn
-                double radiusOfTurn = GeoUtil.CalculateRadiusOfTurn(bankAngle, position.GroundSpeed);
+                if (_radiusOfTurn < 0)
+                {
+                    bankAngle = GeoUtil.CalculateMaxBankAngle(position.GroundSpeed, 25, 3);
+                    r = GeoUtil.CalculateRadiusOfTurn(bankAngle, position.GroundSpeed);
+                }
+                else
+                {
+                    bankAngle = GeoUtil.CalculateBankAngle(_radiusOfTurn, position.GroundSpeed);
+                    r = _radiusOfTurn;
+                }
 
                 // Calculate degrees to turn
-                double degreesToTurn = Math.Min(Math.Abs(turnAmount), GeoUtil.CalculateDegreesTurned(distanceTravelledNMi, radiusOfTurn));
+                double degreesToTurn = Math.Min(Math.Abs(turnAmount), GeoUtil.CalculateDegreesTurned(distanceTravelledNMi, r));
 
                 // Figure out turn direction
                 bool isRightTurn = (TurnDir == TurnDirection.SHORTEST) ?
@@ -51,7 +66,7 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Aircraft
                 double endHeading = GeoUtil.CalculateEndHeading(position.Track_True, degreesToTurn, isRightTurn);
 
                 // Calculate chord line data
-                Tuple<double, double> chordLine = GeoUtil.CalculateChordHeadingAndDistance(position.Track_True, degreesToTurn, radiusOfTurn, isRightTurn);
+                Tuple<double, double> chordLine = GeoUtil.CalculateChordHeadingAndDistance(position.Track_True, degreesToTurn, r, isRightTurn);
 
                 // Calculate new position
                 position.Track_True = chordLine.Item1;

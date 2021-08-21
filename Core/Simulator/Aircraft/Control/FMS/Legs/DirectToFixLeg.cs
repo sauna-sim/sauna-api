@@ -61,7 +61,7 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Aircraft.Control.FMS.Legs
                 _trueCourse = GeoUtil.CalculateDirectBearingAfterTurn(
                         pos.PositionGeoPoint,
                         _endPoint.Point.PointPosition,
-                        GeoUtil.CalculateRadiusOfTurn(GeoUtil.CalculateBankAngle(pos.GroundSpeed, 25, 3), pos.GroundSpeed),
+                        GeoUtil.CalculateRadiusOfTurn(GeoUtil.CalculateMaxBankAngle(pos.GroundSpeed, 25, 3), pos.GroundSpeed),
                         pos.Track_True);
 
                 if (_trueCourse < 0)
