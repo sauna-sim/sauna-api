@@ -210,11 +210,4 @@
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <Import Project="..\packages\Grib.Api.0.7.1\build\Grib.Api.targets" Condition="Exists('..\packages\Grib.Api.0.7.1\build\Grib.Api.targets')" />
-  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
-    <PropertyGroup>
-      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
-    </PropertyGroup>
-    <Error Condition="!Exists('..\packages\Grib.Api.0.7.1\build\Grib.Api.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Grib.Api.0.7.1\build\Grib.Api.targets'))" />
-  </Target>
 </Project>
