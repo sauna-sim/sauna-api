@@ -118,13 +118,22 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Aircraft.Control.FMS
             {
                 int index = 0;
                 FmsPoint point = null;
-                foreach (IRouteLeg leg in _routeLegs)
+
+                if (_activeLeg != null && _activeLeg.EndPoint != null && _activeLeg.EndPoint.Point.Equals(routePoint))
                 {
-                    if (leg.EndPoint != null && leg.EndPoint.Point.Equals(routePoint))
+                    point = _activeLeg.EndPoint;
+                    index = -1;
+                }
+                else
+                {
+                    foreach (IRouteLeg leg in _routeLegs)
                     {
-                        index = _routeLegs.IndexOf(leg) + 1;
-                        point = leg.EndPoint;
-                        break;
+                        if (leg.EndPoint != null && leg.EndPoint.Point.Equals(routePoint))
+                        {
+                            index = _routeLegs.IndexOf(leg) + 1;
+                            point = leg.EndPoint;
+                            break;
+                        }
                     }
                 }
 
@@ -136,41 +145,55 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Aircraft.Control.FMS
                 // Create direct leg
                 IRouteLeg dtoLeg = new DirectToFixLeg(point);
 
-                // Add leg
-                _routeLegs.Insert(index, dtoLeg);
+                _activeLeg = dtoLeg;
 
-                // Remove everything before index
-                _routeLegs.RemoveRange(0, index);
+                if (index >= 0)
+                {
+                    // Remove everything before index
+                    _routeLegs.RemoveRange(0, index);
+                }
             }
         }
 
-        public void AddHold(IRoutePoint rp, double magCourse, HoldTurnDirectionEnum turnDir, HoldLegLengthTypeEnum legLengthType, double legLength)
+        public bool AddHold(IRoutePoint rp, double magCourse, HoldTurnDirectionEnum turnDir, HoldLegLengthTypeEnum legLengthType, double legLength)
         {
             lock (_routeLegsLock)
             {
-                int index = 0;
+                int index = -1;
                 FmsPoint point = null;
-                foreach (IRouteLeg leg in _routeLegs)
+
+                if (_activeLeg != null && _activeLeg.EndPoint != null && _activeLeg.EndPoint.Point.Equals(rp))
                 {
-                    if (leg.EndPoint != null && leg.EndPoint.Point.Equals(rp))
+                    index = 0;
+                    point = _activeLeg.EndPoint;
+                }
+                else
+                {
+                    foreach (IRouteLeg leg in _routeLegs)
                     {
-                        index = _routeLegs.IndexOf(leg) + 1;
-                        point = leg.EndPoint;
-                        break;
+                        if (leg.EndPoint != null && leg.EndPoint.Point.Equals(rp))
+                        {
+                            index = _routeLegs.IndexOf(leg) + 1;
+                            point = leg.EndPoint;
+                            break;
+                        }
                     }
                 }
 
-                if (point == null)
+                if (index >= 0)
                 {
-                    point = new FmsPoint(rp, RoutePointTypeEnum.FLY_OVER);
+
+                    point.PointType = RoutePointTypeEnum.FLY_OVER;
+
+                    // Create hold leg
+                    IRouteLeg holdLeg = new HoldToManualLeg(point, BearingTypeEnum.MAGNETIC, magCourse, turnDir, legLengthType, legLength);
+
+                    // Add leg
+                    _routeLegs.Insert(index, holdLeg);
+                    return true;
                 }
-
-                // Create hold leg
-                IRouteLeg holdLeg = new HoldToManualLeg(point, BearingTypeEnum.MAGNETIC, magCourse, turnDir, legLengthType, legLength);
-
-                // Add leg
-                _routeLegs.Insert(index, holdLeg);
             }
+            return false;
         }
 
     public IRouteLeg GetFirstLeg()

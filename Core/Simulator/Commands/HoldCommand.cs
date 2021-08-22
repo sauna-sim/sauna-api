@@ -46,9 +46,9 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Commands
                 try
                 {
                     string[] items = args[0].Split('/');
-                    args.RemoveAt(0);
 
                     double inbdCrs = Convert.ToDouble(items[0]);
+                    args.RemoveAt(0);
                     HoldTurnDirectionEnum turnDir = HoldTurnDirectionEnum.RIGHT;
                     HoldLegLengthTypeEnum lengthType = HoldLegLengthTypeEnum.DEFAULT;
                     double legLength = -1;
@@ -88,7 +88,11 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Commands
                             }
                         }                        
                     }
-                    Aircraft.Control.FMS.AddHold(new RouteWaypoint(wp), inbdCrs, turnDir, lengthType, legLength);
+                    if (!Aircraft.Control.FMS.AddHold(new RouteWaypoint(wp), inbdCrs, turnDir, lengthType, legLength))
+                    {
+                        Logger?.Invoke($"ERROR - {wp.Identifier} not found in flight plan!");
+                        return false;
+                    }
                     string turnDirStr = turnDir == HoldTurnDirectionEnum.RIGHT ? "Right" : "Left";
                     string distanceStr = (lengthType == HoldLegLengthTypeEnum.DISTANCE) ? $", {legLength}nm" :
                         ((lengthType == HoldLegLengthTypeEnum.TIME) ? $", {legLength}min" : "");
@@ -109,7 +113,6 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Commands
             {
                 return TryGetPublishedHold(wp, ref args);
             }
-            return false;
         }
 
         public bool TryGetPublishedHold(Waypoint wp, ref List<string> args)
@@ -123,7 +126,11 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Commands
             }
             IRoutePoint holdPt = new RouteWaypoint(wp);
 
-            Aircraft.Control.FMS.AddHold(holdPt, pubHold.InboundCourse, pubHold.TurnDirection, pubHold.LegLengthType, pubHold.LegLength);
+            if (!Aircraft.Control.FMS.AddHold(holdPt, pubHold.InboundCourse, pubHold.TurnDirection, pubHold.LegLengthType, pubHold.LegLength))
+            {
+                Logger?.Invoke($"ERROR - {wp.Identifier} not found in flight plan!");
+                return false;
+            }
 
             Logger?.Invoke($"{Aircraft.Callsign} will hold at {wp.Identifier} as published.");
             return true;

@@ -72,8 +72,6 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Aircraft.Control.Instruction
             {
                 _legLength = legLength;
             }
-
-            _inboundCourseInstr = new InterceptCourseInstruction(_routePoint, _magneticCourse);
         }
 
         public HoldingPatternInstruction(IRoutePoint holdingPoint, BearingTypeEnum courseType, double inboundCourse, HoldTurnDirectionEnum turnDir) :
@@ -143,15 +141,11 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Aircraft.Control.Instruction
                     // Calculate required radius of turn
                     double turnAmt = GetTurnAmount();
                     double outCourse = GeoUtil.NormalizeHeading(_trueCourse + turnAmt);
-                    double outR = GeoUtil.CalculateConstantRadiusTurn(_trueCourse, turnAmt, position.WindDirection, position.WindSpeed, position.TrueAirSpeed);
-                    double inR = GeoUtil.CalculateConstantRadiusTurn(outCourse, turnAmt, position.WindDirection, position.WindSpeed, position.TrueAirSpeed);
-
-                    _r = Math.Max(outR, inR);
 
                     // Calculate teardrop bearing and distance
                     GeoPoint startPoint = _routePoint.PointPosition;
                     double outDist = GetOutboundDistance(position);
-                    GeoPoint outPoint = new GeoPoint(GetOutboundStartPoint().PointPosition);
+                    GeoPoint outPoint = new GeoPoint(GetOutboundStartPoint(position).PointPosition);
 
                     outPoint.MoveByNMi(outCourse, outDist);
                     double tdBear = GeoPoint.InitialBearing(startPoint, outPoint);
@@ -204,9 +198,15 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Aircraft.Control.Instruction
             }
         }
 
-        private IRoutePoint GetOutboundStartPoint()
+        private IRoutePoint GetOutboundStartPoint(AircraftPosition position)
         {
+            // Calculate required radius of turn
             double turnAmt = GetTurnAmount();
+            double outCourse = GeoUtil.NormalizeHeading(_trueCourse + turnAmt);
+            double outR = GeoUtil.CalculateConstantRadiusTurn(_trueCourse, turnAmt, position.WindDirection, position.WindSpeed, position.TrueAirSpeed);
+            double inR = GeoUtil.CalculateConstantRadiusTurn(outCourse, turnAmt, position.WindDirection, position.WindSpeed, position.TrueAirSpeed);
+
+            _r = Math.Max(outR, inR);
             double bearingToOutStart = GeoUtil.NormalizeHeading(_trueCourse + (turnAmt / 2));
             return new RoutePointPbd(_routePoint.PointPosition, bearingToOutStart, _r * 2, _routePoint.PointName);
         }
@@ -218,21 +218,31 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Aircraft.Control.Instruction
 
         private void HandleOutboundTurn(ref AircraftPosition position, ref AircraftFms fms, int posCalcIntvl)
         {
+            double turnAmt = GetTurnAmount();
+            double outCourse = GeoUtil.NormalizeHeading(_trueCourse + turnAmt);
+            TurnDirection turnD = _turnDir == HoldTurnDirectionEnum.RIGHT ? TurnDirection.RIGHT : TurnDirection.LEFT;
+            double halfTurnCourse = GeoUtil.NormalizeHeading(_trueCourse + (turnAmt / 2));
+
             // Calculate outbound turn parameters
             if (_turnInstr == null)
             {
-                double turnAmt = GetTurnAmount();
-                double outCourse = GeoUtil.NormalizeHeading(_trueCourse + turnAmt);
-                double outR = GeoUtil.CalculateConstantRadiusTurn(_trueCourse, turnAmt, position.WindDirection, position.WindSpeed, position.TrueAirSpeed);
-                double inR = GeoUtil.CalculateConstantRadiusTurn(outCourse, turnAmt, position.WindDirection, position.WindSpeed, position.TrueAirSpeed);
+                SetOutboundCourseInstr(position);
+                _turnInstr = new TrackHoldInstruction(turnD, halfTurnCourse, _r);
+            }
 
-                _r = Math.Max(outR, inR);
-                TurnDirection turnD = _turnDir == HoldTurnDirectionEnum.RIGHT ? TurnDirection.RIGHT : TurnDirection.LEFT;
-                _turnInstr = new TrackHoldInstruction(turnD, outCourse, _r);
+            if (Math.Abs(_turnInstr.AssignedTrack - outCourse) >= 1)
+            {
+                double alongTrackM;
+                GeoUtil.CalculateCrossTrackErrorM(position.PositionGeoPoint, new GeoPoint(_routePoint.PointPosition), halfTurnCourse, out _, out alongTrackM);
+
+                if (MathUtil.ConvertMetersToNauticalMiles(alongTrackM) <= -_r)
+                {
+                    _turnInstr = new TrackHoldInstruction(turnD, outCourse, _r);
+                }
             }
 
             // Has turn finished
-            if (Math.Abs(_turnInstr.AssignedTrack - position.Track_True) < Double.Epsilon)
+            if (Math.Abs(outCourse - position.Track_True) < 1)
             {
                 _holdPhase = HoldPhaseEnum.OUTBOUND;
                 _turnInstr = null;
@@ -273,19 +283,26 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Aircraft.Control.Instruction
             return GeoUtil.CalculateDistanceTravelledNMi(inbdGs, legLengthMs);
         }
 
+        public void SetOutboundCourseInstr(AircraftPosition position)
+        {
+            double turnAmt = GetTurnAmount();
+            double outCourse = GeoUtil.NormalizeHeading(_trueCourse + turnAmt);
+            IRoutePoint outStartPoint = GetOutboundStartPoint(position);
+            _outboundCourseInstr = new InterceptCourseInstruction(outStartPoint);
+            _outboundCourseInstr.TrueCourse = outCourse;
+        }
+
         private void HandleOutboundLeg(ref AircraftPosition position, ref AircraftFms fms, int posCalcIntvl)
         {
             if (_outboundCourseInstr == null)
             {
-                double turnAmt = GetTurnAmount();
-                double outCourse = GeoUtil.NormalizeHeading(_trueCourse + turnAmt);
-                IRoutePoint outStartPoint = GetOutboundStartPoint();
-                _outboundCourseInstr = new InterceptCourseInstruction(outStartPoint);
-                _outboundCourseInstr.TrueCourse = outCourse;
+                SetOutboundCourseInstr(position);
             }
 
             // Has leg finished
-            if (MathUtil.ConvertMetersToNauticalMiles(_outboundCourseInstr.AlongTrackM) <= -GetOutboundDistance(position))
+            double aTrackNMi = MathUtil.ConvertMetersToNauticalMiles(_outboundCourseInstr.AlongTrackM);
+            double obDistNMi = -GetOutboundDistance(position);
+            if (aTrackNMi <= obDistNMi)
             {
                 _holdPhase = HoldPhaseEnum.TURN_INBOUND;
                 _outboundCourseInstr = null;
@@ -307,7 +324,7 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Aircraft.Control.Instruction
             }
 
             // Has turn finished
-            if (Math.Abs(_turnInstr.AssignedTrack - position.Track_True) < Double.Epsilon)
+            if (Math.Abs(_turnInstr.AssignedTrack - position.Track_True) < 1)
             {
                 _holdPhase = HoldPhaseEnum.INBOUND;
                 _turnInstr = null;
@@ -331,6 +348,7 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Aircraft.Control.Instruction
             if (_inboundCourseInstr.AlongTrackM < 0)
             {
                 _holdPhase = HoldPhaseEnum.TURN_OUTBOUND;
+                _inboundCourseInstr = null;
                 HandleOutboundTurn(ref position, ref fms, posCalcIntvl);
             }
             else

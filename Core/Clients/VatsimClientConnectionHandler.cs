@@ -234,6 +234,12 @@ namespace VatsimAtcTrainingSimulator.Core
                 Status = CONN_STATUS.DISCONNECTED;
             }
 
+            // Abort thread
+            if (recvThread != null)
+            {
+                recvThread.Abort();
+            }
+
             if (Reader != null)
             {
                 Reader.Close();

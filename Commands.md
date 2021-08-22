@@ -23,4 +23,5 @@ Several commands can be on the simulator program. These can either be submitted 
 | `int`, `intercept` | Intercept Course | `<Waypoint Name>` `<Magnetic Course>` | Intercepts and tracks a course to a specific waypoint |
 | `loc`, `ils` | Intercept ILS | `<Runway Designator>` | Intercepts and tracks a localizer to a specific runway |
 | `dct`, `dir`, `direct` | Direct To Waypoint | `<Waypoint Name>` | Instructs the navigation to go direct to a waypoint. Will amend the route if waypoint already existed in the flight plan. Otherwise, a discontinuity is inserted |
+| `hold` | Insert a Hold | `<Waypoint Name>` (`<Inbound Magnetic Course>/<Turn Direction>/<Leg Length>` | Instructs the navigation to hold at a waypoint. Waypoint must be in flight plan. Assumes published hold unless inbound course is provided. Turn direction and leg length are optional. Leg length is minutes by default. Appending `nm` will result in leg length being a distance in nautical miles. |
 | `alt`, `cm`, `dm`, `clm`, `des`, `climb`, `descend` | Change Altitude | `<Altitude (ft) or 'FLXXX' (100s of ft)>` | Aircraft will open climb or open descend to altitude |
