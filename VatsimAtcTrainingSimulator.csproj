@@ -172,6 +172,9 @@
       <DependentUpon>SettingsForm.cs</DependentUpon>
     </EmbeddedResource>
     <Compile Include="Core\Simulator\Commands\FlyPresentHeadingCommand.cs" />
+    <None Include="magnetic\WMM.COF">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Include="packages.config" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>

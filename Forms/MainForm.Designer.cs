@@ -44,9 +44,9 @@ namespace VatsimAtcTrainingSimulator
             this.euroscopeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.viewToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.commandWindowMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.debugConsoleToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.dataToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.loadSectorFileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.debugConsoleToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.clientsDataGridView = new System.Windows.Forms.DataGridView();
             this.dataGridUpdateTimer = new System.Windows.Forms.Timer(this.components);
             this.headerPnl.SuspendLayout();
@@ -141,6 +141,16 @@ namespace VatsimAtcTrainingSimulator
             this.commandWindowMenuItem.Text = "Command Window";
             this.commandWindowMenuItem.CheckedChanged += new System.EventHandler(this.commandWindowMenuItem_CheckedChanged);
             // 
+            // debugConsoleToolStripMenuItem
+            // 
+            this.debugConsoleToolStripMenuItem.Checked = true;
+            this.debugConsoleToolStripMenuItem.CheckOnClick = true;
+            this.debugConsoleToolStripMenuItem.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.debugConsoleToolStripMenuItem.Name = "debugConsoleToolStripMenuItem";
+            this.debugConsoleToolStripMenuItem.Size = new System.Drawing.Size(178, 22);
+            this.debugConsoleToolStripMenuItem.Text = "Debug Console";
+            this.debugConsoleToolStripMenuItem.CheckedChanged += new System.EventHandler(this.debugConsoleToolStripMenuItem_CheckedChanged);
+            // 
             // dataToolStripMenuItem
             // 
             this.dataToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
@@ -155,16 +165,6 @@ namespace VatsimAtcTrainingSimulator
             this.loadSectorFileToolStripMenuItem.Size = new System.Drawing.Size(188, 22);
             this.loadSectorFileToolStripMenuItem.Text = "Load From Sector File";
             this.loadSectorFileToolStripMenuItem.Click += new System.EventHandler(this.loadSectorFileToolStripMenuItem_Click);
-            // 
-            // debugConsoleToolStripMenuItem
-            // 
-            this.debugConsoleToolStripMenuItem.Checked = true;
-            this.debugConsoleToolStripMenuItem.CheckOnClick = true;
-            this.debugConsoleToolStripMenuItem.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.debugConsoleToolStripMenuItem.Name = "debugConsoleToolStripMenuItem";
-            this.debugConsoleToolStripMenuItem.Size = new System.Drawing.Size(178, 22);
-            this.debugConsoleToolStripMenuItem.Text = "Debug Console";
-            this.debugConsoleToolStripMenuItem.CheckedChanged += new System.EventHandler(this.debugConsoleToolStripMenuItem_CheckedChanged);
             // 
             // clientsDataGridView
             // 
@@ -198,6 +198,7 @@ namespace VatsimAtcTrainingSimulator
             this.SizeGripStyle = System.Windows.Forms.SizeGripStyle.Hide;
             this.Text = "VATSIM ATC Training Simulator";
             this.FormClosed += new System.Windows.Forms.FormClosedEventHandler(this.MainForm_FormClosed);
+            this.Load += new System.EventHandler(this.MainForm_Load);
             this.LocationChanged += new System.EventHandler(this.MainForm_LocationChanged);
             this.SizeChanged += new System.EventHandler(this.MainForm_SizeChanged);
             this.headerPnl.ResumeLayout(false);

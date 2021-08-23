@@ -1,4 +1,5 @@
 ﻿using AviationSimulation.GeoTools;
+using AviationSimulation.GeoTools.MagneticTools;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -94,7 +95,7 @@ namespace VatsimAtcTrainingSimulator
                                 logMsg($"{callsign}: {msg}");
                             }
                         };
-                        
+
                         // Send init position
                         lastPilot.SetInitialData(xpdrMode, Convert.ToInt32(items[2]), Convert.ToInt32(items[3]), Convert.ToDouble(items[4]), Convert.ToDouble(items[5]), Convert.ToDouble(items[6]), 250, Convert.ToInt32(items[8]), Convert.ToInt32(items[9]));
 
@@ -172,7 +173,8 @@ namespace VatsimAtcTrainingSimulator
                             {
                                 int delay = Convert.ToInt32(items[1]) * 60000;
                                 lastPilot.DelayMs = delay;
-                            } catch (Exception) { }
+                            }
+                            catch (Exception) { }
                         }
                     }
                     else if (line.StartsWith("ILS"))
@@ -186,8 +188,9 @@ namespace VatsimAtcTrainingSimulator
                             double course = 0;
                             if (items.Length == 4)
                             {
-                                course = Convert.ToDouble(items[3]);                                
-                            } else if (items.Length > 4)
+                                course = Convert.ToDouble(items[3]);
+                            }
+                            else if (items.Length > 4)
                             {
                                 GeoPoint otherThreshold = new GeoPoint(Convert.ToDouble(items[3]), Convert.ToDouble(items[4]));
                                 course = GeoUtil.TrueToMagnetic(GeoPoint.InitialBearing(threshold, otherThreshold), threshold);
@@ -199,7 +202,8 @@ namespace VatsimAtcTrainingSimulator
                         {
                             Console.WriteLine("Well that didn't work did it.");
                         }
-                    } else if (line.StartsWith("HOLDING"))
+                    }
+                    else if (line.StartsWith("HOLDING"))
                     {
                         string[] items = line.Split(':');
 
@@ -376,6 +380,33 @@ namespace VatsimAtcTrainingSimulator
         private void dataGridUpdateTimer_Tick(object sender, EventArgs e)
         {
             clientsDataGridView.Refresh();
+        }
+
+        private void MainForm_Load(object sender, EventArgs e)
+        {
+            bool shouldRetry = false;
+            do
+            {
+                try
+                {
+                    MagneticUtil.LoadData();
+                    shouldRetry = false;
+                }
+                catch (Exception)
+                {
+                    DialogResult result = MessageBox.Show("There was an error loading the WMM.COF file. Ensure that WMM.COF is placed in the 'magnetic' folder.",
+                        "Error Loading Magnetic File!",
+                        MessageBoxButtons.AbortRetryIgnore,
+                        MessageBoxIcon.Warning);
+                    if (result == DialogResult.Retry)
+                    {
+                        shouldRetry = true;
+                    } else if (result == DialogResult.Abort)
+                    {
+                        Close();
+                    }
+                }
+            } while (shouldRetry);
         }
     }
 }
