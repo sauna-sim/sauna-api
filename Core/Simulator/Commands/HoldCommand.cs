@@ -94,8 +94,8 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Commands
                         return false;
                     }
                     string turnDirStr = turnDir == HoldTurnDirectionEnum.RIGHT ? "Right" : "Left";
-                    string distanceStr = (lengthType == HoldLegLengthTypeEnum.DISTANCE) ? $", {legLength}nm" :
-                        ((lengthType == HoldLegLengthTypeEnum.TIME) ? $", {legLength}min" : "");
+                    string distanceStr = (lengthType == HoldLegLengthTypeEnum.DISTANCE) ? $", {legLength}nm legs" :
+                        ((lengthType == HoldLegLengthTypeEnum.TIME) ? $", {legLength}min legs" : "");
 
                     Logger?.Invoke($"{Aircraft.Callsign} will hold at {wp.Identifier}, inbound course {inbdCrs:000}, {turnDirStr} turns{distanceStr}.");
                     return true;
