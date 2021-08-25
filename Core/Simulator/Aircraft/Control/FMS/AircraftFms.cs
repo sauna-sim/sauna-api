@@ -128,7 +128,13 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Aircraft.Control.FMS
                 {
                     foreach (IRouteLeg leg in _routeLegs)
                     {
-                        if (leg.EndPoint != null && leg.EndPoint.Point.Equals(routePoint))
+                        if (leg.StartPoint != null && leg.StartPoint.Point.Equals(routePoint))
+                        {
+                            index = _routeLegs.IndexOf(leg);
+                            point = leg.StartPoint;
+                            break;
+                        }
+                        else if (leg.EndPoint != null && leg.EndPoint.Point.Equals(routePoint))
                         {
                             index = _routeLegs.IndexOf(leg) + 1;
                             point = leg.EndPoint;
@@ -196,7 +202,7 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Aircraft.Control.FMS
             return false;
         }
 
-    public IRouteLeg GetFirstLeg()
+        public IRouteLeg GetFirstLeg()
         {
             lock (_routeLegsLock)
             {

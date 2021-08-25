@@ -58,8 +58,7 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Aircraft
         {
             if (_currentLeg != null)
             {
-                string instrStr = _currentLeg.Instruction != null ? _currentLeg.Instruction.ToString() : "";
-                return $"LNAV {_currentLeg} {instrStr}";
+                return $"LNAV {_currentLeg}";
             }
 
             return "LNAV";

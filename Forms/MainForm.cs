@@ -136,28 +136,53 @@ namespace VatsimAtcTrainingSimulator
 
                         if (lastPilot != null && items.Length >= 2)
                         {
-                            string[] waypoints = items[1].Split(' ');
+                            string[] waypoints = items[1].Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
 
-                            List<FmsPoint> wps = new List<FmsPoint>();
+                            List<IRouteLeg> legs = new List<IRouteLeg>();
+                            FmsPoint lastPoint = null;
 
-                            foreach (string wp in waypoints)
+
+                            for (int i = 0; i < waypoints.Length; i++)
                             {
-                                Waypoint nextWp = DataHandler.GetClosestWaypointByIdentifier(wp, lastPilot.Position.Latitude, lastPilot.Position.Longitude);
-
-                                if (nextWp != null)
+                                if (waypoints[i].ToLower() == "hold" && lastPoint != null)
                                 {
-                                    wps.Add(new FmsPoint(new RouteWaypoint(nextWp), RoutePointTypeEnum.FLY_BY));
+                                    PublishedHold pubHold = DataHandler.GetPublishedHold(lastPoint.Point.PointName);
+
+                                    if (pubHold != null)
+                                    {
+                                        lastPoint.PointType = RoutePointTypeEnum.FLY_OVER;
+                                        HoldToManualLeg leg = new HoldToManualLeg(lastPoint, BearingTypeEnum.MAGNETIC, pubHold.InboundCourse, pubHold.TurnDirection, pubHold.LegLengthType, pubHold.LegLength);
+                                        legs.Add(leg);
+                                        lastPoint = leg.EndPoint;
+                                    }
+                                }
+                                else
+                                {
+                                    Waypoint nextWp = DataHandler.GetClosestWaypointByIdentifier(waypoints[i], lastPilot.Position.Latitude, lastPilot.Position.Longitude);
+
+                                    if (nextWp != null)
+                                    {
+                                        FmsPoint fmsPt = new FmsPoint(new RouteWaypoint(nextWp), RoutePointTypeEnum.FLY_BY);
+                                        if (lastPoint == null)
+                                        {
+                                            lastPoint = fmsPt;
+                                        } else
+                                        {
+                                            legs.Add(new TrackToFixLeg(lastPoint, fmsPt));
+                                            lastPoint = fmsPt;
+                                        }
+                                    }
                                 }
                             }
 
-                            for (int i = 0; i < wps.Count - 1; i++)
+                            foreach (IRouteLeg leg in legs)
                             {
-                                lastPilot.Control.FMS.AddRouteLeg(new TrackToFixLeg(wps[i], wps[i + 1]));
+                                lastPilot.Control.FMS.AddRouteLeg(leg);
                             }
 
-                            if (wps.Count > 0)
+                            if (legs.Count > 0)
                             {
-                                lastPilot.Control.FMS.ActivateDirectTo(wps[0].Point);
+                                lastPilot.Control.FMS.ActivateDirectTo(legs[0].StartPoint.Point);
                                 LnavRouteInstruction instr = new LnavRouteInstruction();
                                 lastPilot.Control.CurrentLateralInstruction = instr;
                             }

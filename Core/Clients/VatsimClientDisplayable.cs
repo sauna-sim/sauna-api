@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using VatsimAtcTrainingSimulator.Core.Simulator.Aircraft;
+using VatsimAtcTrainingSimulator.Core.Simulator.Aircraft.Control.FMS.Legs;
 
 namespace VatsimAtcTrainingSimulator.Core.Clients
 {
@@ -171,6 +172,25 @@ namespace VatsimAtcTrainingSimulator.Core.Clients
                     foreach (IVerticalControlInstruction instr in pilot.Control.ArmedVerticalInstructions)
                     {
                         sb.Append(instr.ToString());
+                        sb.Append("; ");
+                    }
+                    return sb.ToString();
+                }
+                return "";
+            }
+        }
+
+        [DisplayName("FMS Route")]
+        public string FmsRoute
+        {
+            get
+            {
+                if (client is VatsimClientPilot pilot && pilot.Control != null && pilot.Control.FMS != null)
+                {
+                    StringBuilder sb = new StringBuilder();
+                    foreach (IRouteLeg leg in pilot.Control.FMS.GetRouteLegs())
+                    {
+                        sb.Append(leg.ToString());
                         sb.Append("; ");
                     }
                     return sb.ToString();
