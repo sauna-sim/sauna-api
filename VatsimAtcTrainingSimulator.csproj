@@ -104,6 +104,7 @@
     <Compile Include="Core\Simulator\Commands\HoldCommand.cs" />
     <Compile Include="Core\Simulator\Commands\IlsCommand.cs" />
     <Compile Include="Core\Simulator\Commands\InterceptCourseCommand.cs" />
+    <Compile Include="Core\Simulator\Commands\LocCommand.cs" />
     <Compile Include="Core\Simulator\Commands\TurnLeftByHeadingCommand.cs" />
     <Compile Include="Core\Simulator\Commands\TurnRightByHeadingCommand.cs" />
     <Compile Include="Forms\CommandWindow.cs">
