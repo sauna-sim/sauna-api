@@ -45,7 +45,7 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Aircraft.Control
             get => _armedLateralMode;
             set
             {
-                if (_currentLateralMode == null || _currentLateralMode.Type != value.Type)
+                if (value == null || _currentLateralMode == null || _currentLateralMode.Type != value.Type)
                 {
                     _armedLateralMode = value;
                 }
