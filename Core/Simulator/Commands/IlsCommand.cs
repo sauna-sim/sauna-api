@@ -6,6 +6,8 @@ using System.Threading.Tasks;
 using VatsimAtcTrainingSimulator.Core.Data;
 using VatsimAtcTrainingSimulator.Core.Simulator.Aircraft;
 using VatsimAtcTrainingSimulator.Core.Simulator.Aircraft.Control.FMS;
+using VatsimAtcTrainingSimulator.Core.Simulator.Aircraft.Control.Instructions.Lateral;
+using VatsimAtcTrainingSimulator.Core.Simulator.Aircraft.Control.Instructions.Vertical;
 
 namespace VatsimAtcTrainingSimulator.Core.Simulator.Commands
 {
@@ -18,7 +20,28 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Commands
 
         public void ExecuteCommand()
         {
-            Aircraft.Control.ArmedLateralInstruction = new InterceptCourseInstruction(new RouteWaypoint(_loc), _loc.Course);
+
+            if ((Aircraft.Control.CurrentLateralInstruction is IlsApproachInstruction instr1) && instr1.Type == LateralControlMode.APPROACH)
+            {
+                instr1.AircraftLanded += OnLanded;
+            }
+            else if ((Aircraft.Control.ArmedLateralInstruction is IlsApproachInstruction instr2) && instr2.Type == LateralControlMode.APPROACH)
+            {
+                instr2.AircraftLanded += OnLanded;
+            }
+            else
+            {
+                IlsApproachInstruction instr = new IlsApproachInstruction(_loc);
+                instr.AircraftLanded += OnLanded;
+
+                Aircraft.Control.ArmedLateralInstruction = instr;
+            }
+            Aircraft.Control.AddArmedVerticalInstruction(new GlidePathInstruction(_loc.Location, 3));
+        }
+
+        public void OnLanded(object sender, EventArgs e)
+        {
+            _ = Aircraft.Disconnect();
         }
 
         public bool HandleCommand(ref List<string> args)
@@ -26,7 +49,7 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Commands
             // Check argument length
             if (args.Count < 1)
             {
-                Logger?.Invoke($"ERROR: ILS/LOC requires at least 1 arguments!");
+                Logger?.Invoke($"ERROR: ILS requires at least 1 arguments!");
                 return false;
             }
 
@@ -46,7 +69,7 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Commands
 
             _loc = (Localizer)wp;
 
-            Logger?.Invoke($"{Aircraft.Callsign} intercepting localizer {rwyStr}");
+            Logger?.Invoke($"{Aircraft.Callsign} flying ILS {rwyStr}");
 
             return true;
         }

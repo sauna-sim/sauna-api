@@ -12,7 +12,8 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Aircraft
         TRACK_HOLD,
         COURSE_INTERCEPT,
         NAV_ROUTE,
-        HOLDING_PATTERN
+        HOLDING_PATTERN,
+        APPROACH
     }
 
     public enum TurnDirection

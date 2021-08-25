@@ -43,17 +43,39 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Aircraft.Control
         public ILateralControlInstruction ArmedLateralInstruction
         {
             get => _armedLateralMode;
-            set => _armedLateralMode = value;
+            set
+            {
+                if (_currentLateralMode == null || _currentLateralMode.Type != value.Type)
+                {
+                    _armedLateralMode = value;
+                }
+            }
         }
 
         public IVerticalControlInstruction CurrentVerticalInstruction
         {
             get => _currentVerticalMode;
             set => _currentVerticalMode = value;
-        }       
+        }
+
+        public List<IVerticalControlInstruction> ArmedVerticalInstructions
+        {
+            get
+            {
+                lock (_armedVerticalModesLock)
+                {
+                    return _armedVerticalModes.ToList();
+                }
+            }
+        }
 
         public bool AddArmedVerticalInstruction(IVerticalControlInstruction instr)
         {
+            if (_currentVerticalMode.Type == VerticalControlMode.GLIDESLOPE)
+            {
+                return false;
+            }
+
             lock (_armedVerticalModesLock)
             {
                 List<int> deletionList = new List<int>();
@@ -69,7 +91,7 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Aircraft.Control
                     i++;
                 }
 
-                foreach(int index in deletionList)
+                foreach (int index in deletionList)
                 {
                     _armedVerticalModes.RemoveAt(index);
                 }
@@ -96,6 +118,12 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Aircraft.Control
                     {
                         CurrentVerticalInstruction = armedInstr;
                         _armedVerticalModes.Remove(armedInstr);
+
+                        // If glideslope, clear the armed list
+                        if (armedInstr.Type == VerticalControlMode.GLIDESLOPE)
+                        {
+                            _armedVerticalModes.Clear();
+                        }
                         break;
                     }
                 }

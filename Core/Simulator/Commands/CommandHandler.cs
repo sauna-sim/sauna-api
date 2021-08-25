@@ -87,7 +87,13 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Commands
                     cmd = new HoldCommand();
                     break;
                 case "loc":
+                case "fac":
+                case "fat":
+                    cmd = new LocCommand();
+                    break;
                 case "ils":
+                case "app":
+                case "apch":
                     cmd = new IlsCommand();
                     break;
                 case "int":

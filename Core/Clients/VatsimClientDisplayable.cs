@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using VatsimAtcTrainingSimulator.Core.Simulator.Aircraft;
 
 namespace VatsimAtcTrainingSimulator.Core.Clients
 {
@@ -154,6 +155,25 @@ namespace VatsimAtcTrainingSimulator.Core.Clients
                 if (client is VatsimClientPilot pilot && pilot.Control != null)
                 {
                     return pilot.Control.CurrentVerticalInstruction.ToString();
+                }
+                return "";
+            }
+        }
+
+        [DisplayName("Armed Vertical Mode")]
+        public string ArmedVertMode
+        {
+            get
+            {
+                if (client is VatsimClientPilot pilot && pilot.Control != null)
+                {
+                    StringBuilder sb = new StringBuilder();
+                    foreach (IVerticalControlInstruction instr in pilot.Control.ArmedVerticalInstructions)
+                    {
+                        sb.Append(instr.ToString());
+                        sb.Append("; ");
+                    }
+                    return sb.ToString();
                 }
                 return "";
             }

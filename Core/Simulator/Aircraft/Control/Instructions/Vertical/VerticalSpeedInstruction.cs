@@ -25,7 +25,7 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Aircraft
 
         public bool ShouldActivateInstruction(AircraftPosition position, AircraftFms fms, int posCalcInterval)
         {
-            return true;
+            return false;
         }
 
         public void UpdatePosition(ref AircraftPosition position, ref AircraftFms fms, int posCalcInterval)
