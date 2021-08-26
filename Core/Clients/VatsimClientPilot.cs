@@ -44,6 +44,7 @@ namespace VatsimAtcTrainingSimulator.Core
         private bool _initDataSet;
         private bool _shouldSpawn;
         private string _flightPlan;
+        private CONN_STATUS _connStatus = CONN_STATUS.WAITING;
 
         public bool ShouldSpawn
         {
@@ -133,7 +134,7 @@ namespace VatsimAtcTrainingSimulator.Core
         public int Assigned_IAS { get; set; } = -1;
         public ConstraintType Assigned_IAS_Type { get; set; } = ConstraintType.FREE;
 
-        public CONN_STATUS ConnectionStatus => ConnHandler == null ? CONN_STATUS.WAITING : ConnHandler.Status;
+        public CONN_STATUS ConnectionStatus => ConnHandler == null ? _connStatus : ConnHandler.Status;
 
         public VatsimClientPilot(string callsign, string networkId, string password, string fullname, string hostname, int port, bool vatsim)
         {
@@ -359,6 +360,13 @@ namespace VatsimAtcTrainingSimulator.Core
             {
                 await ConnHandler.RemoveClient(CLIENT_TYPE.PILOT, Callsign, NetworkId);
                 ConnHandler.Disconnect();
+            } else
+            {
+                if (_delayTimer != null)
+                {
+                    _delayTimer.Stop();
+                }
+                _connStatus = CONN_STATUS.DISCONNECTED;
             }
         }
 

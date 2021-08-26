@@ -35,8 +35,8 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Aircraft
         public double StaticAirTemperature { get; private set; }
         public double WindDirection { get; private set; }
         public double WindSpeed { get; private set; }
-        public double PressureAltitude => GeoUtil.ConvertIndicatedToPressureAlt(IndicatedAltitude, AltimeterSetting_hPa);
-        public double DensityAltitude => GeoUtil.ConvertPressureToDensityAlt(PressureAltitude, StaticAirTemperature);
+        public double PressureAltitude => _altPres;
+        public double DensityAltitude => _altDens;
         public double AbsoluteAltitude
         {
             get => _altAbs;

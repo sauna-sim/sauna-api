@@ -72,30 +72,26 @@ namespace VatsimAtcTrainingSimulator
             {
                 List<int> deletionList = new List<int>();
 
-                for (int i = 0; i < clients.Count; i++)
+                for (int i = clients.Count - 1; i >= 0; i--)
                 {
                     IVatsimClient c = clients[i];
-                    if (c.ConnectionStatus == CONN_STATUS.DISCONNECTED)
+                    if (c.ConnectionStatus == CONN_STATUS.DISCONNECTED || c.ConnectionStatus == CONN_STATUS.WAITING)
                     {
-                        deletionList.Add(i);
+                        foreach (VatsimClientDisplayable disp in DisplayableList)
+                        {
+                            if (disp.client == clients[i])
+                            {
+                                DisplayableList.Remove(disp);
+                                break;
+                            }
+                        }
+                        _ = clients[i].Disconnect();
+                        clients.RemoveAt(i);
                     }
                     else if (c.Callsign.Equals(client.Callsign))
                     {
                         return false;
                     }
-                }
-
-                foreach (int i in deletionList)
-                {
-                    foreach (VatsimClientDisplayable disp in DisplayableList)
-                    {
-                        if (disp.client == clients[i])
-                        {
-                            DisplayableList.Remove(disp);
-                            break;
-                        }
-                    }
-                    clients.RemoveAt(i);
                 }
 
                 clients.Add(client);

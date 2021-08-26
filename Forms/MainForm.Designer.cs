@@ -49,6 +49,7 @@ namespace VatsimAtcTrainingSimulator
             this.loadSectorFileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.clientsDataGridView = new System.Windows.Forms.DataGridView();
             this.dataGridUpdateTimer = new System.Windows.Forms.Timer(this.components);
+            this.deleteAllBtn = new System.Windows.Forms.Button();
             this.headerPnl.SuspendLayout();
             this.menuStrip.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.clientsDataGridView)).BeginInit();
@@ -56,6 +57,7 @@ namespace VatsimAtcTrainingSimulator
             // 
             // headerPnl
             // 
+            this.headerPnl.Controls.Add(this.deleteAllBtn);
             this.headerPnl.Controls.Add(this.pauseAllBtn);
             this.headerPnl.Controls.Add(this.settingsBtn);
             this.headerPnl.Controls.Add(this.menuStrip);
@@ -79,7 +81,7 @@ namespace VatsimAtcTrainingSimulator
             // settingsBtn
             // 
             this.settingsBtn.FlatStyle = System.Windows.Forms.FlatStyle.System;
-            this.settingsBtn.Location = new System.Drawing.Point(93, 27);
+            this.settingsBtn.Location = new System.Drawing.Point(174, 27);
             this.settingsBtn.Name = "settingsBtn";
             this.settingsBtn.Size = new System.Drawing.Size(75, 23);
             this.settingsBtn.TabIndex = 1;
@@ -112,7 +114,7 @@ namespace VatsimAtcTrainingSimulator
             this.openScenarioToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.euroscopeToolStripMenuItem});
             this.openScenarioToolStripMenuItem.Name = "openScenarioToolStripMenuItem";
-            this.openScenarioToolStripMenuItem.Size = new System.Drawing.Size(151, 22);
+            this.openScenarioToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
             this.openScenarioToolStripMenuItem.Text = "Open Scenario";
             // 
             // euroscopeToolStripMenuItem
@@ -184,6 +186,16 @@ namespace VatsimAtcTrainingSimulator
             this.dataGridUpdateTimer.Interval = 1000;
             this.dataGridUpdateTimer.Tick += new System.EventHandler(this.dataGridUpdateTimer_Tick);
             // 
+            // deleteAllBtn
+            // 
+            this.deleteAllBtn.Location = new System.Drawing.Point(93, 27);
+            this.deleteAllBtn.Name = "deleteAllBtn";
+            this.deleteAllBtn.Size = new System.Drawing.Size(75, 23);
+            this.deleteAllBtn.TabIndex = 4;
+            this.deleteAllBtn.Text = "Remove All";
+            this.deleteAllBtn.UseVisualStyleBackColor = true;
+            this.deleteAllBtn.Click += new System.EventHandler(this.deleteAllBtn_Click);
+            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -226,6 +238,7 @@ namespace VatsimAtcTrainingSimulator
         private ToolStripMenuItem debugConsoleToolStripMenuItem;
         private DataGridView clientsDataGridView;
         private Timer dataGridUpdateTimer;
+        private Button deleteAllBtn;
     }
 }
 

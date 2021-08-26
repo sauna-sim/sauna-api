@@ -249,11 +249,8 @@ namespace VatsimAtcTrainingSimulator
 
                 foreach (VatsimClientPilot pilot in pilots)
                 {
-                    if (ClientsHandler.GetClientByCallsign(pilot.Callsign) == null)
-                    {
                         ClientsHandler.AddClient(pilot);
                         pilot.ShouldSpawn = true;
-                    }
                 }
             }
         }
@@ -432,6 +429,16 @@ namespace VatsimAtcTrainingSimulator
                     }
                 }
             } while (shouldRetry);
+        }
+
+        private void deleteAllBtn_Click(object sender, EventArgs e)
+        {
+            DialogResult result = MessageBox.Show("Are you sure you want to delete all aircraft?", "Delete All Aircraft?", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
+
+            if (result == DialogResult.Yes)
+            {
+                ClientsHandler.DisconnectAllClients();
+            }
         }
     }
 }

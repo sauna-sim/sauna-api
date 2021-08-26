@@ -50,7 +50,13 @@ namespace VatsimAtcTrainingSimulator.Core.Clients
 
         private int RoundDoubles(double input)
         {
-            return Convert.ToInt32(Math.Round(input, MidpointRounding.AwayFromZero));
+            try
+            {
+                return Convert.ToInt32(Math.Round(input, MidpointRounding.AwayFromZero));
+            } catch (OverflowException)
+            {
+                return -1;
+            }
         }
 
         [DisplayName("Heading (Magnetic)")]
