@@ -108,7 +108,7 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Aircraft
                 _magneticHdg = GeoUtil.TrueToMagnetic(_trueHdg, PositionGeoPoint);
 
                 // Calculate True Track
-                double wca = Math.Acos(WindXComp / TrueAirSpeed);
+                double wca = TrueAirSpeed == 0 ? 0 : Math.Acos(WindXComp / TrueAirSpeed);
                 _trueTrack = GeoUtil.NormalizeHeading(_trueHdg + wca);
             }
         }
@@ -126,7 +126,7 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Aircraft
                 _trueTrack = value;
 
                 // Calculate True Heading
-                double wca = Math.Acos(WindXComp / TrueAirSpeed);
+                double wca = TrueAirSpeed == 0 ? 0 : Math.Acos(WindXComp / TrueAirSpeed);
                 _trueHdg = GeoUtil.NormalizeHeading(_trueTrack - wca);
 
                 // Set Magnetic Heading
@@ -138,7 +138,7 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Aircraft
 
         public double TrueAirSpeed => GeoUtil.CalculateTAS(IndicatedAirSpeed, AltimeterSetting_hPa, IndicatedAltitude, StaticAirTemperature);
 
-        public double GroundSpeed => TrueAirSpeed - WindHComp;
+        public double GroundSpeed => TrueAirSpeed == 0 ? 0 : (TrueAirSpeed - WindHComp);
 
         public GribDataPoint GribPoint
         {
