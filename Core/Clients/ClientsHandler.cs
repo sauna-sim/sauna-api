@@ -75,7 +75,7 @@ namespace VatsimAtcTrainingSimulator
                 for (int i = clients.Count - 1; i >= 0; i--)
                 {
                     IVatsimClient c = clients[i];
-                    if (c.ConnectionStatus == CONN_STATUS.DISCONNECTED || c.ConnectionStatus == CONN_STATUS.WAITING)
+                    if (c.ConnectionStatus == CONN_STATUS.DISCONNECTED || (c.Callsign.Equals(client.Callsign) && c.ConnectionStatus == CONN_STATUS.WAITING))
                     {
                         foreach (VatsimClientDisplayable disp in DisplayableList)
                         {
