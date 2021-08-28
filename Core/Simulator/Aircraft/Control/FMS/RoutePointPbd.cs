@@ -1,4 +1,4 @@
-﻿using AviationSimulation.GeoTools;
+﻿using AviationCalcUtilManaged.GeoTools;
 using System;
 using System.Collections.Generic;
 using System.Linq;

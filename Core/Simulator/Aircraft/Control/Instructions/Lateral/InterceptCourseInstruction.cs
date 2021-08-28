@@ -1,5 +1,6 @@
-﻿using AviationSimulation.GeoTools;
-using AviationSimulation.MathTools;
+﻿using AviationCalcUtilManaged.GeoTools;
+using AviationCalcUtilManaged.GeoTools.MagneticTools;
+using AviationCalcUtilManaged.MathTools;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -53,7 +54,7 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Aircraft
                 _magneticCourse = GeoUtil.NormalizeHeading(Math.Round(value, 1, MidpointRounding.AwayFromZero));
 
                 // Calculate True Course
-                _trueCourse = GeoUtil.MagneticToTrue(_magneticCourse, AssignedWaypoint.PointPosition);
+                _trueCourse = MagneticUtil.ConvertMagneticToTrue(_magneticCourse, AssignedWaypoint.PointPosition);
             }
         }
 
@@ -65,7 +66,7 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Aircraft
                 _trueCourse = GeoUtil.NormalizeHeading(Math.Round(value, 1, MidpointRounding.AwayFromZero));
 
                 // Calculate Magnetic Course
-                _magneticCourse = GeoUtil.TrueToMagnetic(_trueCourse, AssignedWaypoint.PointPosition);
+                _magneticCourse = MagneticUtil.ConvertTrueToMagnetic(_trueCourse, AssignedWaypoint.PointPosition);
             }
         }
 

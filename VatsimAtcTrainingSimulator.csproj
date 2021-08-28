@@ -70,6 +70,8 @@
     <Compile Include="Core\Data\Localizer.cs" />
     <Compile Include="Core\Data\Procedures\Approaches\ProcedureSegment.cs" />
     <Compile Include="Core\Data\PublishedHold.cs" />
+    <Compile Include="Core\GribUtil.cs" />
+    <Compile Include="Core\PauseableTimer.cs" />
     <Compile Include="Core\Simulator\Aircraft\AircraftPositionUtil.cs" />
     <Compile Include="Core\Simulator\Aircraft\Control\FMS\AircraftFms.cs" />
     <Compile Include="Core\Simulator\Aircraft\Control\FMS\Legs\CourseToAltLeg.cs" />
@@ -215,10 +217,13 @@
     </PackageReference>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\aviation-simulation-util\AviationSimulationUtility.csproj">
-      <Project>{8aab7f5e-c5cd-4369-9de5-9ed688e37943}</Project>
-      <Name>AviationSimulationUtility</Name>
+    <ProjectReference Include="..\aviation-calc-util-managed\aviation-calc-util-managed.vcxproj">
+      <Project>{295b5480-f0dd-474c-9c92-64b7392028dd}</Project>
+      <Name>aviation-calc-util-managed</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <PostBuildEvent>xcopy "$(SolutionDir)$(ConfigurationName)\*" "$(TargetDir)" /E/H/C/I/Y</PostBuildEvent>
+  </PropertyGroup>
 </Project>

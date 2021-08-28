@@ -1,5 +1,6 @@
-﻿using AviationSimulation.GeoTools;
-using AviationSimulation.MathTools;
+﻿using AviationCalcUtilManaged.GeoTools;
+using AviationCalcUtilManaged.GeoTools.MagneticTools;
+using AviationCalcUtilManaged.MathTools;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -53,12 +54,12 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Aircraft.Control.Instruction
             if (courseType == BearingTypeEnum.TRUE)
             {
                 _trueCourse = inboundCourse;
-                _magneticCourse = GeoUtil.TrueToMagnetic(_trueCourse, holdingPoint.PointPosition);
+                _magneticCourse = MagneticUtil.ConvertTrueToMagnetic(_trueCourse, holdingPoint.PointPosition);
             }
             else
             {
                 _magneticCourse = inboundCourse;
-                _trueCourse = GeoUtil.MagneticToTrue(_magneticCourse, holdingPoint.PointPosition);
+                _trueCourse = MagneticUtil.ConvertMagneticToTrue(_magneticCourse, holdingPoint.PointPosition);
             }
 
             _turnDir = turnDir;

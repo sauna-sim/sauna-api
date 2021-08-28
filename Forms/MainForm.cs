@@ -1,5 +1,6 @@
-﻿using AviationSimulation.GeoTools;
-using AviationSimulation.GeoTools.MagneticTools;
+﻿using AviationCalcUtilManaged.GeoTools;
+using AviationCalcUtilManaged.GeoTools.MagneticTools;
+using AviationSimulation.GeoTools.GribTools;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -218,7 +219,7 @@ namespace VatsimAtcTrainingSimulator
                             else if (items.Length > 4)
                             {
                                 GeoPoint otherThreshold = new GeoPoint(Convert.ToDouble(items[3]), Convert.ToDouble(items[4]));
-                                course = GeoUtil.TrueToMagnetic(GeoPoint.InitialBearing(threshold, otherThreshold), threshold);
+                                course = MagneticUtil.ConvertTrueToMagnetic(GeoPoint.InitialBearing(threshold, otherThreshold), threshold);
                             }
 
                             DataHandler.AddWaypoint(new Localizer(wpId, threshold.Lat, threshold.Lon, wpId, 0, course));
@@ -370,7 +371,7 @@ namespace VatsimAtcTrainingSimulator
                                     }
                                     catch (Exception) { }
 
-                                    DataHandler.AddWaypoint(new WaypointNavaid(items[0], GeoUtil.ConvertSectorFileDegMinSecToDecimalDeg(items[2]), GeoUtil.ConvertSectorFileDegMinSecToDecimalDeg(items[3]), "", freq, type));
+                                    DataHandler.AddWaypoint(new WaypointNavaid(items[0], GribUtil.ConvertSectorFileDegMinSecToDecimalDeg(items[2]), GribUtil.ConvertSectorFileDegMinSecToDecimalDeg(items[3]), "", freq, type));
                                 }
                                 break;
                             case "FIXES":
@@ -378,7 +379,7 @@ namespace VatsimAtcTrainingSimulator
 
                                 if (items.Length >= 3)
                                 {
-                                    DataHandler.AddWaypoint(new Waypoint(items[0], GeoUtil.ConvertSectorFileDegMinSecToDecimalDeg(items[1]), GeoUtil.ConvertSectorFileDegMinSecToDecimalDeg(items[2])));
+                                    DataHandler.AddWaypoint(new Waypoint(items[0], GribUtil.ConvertSectorFileDegMinSecToDecimalDeg(items[1]), GribUtil.ConvertSectorFileDegMinSecToDecimalDeg(items[2])));
                                 }
                                 break;
                         }

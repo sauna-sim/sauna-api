@@ -1,4 +1,5 @@
-﻿using AviationSimulation.GeoTools;
+﻿using AviationCalcUtilManaged.GeoTools;
+using AviationCalcUtilManaged.GeoTools.MagneticTools;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -68,10 +69,10 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Aircraft.Control.FMS.Legs
             {
                 if (_trueCourse < 0)
                 {
-                    _trueCourse = GeoUtil.MagneticToTrue(_magneticCourse, pos.PositionGeoPoint);
+                    _trueCourse = MagneticUtil.ConvertMagneticToTrue(_magneticCourse, pos.PositionGeoPoint);
                 } else if (_magneticCourse < 0)
                 {
-                    _magneticCourse = GeoUtil.TrueToMagnetic(_trueCourse, pos.PositionGeoPoint);
+                    _magneticCourse = MagneticUtil.ConvertTrueToMagnetic(_trueCourse, pos.PositionGeoPoint);
                 }
                 _beginAlt = pos.IndicatedAltitude;
 
