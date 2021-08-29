@@ -209,9 +209,6 @@
     <Folder Include="Properties\DataSources\" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Grib.Api">
-      <Version>0.7.1</Version>
-    </PackageReference>
     <PackageReference Include="Newtonsoft.Json">
       <Version>13.0.1</Version>
     </PackageReference>
@@ -224,6 +221,6 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>xcopy "$(SolutionDir)$(ConfigurationName)\*" "$(TargetDir)" /E/H/C/I/Y</PostBuildEvent>
+    <PostBuildEvent>xcopy "$(SolutionDir)$(ConfigurationName)\*" "$(TargetDir)" /D/E/H/C/I/Y</PostBuildEvent>
   </PropertyGroup>
 </Project>
