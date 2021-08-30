@@ -40,6 +40,10 @@ namespace VatsimAtcTrainingSimulator.Core
         public void Start()
         {
             _started = DateTime.UtcNow;
+            if (_timeLeftMs < 0)
+            {
+                _timeLeftMs = _timeMs;
+            }
             _timer.Interval = _timeLeftMs;
             _timer.Start();
         }

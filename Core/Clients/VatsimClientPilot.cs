@@ -278,6 +278,10 @@ namespace VatsimAtcTrainingSimulator.Core
             catch (ThreadAbortException)
             {
                 return;
+            } catch (AccessViolationException ex)
+            {
+                Console.WriteLine(ex.InnerException.Message);
+                Console.WriteLine("Got Here!");
             }
         }
 
@@ -355,6 +359,16 @@ namespace VatsimAtcTrainingSimulator.Core
 
         public async Task Disconnect()
         {
+            if (posUpdThread != null)
+            {
+                posUpdThread.Abort();
+            }
+
+            if (posSendThread != null)
+            {
+                posSendThread.Abort();
+            }
+
             // Send Disconnect Message
             if (ConnHandler != null)
             {
