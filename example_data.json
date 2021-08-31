@@ -1,0 +1,354 @@
+{
+    "airports": [{
+        "icao": "KEWR",
+        "iata": "EWR",
+        "faaLid": "EWR",
+        "fullName": "New York Newark Liberty International Airport",
+        "shortName": "Newark Airport",
+        "position": {
+            "lat": 40.6924798,
+            "lon": -74.1686868,
+            "alt": 18
+        },
+        "runways": [{
+                "start": {
+                    "number": 4,
+                    "qualifier": "L",
+                    "displacedStart": {
+                        "distance": 0,
+                        "units": "ft"
+                    },
+                    "displacedThreshold": {
+                        "distance": 2540,
+                        "units": "ft"
+                    }
+                },
+                "end": {
+                    "number": 22,
+                    "qualifier": "R",
+                    "displacedStart": {
+                        "distance": 0,
+                        "units": "ft"
+                    },
+                    "displacedThreshold": {
+                        "distance": 1440,
+                        "units": "ft"
+                    }
+                },
+                "points": [{
+                    "lat": 40.67553,
+                    "lon": -74.16211
+                }, {
+                    "lat": 40.70268,
+                    "lon": -74.17922
+                }]
+            },
+            {
+                "start": {
+                    "number": 4,
+                    "qualifier": "R",
+                    "displacedStart": {
+                        "distance": 0,
+                        "units": "ft"
+                    },
+                    "displacedThreshold": {
+                        "distance": 1190,
+                        "units": "ft"
+                    }
+                },
+                "end": {
+                    "number": 22,
+                    "qualifier": "L",
+                    "displacedStart": {
+                        "distance": 0,
+                        "units": "ft"
+                    },
+                    "displacedThreshold": {
+                        "distance": 1793,
+                        "units": "ft"
+                    }
+                },
+                "points": [{
+                    "lat": 40.67775,
+                    "lon": -74.17401
+                }, {
+                    "lat": 40.70255,
+                    "lon": -74.15841
+                }]
+            },
+            {
+                "start": {
+                    "number": 11,
+                    "displacedStart": {
+                        "distance": 0,
+                        "units": "ft"
+                    },
+                    "displacedThreshold": {
+                        "distance": 0,
+                        "units": "ft"
+                    }
+                },
+                "end": {
+                    "number": 29,
+                    "displacedStart": {
+                        "distance": 0,
+                        "units": "ft"
+                    },
+                    "displacedThreshold": {
+                        "distance": 224,
+                        "units": "ft"
+                    }
+                },
+                "points": [{
+                    "lat": 40.70273,
+                    "lon": -74.18051
+                }, {
+                    "lat": 40.70129,
+                    "lon": -74.15676
+                }]
+            }
+        ]
+    }],
+    "procedures": {
+        "departures": [{
+                "procName": "LIB#",
+                "fullName": "Liberty",
+                "topAlt": 2500,
+                "airports": [{
+                    "icao": "KEWR",
+                    "rwySegments": [{
+                        "number": 22,
+                        "climbSegments": [{
+                                "name": "Turnpike",
+                                "legs": [{
+                                        "type": "VA",
+                                        "heading": 219,
+                                        "endAlt": 500
+                                    },
+                                    {
+                                        "type": "VM",
+                                        "heading": 215
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "Parkway",
+                                "legs": [{
+                                    "type": "VM",
+                                    "heading": 239
+                                }]
+                            },
+                            {
+                                "name": "Bud",
+                                "legs": [{
+                                    "type": "VM",
+                                    "heading": 263
+                                }]
+                            }
+                        ]
+                    }]
+                }]
+            },
+            {
+                "procName": "EWR#",
+                "fullName": "Newark",
+                "airports": [{
+                    "icao": "KEWR",
+                    "rwySegments": [{
+                            "number": 22,
+                            "climbSegments": [{
+                                "legs": [{
+                                        "type": "VA",
+                                        "heading": 219,
+                                        "endAlt": 500
+                                    },
+                                    {
+                                        "type": "VD",
+                                        "heading": 190,
+                                        "waypoint": "I-LSQ",
+                                        "distance": 2.3
+                                    },
+                                    {
+                                        "type": "VM",
+                                        "heading": 220
+                                    }
+                                ]
+                            }]
+                        },
+                        {
+                            "number": 4,
+                            "climbSegments": [{
+                                "legs": [{
+                                        "type": "VA",
+                                        "heading": 39,
+                                        "endAlt": 500
+                                    },
+                                    {
+                                        "type": "VD",
+                                        "heading": 60,
+                                        "waypoint": "I-EZA",
+                                        "distance": 4
+                                    },
+                                    {
+                                        "type": "VM",
+                                        "heading": 290
+                                    }
+                                ]
+                            }]
+                        },
+                        {
+                            "number": 11,
+                            "climbSegments": [{
+                                "legs": [{
+                                        "type": "VD",
+                                        "heading": 60,
+                                        "waypoint": "I-EZA",
+                                        "distance": 4
+                                    },
+                                    {
+                                        "type": "VM",
+                                        "heading": 290
+                                    }
+                                ]
+                            }]
+                        },
+                        {
+                            "number": 29,
+                            "climbSegments": [{
+                                "legs": [{
+                                        "type": "VD",
+                                        "heading": 288,
+                                        "waypoint": "I-GPR",
+                                        "distance": 1.4
+                                    },
+                                    {
+                                        "type": "VM",
+                                        "heading": 265
+                                    }
+                                ]
+                            }]
+                        }
+                    ]
+                }]
+            },
+            {
+                "procName": "PORTT#",
+                "fullName": "PORTT",
+                "topAlt": 2500,
+                "airports": [{
+                    "icao": "KEWR",
+                    "rwySegments": [{
+                        "number": 22,
+                        "climbSegments": [{
+                            "legs": [{
+                                    "type": "VA",
+                                    "heading": 219,
+                                    "endAlt": 518
+                                },
+                                {
+                                    "type": "DF",
+                                    "waypoint": "BAGGA",
+                                    "type": "FLY_BY",
+                                    "speed": {
+                                        "restriction": 220,
+                                        "type": "LESS"
+                                    }
+                                }
+                            ]
+                        }]
+                    }]
+                }],
+
+                "commonSegments": [{
+                    "type": "TF",
+                    "waypoint": "PORTT",
+                    "inbound": 261,
+                    "type": "FLY_BY"
+                }],
+                "transitions": [{
+                        "name": "ELIOT",
+                        "legs": [{
+                                "type": "TF",
+                                "waypoint": "SIRLY",
+                                "inbound": 315
+                            },
+                            {
+                                "type": "TF",
+                                "waypoint": "FENLY",
+                                "inbound": 309
+                            },
+                            {
+                                "type": "TF",
+                                "waypoint": "ELIOT",
+                                "inbound": 298
+                            }
+                        ]
+                    },
+                    {
+                        "name": "PARKE",
+                        "legs": [{
+                                "type": "TF",
+                                "waypoint": "RIETA",
+                                "inbound": 282
+                            },
+                            {
+                                "type": "TF",
+                                "waypoint": "SBJ",
+                                "inbound": 282
+                            },
+                            {
+                                "type": "TF",
+                                "waypoint": "PARKE",
+                                "inbound": 305
+                            }
+                        ]
+                    },
+                    {
+                        "name": "LANNA",
+                        "legs": [{
+                                "type": "TF",
+                                "waypoint": "RIETA",
+                                "inbound": 282
+                            },
+                            {
+                                "type": "TF",
+                                "waypoint": "SBJ",
+                                "inbound": 282
+                            },
+                            {
+                                "type": "TF",
+                                "waypoint": "LANNA",
+                                "inbound": 277
+                            }
+                        ]
+                    },
+                    {
+                        "name": "BIGGY",
+                        "legs": [{
+                                "type": "TF",
+                                "waypoint": "RIETA",
+                                "inbound": 282
+                            },
+                            {
+                                "type": "TF",
+                                "waypoint": "SBJ",
+                                "inbound": 282
+                            },
+                            {
+                                "type": "TF",
+                                "waypoint": "BIGGY",
+                                "inbound": 240
+                            }
+                        ]
+                    }
+                ]
+            }
+        ],
+        "arrivals": [
+
+        ],
+        "approaches": [
+
+        ]
+    }
+}
