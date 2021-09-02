@@ -138,7 +138,7 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Aircraft
 
         public double IndicatedAirSpeed { get; set; }
 
-        public double TrueAirSpeed => GeoUtil.CalculateTAS(IndicatedAirSpeed, AltimeterSetting_hPa, IndicatedAltitude, StaticAirTemperature);
+        public double TrueAirSpeed => GeoUtil.ConvertIasToTas(IndicatedAirSpeed, _altDens);
 
         public double GroundSpeed => TrueAirSpeed == 0 ? 0 : (TrueAirSpeed - WindHComp);
 
