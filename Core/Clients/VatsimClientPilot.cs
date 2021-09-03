@@ -359,16 +359,6 @@ namespace VatsimAtcTrainingSimulator.Core
 
         public async Task Disconnect()
         {
-            if (posUpdThread != null)
-            {
-                posUpdThread.Abort();
-            }
-
-            if (posSendThread != null)
-            {
-                posSendThread.Abort();
-            }
-
             // Send Disconnect Message
             if (ConnHandler != null)
             {
@@ -381,6 +371,16 @@ namespace VatsimAtcTrainingSimulator.Core
                     _delayTimer.Stop();
                 }
                 _connStatus = CONN_STATUS.DISCONNECTED;
+            }
+
+            if (posSendThread != null)
+            {
+                posSendThread.Abort();
+            }
+
+            if (posUpdThread != null)
+            {
+                posUpdThread.Abort();
             }
         }
 
