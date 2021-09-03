@@ -60,7 +60,7 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Aircraft
                 _magneticHdg = value;
 
                 // Calculate True Heading
-                _trueHdg = MagneticUtil.ConvertMagneticToTrue(_magneticHdg, PositionGeoPoint);
+                _trueHdg = MagneticUtil.ConvertMagneticToTrueTile(_magneticHdg, PositionGeoPoint);
 
                 // Calculate True Track
                 double wca = TrueAirSpeed == 0 ? 0 : Math.Acos(WindXComp / TrueAirSpeed);
@@ -107,7 +107,7 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Aircraft
                 _trueHdg = value;
 
                 // Set Magnetic Heading
-                _magneticHdg = MagneticUtil.ConvertTrueToMagnetic(_trueHdg, PositionGeoPoint);
+                _magneticHdg = MagneticUtil.ConvertTrueToMagneticTile(_trueHdg, PositionGeoPoint);
 
                 // Calculate True Track
                 double wca = TrueAirSpeed == 0 ? 0 : Math.Acos(WindXComp / TrueAirSpeed);
@@ -132,7 +132,7 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Aircraft
                 _trueHdg = GeoUtil.NormalizeHeading(_trueTrack - wca);
 
                 // Set Magnetic Heading
-                _magneticHdg = MagneticUtil.ConvertTrueToMagnetic(_trueHdg, PositionGeoPoint);
+                _magneticHdg = MagneticUtil.ConvertTrueToMagneticTile(_trueHdg, PositionGeoPoint);
             }
         }
 

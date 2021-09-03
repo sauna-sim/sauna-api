@@ -219,7 +219,7 @@ namespace VatsimAtcTrainingSimulator
                             else if (items.Length > 4)
                             {
                                 GeoPoint otherThreshold = new GeoPoint(Convert.ToDouble(items[3]), Convert.ToDouble(items[4]));
-                                course = MagneticUtil.ConvertTrueToMagnetic(GeoPoint.InitialBearing(threshold, otherThreshold), threshold);
+                                course = MagneticUtil.ConvertTrueToMagneticTile(GeoPoint.InitialBearing(threshold, otherThreshold), threshold);
                             }
 
                             DataHandler.AddWaypoint(new Localizer(wpId, threshold.Lat, threshold.Lon, wpId, 0, course));

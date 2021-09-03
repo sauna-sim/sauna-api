@@ -54,12 +54,12 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Aircraft.Control.Instruction
             if (courseType == BearingTypeEnum.TRUE)
             {
                 _trueCourse = inboundCourse;
-                _magneticCourse = MagneticUtil.ConvertTrueToMagnetic(_trueCourse, holdingPoint.PointPosition);
+                _magneticCourse = MagneticUtil.ConvertTrueToMagneticTile(_trueCourse, holdingPoint.PointPosition);
             }
             else
             {
                 _magneticCourse = inboundCourse;
-                _trueCourse = MagneticUtil.ConvertMagneticToTrue(_magneticCourse, holdingPoint.PointPosition);
+                _trueCourse = MagneticUtil.ConvertMagneticToTrueTile(_magneticCourse, holdingPoint.PointPosition);
             }
 
             _turnDir = turnDir;
