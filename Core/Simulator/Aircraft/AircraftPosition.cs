@@ -1,6 +1,7 @@
 ﻿using AviationCalcUtilManaged.GeoTools;
 using AviationCalcUtilManaged.GeoTools.GribTools;
 using AviationCalcUtilManaged.GeoTools.MagneticTools;
+using AviationCalcUtilManaged.MathTools;
 using AviationSimulation.GeoTools.GribTools;
 using System;
 using System.Collections.Generic;
@@ -19,6 +20,10 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Aircraft
         private double _trueTrack;
         private double _altSetting_hPa = GeoUtil.STD_PRES_HPA;
         private double _sfcPress_hPa = GeoUtil.STD_PRES_HPA;
+        private double _ias;
+        private double _tas;
+        private double _gs;
+        private double _mach;
         private GribDataPoint _gribPoint;
 
         public double Latitude { get; set; }
@@ -30,11 +35,20 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Aircraft
             {
                 _altInd = value;
                 _altPres = GeoUtil.ConvertIndicatedToPressureAlt(_altInd, _altSetting_hPa);
-                _altDens = GeoUtil.ConvertPressureToDensityAlt(_altPres, StaticAirTemperature);
                 _altAbs = GeoUtil.ConvertIndicatedToAbsoluteAlt(_altInd, _altSetting_hPa, SurfacePressure_hPa);
+                if (_gribPoint != null)
+                {
+                    double T = AtmosUtil.CalculateTempAtAlt(MathUtil.ConvertFeetToMeters(_altAbs), _gribPoint.GeoPotentialHeight_M, _gribPoint.Temp_K);
+                    double p = AtmosUtil.CalculatePressureAtAlt(MathUtil.ConvertFeetToMeters(_altAbs), _gribPoint.GeoPotentialHeight_M, _gribPoint.Level_hPa * 100, T);
+                    _altDens = MathUtil.ConvertMetersToFeet(AtmosUtil.CalculateDensityAltitude(p, T));
+                } else
+                {
+                    double T = MathUtil.ConvertCelsiusToKelvin(GeoUtil.CalculateIsaTemp(_altPres));
+                    double p = AtmosUtil.ISA_STD_PRES_Pa;
+                    _altDens = MathUtil.ConvertMetersToFeet(AtmosUtil.CalculateDensityAltitude(p, T));
+                }
             }
         }
-        public double StaticAirTemperature { get; private set; }
         public double WindDirection { get; private set; }
         public double WindSpeed { get; private set; }
         public double PressureAltitude => _altPres;
@@ -47,7 +61,18 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Aircraft
                 _altAbs = value;
                 _altInd = GeoUtil.ConvertAbsoluteToIndicatedAlt(_altAbs, _altSetting_hPa, _sfcPress_hPa);
                 _altPres = GeoUtil.ConvertIndicatedToPressureAlt(_altInd, _altSetting_hPa);
-                _altDens = GeoUtil.ConvertPressureToDensityAlt(_altPres, StaticAirTemperature);
+                if (_gribPoint != null)
+                {
+                    double T = AtmosUtil.CalculateTempAtAlt(MathUtil.ConvertFeetToMeters(_altAbs), _gribPoint.GeoPotentialHeight_M, _gribPoint.Temp_K);
+                    double p = AtmosUtil.CalculatePressureAtAlt(MathUtil.ConvertFeetToMeters(_altAbs), _gribPoint.GeoPotentialHeight_M, _gribPoint.Level_hPa * 100, T);
+                    _altDens = MathUtil.ConvertMetersToFeet(AtmosUtil.CalculateDensityAltitude(p, T));
+                }
+                else
+                {
+                    double T = MathUtil.ConvertCelsiusToKelvin(GeoUtil.CalculateIsaTemp(_altPres));
+                    double p = AtmosUtil.ISA_STD_PRES_Pa;
+                    _altDens = MathUtil.ConvertMetersToFeet(AtmosUtil.CalculateDensityAltitude(p, T));
+                }
             }
         }
 
@@ -80,7 +105,6 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Aircraft
                 // Backwards compute new Indicated Alt
                 _altInd = GeoUtil.ConvertAbsoluteToIndicatedAlt(_altAbs, _altSetting_hPa, _sfcPress_hPa);
                 _altPres = GeoUtil.ConvertIndicatedToPressureAlt(_altInd, _altSetting_hPa);
-                _altDens = GeoUtil.ConvertPressureToDensityAlt(_altPres, StaticAirTemperature);
             }
         }
         public double SurfacePressure_hPa
@@ -93,7 +117,6 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Aircraft
                 // Backwards compute new Indicated Alt
                 _altInd = GeoUtil.ConvertAbsoluteToIndicatedAlt(_altAbs, _altSetting_hPa, _sfcPress_hPa);
                 _altPres = GeoUtil.ConvertIndicatedToPressureAlt(_altInd, _altSetting_hPa);
-                _altDens = GeoUtil.ConvertPressureToDensityAlt(_altPres, StaticAirTemperature);
             }
         }
         public int PresAltDiff => (int)((GeoUtil.STD_PRES_HPA - (SurfacePressure_hPa == 0 ? GeoUtil.STD_PRES_HPA : SurfacePressure_hPa)) * GeoUtil.STD_PRES_DROP);
@@ -136,11 +159,48 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Aircraft
             }
         }
 
-        public double IndicatedAirSpeed { get; set; }
+        public double IndicatedAirSpeed
+        {
+            get => _ias;
+            set
+            {
+                _ias = value;
 
-        public double TrueAirSpeed => GeoUtil.ConvertIasToTas(IndicatedAirSpeed, _altDens);
+                if (_gribPoint != null)
+                {
+                    _tas = AtmosUtil.ConvertIasToTas(_ias, _gribPoint.Level_hPa, _altAbs, _gribPoint.GeoPotentialHeight_Ft, _gribPoint.Temp_K, out _mach);
+                } else
+                {
+                    _tas = AtmosUtil.ConvertIasToTas(_ias, AtmosUtil.ISA_STD_PRES_hPa, _altAbs, 0, AtmosUtil.ISA_STD_TEMP_K, out _mach);
+                }
+                _gs = _tas == 0 ? 0 : (_tas - WindHComp);
+            }
+        }
 
-        public double GroundSpeed => TrueAirSpeed == 0 ? 0 : (TrueAirSpeed - WindHComp);
+        public double TrueAirSpeed => _tas;
+
+        public double GroundSpeed => _gs;
+
+        public double MachNumber
+        {
+            get => _mach;
+            set
+            {
+                _mach = value;
+                if (_gribPoint != null)
+                {
+                    double T = AtmosUtil.CalculateTempAtAlt(MathUtil.ConvertFeetToMeters(_altAbs), _gribPoint.GeoPotentialHeight_M, _gribPoint.Temp_K);
+                    _tas = MathUtil.ConvertMpersToKts(AtmosUtil.ConvertMachToTas(_mach, T));
+                    _ias = AtmosUtil.ConvertTasToIas(_tas, _gribPoint.Level_hPa, _altAbs, _gribPoint.GeoPotentialHeight_Ft, _gribPoint.Temp_K, out _);
+                } else
+                {
+                    double T = AtmosUtil.CalculateTempAtAlt(MathUtil.ConvertFeetToMeters(_altAbs), 0, AtmosUtil.ISA_STD_TEMP_K);
+                    _tas = MathUtil.ConvertMpersToKts(AtmosUtil.ConvertMachToTas(_mach, T));
+                    _ias = AtmosUtil.ConvertTasToIas(_tas, AtmosUtil.ISA_STD_PRES_hPa, _altAbs, 0, AtmosUtil.ISA_STD_TEMP_K, out _);
+                }
+                _gs = _tas == 0 ? 0 : (_tas - WindHComp);
+            }
+        }
 
         public GribDataPoint GribPoint
         {
@@ -154,11 +214,18 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Aircraft
                     WindDirection = 0;
                     WindSpeed = 0;
                     SurfacePressure_hPa = GeoUtil.STD_PRES_HPA;
-                    StaticAirTemperature = GeoUtil.CalculateIsaTemp(AbsoluteAltitude);
 
                     // Calculate True Track
                     double wca = TrueAirSpeed == 0 ? 0 : Math.Acos(WindXComp / TrueAirSpeed);
                     _trueTrack = GeoUtil.NormalizeHeading(_trueHdg + wca);
+
+                    // Calculate TAS
+                    _tas = AtmosUtil.ConvertIasToTas(_ias, AtmosUtil.ISA_STD_PRES_hPa, _altAbs, 0, AtmosUtil.ISA_STD_TEMP_K, out _mach);
+
+                    // Density Alt
+                    double T = MathUtil.ConvertCelsiusToKelvin(GeoUtil.CalculateIsaTemp(_altPres));
+                    double p = AtmosUtil.ISA_STD_PRES_Pa;
+                    _altDens = MathUtil.ConvertMetersToFeet(AtmosUtil.CalculateDensityAltitude(p, T));
                 }
                 else if (_gribPoint != value)
                 {
@@ -181,8 +248,16 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Aircraft
                     {
                         SurfacePressure_hPa = GeoUtil.STD_PRES_HPA;
                     }
-                    StaticAirTemperature = _gribPoint.Temp_C;
+
+                    // Density Alt
+                    double T = AtmosUtil.CalculateTempAtAlt(MathUtil.ConvertFeetToMeters(_altAbs), _gribPoint.GeoPotentialHeight_M, _gribPoint.Temp_K);
+                    double p = AtmosUtil.CalculatePressureAtAlt(MathUtil.ConvertFeetToMeters(_altAbs), _gribPoint.GeoPotentialHeight_M, _gribPoint.Level_hPa * 100, T);
+                    _altDens = MathUtil.ConvertMetersToFeet(AtmosUtil.CalculateDensityAltitude(p, T));
+
+                    // Calculate TAS
+                    _tas = AtmosUtil.ConvertIasToTas(_ias, _gribPoint.Level_hPa, _altAbs, _gribPoint.GeoPotentialHeight_Ft, _gribPoint.Temp_K, out _mach);
                 }
+                _gs = _tas == 0 ? 0 : (_tas - WindHComp);
             }
         }
 
