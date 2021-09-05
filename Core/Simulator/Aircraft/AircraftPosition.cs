@@ -179,7 +179,22 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Aircraft
 
         public double TrueAirSpeed => _tas;
 
-        public double GroundSpeed => _gs;
+        public double GroundSpeed {
+            get => _gs;
+            set
+            {
+                _gs = value;
+                _tas = _gs + WindHComp;
+                if (_gribPoint != null)
+                {
+                    _ias = AtmosUtil.ConvertTasToIas(_tas, _gribPoint.Level_hPa, _altAbs, _gribPoint.GeoPotentialHeight_Ft, _gribPoint.Temp_K, out _mach);
+                }
+                else
+                {
+                    _ias = AtmosUtil.ConvertIasToTas(_tas, AtmosUtil.ISA_STD_PRES_hPa, _altAbs, 0, AtmosUtil.ISA_STD_TEMP_K, out _mach);
+                }
+            }
+        }
 
         public double MachNumber
         {
