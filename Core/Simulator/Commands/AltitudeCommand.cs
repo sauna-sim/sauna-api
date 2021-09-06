@@ -72,8 +72,10 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Commands
                     alt = Convert.ToInt32(altStr.Substring(1));
                 } else
                 {
-                    isFlightLevel = false;
-                    alt = Convert.ToInt32(altStr);
+                    int alt_as_int = Convert.ToInt32(altStr);
+                    isFlightLevel = alt_as_int <= 600 ? true : false;
+                    alt = isFlightLevel ? alt_as_int * 100 : alt_as_int;
+                    if (isFlightLevel) altStr = $"FL{altStr}";
                 }
                 Logger?.Invoke($"{Aircraft.Callsign} maintaining {altStr}.");
             }
