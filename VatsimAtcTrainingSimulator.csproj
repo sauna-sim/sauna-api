@@ -235,9 +235,9 @@
     </PackageReference>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\aviation-calc-util-managed\aviation-calc-util-managed.vcxproj">
-      <Project>{295b5480-f0dd-474c-9c92-64b7392028dd}</Project>
-      <Name>aviation-calc-util-managed</Name>
+    <ProjectReference Include="..\aviation-calc-util-net\AviationCalcUtilNet.csproj">
+      <Project>{ddc891ca-a626-4376-a6d4-d86596d7a867}</Project>
+      <Name>AviationCalcUtilNet</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

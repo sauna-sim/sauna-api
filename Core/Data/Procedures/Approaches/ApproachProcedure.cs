@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using VatsimAtcTrainingSimulator.Core.Simulator.Aircraft;
@@ -8,16 +9,59 @@ using VatsimAtcTrainingSimulator.Core.Simulator.Aircraft.Control.FMS;
 
 namespace VatsimAtcTrainingSimulator.Core.Data.Procedures.Approaches
 {
+    public class ApproachTypeAttr : Attribute
+    {
+        public ApproachTypeAttr(string shortName, string longName, string levelDName)
+        {
+            ShortName = shortName;
+            LongName = longName;
+            LevelDName = levelDName;
+        }
+
+        public string ShortName { get; private set; }
+        public string LongName { get; private set; }
+        public string LevelDName { get; private set; }
+    }
+
+    public static class ApproachTypes
+    {
+        public static string GetShortName(this ApproachType type)
+        {
+            return GetAttr(type).ShortName;
+        }
+
+        public static string GetLongName(this ApproachType type)
+        {
+            return GetAttr(type).LongName;
+        }
+
+        public static string GetLevelDName(this ApproachType type)
+        {
+            return GetAttr(type).LevelDName;
+        }
+
+        private static ApproachTypeAttr GetAttr(ApproachType p)
+        {
+            return (ApproachTypeAttr)Attribute.GetCustomAttribute(ForValue(p), typeof(ApproachTypeAttr));
+        }
+
+        private static MemberInfo ForValue(ApproachType p)
+        {
+            return typeof(ApproachType).GetField(Enum.GetName(typeof(ApproachType), p));
+        }
+    }
+
     public enum ApproachType
     {
-        ILS,
-        LOC,
-        RNAV,
-        RNP,
-        GPS,
-        VOR,
-        NDB,
-        LDA
+        [ApproachTypeAttr("ILS", "Instrument Landing System", "ILS")] ILS,
+        [ApproachTypeAttr("GLS", "GBAS Landing System", "GLS")] GLS,
+        [ApproachTypeAttr("LOC", "Localizer", "LOC")] LOC,
+        [ApproachTypeAttr("RNAV", "Area Navigation", "RNV")] RNAV,
+        [ApproachTypeAttr("RNP", "Required Navigation Precision", "RNP")] RNP,
+        [ApproachTypeAttr("GPS", "Global Positioning System", "GPS")] GPS,
+        [ApproachTypeAttr("VOR", "VHF Omnidirectional Range", "VOR")] VOR,
+        [ApproachTypeAttr("NDB", "Non-directional Beacon", "NDB")] NDB,
+        [ApproachTypeAttr("LDA", "Localizer-Type Directional Aid", "LDA")] LDA
     }
 
     public class ApproachProcedure
@@ -31,6 +75,13 @@ namespace VatsimAtcTrainingSimulator.Core.Data.Procedures.Approaches
         private ProcedureSegment _finalSegment;
         private List<ProcedureSegment> _maSegments;
 
+        private ApproachProcedure()
+        {
+            _type = ApproachType.ILS;
+            _initSegments = new List<ProcedureSegment>();
+            _finalSegment = new ProcedureSegment();
+
+        }
         private ApproachProcedure(ApproachType type, char letter, string rwy, ApproachMinimums mins, ApproachMinimums circleMins, List<ProcedureSegment> initSegments, ProcedureSegment finalSegment, ProcedureSegment defaultMaSegment, List<ProcedureSegment> alternateMaSegments)
         {
             _type = type;
@@ -47,21 +98,55 @@ namespace VatsimAtcTrainingSimulator.Core.Data.Procedures.Approaches
             _maSegments.AddRange(alternateMaSegments);
         }
 
-        public ApproachType Type => _type;
+        public ApproachType Type
+        {
+            get => _type;
+            set => _type = value;
+        }
 
-        public char Letter => _letter;
+        public char Letter
+        {
+            get => _letter;
+            set => _letter = value;
+        }
 
-        public string Runway => _rwy;
+        public string Runway
+        {
+            get => _rwy;
+            set => _rwy = value;
+        }
 
-        public ApproachMinimums Minimums => _mins;
+        public string ShortName => $"{Type.GetShortName()}{Letter}{Runway}";
 
-        public ApproachMinimums CirclingMinimums => _circleMins;
+        public string LevelDName => $"{Type.GetLevelDName()}{Letter}{Runway}";
 
-        public List<ProcedureSegment> InitialSegments => _initSegments;
+        public ApproachMinimums Minimums {
+            get => _mins;
+            set => _mins = value;
+        }
 
-        public ProcedureSegment FinalSegment => _finalSegment;
+        public ApproachMinimums CirclingMinimums
+        {
+            get => _circleMins;
+            set => _circleMins = value;
+        }
 
-        public List<ProcedureSegment> MissedApproachSegments => _maSegments;
+        public List<ProcedureSegment> InitialSegments {
+            get => _initSegments;
+            set => _initSegments = value ?? new List<ProcedureSegment>();
+        }
+
+        public ProcedureSegment FinalSegment
+        {
+            get => _finalSegment;
+            set => _finalSegment = value ?? new ProcedureSegment();
+        }
+
+        public List<ProcedureSegment> MissedApproachSegments
+        {
+            get => _maSegments;
+            set => _maSegments = value ?? new List<ProcedureSegment>();
+        }
 
         public ProcedureSegment DefaultMissedSegment => _maSegments.Count >= 1 ? _maSegments[0] : null;
     }

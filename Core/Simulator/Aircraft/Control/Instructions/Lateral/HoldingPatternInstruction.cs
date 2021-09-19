@@ -1,6 +1,6 @@
-﻿using AviationCalcUtilManaged.GeoTools;
-using AviationCalcUtilManaged.GeoTools.MagneticTools;
-using AviationCalcUtilManaged.MathTools;
+﻿using AviationCalcUtilNet.GeoTools;
+using AviationCalcUtilNet.GeoTools.MagneticTools;
+using AviationCalcUtilNet.MathTools;
 using System;
 using System.Collections.Generic;
 using System.Linq;

@@ -1,6 +1,6 @@
-﻿using AviationCalcUtilManaged.GeoTools;
-using AviationCalcUtilManaged.GeoTools.MagneticTools;
-using AviationCalcUtilManaged.MathTools;
+﻿using AviationCalcUtilNet.GeoTools;
+using AviationCalcUtilNet.GeoTools.MagneticTools;
+using AviationCalcUtilNet.MathTools;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -21,10 +21,10 @@ namespace VatsimAtcTrainingSimulator.Core.Simulator.Aircraft
 
     public class InterceptCourseInstruction : ILateralControlInstruction
     {
-        private const double MAX_INTC_ANGLE = 45;
-        private const double MIN_XTK_M = 3;
-        private const double MAX_CRS_DEV = 0.1;
-        private const double MAX_INTC_XTK_M = MathUtil.CONV_FACTOR_NMI_M;
+        private readonly double MAX_INTC_ANGLE = 45;
+        private readonly double MIN_XTK_M = 3;
+        private readonly double MAX_CRS_DEV = 0.1;
+        private readonly double MAX_INTC_XTK_M = MathUtil.CONV_FACTOR_NMI_M;
 
         private double previousTrack;
         private double previousTas;

@@ -2,11 +2,11 @@
 {
     public class ApproachMinimums
     {
-        public int CatAMinimums { get; private set; }
-        public int CatBMinimums { get; private set; }
-        public int CatCMinimums { get; private set; }
-        public int CatDMinimums { get; private set; }
-        public int CatEMinimums { get; private set; }
+        public int CatAMinimums { get; set; }
+        public int CatBMinimums { get; set; }
+        public int CatCMinimums { get; set; }
+        public int CatDMinimums { get; set; }
+        public int CatEMinimums { get; set; }
 
         public ApproachMinimums(int catA, int catB, int catC, int catD, int catE)
         {

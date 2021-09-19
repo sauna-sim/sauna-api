@@ -1,7 +1,7 @@
-﻿using AviationCalcUtilManaged.GeoTools;
-using AviationCalcUtilManaged.GeoTools.GribTools;
-using AviationCalcUtilManaged.GeoTools.MagneticTools;
-using AviationCalcUtilManaged.MathTools;
+﻿using AviationCalcUtilNet.GeoTools;
+using AviationCalcUtilNet.GeoTools.GribTools;
+using AviationCalcUtilNet.GeoTools.MagneticTools;
+using AviationCalcUtilNet.MathTools;
 using AviationSimulation.GeoTools.GribTools;
 using System;
 using System.Collections.Generic;

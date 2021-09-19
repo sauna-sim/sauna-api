@@ -1,5 +1,5 @@
-﻿using AviationCalcUtilManaged.GeoTools;
-using AviationCalcUtilManaged.GeoTools.GribTools;
+﻿using AviationCalcUtilNet.GeoTools;
+using AviationCalcUtilNet.GeoTools.GribTools;
 using System;
 using System.Linq;
 using System.Text;

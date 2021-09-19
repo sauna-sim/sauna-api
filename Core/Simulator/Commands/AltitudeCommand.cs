@@ -1,5 +1,5 @@
-﻿using AviationCalcUtilManaged.GeoTools;
-using AviationCalcUtilManaged.MathTools;
+﻿using AviationCalcUtilNet.GeoTools;
+using AviationCalcUtilNet.MathTools;
 using System;
 using System.Collections.Generic;
 using System.Linq;
