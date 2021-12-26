@@ -320,7 +320,7 @@ namespace VatsimAtcTrainingSimulator
             OpenFileDialog fileDialog = new OpenFileDialog()
             {
                 Title = "Open Sector File",
-                Filter = "Sector File|*.sct2|Sector File (Old)|*.sct"
+                Filter = "Sector File|*.sct;*.sct2"
             };
 
             if (fileDialog.ShowDialog() == DialogResult.OK)

@@ -86,6 +86,7 @@
   <ItemGroup>
     <Compile Include="Core\Clients\ClientsHandler.cs" />
     <Compile Include="Core\Clients\VatsimClientDisplayable.cs" />
+    <Compile Include="Core\Data\Loaders\LevelD767Loader.cs" />
     <Compile Include="Core\Data\Procedures\Approaches\ApproachMinimums.cs" />
     <Compile Include="Core\Data\Procedures\Approaches\ApproachProcedure.cs" />
     <Compile Include="Core\Data\Localizer.cs" />
