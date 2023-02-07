@@ -1,0 +1,21 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <AssemblyVersion>1.0.0</AssemblyVersion>
+    <FileVersion>1.0.0</FileVersion>
+    <Platforms>x86;x64</Platforms>
+    <Version>1.0.0</Version>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <Description>ASEL ATC Simulator Core Library</Description>
+    <PackageId>AselAtcTrainingSim.AselSimCore</PackageId>
+    <Authors>Prithvisagar Shivaraman</Authors>
+    <RootNamespace>AselAtcTrainingSim.AselSimCore</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\vatsim-tools\aviation-calc-util-net\AviationCalcUtilNet.csproj" />
+  </ItemGroup>
+</Project>
