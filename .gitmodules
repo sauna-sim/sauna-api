@@ -1,0 +1,3 @@
+[submodule "aviation-calc-util-net"]
+	path = aviation-calc-util-net
+	url = git@github.com:997R8V10/aviation-calc-util-net.git
