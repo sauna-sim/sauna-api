@@ -225,13 +225,13 @@ namespace AselAtcTrainingSim.AselSimCore
 
                     // Send Position
                     string posStr = $"@{(char)XpdrMode}:{Callsign}:{Squawk}:{Rating}:{Position.Latitude}:{Position.Longitude}:{Position.AbsoluteAltitude}:{Position.GroundSpeed}:{posdata}:{Position.PresAltDiff}";
-                    if (AppSettings.SendIas)
+                    if (AppSettingsManager.SendIas)
                     {
                         posStr += $":{Position.IndicatedAirSpeed}";
                     }
                     _ = ConnHandler.SendData(posStr);
 
-                    Thread.Sleep(AppSettings.UpdateRate);
+                    Thread.Sleep(AppSettingsManager.UpdateRate);
                 }
             }
             catch (Exception ex)
@@ -262,18 +262,18 @@ namespace AselAtcTrainingSim.AselSimCore
                         {
                             if (Assigned_IAS <= Position.IndicatedAirSpeed)
                             {
-                                Position.IndicatedAirSpeed = Math.Max(Assigned_IAS, Position.IndicatedAirSpeed + (slowDownKts * AppSettings.PosCalcRate / 1000.0));
+                                Position.IndicatedAirSpeed = Math.Max(Assigned_IAS, Position.IndicatedAirSpeed + (slowDownKts * AppSettingsManager.PosCalcRate / 1000.0));
                             }
                             else
                             {
-                                Position.IndicatedAirSpeed = Math.Min(Assigned_IAS, Position.IndicatedAirSpeed + (speedUpKts * AppSettings.PosCalcRate / 1000.0));
+                                Position.IndicatedAirSpeed = Math.Min(Assigned_IAS, Position.IndicatedAirSpeed + (speedUpKts * AppSettingsManager.PosCalcRate / 1000.0));
                             }
                         }
 
-                        Control.UpdatePosition(ref _position, AppSettings.PosCalcRate);
+                        Control.UpdatePosition(ref _position, AppSettingsManager.PosCalcRate);
                     }
 
-                    Thread.Sleep(AppSettings.PosCalcRate);
+                    Thread.Sleep(AppSettingsManager.PosCalcRate);
                 }
             }
             catch (ThreadAbortException)

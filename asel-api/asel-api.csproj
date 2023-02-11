@@ -13,5 +13,11 @@
     <ProjectReference Include="..\asel-sim-core\asel-sim-core.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="magnetic\WMM.COF">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 
 </Project>

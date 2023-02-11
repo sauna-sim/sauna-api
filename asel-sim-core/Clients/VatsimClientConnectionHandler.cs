@@ -141,7 +141,7 @@ namespace AselAtcTrainingSim.AselSimCore
 
         private void HandleData(string line)
         {
-            string cmdFreqStr = $"@{((AppSettings.CommandFrequency - 100) * 1000).ToString("00000")}";
+            string cmdFreqStr = $"@{((AppSettingsManager.CommandFrequency - 100) * 1000).ToString("00000")}";
 
             // Handle request
             if (line.StartsWith("$CQ"))
@@ -212,9 +212,9 @@ namespace AselAtcTrainingSim.AselSimCore
         public async Task AddClient(CLIENT_TYPE type, string callsign, string fullname, string networkId, string password)
         {
             if (type == CLIENT_TYPE.PILOT)
-                await SendData($"#AP{callsign}:SERVER:{networkId}:{password}:1:{AppSettings.Protocol}:1:{fullname}");
+                await SendData($"#AP{callsign}:SERVER:{networkId}:{password}:1:{AppSettingsManager.Protocol}:1:{fullname}");
             else if (type == CLIENT_TYPE.ATC)
-                await SendData($"#AA{callsign}:SERVER:{fullname}:{networkId}:{password}:1:{AppSettings.Protocol}");
+                await SendData($"#AA{callsign}:SERVER:{fullname}:{networkId}:{password}:1:{AppSettingsManager.Protocol}");
 
         }
 
