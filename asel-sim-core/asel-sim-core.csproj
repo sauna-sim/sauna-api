@@ -12,14 +12,9 @@
     <RootNamespace>AselAtcTrainingSim.AselSimCore</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Remove="aviation-calc-util-net\**" />
-    <EmbeddedResource Remove="aviation-calc-util-net\**" />
-    <None Remove="aviation-calc-util-net\**" />
-  </ItemGroup>
-  <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="13.0.2" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="aviation-calc-util-net\AviationCalcUtilNet.csproj" />
+    <ProjectReference Include="..\aviation-calc-util-net\AviationCalcUtilNet.csproj" />
   </ItemGroup>
 </Project>
