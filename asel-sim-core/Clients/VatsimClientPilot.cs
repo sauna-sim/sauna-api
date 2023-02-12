@@ -14,7 +14,7 @@ namespace AselAtcTrainingSim.AselSimCore
     public enum XpdrMode
     {
         STANDBY = 'S',
-        MODE_C = 'C',
+        MODE_C = 'N',
         IDENT = 'Y'
     }
 
@@ -37,6 +37,7 @@ namespace AselAtcTrainingSim.AselSimCore
         private string password;
         private string fullname;
         private string hostname;
+        private string protocol;
         private int port;
         private bool vatsim;
         private PauseableTimer _delayTimer;
@@ -137,7 +138,7 @@ namespace AselAtcTrainingSim.AselSimCore
 
         public CONN_STATUS ConnectionStatus => ConnHandler == null ? _connStatus : ConnHandler.Status;
 
-        public VatsimClientPilot(string callsign, string networkId, string password, string fullname, string hostname, int port, bool vatsim)
+        public VatsimClientPilot(string callsign, string networkId, string password, string fullname, string hostname, int port, bool vatsim, string protocol)
         {
             Callsign = callsign;
             NetworkId = networkId;
@@ -146,6 +147,7 @@ namespace AselAtcTrainingSim.AselSimCore
             this.hostname = hostname;
             this.port = port;
             this.vatsim = vatsim;
+            this.protocol = protocol;
             Paused = true;
             Position = new AircraftPosition();
             Control = new AircraftControl();
@@ -164,7 +166,7 @@ namespace AselAtcTrainingSim.AselSimCore
             }
 
             ConnHandler = new VatsimClientConnectionHandler(this);
-            if (await Connect(hostname, port, Callsign, NetworkId, password, fullname, vatsim))
+            if (await Connect(hostname, port, Callsign, NetworkId, password, fullname, vatsim, protocol))
             {
                 // Send initial configuration
                 HandleRequest("ACC", Callsign, "@94836");
@@ -184,7 +186,7 @@ namespace AselAtcTrainingSim.AselSimCore
             }
         }
 
-        public async Task<bool> Connect(string hostname, int port, string callsign, string cid, string password, string fullname, bool vatsim)
+        public async Task<bool> Connect(string hostname, int port, string callsign, string cid, string password, string fullname, bool vatsim, string protocol)
         {
             // Establish Connection
             ConnHandler = new VatsimClientConnectionHandler(this)
@@ -202,7 +204,7 @@ namespace AselAtcTrainingSim.AselSimCore
             }
 
             // Connect client
-            await ConnHandler.AddClient(CLIENT_TYPE.PILOT, Callsign, fullname, cid, password);
+            await ConnHandler.AddClient(CLIENT_TYPE.PILOT, Callsign, fullname, cid, password, protocol);
 
             return true;
         }

@@ -8,9 +8,10 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
-namespace asel_api
+namespace AselAtcTrainingSim.AselApi
 {
     public class Startup
     {
@@ -24,7 +25,12 @@ namespace asel_api
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddControllers();
+            services.AddControllers()
+                // Add JSON Serialization Options
+                .AddJsonOptions(options => {
+                    options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+                    options.JsonSerializerOptions.NumberHandling = JsonNumberHandling.AllowNamedFloatingPointLiterals;
+                });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

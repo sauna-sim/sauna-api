@@ -11,7 +11,7 @@ namespace VatsimAtcTrainingSimulator
 {
     public static class ClientsHandler
     {
-        public static BindingList<VatsimClientDisplayable> DisplayableList { get; private set; }
+        public static List<VatsimClientDisplayable> DisplayableList { get; private set; }
         private static List<IVatsimClient> clients;
         private static object clientsLock = new object();
         private static bool _allPaused = true;
@@ -36,7 +36,7 @@ namespace VatsimAtcTrainingSimulator
 
         static ClientsHandler()
         {
-            DisplayableList = new BindingList<VatsimClientDisplayable>();
+            DisplayableList = new List<VatsimClientDisplayable>();
             lock (clientsLock)
             {
                 clients = new List<IVatsimClient>();

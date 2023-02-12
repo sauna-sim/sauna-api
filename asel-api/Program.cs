@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace asel_api
+namespace AselAtcTrainingSim.AselApi
 {
     public class Program
     {

@@ -8,7 +8,7 @@ using AselAtcTrainingSim.AselSimCore.Data;
 
 namespace AselAtcTrainingSim.AselSimCore.Simulator.Aircraft.Control.FMS
 {
-    class RouteWaypoint : IRoutePoint
+    public class RouteWaypoint : IRoutePoint
     {
         private string _waypointName;
         private GeoPoint _pointPosition;
