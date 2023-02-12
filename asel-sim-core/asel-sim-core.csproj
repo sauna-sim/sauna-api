@@ -13,8 +13,6 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="13.0.2" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\aviation-calc-util-net\AviationCalcUtilNet.csproj" />
+    <PackageReference Include="PShivaraman.AviationCalcUtilNet" Version="1.0.0.1" />
   </ItemGroup>
 </Project>
