@@ -17,6 +17,24 @@ namespace AselAtcTrainingSim.AselSimCore.Simulator.Commands
         private bool isFlightLevel = false;
         private double altimSetting = -1;
 
+        public AltitudeCommand()
+        {
+
+        }
+
+        public AltitudeCommand(VatsimClientPilot aircraft, Action<string> logger, int alt, bool isFlightLevel, double altimSetting, bool pressureInHg)
+        {
+            Aircraft = aircraft;
+            Logger = logger;
+            this.alt = alt;
+            this.isFlightLevel = isFlightLevel;
+            this.altimSetting = altimSetting;
+            if (pressureInHg)
+            {
+                this.altimSetting = MathUtil.ConvertInhgToHpa(this.altimSetting);
+            }
+        }
+
         public void ExecuteCommand()
         {
             if (isFlightLevel && Aircraft.Position.AltimeterSetting_hPa != AtmosUtil.ISA_STD_PRES_hPa)

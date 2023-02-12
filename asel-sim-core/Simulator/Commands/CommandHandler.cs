@@ -38,6 +38,24 @@ namespace AselAtcTrainingSim.AselSimCore.Simulator.Commands
             processingCommand = false;
         }
 
+        public static bool QueueCommand(IAircraftCommand command)
+        {
+            if (command != null)
+            {
+                // Add to Queue
+                lock (commandQueueLock)
+                {
+                    commandQueue.Enqueue(command);
+                }
+
+                // Launch thread to execute queue
+                Thread t = new Thread(ProcessNextCommand);
+                t.Start();
+                return true;
+            }
+            return false;
+        }
+
         public static List<string> HandleCommand(string commandName, VatsimClientPilot aircraft, List<string> args, Action<string> logger)
         {
             string cmdNameNormalized = commandName.ToLower();
