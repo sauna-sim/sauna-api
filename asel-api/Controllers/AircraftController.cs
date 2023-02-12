@@ -1,4 +1,4 @@
-using AselAtcTrainingSim.AselApi.RestObjects;
+using AselAtcTrainingSim.AselApi.RestObjects.Aircraft;
 using AselAtcTrainingSim.AselSimCore;
 using AselAtcTrainingSim.AselSimCore.Clients;
 using AselAtcTrainingSim.AselSimCore.Data;
@@ -25,8 +25,8 @@ namespace AselAtcTrainingSim.AselApi.Controllers
             _logger = logger;
         }
 
-        [HttpGet]
-        public List<AircraftResponse> GetAircraft()
+        [HttpGet("getAll")]
+        public List<AircraftResponse> GetAllAircraft()
         {
             List<AircraftResponse> pilots = new List<AircraftResponse>();
             foreach (var disp in ClientsHandler.DisplayableList)
@@ -37,6 +37,50 @@ namespace AselAtcTrainingSim.AselApi.Controllers
                 }
             }
             return pilots;
+        }
+
+        [HttpGet("getAllWithFms")]
+        public List<AircraftResponse> GetAllAircraftWithFms()
+        {
+            List<AircraftResponse> pilots = new List<AircraftResponse>();
+            foreach (var disp in ClientsHandler.DisplayableList)
+            {
+                if (disp.client is VatsimClientPilot pilot)
+                {
+                    pilots.Add(new AircraftResponse(pilot, true));
+                }
+            }
+            return pilots;
+        }
+
+        [HttpGet("getByCallsign/{callsign}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public ActionResult<AircraftResponse> GetAircraftByCallsign(string callsign)
+        {
+            IVatsimClient client = ClientsHandler.GetClientByCallsign(callsign);
+
+            if (client == null || !(client is VatsimClientPilot))
+            {
+                return BadRequest("The aircraft was not found!");
+            }
+
+            return Ok(new AircraftResponse((VatsimClientPilot)client, true));
+        }
+
+        [HttpGet("getByPartialCallsign/{callsign}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public ActionResult<AircraftResponse> GetAircraftByPartialCallsign(string callsign)
+        {
+            IVatsimClient client = ClientsHandler.GetClientWhichContainsCallsign(callsign);
+
+            if (client == null || !(client is VatsimClientPilot))
+            {
+                return BadRequest("The aircraft was not found!");
+            }
+
+            return Ok(new AircraftResponse((VatsimClientPilot)client, true));
         }
 
         [HttpPost("all/pause")]
@@ -50,6 +94,30 @@ namespace AselAtcTrainingSim.AselApi.Controllers
         public ActionResult UnpauseAll()
         {
             ClientsHandler.AllPaused = false;
+            return Ok();
+        }
+
+        [HttpDelete("removeByCallsign/{callsign}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public ActionResult<AircraftResponse> RemoveAircraftByCallsign(string callsign)
+        {
+            IVatsimClient client = ClientsHandler.GetClientByCallsign(callsign);
+
+            if (client == null || !(client is VatsimClientPilot))
+            {
+                return BadRequest("The aircraft was not found!");
+            }
+
+            ClientsHandler.RemoveClientByCallsign(callsign);
+
+            return Ok(new AircraftResponse((VatsimClientPilot)client, true));
+        }
+
+        [HttpDelete("all/remove")]
+        public ActionResult RemoveAll()
+        {
+            ClientsHandler.DisconnectAllClients();
             return Ok();
         }
 
