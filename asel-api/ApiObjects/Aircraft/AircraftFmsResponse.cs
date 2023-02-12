@@ -3,7 +3,7 @@ using AselAtcTrainingSim.AselSimCore.Simulator.Aircraft.Control.FMS;
 using AselAtcTrainingSim.AselSimCore.Simulator.Aircraft.Control.FMS.Legs;
 using System.Collections.Generic;
 
-namespace AselAtcTrainingSim.AselApi.RestObjects.Aircraft
+namespace AselAtcTrainingSim.AselApi.ApiObjects.Aircraft
 {
     public class AircraftFmsResponse
     {

@@ -1,4 +1,4 @@
-using AselAtcTrainingSim.AselApi.RestObjects.Aircraft;
+using AselAtcTrainingSim.AselApi.ApiObjects.Aircraft;
 using AselAtcTrainingSim.AselSimCore;
 using AselAtcTrainingSim.AselSimCore.Clients;
 using AselAtcTrainingSim.AselSimCore.Data;

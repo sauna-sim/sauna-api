@@ -44,6 +44,26 @@ namespace AselAtcTrainingSim.AselSimCore.Simulator.Commands
             _ = Aircraft.Disconnect();
         }
 
+        public bool HandleCommand(VatsimClientPilot aircraft, Action<string> logger, string runway)
+        {
+            Aircraft = aircraft;
+            Logger = logger;
+            // Find Waypoint
+            Waypoint wp = DataHandler.GetClosestWaypointByIdentifier($"ILS{runway}", Aircraft.Position.Latitude, Aircraft.Position.Longitude);
+
+            if (wp == null || !(wp is Localizer))
+            {
+                Logger?.Invoke($"ERROR: Localizer {runway} not found!");
+                return false;
+            }
+
+            _loc = (Localizer)wp;
+
+            Logger?.Invoke($"{Aircraft.Callsign} flying ILS {runway}");
+
+            return true;
+        }
+
         public bool HandleCommand(ref List<string> args)
         {
             // Check argument length

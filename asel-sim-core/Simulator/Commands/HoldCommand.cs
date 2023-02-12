@@ -19,6 +19,54 @@ namespace AselAtcTrainingSim.AselSimCore.Simulator.Commands
             
         }
 
+        public bool HandleCommand(VatsimClientPilot aircraft, Action<string> logger, string waypoint, bool isPublishedHold, int inboundCourse, HoldTurnDirectionEnum turnDir, HoldLegLengthTypeEnum legLengthType, double legLength)
+        {
+            Aircraft = aircraft;
+            Logger = logger;
+
+            // Find Waypoint
+            Waypoint wp = DataHandler.GetClosestWaypointByIdentifier(waypoint, Aircraft.Position.Latitude, Aircraft.Position.Longitude);
+
+            if (wp == null)
+            {
+                Logger?.Invoke($"ERROR - Waypoint {waypoint} not found!");
+                return false;
+            }
+
+            if (isPublishedHold)
+            {
+                PublishedHold pubHold = DataHandler.GetPublishedHold(wp.Identifier);
+
+                if (pubHold == null)
+                {
+                    Logger?.Invoke($"ERROR - No published hold found for waypoint {wp.Identifier}!");
+                    return false;
+                }
+                IRoutePoint holdPt = new RouteWaypoint(wp);
+
+                if (!Aircraft.Control.FMS.AddHold(holdPt, pubHold.InboundCourse, pubHold.TurnDirection, pubHold.LegLengthType, pubHold.LegLength))
+                {
+                    Logger?.Invoke($"ERROR - {wp.Identifier} not found in flight plan!");
+                    return false;
+                }
+
+                Logger?.Invoke($"{Aircraft.Callsign} will hold at {wp.Identifier} as published.");
+                return true;
+            }
+
+            if (!Aircraft.Control.FMS.AddHold(new RouteWaypoint(wp), inboundCourse, turnDir, legLengthType, legLength))
+            {
+                Logger?.Invoke($"ERROR - {wp.Identifier} not found in flight plan!");
+                return false;
+            }
+            string turnDirStr = turnDir == HoldTurnDirectionEnum.RIGHT ? "Right" : "Left";
+            string distanceStr = (legLengthType == HoldLegLengthTypeEnum.DISTANCE) ? $", {legLength}nm legs" :
+                ((legLengthType == HoldLegLengthTypeEnum.TIME) ? $", {legLength}min legs" : "");
+
+            Logger?.Invoke($"{Aircraft.Callsign} will hold at {wp.Identifier}, inbound course {inboundCourse:000}, {turnDirStr} turns{distanceStr}.");
+            return true;
+        }
+
         public bool HandleCommand(ref List<string> args)
         {
             // Check argument length

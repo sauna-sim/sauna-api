@@ -23,6 +23,26 @@ namespace AselAtcTrainingSim.AselSimCore.Simulator.Commands
             Aircraft.Assigned_IAS_Type = Type;
         }
 
+        public bool HandleCommand(VatsimClientPilot aircraft, Action<string> logger, ConstraintType constraintType, int speed)
+        {
+            Aircraft = aircraft;
+            Logger = logger;
+
+            Type = constraintType;
+
+            if (constraintType == ConstraintType.FREE)
+            {
+                Ias = -1;
+                Logger?.Invoke($"{Aircraft.Callsign} resuming normal speed.");
+            } else
+            {
+                Ias = speed;
+                Logger?.Invoke($"{Aircraft.Callsign} maintaining {Ias}kts{(constraintType == ConstraintType.LESS ? " or less" : (constraintType == ConstraintType.MORE ? " or greater" : ""))}.");
+            }
+
+            return true;
+        }
+
         public bool HandleCommand(ref List<string> args)
         {
             // Check argument length

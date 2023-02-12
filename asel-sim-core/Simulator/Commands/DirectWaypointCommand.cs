@@ -26,6 +26,25 @@ namespace AselAtcTrainingSim.AselSimCore.Simulator.Commands
             Aircraft.Control.CurrentLateralInstruction = instr;
         }
 
+        public bool HandleCommand(VatsimClientPilot aircraft, Action<string> logger, string waypoint)
+        {
+            this.Aircraft = aircraft;
+            this.Logger = logger;
+
+            // Find Waypoint
+            wp = DataHandler.GetClosestWaypointByIdentifier(waypoint, Aircraft.Position.Latitude, Aircraft.Position.Longitude);
+
+            if (wp == null)
+            {
+                Logger?.Invoke($"ERROR: Waypoint {waypoint} not found!");
+                return false;
+            }
+
+            Logger?.Invoke($"{Aircraft.Callsign} proceeding direct {wp.Identifier}.");
+
+            return true;
+        }
+
         public bool HandleCommand(ref List<string> args)
         {
             // Check argument length

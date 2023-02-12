@@ -8,7 +8,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using System.Collections.Generic;
 
-namespace AselAtcTrainingSim.AselApi.RestObjects.Aircraft
+namespace AselAtcTrainingSim.AselApi.ApiObjects.Aircraft
 {
     public class AircraftResponse
     {

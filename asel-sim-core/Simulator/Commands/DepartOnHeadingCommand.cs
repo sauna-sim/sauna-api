@@ -28,6 +28,38 @@ namespace AselAtcTrainingSim.AselSimCore.Simulator.Commands
             }
         }
 
+        public bool HandleCommand(VatsimClientPilot aircraft, Action<string> logger, string waypoint, int heading)
+        {
+            Aircraft = aircraft;
+            Logger = logger;
+
+            // Find Waypoint
+            Waypoint wp = DataHandler.GetClosestWaypointByIdentifier(waypoint, Aircraft.Position.Latitude, Aircraft.Position.Longitude);
+
+            if (wp == null)
+            {
+                Logger?.Invoke($"ERROR - Waypoint {waypoint} not found!");
+                return false;
+            }
+
+            // Get Route Leg
+            IRouteLeg leg = Aircraft.Control.FMS.GetLegToPoint(new RouteWaypoint(wp));
+
+            if (leg == null)
+            {
+                Logger?.Invoke($"ERROR - Waypoint {waypoint} does not exist in route!");
+                return false;
+            }
+
+            hdg = heading;
+            leg.EndPoint.PointType = RoutePointTypeEnum.FLY_OVER;
+            point = leg.EndPoint.Point;
+            Aircraft.Control.FMS.WaypointPassed += OnReachingWaypoint;
+
+            Logger?.Invoke($"{Aircraft.Callsign} will depart {waypoint} heading {heading:000} degrees.");
+            return true;
+        }
+
         public bool HandleCommand(ref List<string> args)
         {
             // Check argument length

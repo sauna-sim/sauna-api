@@ -1,4 +1,4 @@
-namespace AselAtcTrainingSim.AselApi.RestObjects.Commands
+namespace AselAtcTrainingSim.AselApi.ApiObjects.Commands
 {
     public class AltitudeCommandRequest
     {

@@ -19,6 +19,15 @@ namespace AselAtcTrainingSim.AselSimCore.Simulator.Commands
         {
             Aircraft.Control.CurrentLateralInstruction = new HeadingHoldInstruction(hdg);
         }
+        public bool HandleCommand(VatsimClientPilot aircraft, Action<string> logger, int degsToTurn)
+        {
+            Aircraft = aircraft;
+            Logger = logger;
+            hdg = (int)Math.Round(GeoUtil.NormalizeHeading(Aircraft.Position.Heading_Mag - degsToTurn), MidpointRounding.AwayFromZero);
+
+            Logger?.Invoke($"{Aircraft.Callsign} turning left heading {hdg:000} degrees.");
+            return true;
+        }
 
         public bool HandleCommand(ref List<string> args)
         {

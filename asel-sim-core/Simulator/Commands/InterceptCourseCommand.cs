@@ -22,6 +22,26 @@ namespace AselAtcTrainingSim.AselSimCore.Simulator.Commands
             Aircraft.Control.ArmedLateralInstruction = new InterceptCourseInstruction(new RouteWaypoint(wp), course);
         }
 
+        public bool HandleCommand(VatsimClientPilot aircraft, Action<string> logger, string waypoint, int course)
+        {
+            Aircraft = aircraft;
+            Logger = logger;
+
+            // Find Waypoint
+            Waypoint wp = DataHandler.GetClosestWaypointByIdentifier(waypoint, Aircraft.Position.Latitude, Aircraft.Position.Longitude);
+
+            if (wp == null)
+            {
+                Logger?.Invoke($"ERROR - Waypoint {waypoint} not found!");
+                return false;
+            }
+
+            this.course = course;
+            Logger?.Invoke($"{Aircraft.Callsign} intercepting course {course} of waypoint {wp.Identifier}");
+
+            return true;
+        }
+
         public bool HandleCommand(ref List<string> args)
         {
             // Check argument length

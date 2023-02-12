@@ -21,6 +21,26 @@ namespace AselAtcTrainingSim.AselSimCore.Simulator.Commands
             Aircraft.Control.ArmedLateralInstruction = instr;
         }
 
+        public bool HandleCommand(VatsimClientPilot aircraft, Action<string> logger, string runway)
+        {
+            Aircraft = aircraft;
+            Logger = logger;
+            // Find Waypoint
+            Waypoint wp = DataHandler.GetClosestWaypointByIdentifier($"ILS{runway}", Aircraft.Position.Latitude, Aircraft.Position.Longitude);
+
+            if (wp == null || !(wp is Localizer))
+            {
+                Logger?.Invoke($"ERROR: Localizer {runway} not found!");
+                return false;
+            }
+
+            _loc = (Localizer)wp;
+
+            Logger?.Invoke($"{Aircraft.Callsign} intercepting localizer {runway}");
+
+            return true;
+        }
+
         public bool HandleCommand(ref List<string> args)
         {
             // Check argument length

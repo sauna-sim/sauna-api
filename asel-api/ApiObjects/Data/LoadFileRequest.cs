@@ -1,4 +1,4 @@
-namespace AselAtcTrainingSim.AselApi.RestObjects
+namespace AselAtcTrainingSim.AselApi.ApiObjects.Data
 {
     public class LoadFileRequest
     {

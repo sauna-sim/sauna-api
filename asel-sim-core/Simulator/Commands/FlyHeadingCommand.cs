@@ -21,6 +21,15 @@ namespace AselAtcTrainingSim.AselSimCore.Simulator.Commands
             Aircraft.Control.CurrentLateralInstruction = new HeadingHoldInstruction(Hdg);
         }
 
+        public bool HandleCommand(VatsimClientPilot aircraft, Action<string> logger, int hdg)
+        {
+            Aircraft = aircraft;
+            Logger = logger;
+            Hdg = hdg;
+            Logger?.Invoke($"{Aircraft.Callsign} flying heading {hdg:000} degrees.");
+            return true;
+        }
+
         public bool HandleCommand(ref List<string> args)
         {
             // Check argument length
