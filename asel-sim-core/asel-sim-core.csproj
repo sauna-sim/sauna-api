@@ -11,8 +11,8 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="13.0.2" />
-    <PackageReference Include="PShivaraman.AviationCalcUtilNet.win-$(Platform)" Version="1.0.2" Condition="$([MSBuild]::IsOSPlatform('Windows'))"/>
-    <PackageReference Include="PShivaraman.AviationCalcUtilNet.osx-$(Platform)" Version="1.0.2" Condition="$([MSBuild]::IsOSPlatform('OSX'))"/>
-    <PackageReference Include="PShivaraman.AviationCalcUtilNet.linux-$(Platform)" Version="1.0.2" Condition="$([MSBuild]::IsOSPlatform('Linux'))"/>
+    <PackageReference Include="PShivaraman.AviationCalcUtilNet.win-$(Platform)" Version="1.0.4" Condition="$([MSBuild]::IsOSPlatform('Windows'))"/>
+    <PackageReference Include="PShivaraman.AviationCalcUtilNet.osx-$(Platform)" Version="1.0.4" Condition="$([MSBuild]::IsOSPlatform('OSX'))"/>
+    <PackageReference Include="PShivaraman.AviationCalcUtilNet.linux-$(Platform)" Version="1.0.4" Condition="$([MSBuild]::IsOSPlatform('Linux'))"/>
   </ItemGroup>
 </Project>
