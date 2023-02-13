@@ -5,14 +5,14 @@
     <FileVersion>0.5.0</FileVersion>
     <Platforms>x86;x64</Platforms>
     <Version>0.5.0</Version>
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <Description>ASEL ATC Simulator Core Library</Description>
-    <PackageId>AselAtcTrainingSim.AselSimCore</PackageId>
     <Authors>Prithvisagar Shivaraman</Authors>
     <RootNamespace>AselAtcTrainingSim.AselSimCore</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="13.0.2" />
-    <PackageReference Include="PShivaraman.AviationCalcUtilNet" Version="1.0.0.1" />
+    <PackageReference Include="PShivaraman.AviationCalcUtilNet.win-$(Platform)" Version="1.0.2" Condition="$([MSBuild]::IsOSPlatform('Windows'))"/>
+    <PackageReference Include="PShivaraman.AviationCalcUtilNet.osx-$(Platform)" Version="1.0.2" Condition="$([MSBuild]::IsOSPlatform('OSX'))"/>
+    <PackageReference Include="PShivaraman.AviationCalcUtilNet.linux-$(Platform)" Version="1.0.2" Condition="$([MSBuild]::IsOSPlatform('Linux'))"/>
   </ItemGroup>
 </Project>
