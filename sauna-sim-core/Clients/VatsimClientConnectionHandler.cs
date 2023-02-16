@@ -236,10 +236,6 @@ namespace SaunaSim.Core
             }
 
             // Abort thread
-            if (recvThread != null)
-            {
-                recvThread.Interrupt();
-            }
 
             if (Reader != null)
             {

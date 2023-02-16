@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
+using VatsimAtcTrainingSimulator;
 
 namespace SaunaSim.Api
 {
@@ -33,9 +34,16 @@ namespace SaunaSim.Api
                 });
         }
 
-        // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+        private void OnShutdown()
         {
+            ClientsHandler.DisconnectAllClients();
+        }
+
+        // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, IHostApplicationLifetime applicationLifetime)
+        {
+            // Register shutdown
+            applicationLifetime.ApplicationStopping.Register(OnShutdown);
 
             if (env.IsDevelopment())
             {
