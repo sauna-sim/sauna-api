@@ -111,9 +111,9 @@ namespace AselAtcTrainingSim.AselSimCore
             }
         }
 
-        public XpdrMode XpdrMode { get; private set; }
-        public int Squawk { get; private set; }
-        public int Rating { get; private set; }
+        public XpdrMode XpdrMode { get; set; }
+        public int Squawk { get; set; }
+        public int Rating { get; set; }
         private AircraftPosition _position;
         public AircraftPosition Position { get => _position; private set => _position = value; }
         private bool _onGround = false;
