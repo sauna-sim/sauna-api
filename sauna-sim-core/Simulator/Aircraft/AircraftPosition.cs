@@ -26,8 +26,10 @@ namespace SaunaSim.Core.Simulator.Aircraft
         private double _mach;
         private GribDataPoint _gribPoint;
 
+        // Position
         public double Latitude { get; set; }
         public double Longitude { get; set; }
+
         public double IndicatedAltitude
         {
             get => _altInd;
@@ -49,10 +51,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
                 }
             }
         }
-        public double WindDirection { get; private set; }
-        public double WindSpeed { get; private set; }
-        public double PressureAltitude => _altPres;
-        public double DensityAltitude => _altDens;
+
         public double AbsoluteAltitude
         {
             get => _altAbs;
@@ -76,6 +75,10 @@ namespace SaunaSim.Core.Simulator.Aircraft
             }
         }
 
+        public double PressureAltitude => _altPres;
+        public double DensityAltitude => _altDens;
+
+        // Rotation
         public double Heading_Mag
         {
             get => _magneticHdg;
@@ -92,34 +95,6 @@ namespace SaunaSim.Core.Simulator.Aircraft
                 _trueTrack = GeoUtil.NormalizeHeading(_trueHdg + wca);
             }
         }
-        public double Bank { get; set; }
-        public double Pitch { get; set; }
-        public double VerticalSpeed { get; set; }
-        public double AltimeterSetting_hPa
-        {
-            get => _altSetting_hPa;
-            set
-            {
-                _altSetting_hPa = value;
-
-                // Backwards compute new Indicated Alt
-                _altInd = AtmosUtil.ConvertAbsoluteToIndicatedAlt(_altAbs, _altSetting_hPa, _sfcPress_hPa);
-                _altPres = AtmosUtil.ConvertIndicatedToPressureAlt(_altInd, _altSetting_hPa);
-            }
-        }
-        public double SurfacePressure_hPa
-        {
-            get => _sfcPress_hPa;
-            set
-            {
-                _sfcPress_hPa = value;
-
-                // Backwards compute new Indicated Alt
-                _altInd = AtmosUtil.ConvertAbsoluteToIndicatedAlt(_altAbs, _altSetting_hPa, _sfcPress_hPa);
-                _altPres = AtmosUtil.ConvertIndicatedToPressureAlt(_altInd, _altSetting_hPa);
-            }
-        }
-        public int PresAltDiff => (int)((AtmosUtil.ISA_STD_PRES_hPa - (SurfacePressure_hPa == 0 ? AtmosUtil.ISA_STD_PRES_hPa : SurfacePressure_hPa)) * AtmosUtil.ISA_STD_PRES_DROP_ft_PER_hPa);
 
         public double Heading_True
         {
@@ -138,10 +113,6 @@ namespace SaunaSim.Core.Simulator.Aircraft
             }
         }
 
-        public double WindXComp => WindSpeed * Math.Sin((Heading_True - WindDirection) * Math.PI / 180.0);
-
-        public double WindHComp => GeoUtil.HeadwindComponent(WindSpeed, WindDirection, Heading_True);
-
         public double Track_True
         {
             get => _trueTrack;
@@ -159,6 +130,10 @@ namespace SaunaSim.Core.Simulator.Aircraft
             }
         }
 
+        public double Bank { get; set; }
+        public double Pitch { get; set; }
+
+        // Linear Velocities
         public double IndicatedAirSpeed
         {
             get => _ias;
@@ -169,7 +144,8 @@ namespace SaunaSim.Core.Simulator.Aircraft
                 if (_gribPoint != null)
                 {
                     _tas = AtmosUtil.ConvertIasToTas(_ias, _gribPoint.Level_hPa, _altAbs, _gribPoint.GeoPotentialHeight_Ft, _gribPoint.Temp_K, out _mach);
-                } else
+                }
+                else
                 {
                     _tas = AtmosUtil.ConvertIasToTas(_ias, AtmosUtil.ISA_STD_PRES_hPa, _altAbs, 0, AtmosUtil.ISA_STD_TEMP_K, out _mach);
                 }
@@ -179,7 +155,8 @@ namespace SaunaSim.Core.Simulator.Aircraft
 
         public double TrueAirSpeed => _tas;
 
-        public double GroundSpeed {
+        public double GroundSpeed
+        {
             get => _gs;
             set
             {
@@ -207,7 +184,8 @@ namespace SaunaSim.Core.Simulator.Aircraft
                     double T = AtmosUtil.CalculateTempAtAlt(MathUtil.ConvertFeetToMeters(_altAbs), _gribPoint.GeoPotentialHeight_M, _gribPoint.Temp_K);
                     _tas = MathUtil.ConvertMpersToKts(AtmosUtil.ConvertMachToTas(_mach, T));
                     _ias = AtmosUtil.ConvertTasToIas(_tas, _gribPoint.Level_hPa, _altAbs, _gribPoint.GeoPotentialHeight_Ft, _gribPoint.Temp_K, out _);
-                } else
+                }
+                else
                 {
                     double T = AtmosUtil.CalculateTempAtAlt(MathUtil.ConvertFeetToMeters(_altAbs), 0, AtmosUtil.ISA_STD_TEMP_K);
                     _tas = MathUtil.ConvertMpersToKts(AtmosUtil.ConvertMachToTas(_mach, T));
@@ -217,6 +195,50 @@ namespace SaunaSim.Core.Simulator.Aircraft
             }
         }
 
+        public double VerticalSpeed { get; set; }
+
+        // TODO: Add Velocity_X_MPerS, Velocity_Y_MPerS, and Velocity_Z_MPerS here
+
+        public double WindDirection { get; private set; }
+        public double WindSpeed { get; private set; }
+
+        // Rotational Velocities
+        public double Heading_Velocity_RadPerS => 0;
+        public double Bank_Velocity_RadPerS => 0;
+        public double Pitch_Velocity_RadPerS => 0;
+        
+        // Atmospheric Data        
+        public double AltimeterSetting_hPa
+        {
+            get => _altSetting_hPa;
+            set
+            {
+                _altSetting_hPa = value;
+
+                // Backwards compute new Indicated Alt
+                _altInd = AtmosUtil.ConvertAbsoluteToIndicatedAlt(_altAbs, _altSetting_hPa, _sfcPress_hPa);
+                _altPres = AtmosUtil.ConvertIndicatedToPressureAlt(_altInd, _altSetting_hPa);
+            }
+        }
+        public double SurfacePressure_hPa
+        {
+            get => _sfcPress_hPa;
+            set
+            {
+                _sfcPress_hPa = value;
+
+                // Backwards compute new Indicated Alt
+                _altInd = AtmosUtil.ConvertAbsoluteToIndicatedAlt(_altAbs, _altSetting_hPa, _sfcPress_hPa);
+                _altPres = AtmosUtil.ConvertIndicatedToPressureAlt(_altInd, _altSetting_hPa);
+            }
+        }
+        public int PresAltDiff => (int)((AtmosUtil.ISA_STD_PRES_hPa - (SurfacePressure_hPa == 0 ? AtmosUtil.ISA_STD_PRES_hPa : SurfacePressure_hPa)) * AtmosUtil.ISA_STD_PRES_DROP_ft_PER_hPa);
+                
+
+        public double WindXComp => WindSpeed * Math.Sin((Heading_True - WindDirection) * Math.PI / 180.0);
+
+        public double WindHComp => GeoUtil.HeadwindComponent(WindSpeed, WindDirection, Heading_True);
+        
         public GribDataPoint GribPoint
         {
             get => _gribPoint;
