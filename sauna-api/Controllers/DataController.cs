@@ -7,7 +7,6 @@ using SaunaSim.Core.Simulator.Aircraft.Control.FMS.Legs;
 using SaunaSim.Core.Simulator.Commands;
 using AviationCalcUtilNet.GeoTools;
 using AviationCalcUtilNet.GeoTools.MagneticTools;
-using AviationSimulation.GeoTools.GribTools;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -113,7 +112,8 @@ namespace SaunaSim.Api.Controllers
                                         freq = Convert.ToDecimal(items[1]);
                                     } catch (Exception) { }
 
-                                    DataHandler.AddWaypoint(new WaypointNavaid(items[0], GribUtil.ConvertSectorFileDegMinSecToDecimalDeg(items[2]), GribUtil.ConvertSectorFileDegMinSecToDecimalDeg(items[3]), "", freq, type));
+                                    GeoUtil.ConvertVrcToDecimalDegs(items[2], items[3], out double lat, out double lon);
+                                    DataHandler.AddWaypoint(new WaypointNavaid(items[0], lat, lon, "", freq, type));
                                 }
                                 break;
                             case "FIXES":
@@ -121,7 +121,8 @@ namespace SaunaSim.Api.Controllers
 
                                 if (items.Length >= 3)
                                 {
-                                    DataHandler.AddWaypoint(new Waypoint(items[0], GribUtil.ConvertSectorFileDegMinSecToDecimalDeg(items[1]), GribUtil.ConvertSectorFileDegMinSecToDecimalDeg(items[2])));
+                                    GeoUtil.ConvertVrcToDecimalDegs(items[1], items[2], out double lat, out double lon);
+                                    DataHandler.AddWaypoint(new Waypoint(items[0],  lat, lon));
                                 }
                                 break;
                         }

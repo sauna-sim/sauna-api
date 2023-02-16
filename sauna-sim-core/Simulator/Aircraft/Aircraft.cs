@@ -118,7 +118,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
         public void Start()
         {
             // Set initial assignments
-            Position.UpdatePosition();
+            Position.UpdateGribPoint();
 
             // Connect if no delay, otherwise start timer
             if (DelayMs <= 0)
@@ -162,7 +162,8 @@ namespace SaunaSim.Core.Simulator.Aircraft
 
         private void OnConnectionTerminated(object sender, EventArgs e)
         {
-
+            _shouldUpdatePosition = false;
+            _delayTimer?.Stop();
         }
 
         private void AircraftPositionWorker()
@@ -206,9 +207,10 @@ namespace SaunaSim.Core.Simulator.Aircraft
                     _shouldUpdatePosition = false;
                     _posUpdThread.Join();
                     _delayTimer?.Stop();
+                    _delayTimer?.Dispose();
                 }
 
-                // TODO: free unmanaged resources (unmanaged objects) and override finalizer
+                // TODO: Delete Connection Object
                 _posUpdThread = null;
                 Position = null;
                 Control = null;
@@ -217,12 +219,11 @@ namespace SaunaSim.Core.Simulator.Aircraft
             }
         }
 
-        // // TODO: override finalizer only if 'Dispose(bool disposing)' has code to free unmanaged resources
-        // ~Aircraft()
-        // {
-        //     // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
-        //     Dispose(disposing: false);
-        // }
+        ~Aircraft()
+        {
+            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+            Dispose(disposing: false);
+        }
 
         public void Dispose()
         {

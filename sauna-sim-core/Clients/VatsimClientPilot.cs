@@ -26,7 +26,7 @@ namespace SaunaSim.Core
         MORE = 1
     }
 
-    public class VatsimClientPilot : IVatsimClient
+    public class VatsimClientPilot : IVatsimClient, IDisposable
     {
         // Properties
         public VatsimClientConnectionHandler ConnHandler { get; private set; }
@@ -47,6 +47,7 @@ namespace SaunaSim.Core
         private bool _shouldSpawn;
         private string _flightPlan;
         private CONN_STATUS _connStatus = CONN_STATUS.WAITING;
+        private bool _shouldUpdatePosition = false;
 
         public bool ShouldSpawn
         {
@@ -117,6 +118,8 @@ namespace SaunaSim.Core
         private AircraftPosition _position;
         public AircraftPosition Position { get => _position; private set => _position = value; }
         private bool _onGround = false;
+        private bool disposedValue;
+
         public bool OnGround
         {
             get => _onGround;
@@ -172,6 +175,7 @@ namespace SaunaSim.Core
                 HandleRequest("ACC", Callsign, "@94836");
 
                 // Start Position Update Thread
+                _shouldUpdatePosition = true;
                 posUpdThread = new Thread(new ThreadStart(AircraftPositionWorker));
                 posUpdThread.Name = $"{Callsign} Position Worker";
                 posUpdThread.Start();
@@ -213,7 +217,7 @@ namespace SaunaSim.Core
         {
             try
             {
-                while (ConnHandler.Status == CONN_STATUS.CONNECTED)
+                while (_shouldUpdatePosition && ConnHandler.Status == CONN_STATUS.CONNECTED)
                 {
                     // Construct position data
                     int posdata = 0;
@@ -251,7 +255,7 @@ namespace SaunaSim.Core
         {
             try
             {
-                while (ConnHandler.Status == CONN_STATUS.CONNECTED)
+                while (_shouldUpdatePosition && ConnHandler.Status == CONN_STATUS.CONNECTED)
                 {
                     // Calculate position
                     if (!Paused)
@@ -334,7 +338,7 @@ namespace SaunaSim.Core
             Position.Latitude = lat;
             Position.Longitude = lon;
             Position.IndicatedAltitude = alt;
-            Position.UpdatePosition();
+            Position.UpdateGribPoint();
 
             // Set initial assignments
             Control = new AircraftControl(new HeadingHoldInstruction(Convert.ToInt32(hdg)), new AltitudeHoldInstruction(Convert.ToInt32(alt)));
@@ -376,21 +380,46 @@ namespace SaunaSim.Core
                 _connStatus = CONN_STATUS.DISCONNECTED;
             }
 
-            // TODO: Change this to a Task with Cancellation Token
-            if (posSendThread != null)
-            {
-                posSendThread.Abort();
-            }
+            _shouldUpdatePosition = false;
+        }
 
-            if (posUpdThread != null)
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposedValue)
             {
-                posUpdThread.Abort();
+                if (disposing)
+                {
+                    Disconnect().ConfigureAwait(false);
+                    _shouldUpdatePosition = false;
+                    posUpdThread.Join();
+                    posSendThread.Join();
+                    _delayTimer?.Stop();
+                    _delayTimer?.Dispose();
+                    ConnHandler.Client.Dispose();
+                }
+
+                // TODO: Delete Connection Object
+                posUpdThread = null;
+                posSendThread = null;
+                Position = null;
+                Control = null;
+                _delayTimer = null;
+                ConnHandler = null;
+                disposedValue = true;
             }
         }
 
         ~VatsimClientPilot()
         {
-            Disconnect().ConfigureAwait(false);
+            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+            Dispose(disposing: false);
+        }
+
+        public void Dispose()
+        {
+            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
         }
     }
 }

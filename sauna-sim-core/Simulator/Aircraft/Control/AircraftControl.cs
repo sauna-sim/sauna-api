@@ -134,7 +134,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Control
             CurrentVerticalInstruction.UpdatePosition(ref position, ref _fms, posCalcInterval);
 
             // Recalculate values
-            position.UpdatePosition();
+            position.UpdateGribPoint();
         }
     }
 }

@@ -2,7 +2,6 @@
 using AviationCalcUtilNet.GeoTools.GribTools;
 using AviationCalcUtilNet.GeoTools.MagneticTools;
 using AviationCalcUtilNet.MathTools;
-using AviationSimulation.GeoTools.GribTools;
 using System;
 using System.Collections.Generic;
 using SaunaSim.Core.Data;
@@ -300,9 +299,16 @@ namespace SaunaSim.Core.Simulator.Aircraft
 
         public GeoPoint PositionGeoPoint => new GeoPoint(Latitude, Longitude, AbsoluteAltitude);
 
-        public void UpdatePosition()
+        public void UpdateGribPoint()
         {
-            GribPoint = GribUtil.GetClosestGribPoint(PositionGeoPoint);
+            GribTile tile = GribTile.FindOrCreateGribTile(PositionGeoPoint, DateTime.UtcNow);
+
+            if (tile == null)
+            {
+                GribPoint = null;
+            }
+
+            GribPoint = tile.GetClosestPoint(PositionGeoPoint);
         }
     }
 }
