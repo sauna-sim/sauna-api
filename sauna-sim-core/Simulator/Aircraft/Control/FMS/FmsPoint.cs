@@ -28,9 +28,9 @@ namespace SaunaSim.Core.Simulator.Aircraft.Control.FMS
 
         public RoutePointTypeEnum PointType { get => _routePointType; set => _routePointType = value; }
 
-        public ConstraintType AltitudeConstraintType { get; set; } = ConstraintType.FREE;
+        public int LowerAltitudeConstraint { get; set; }
 
-        public double AltitudeConstraint { get; set; }
+        public int UpperAltitudeConstraint { get; set; }
 
         public ConstraintType SpeedConstraintType { get; set; } = ConstraintType.FREE;
 
