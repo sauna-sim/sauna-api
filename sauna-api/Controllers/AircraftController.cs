@@ -34,7 +34,7 @@ namespace SaunaSim.Api.Controllers
         {
             try
             {
-                SimAircraft pilot = new SimAircraft(request.Callsign, request.Cid, request.Password, request.FullName, request.Server, (ushort)request.Port, request.VatsimServer, request.Protocol, request.Position.Latitude, request.Position.Longitude, request.Position.IndicatedAltitude, request.Position.MagneticHeading)
+                SimAircraft pilot = new SimAircraft(request.Callsign, request.Cid, request.Password, request.FullName, request.Server, (ushort)request.Port, request.Protocol, request.Position.Latitude, request.Position.Longitude, request.Position.IndicatedAltitude, request.Position.MagneticHeading)
                 {
                     LogInfo = (string msg) => {
                         _logger.LogInformation($"{request.Callsign}: {msg}");

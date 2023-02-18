@@ -10,7 +10,6 @@ namespace SaunaSim.Api.ApiObjects.Aircraft
         public string Password { get; set; }
         public string Server { get; set; }
         public int Port { get; set; }
-        public bool VatsimServer { get; set; }
         public ProtocolRevision Protocol { get; set; }
 
         public string FullName { get; set; } = "Simulator Pilot";

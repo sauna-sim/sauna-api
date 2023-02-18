@@ -9,7 +9,6 @@ namespace SaunaSim.Api.ApiObjects.Data
         public string Password { get; set; }
         public string Server { get; set; }
         public int Port { get; set; }
-        public bool VatsimServer { get; set; }
         public ProtocolRevision Protocol { get; set; }
     }
 }

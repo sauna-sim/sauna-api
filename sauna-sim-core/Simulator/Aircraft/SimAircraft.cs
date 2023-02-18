@@ -106,7 +106,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
         public ConstraintType Assigned_IAS_Type { get; set; } = ConstraintType.FREE;
 
 
-        public SimAircraft(string callsign, string networkId, string password, string fullname, string hostname, ushort port, bool vatsim, ProtocolRevision protocol, double lat, double lon, double alt, double hdg_mag, int delayMs = 0)
+        public SimAircraft(string callsign, string networkId, string password, string fullname, string hostname, ushort port, ProtocolRevision protocol, double lat, double lon, double alt, double hdg_mag, int delayMs = 0)
         {
             LoginInfo = new LoginInfo(networkId, password, callsign, fullname, PilotRatingType.Student, hostname, protocol, AppSettingsManager.CommandFrequency, port);
             Connection = new Connection();
