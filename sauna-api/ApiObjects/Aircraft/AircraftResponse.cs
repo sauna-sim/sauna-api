@@ -48,9 +48,13 @@ namespace SaunaSim.Api.ApiObjects.Aircraft
         public class AircraftControlResponse
         {
             public object CurrentLateralMode { get; set; }
+            public string CurrentLateralModeStr { get; set; }
             public object ArmedLateralMode { get; set; }
+            public string ArmedLateralModeStr { get; set; }
             public object CurrentVerticalMode { get; set; }
+            public string CurrentVerticalModeStr { get; set; }
             public List<object> ArmedVerticalModes { get; set; }
+            public List<string> ArmedVerticalModesStr { get; set; }
             public AircraftFmsResponse FMS { get; set; }
 
             public AircraftControlResponse()
@@ -61,12 +65,17 @@ namespace SaunaSim.Api.ApiObjects.Aircraft
             public AircraftControlResponse(AircraftControl control, bool includeFms = false)
             {
                 CurrentLateralMode = control.CurrentLateralInstruction;
+                CurrentLateralModeStr = control.CurrentLateralInstruction?.ToString();
                 ArmedLateralMode = control.ArmedLateralInstruction;
+                ArmedLateralModeStr = control.ArmedLateralInstruction?.ToString();
                 CurrentVerticalMode = control.CurrentVerticalInstruction;
+                CurrentVerticalModeStr = control.CurrentVerticalInstruction?.ToString();
                 ArmedVerticalModes = new List<object>();
+                ArmedVerticalModesStr = new List<string>();
                 foreach (var instr in control.ArmedVerticalInstructions)
                 {
                     ArmedVerticalModes.Add(instr);
+                    ArmedVerticalModesStr.Add(instr.ToString());
                 }
                 if (includeFms)
                 {
