@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SaunaSim.Core.Simulator.Aircraft;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -56,6 +57,119 @@ namespace SaunaSim.Core.Simulator.Commands
             return false;
         }
 
+        public static List<string> HandleCommand(string commandName, SimAircraft aircraft, List<string> args, Action<string> logger)
+        {
+            string cmdNameNormalized = commandName.ToLower();
+            IAircraftCommand cmd = null;
+
+            // Get Command
+            switch (cmdNameNormalized)
+            {
+                case "pause":
+                case "p":
+                    aircraft.Paused = true;
+                    break;
+                case "unpause":
+                case "up":
+                    aircraft.Paused = false;
+                    break;
+                case "remove":
+                case "delete":
+                case "del":
+                    // TODO: Delete Aircraft
+                    //_ = aircraft.Disconnect();
+                    break;
+                case "fh":
+                    cmd = new FlyHeadingCommand();
+                    break;
+                case "tl":
+                    cmd = new TurnLeftHeadingCommand();
+                    break;
+                case "tr":
+                    cmd = new TurnRightHeadingCommand();
+                    break;
+                case "tlb":
+                    cmd = new TurnLeftByHeadingCommand();
+                    break;
+                case "trb":
+                    cmd = new TurnRightByHeadingCommand();
+                    break;
+                case "fph":
+                    cmd = new FlyPresentHeadingCommand();
+                    break;
+                case "dephdg":
+                case "dh":
+                case "lh":
+                case "leavehdg":
+                    cmd = new DepartOnHeadingCommand();
+                    break;
+                case "hold":
+                    cmd = new HoldCommand();
+                    break;
+                case "loc":
+                case "fac":
+                case "fat":
+                    cmd = new LocCommand();
+                    break;
+                case "ils":
+                case "app":
+                case "apch":
+                    cmd = new IlsCommand();
+                    break;
+                case "int":
+                case "intercept":
+                    cmd = new InterceptCourseCommand();
+                    break;
+                case "direct":
+                case "dct":
+                case "dir":
+                    cmd = new DirectWaypointCommand();
+                    break;
+                case "speed":
+                case "spd":
+                    cmd = new SpeedCommand();
+                    break;
+                case "alt":
+                case "cm":
+                case "dm":
+                case "clm":
+                case "climb":
+                case "des":
+                case "descend":
+                    cmd = new AltitudeCommand();
+                    break;
+                default:
+                    logger($"ERROR: Command {commandName} not valid!");
+                    return args;
+            }
+
+            if (cmd != null)
+            {
+                // Get new args after processing command
+                // TODO: Change IAircraftCommand to SimAircraft
+                //cmd.Aircraft = aircraft;
+                cmd.Logger = logger;
+
+                // Make sure command is valid before running.
+                if (cmd.HandleCommand(ref args))
+                {
+                    // Add to Queue
+                    lock (commandQueueLock)
+                    {
+                        commandQueue.Enqueue(cmd);
+                    }
+
+                    // Launch thread to execute queue
+                    Thread t = new Thread(ProcessNextCommand);
+                    t.Start();
+                }
+            }
+
+            // Return args
+            return args;
+        }
+
+        // TODO: Remove this!!!
         public static List<string> HandleCommand(string commandName, VatsimClientPilot aircraft, List<string> args, Action<string> logger)
         {
             string cmdNameNormalized = commandName.ToLower();

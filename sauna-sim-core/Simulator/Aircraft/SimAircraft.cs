@@ -2,9 +2,11 @@
 using Newtonsoft.Json.Linq;
 using SaunaSim.Core.Data;
 using SaunaSim.Core.Simulator.Aircraft.Control;
+using SaunaSim.Core.Simulator.Commands;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -14,12 +16,13 @@ namespace SaunaSim.Core.Simulator.Aircraft
 {
     public enum ConnectionStatusType
     {
+        WAITING,
         DISCONNECTED,
         CONNECTING,
         CONNECTED
     }
 
-    public class Aircraft : IDisposable
+    public class SimAircraft : IDisposable
     {
         private Thread _posUpdThread;
         private PauseableTimer _delayTimer;
@@ -39,7 +42,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
         public int Port { get; private set; }
         public bool IsVatsimServer { get; private set; } = false;
         public int Rating { get; set; } = 1;
-        public ConnectionStatusType ConnectionStatus => ConnectionStatusType.DISCONNECTED;
+        public ConnectionStatusType ConnectionStatus { get; private set; } = ConnectionStatusType.WAITING;
 
         // Aircraft Info
         public AircraftPosition Position { get => _position; set => _position = value; }
@@ -92,7 +95,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
         public ConstraintType Assigned_IAS_Type { get; set; } = ConstraintType.FREE;
 
 
-        public Aircraft(string callsign, string networkId, string password, string fullname, string hostname, int port, bool vatsim, string protocol, double lat, double lon, double alt, double hdg_mag, int delayMs = 0)
+        public SimAircraft(string callsign, string networkId, string password, string fullname, string hostname, int port, bool vatsim, string protocol, double lat, double lon, double alt, double hdg_mag, int delayMs = 0)
         {
             Callsign = callsign;
             NetworkId = networkId;
@@ -137,19 +140,43 @@ namespace SaunaSim.Core.Simulator.Aircraft
             }
         }
 
+        private void OnFrequencyMessageReceived(object sender, EventArgs e)
+        {
+            // TODO: Check if frequency is equal to command frequency
+            {
+                string freqMessage = "";
+
+                // Split message into args
+                List<string> split = freqMessage.Split(' ').ToList();
+
+                // Loop through command list
+                while (split.Count > 0)
+                {
+                    // Get command name
+                    string command = split[0].ToLower();
+                    split.RemoveAt(0);
+                    
+                    split = CommandHandler.HandleCommand(command, this, split, (string msg) =>
+                    {
+                        string returnMsg = msg.Replace($"{Callsign} ", "");
+                        // TODO: Send message back
+                    });
+                }
+            }
+        }
+
         private void OnTimerElapsed(object sender, ElapsedEventArgs e)
         {
             DelayMs = -1;
-            if (_delayTimer != null)
-            {
-                _delayTimer.Stop();
-            }
+            _delayTimer?.Stop();
 
             // TODO: Connect to Network
+            ConnectionStatus = ConnectionStatusType.CONNECTING;
         }
 
         private void OnConnectionEstablished(object sender, EventArgs e)
         {
+            ConnectionStatus = ConnectionStatusType.CONNECTED;
             // Start Position Update Thread
             _shouldUpdatePosition = true;
             _posUpdThread = new Thread(new ThreadStart(AircraftPositionWorker));
@@ -162,6 +189,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
 
         private void OnConnectionTerminated(object sender, EventArgs e)
         {
+            ConnectionStatus = ConnectionStatusType.DISCONNECTED;
             _shouldUpdatePosition = false;
             _delayTimer?.Stop();
         }
@@ -219,7 +247,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
             }
         }
 
-        ~Aircraft()
+        ~SimAircraft()
         {
             // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
             Dispose(disposing: false);

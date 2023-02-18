@@ -31,19 +31,19 @@ namespace SaunaSim.Api.Controllers
         }
 
         [HttpGet("settings")]
-        public AppSettings GetSettings()
+        public AppSettingsRequestResponse GetSettings()
         {
-            return AppSettingsManager.Settings;
+            return new AppSettingsRequestResponse(AppSettingsManager.Settings);
         }
 
         [HttpPost("settings")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public ActionResult<AppSettings> UpdateSettings(AppSettings settings)
+        public ActionResult<AppSettings> UpdateSettings(AppSettingsRequestResponse settings)
         {
-            AppSettingsManager.Settings = settings;
+            AppSettingsManager.Settings = settings.ToAppSettings();
 
-            return Ok(AppSettingsManager.Settings);
+            return Ok(new AppSettingsRequestResponse(AppSettingsManager.Settings));
         }
 
         [HttpPost("loadMagneticFile")]

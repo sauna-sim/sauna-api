@@ -231,10 +231,10 @@ namespace SaunaSim.Core
 
                     // Send Position
                     string posStr = $"@{(char)XpdrMode}:{Callsign}:{Squawk}:{Rating}:{Position.Latitude}:{Position.Longitude}:{Position.AbsoluteAltitude}:{Position.GroundSpeed}:{posdata}:{Position.PresAltDiff}";
-                    if (AppSettingsManager.SendIas)
-                    {
-                        posStr += $":{Position.IndicatedAirSpeed}";
-                    }
+                    //if (AppSettingsManager.SendIas)
+                    //{
+                    //    posStr += $":{Position.IndicatedAirSpeed}";
+                    //}
                     _ = ConnHandler.SendData(posStr);
 
                     Thread.Sleep(AppSettingsManager.UpdateRate);
