@@ -4,13 +4,14 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using SaunaSim.Core.Data;
+using SaunaSim.Core.Simulator.Aircraft;
 using SaunaSim.Core.Simulator.Aircraft.Control.Instructions.Lateral;
 
 namespace SaunaSim.Core.Simulator.Commands
 {
     public class LocCommand : IAircraftCommand
     {
-        public VatsimClientPilot Aircraft { get; set; }
+        public SimAircraft Aircraft { get; set; }
         public Action<string> Logger { get; set; }
 
         private Localizer _loc;
@@ -21,7 +22,7 @@ namespace SaunaSim.Core.Simulator.Commands
             Aircraft.Control.ArmedLateralInstruction = instr;
         }
 
-        public bool HandleCommand(VatsimClientPilot aircraft, Action<string> logger, string runway)
+        public bool HandleCommand(SimAircraft aircraft, Action<string> logger, string runway)
         {
             Aircraft = aircraft;
             Logger = logger;

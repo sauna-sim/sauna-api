@@ -1,6 +1,5 @@
 using SaunaSim.Api.ApiObjects.Aircraft;
 using SaunaSim.Core;
-using SaunaSim.Core.Clients;
 using SaunaSim.Core.Data;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -9,10 +8,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using VatsimAtcTrainingSimulator;
 using SaunaSim.Core.Simulator.Aircraft.Control.FMS.Legs;
 using SaunaSim.Core.Simulator.Aircraft.Control.FMS;
 using SaunaSim.Core.Simulator.Aircraft;
+using System.Runtime.CompilerServices;
 
 namespace SaunaSim.Api.Controllers
 {
@@ -35,14 +34,17 @@ namespace SaunaSim.Api.Controllers
         {
             try
             {
-                VatsimClientPilot pilot = new VatsimClientPilot(request.Callsign, request.Cid, request.Password, request.FullName, request.Server, request.Port, request.VatsimServer, request.Protocol)
+                SimAircraft pilot = new SimAircraft(request.Callsign, request.Cid, request.Password, request.FullName, request.Server, (ushort)request.Port, request.VatsimServer, request.Protocol, request.Position.Latitude, request.Position.Longitude, request.Position.IndicatedAltitude, request.Position.MagneticHeading)
                 {
-                    Logger = (string msg) =>
-                    {
+                    LogInfo = (string msg) => {
                         _logger.LogInformation($"{request.Callsign}: {msg}");
                     },
-
-                    Rating = request.PilotRating,
+                    LogWarn = (string msg) => {
+                        _logger.LogWarning($"{request.Callsign}: {msg}");
+                    },
+                    LogError = (string msg) => {
+                        _logger.LogError($"{request.Callsign}: {msg}");
+                    },
 
                     XpdrMode = request.TransponderMode,
                     Squawk = request.Squawk,
@@ -50,9 +52,6 @@ namespace SaunaSim.Api.Controllers
                     FlightPlan = request.FlightPlan,
                 };
 
-                pilot.Position.Latitude = request.Position.Latitude;
-                pilot.Position.Longitude = request.Position.Longitude;
-                pilot.Position.IndicatedAltitude = request.Position.IndicatedAltitude;
 
                 if (request.Position.IsMachNumber)
                 {
@@ -62,7 +61,7 @@ namespace SaunaSim.Api.Controllers
                     pilot.Position.IndicatedAirSpeed = request.Position.IndicatedSpeed;
                 }
 
-                pilot.Position.Heading_Mag = request.Position.MagneticHeading;
+
 
                 List<IRouteLeg> legs = new List<IRouteLeg>();
 
@@ -124,8 +123,8 @@ namespace SaunaSim.Api.Controllers
                 AltitudeHoldInstruction altInstr = new AltitudeHoldInstruction((int)pilot.Position.IndicatedAltitude);
                 pilot.Control.CurrentVerticalInstruction = altInstr;
 
-                ClientsHandler.AddClient(pilot);
-                pilot.ShouldSpawn = true;
+                SimAircraftHandler.AddAircraft(pilot);
+                pilot.Start();
 
                 return Ok(new AircraftResponse(pilot, true));
             } catch (Exception e)
@@ -137,12 +136,11 @@ namespace SaunaSim.Api.Controllers
         public List<AircraftResponse> GetAllAircraft()
         {
             List<AircraftResponse> pilots = new List<AircraftResponse>();
-            foreach (var disp in ClientsHandler.DisplayableList)
+            foreach (var pilot in SimAircraftHandler.Aircraft)
             {
-                if (disp.client is VatsimClientPilot pilot)
-                {
-                    pilots.Add(new AircraftResponse(pilot));
-                }
+
+                pilots.Add(new AircraftResponse(pilot));
+
             }
             return pilots;
         }
@@ -151,12 +149,9 @@ namespace SaunaSim.Api.Controllers
         public List<AircraftResponse> GetAllAircraftWithFms()
         {
             List<AircraftResponse> pilots = new List<AircraftResponse>();
-            foreach (var disp in ClientsHandler.DisplayableList)
+            foreach (var pilot in SimAircraftHandler.Aircraft)
             {
-                if (disp.client is VatsimClientPilot pilot)
-                {
-                    pilots.Add(new AircraftResponse(pilot, true));
-                }
+                pilots.Add(new AircraftResponse(pilot, true));
             }
             return pilots;
         }
@@ -166,14 +161,14 @@ namespace SaunaSim.Api.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public ActionResult<AircraftResponse> GetAircraftByCallsign(string callsign)
         {
-            IVatsimClient client = ClientsHandler.GetClientByCallsign(callsign);
+            SimAircraft client = SimAircraftHandler.GetAircraftByCallsign(callsign);
 
-            if (client == null || !(client is VatsimClientPilot))
+            if (client == null)
             {
                 return BadRequest("The aircraft was not found!");
             }
 
-            return Ok(new AircraftResponse((VatsimClientPilot)client, true));
+            return Ok(new AircraftResponse(client, true));
         }
 
         [HttpGet("getByPartialCallsign/{callsign}")]
@@ -181,27 +176,27 @@ namespace SaunaSim.Api.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public ActionResult<AircraftResponse> GetAircraftByPartialCallsign(string callsign)
         {
-            IVatsimClient client = ClientsHandler.GetClientWhichContainsCallsign(callsign);
+            SimAircraft client = SimAircraftHandler.GetAircraftWhichContainsCallsign(callsign);
 
-            if (client == null || !(client is VatsimClientPilot))
+            if (client == null)
             {
                 return BadRequest("The aircraft was not found!");
             }
 
-            return Ok(new AircraftResponse((VatsimClientPilot)client, true));
+            return Ok(new AircraftResponse(client, true));
         }
 
         [HttpPost("all/pause")]
         public ActionResult PauseAll()
         {
-            ClientsHandler.AllPaused = true;
+            SimAircraftHandler.AllPaused = true;
             return Ok();
         }
 
         [HttpPost("all/unpause")]
         public ActionResult UnpauseAll()
         {
-            ClientsHandler.AllPaused = false;
+            SimAircraftHandler.AllPaused = false;
             return Ok();
         }
 
@@ -210,22 +205,22 @@ namespace SaunaSim.Api.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public ActionResult<AircraftResponse> RemoveAircraftByCallsign(string callsign)
         {
-            IVatsimClient client = ClientsHandler.GetClientByCallsign(callsign);
+            SimAircraft client = SimAircraftHandler.GetAircraftByCallsign(callsign);
 
-            if (client == null || !(client is VatsimClientPilot))
+            if (client == null)
             {
                 return BadRequest("The aircraft was not found!");
             }
 
-            ClientsHandler.RemoveClientByCallsign(callsign);
+            SimAircraftHandler.RemoveAircraftByCallsign(callsign);
 
-            return Ok(new AircraftResponse((VatsimClientPilot)client, true));
+            return Ok(new AircraftResponse(client, true));
         }
 
         [HttpDelete("all/remove")]
         public ActionResult RemoveAll()
         {
-            ClientsHandler.DisconnectAllClients();
+            SimAircraftHandler.DeleteAllAircraft();
             return Ok();
         }
 

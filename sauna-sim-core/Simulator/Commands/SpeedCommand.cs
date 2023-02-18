@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SaunaSim.Core.Simulator.Aircraft;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -10,7 +11,7 @@ namespace SaunaSim.Core.Simulator.Commands
     {
         public Action<string> Logger { get; set; }
 
-        public VatsimClientPilot Aircraft { get; set; }
+        public SimAircraft Aircraft { get; set; }
 
         private ConstraintType Type { get; set; }
 
@@ -23,7 +24,7 @@ namespace SaunaSim.Core.Simulator.Commands
             Aircraft.Assigned_IAS_Type = Type;
         }
 
-        public bool HandleCommand(VatsimClientPilot aircraft, Action<string> logger, ConstraintType constraintType, int speed)
+        public bool HandleCommand(SimAircraft aircraft, Action<string> logger, ConstraintType constraintType, int speed)
         {
             Aircraft = aircraft;
             Logger = logger;

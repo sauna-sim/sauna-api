@@ -12,7 +12,7 @@ namespace SaunaSim.Core.Simulator.Commands
     {
         public Action<string> Logger { get; set; }
 
-        public VatsimClientPilot Aircraft { get; set; }
+        public SimAircraft Aircraft { get; set; }
 
         private int Hdg { get; set; }
 
@@ -21,7 +21,7 @@ namespace SaunaSim.Core.Simulator.Commands
             Aircraft.Control.CurrentLateralInstruction = new HeadingHoldInstruction(Hdg);
         }
 
-        public bool HandleCommand(VatsimClientPilot aircraft, Action<string> logger, int hdg)
+        public bool HandleCommand(SimAircraft aircraft, Action<string> logger, int hdg)
         {
             Aircraft = aircraft;
             Logger = logger;

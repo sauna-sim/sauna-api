@@ -8,7 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using VatsimAtcTrainingSimulator;
+using SaunaSim.Core.Simulator.Aircraft;
 
 namespace SaunaSim.Api.Controllers
 {
@@ -29,14 +29,14 @@ namespace SaunaSim.Api.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public ActionResult SendAltitudeCommand(AltitudeCommandRequest request)
         {
-            IVatsimClient client = ClientsHandler.GetClientByCallsign(request.Callsign);
+            SimAircraft client = SimAircraftHandler.GetAircraftByCallsign(request.Callsign);
 
-            if (client == null || !(client is VatsimClientPilot))
+            if (client == null)
             {
                 return BadRequest("The aircraft was not found!");
             }
 
-            VatsimClientPilot aircraft = (VatsimClientPilot) client;
+            SimAircraft aircraft = client;
 
             double altimSetting = -1;
             if (request.Pressure > 0) {
@@ -58,14 +58,14 @@ namespace SaunaSim.Api.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public ActionResult SendDepartOnHeadingCommand(DepartOnHeadingCommandRequest request)
         {
-            IVatsimClient client = ClientsHandler.GetClientByCallsign(request.Callsign);
+            SimAircraft client = SimAircraftHandler.GetAircraftByCallsign(request.Callsign);
 
-            if (client == null || !(client is VatsimClientPilot))
+            if (client == null)
             {
                 return BadRequest("The aircraft was not found!");
             }
 
-            VatsimClientPilot aircraft = (VatsimClientPilot)client;
+            SimAircraft aircraft = client;
 
             DepartOnHeadingCommand command = new DepartOnHeadingCommand();
             bool result = command.HandleCommand(aircraft, (string msg) => _logger.LogInformation(msg), request.Waypoint, request.Heading);
@@ -82,14 +82,14 @@ namespace SaunaSim.Api.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public ActionResult SendDirectWaypointCommand(DirectWaypointCommandRequest request)
         {
-            IVatsimClient client = ClientsHandler.GetClientByCallsign(request.Callsign);
+            SimAircraft client = SimAircraftHandler.GetAircraftByCallsign(request.Callsign);
 
-            if (client == null || !(client is VatsimClientPilot))
+            if (client == null)
             {
                 return BadRequest("The aircraft was not found!");
             }
 
-            VatsimClientPilot aircraft = (VatsimClientPilot)client;
+            SimAircraft aircraft = client;
 
             DirectWaypointCommand command = new DirectWaypointCommand();
             bool result = command.HandleCommand(aircraft, (string msg) => _logger.LogInformation(msg), request.Waypoint);
@@ -106,14 +106,14 @@ namespace SaunaSim.Api.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public ActionResult SendFlyHeadingCommand(HeadingCommandRequest request)
         {
-            IVatsimClient client = ClientsHandler.GetClientByCallsign(request.Callsign);
+            SimAircraft client = SimAircraftHandler.GetAircraftByCallsign(request.Callsign);
 
-            if (client == null || !(client is VatsimClientPilot))
+            if (client == null)
             {
                 return BadRequest("The aircraft was not found!");
             }
 
-            VatsimClientPilot aircraft = (VatsimClientPilot)client;
+            SimAircraft aircraft = client;
 
             FlyHeadingCommand command = new FlyHeadingCommand();
             bool result = command.HandleCommand(aircraft, (string msg) => _logger.LogInformation(msg), request.Heading);
@@ -130,14 +130,14 @@ namespace SaunaSim.Api.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public ActionResult SendTurnLeftByHeadingCommand(DegTurnCommandRequest request)
         {
-            IVatsimClient client = ClientsHandler.GetClientByCallsign(request.Callsign);
+            SimAircraft client = SimAircraftHandler.GetAircraftByCallsign(request.Callsign);
 
-            if (client == null || !(client is VatsimClientPilot))
+            if (client == null)
             {
                 return BadRequest("The aircraft was not found!");
             }
 
-            VatsimClientPilot aircraft = (VatsimClientPilot)client;
+            SimAircraft aircraft = client;
 
             TurnLeftByHeadingCommand command = new TurnLeftByHeadingCommand();
             bool result = command.HandleCommand(aircraft, (string msg) => _logger.LogInformation(msg), request.DegreesToTurn);
@@ -154,14 +154,14 @@ namespace SaunaSim.Api.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public ActionResult SendTurnLeftHeadingCommand(HeadingCommandRequest request)
         {
-            IVatsimClient client = ClientsHandler.GetClientByCallsign(request.Callsign);
+            SimAircraft client = SimAircraftHandler.GetAircraftByCallsign(request.Callsign);
 
-            if (client == null || !(client is VatsimClientPilot))
+            if (client == null)
             {
                 return BadRequest("The aircraft was not found!");
             }
 
-            VatsimClientPilot aircraft = (VatsimClientPilot)client;
+            SimAircraft aircraft = client;
 
             TurnLeftHeadingCommand command = new TurnLeftHeadingCommand();
             bool result = command.HandleCommand(aircraft, (string msg) => _logger.LogInformation(msg), request.Heading);
@@ -178,14 +178,14 @@ namespace SaunaSim.Api.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public ActionResult SendTurnRightByHeadingCommand(DegTurnCommandRequest request)
         {
-            IVatsimClient client = ClientsHandler.GetClientByCallsign(request.Callsign);
+            SimAircraft client = SimAircraftHandler.GetAircraftByCallsign(request.Callsign);
 
-            if (client == null || !(client is VatsimClientPilot))
+            if (client == null)
             {
                 return BadRequest("The aircraft was not found!");
             }
 
-            VatsimClientPilot aircraft = (VatsimClientPilot)client;
+            SimAircraft aircraft = client;
 
             TurnRightByHeadingCommand command = new TurnRightByHeadingCommand();
             bool result = command.HandleCommand(aircraft, (string msg) => _logger.LogInformation(msg), request.DegreesToTurn);
@@ -202,14 +202,14 @@ namespace SaunaSim.Api.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public ActionResult SendTurnRightHeadingCommand(HeadingCommandRequest request)
         {
-            IVatsimClient client = ClientsHandler.GetClientByCallsign(request.Callsign);
+            SimAircraft client = SimAircraftHandler.GetAircraftByCallsign(request.Callsign);
 
-            if (client == null || !(client is VatsimClientPilot))
+            if (client == null)
             {
                 return BadRequest("The aircraft was not found!");
             }
 
-            VatsimClientPilot aircraft = (VatsimClientPilot)client;
+            SimAircraft aircraft = client;
 
             TurnRightHeadingCommand command = new TurnRightHeadingCommand();
             bool result = command.HandleCommand(aircraft, (string msg) => _logger.LogInformation(msg), request.Heading);
@@ -226,14 +226,14 @@ namespace SaunaSim.Api.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public ActionResult SendFlyPresentHeadingCommand(NoArgCommandRequest request)
         {
-            IVatsimClient client = ClientsHandler.GetClientByCallsign(request.Callsign);
+            SimAircraft client = SimAircraftHandler.GetAircraftByCallsign(request.Callsign);
 
-            if (client == null || !(client is VatsimClientPilot))
+            if (client == null)
             {
                 return BadRequest("The aircraft was not found!");
             }
 
-            VatsimClientPilot aircraft = (VatsimClientPilot)client;
+            SimAircraft aircraft = client;
 
             FlyPresentHeadingCommand command = new FlyPresentHeadingCommand();
             bool result = command.HandleCommand(aircraft, (string msg) => _logger.LogInformation(msg));
@@ -250,14 +250,14 @@ namespace SaunaSim.Api.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public ActionResult SendHoldCommand(HoldCommandRequest request)
         {
-            IVatsimClient client = ClientsHandler.GetClientByCallsign(request.Callsign);
+            SimAircraft client = SimAircraftHandler.GetAircraftByCallsign(request.Callsign);
 
-            if (client == null || !(client is VatsimClientPilot))
+            if (client == null)
             {
                 return BadRequest("The aircraft was not found!");
             }
 
-            VatsimClientPilot aircraft = (VatsimClientPilot)client;
+            SimAircraft aircraft = client;
 
             HoldCommand command = new HoldCommand();
             bool result = command.HandleCommand(aircraft, (string msg) => _logger.LogInformation(msg), request.Waypoint, request.PublishedHold, request.InboundCourse, request.TurnDirection, request.LegLengthType, request.LegLength);
@@ -274,14 +274,14 @@ namespace SaunaSim.Api.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public ActionResult SendIlsCommand(LocIlsCommandRequest request)
         {
-            IVatsimClient client = ClientsHandler.GetClientByCallsign(request.Callsign);
+            SimAircraft client = SimAircraftHandler.GetAircraftByCallsign(request.Callsign);
 
-            if (client == null || !(client is VatsimClientPilot))
+            if (client == null)
             {
                 return BadRequest("The aircraft was not found!");
             }
 
-            VatsimClientPilot aircraft = (VatsimClientPilot)client;
+            SimAircraft aircraft = client;
 
             IlsCommand command = new IlsCommand();
             bool result = command.HandleCommand(aircraft, (string msg) => _logger.LogInformation(msg), request.Runway);
@@ -298,14 +298,14 @@ namespace SaunaSim.Api.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public ActionResult SendLocCommand(LocIlsCommandRequest request)
         {
-            IVatsimClient client = ClientsHandler.GetClientByCallsign(request.Callsign);
+            SimAircraft client = SimAircraftHandler.GetAircraftByCallsign(request.Callsign);
 
-            if (client == null || !(client is VatsimClientPilot))
+            if (client == null)
             {
                 return BadRequest("The aircraft was not found!");
             }
 
-            VatsimClientPilot aircraft = (VatsimClientPilot)client;
+            SimAircraft aircraft = client;
 
             LocCommand command = new LocCommand();
             bool result = command.HandleCommand(aircraft, (string msg) => _logger.LogInformation(msg), request.Runway);
@@ -322,14 +322,14 @@ namespace SaunaSim.Api.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public ActionResult SendInterceptCourseCommand(InterceptCourseCommandRequest request)
         {
-            IVatsimClient client = ClientsHandler.GetClientByCallsign(request.Callsign);
+            SimAircraft client = SimAircraftHandler.GetAircraftByCallsign(request.Callsign);
 
-            if (client == null || !(client is VatsimClientPilot))
+            if (client == null)
             {
                 return BadRequest("The aircraft was not found!");
             }
 
-            VatsimClientPilot aircraft = (VatsimClientPilot)client;
+            SimAircraft aircraft = client;
 
             InterceptCourseCommand command = new InterceptCourseCommand();
             bool result = command.HandleCommand(aircraft, (string msg) => _logger.LogInformation(msg), request.Waypoint, request.Course);
@@ -346,14 +346,14 @@ namespace SaunaSim.Api.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public ActionResult SendSpeedCommand(SpeedCommandRequest request)
         {
-            IVatsimClient client = ClientsHandler.GetClientByCallsign(request.Callsign);
+            SimAircraft client = SimAircraftHandler.GetAircraftByCallsign(request.Callsign);
 
-            if (client == null || !(client is VatsimClientPilot))
+            if (client == null)
             {
                 return BadRequest("The aircraft was not found!");
             }
 
-            VatsimClientPilot aircraft = (VatsimClientPilot)client;
+            SimAircraft aircraft = client;
 
             SpeedCommand command = new SpeedCommand();
             bool result = command.HandleCommand(aircraft, (string msg) => _logger.LogInformation(msg), request.ConstraintType, request.Speed);

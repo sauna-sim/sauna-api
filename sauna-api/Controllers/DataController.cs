@@ -14,7 +14,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using VatsimAtcTrainingSimulator;
+using FsdConnectorNet;
+using SaunaSim.Core.Data.Loaders;
 
 namespace SaunaSim.Api.Controllers
 {
@@ -41,7 +42,19 @@ namespace SaunaSim.Api.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public ActionResult<AppSettings> UpdateSettings(AppSettingsRequestResponse settings)
         {
-            AppSettingsManager.Settings = settings.ToAppSettings();
+            try
+            {
+                AppSettingsManager.Settings = settings.ToAppSettings();
+            }
+            catch (Exception ex)
+            {
+                if (ex is IndexOutOfRangeException || ex is FormatException || ex is OverflowException)
+                {
+                    return BadRequest("Command frequency was not in the correct format.");
+                }
+                throw;
+            }
+            
 
             return Ok(new AppSettingsRequestResponse(AppSettingsManager.Settings));
         }
@@ -130,7 +143,7 @@ namespace SaunaSim.Api.Controllers
                 }
             } catch (Exception ex)
             {
-                return BadRequest(ex);
+                return BadRequest(ex.Message);
             }
             return Ok();
         }
@@ -144,9 +157,9 @@ namespace SaunaSim.Api.Controllers
             {
                 string[] filelines = System.IO.File.ReadAllLines(request.FileName);
 
-                List<VatsimClientPilot> pilots = new List<VatsimClientPilot>();
+                List<SimAircraft> pilots = new List<SimAircraft>();
 
-                VatsimClientPilot lastPilot = null;
+                SimAircraft lastPilot = null;
 
                 foreach (string line in filelines)
                 {
@@ -155,17 +168,41 @@ namespace SaunaSim.Api.Controllers
                     {
                         string[] items = line.Split(':');
                         string callsign = items[1];
-                        XpdrMode xpdrMode = (XpdrMode)items[0].ToCharArray()[1];
+                        TransponderModeType xpdrMode;
+                        switch (items[0].ToCharArray()[1]) {
+                            case 'N':
+                                xpdrMode = TransponderModeType.ModeC;
+                                break;
+                            case 'S':
+                                xpdrMode = TransponderModeType.Standby;
+                                break;
+                            case 'Y':
+                                xpdrMode = TransponderModeType.Ident;
+                                break;
+                            default:
+                                xpdrMode = TransponderModeType.ModeC;
+                                break;
+                        }
 
-                        lastPilot = new VatsimClientPilot(callsign, request.Cid, request.Password, "Simulator Pilot", request.Server, request.Port, request.VatsimServer, request.Protocol) {
-                            Logger = (string msg) => {
+                        EuroScopeLoader.ReadVatsimPosFlag(Convert.ToInt32(items[8]), out double hdg, out double bank, out double pitch, out bool onGround);
+                        //SimAircraft(string callsign, string networkId, string password,        string fullname, string hostname, ushort port, bool vatsim,   ProtocolRevision protocol,      double lat, double lon, double alt, double hdg_mag, int delayMs = 0)
+                        lastPilot = new SimAircraft(callsign, request.Cid, request.Password, "Simulator Pilot", request.Server, (ushort)request.Port, request.VatsimServer, request.Protocol, Convert.ToDouble(items[4]), Convert.ToDouble(items[5]), Convert.ToDouble(items[6]), hdg) {
+                            LogInfo = (string msg) => {
                                 _logger.LogInformation($"{callsign}: {msg}");
-                            }
+                            },
+                            LogWarn = (string msg) => {
+                                _logger.LogWarning($"{callsign}: {msg}");
+                            },
+                            LogError = (string msg) => {
+                                _logger.LogError($"{callsign}: {msg}");
+                            },
+                            XpdrMode = xpdrMode,
                         };
+                        lastPilot.Position.IndicatedAirSpeed = 250.0;
 
-                        // Send init position
-                        lastPilot.SetInitialData(xpdrMode, Convert.ToInt32(items[2]), Convert.ToInt32(items[3]), Convert.ToDouble(items[4]), Convert.ToDouble(items[5]), Convert.ToDouble(items[6]), 250, Convert.ToInt32(items[8]), Convert.ToInt32(items[9]));
 
+
+                        
                         // Add to temp list
                         pilots.Add(lastPilot);
                     } else if (line.StartsWith("$FP"))
@@ -302,14 +339,14 @@ namespace SaunaSim.Api.Controllers
                     }
                 }
 
-                foreach (VatsimClientPilot pilot in pilots)
+                foreach (SimAircraft pilot in pilots)
                 {
-                    ClientsHandler.AddClient(pilot);
-                    pilot.ShouldSpawn = true;
+                    SimAircraftHandler.AddAircraft(pilot);
+                    pilot.Start();
                 }
             } catch (Exception ex)
             {
-                return BadRequest(ex);
+                return BadRequest(ex.StackTrace);
             }
             return Ok();
         }

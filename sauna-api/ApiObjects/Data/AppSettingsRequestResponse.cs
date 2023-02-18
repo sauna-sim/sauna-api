@@ -12,15 +12,18 @@ namespace SaunaSim.Api.ApiObjects.Data
 
         public AppSettingsRequestResponse(AppSettings settings)
         {
-            CommandFrequency = settings.CommandFrequency.ToString("000.000");
+            CommandFrequency = $"{settings.CommandFrequency.Item1:000}.{settings.CommandFrequency.Item2:000}";
             PosCalcRate = settings.PosCalcRate;
         }
 
         public AppSettings ToAppSettings()
         {
+            var split = CommandFrequency.Split('.');
+
             return new AppSettings {
-                CommandFrequency = Convert.ToDouble(this.CommandFrequency),
-                PosCalcRate = this.PosCalcRate
+                
+                CommandFrequency = (Convert.ToUInt16(split[0]), Convert.ToUInt16(split[1])),
+                PosCalcRate = this.PosCalcRate,
             };
         }
     }

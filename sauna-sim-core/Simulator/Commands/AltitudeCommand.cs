@@ -11,7 +11,7 @@ namespace SaunaSim.Core.Simulator.Commands
 {
     public class AltitudeCommand : IAircraftCommand
     {
-        public VatsimClientPilot Aircraft { get; set; }
+        public SimAircraft Aircraft { get; set; }
         public Action<string> Logger { get; set; }
         private int alt = 0;
         private bool isFlightLevel = false;
@@ -47,7 +47,7 @@ namespace SaunaSim.Core.Simulator.Commands
             Aircraft.Control.AddArmedVerticalInstruction(new AltitudeHoldInstruction(alt));
         }
 
-        public bool HandleCommand(VatsimClientPilot aircraft, Action<string> logger, int alt, bool isFlightLevel, double altimSetting, bool pressureInHg)
+        public bool HandleCommand(SimAircraft aircraft, Action<string> logger, int alt, bool isFlightLevel, double altimSetting, bool pressureInHg)
         {
             Aircraft = aircraft;
             Logger = logger;
