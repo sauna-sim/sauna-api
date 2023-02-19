@@ -12,6 +12,7 @@ using SaunaSim.Core.Simulator.Aircraft.Control.FMS.Legs;
 using SaunaSim.Core.Simulator.Aircraft.Control.FMS;
 using SaunaSim.Core.Simulator.Aircraft;
 using System.Runtime.CompilerServices;
+using SaunaSim.Api.Utilities;
 
 namespace SaunaSim.Api.Controllers
 {
@@ -34,7 +35,9 @@ namespace SaunaSim.Api.Controllers
         {
             try
             {
-                SimAircraft pilot = new SimAircraft(request.Callsign, request.Cid, request.Password, request.FullName, request.Server, (ushort)request.Port, request.Protocol, request.Position.Latitude, request.Position.Longitude, request.Position.IndicatedAltitude, request.Position.MagneticHeading)
+                SimAircraft pilot = new SimAircraft(request.Callsign, request.Cid, request.Password, request.FullName, request.Server, (ushort)request.Port, request.Protocol,
+                    ClientInfoLoader.GetClientInfo((string msg) => { _logger.LogWarning($"{request.Callsign}: {msg}"); }),
+                    request.Position.Latitude, request.Position.Longitude, request.Position.IndicatedAltitude, request.Position.MagneticHeading)
                 {
                     LogInfo = (string msg) => {
                         _logger.LogInformation($"{request.Callsign}: {msg}");

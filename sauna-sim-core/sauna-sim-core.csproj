@@ -20,6 +20,5 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\FsdConnectorNet\FsdConnectorNet\FsdConnectorNet.csproj" />
-    <ProjectReference Include="..\..\sauna-vatsim-private\sauna-vatsim-private\sauna-vatsim-private.csproj" />
   </ItemGroup>
 </Project>

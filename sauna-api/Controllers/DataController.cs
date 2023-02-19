@@ -16,6 +16,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using FsdConnectorNet;
 using SaunaSim.Core.Data.Loaders;
+using SaunaSim.Api.Utilities;
 
 namespace SaunaSim.Api.Controllers
 {
@@ -45,8 +46,7 @@ namespace SaunaSim.Api.Controllers
             try
             {
                 AppSettingsManager.Settings = settings.ToAppSettings();
-            }
-            catch (Exception ex)
+            } catch (Exception ex)
             {
                 if (ex is IndexOutOfRangeException || ex is FormatException || ex is OverflowException)
                 {
@@ -54,7 +54,7 @@ namespace SaunaSim.Api.Controllers
                 }
                 throw;
             }
-            
+
 
             return Ok(new AppSettingsRequestResponse(AppSettingsManager.Settings));
         }
@@ -135,7 +135,7 @@ namespace SaunaSim.Api.Controllers
                                 if (items.Length >= 3)
                                 {
                                     GeoUtil.ConvertVrcToDecimalDegs(items[1], items[2], out double lat, out double lon);
-                                    DataHandler.AddWaypoint(new Waypoint(items[0],  lat, lon));
+                                    DataHandler.AddWaypoint(new Waypoint(items[0], lat, lon));
                                 }
                                 break;
                         }
@@ -169,7 +169,8 @@ namespace SaunaSim.Api.Controllers
                         string[] items = line.Split(':');
                         string callsign = items[1];
                         TransponderModeType xpdrMode;
-                        switch (items[0].ToCharArray()[1]) {
+                        switch (items[0].ToCharArray()[1])
+                        {
                             case 'N':
                                 xpdrMode = TransponderModeType.ModeC;
                                 break;
@@ -186,7 +187,9 @@ namespace SaunaSim.Api.Controllers
 
                         EuroScopeLoader.ReadVatsimPosFlag(Convert.ToInt32(items[8]), out double hdg, out double bank, out double pitch, out bool onGround);
                         //SimAircraft(string callsign, string networkId, string password,        string fullname, string hostname, ushort port, bool vatsim,   ProtocolRevision protocol,      double lat, double lon, double alt, double hdg_mag, int delayMs = 0)
-                        lastPilot = new SimAircraft(callsign, request.Cid, request.Password, "Simulator Pilot", request.Server, (ushort)request.Port, request.Protocol, Convert.ToDouble(items[4]), Convert.ToDouble(items[5]), Convert.ToDouble(items[6]), hdg) {
+                        lastPilot = new SimAircraft(callsign, request.Cid, request.Password, "Simulator Pilot", request.Server, (ushort)request.Port, request.Protocol,
+                            ClientInfoLoader.GetClientInfo((string msg) => { _logger.LogWarning($"{callsign}: {msg}"); }),
+                            Convert.ToDouble(items[4]), Convert.ToDouble(items[5]), Convert.ToDouble(items[6]), hdg) {
                             LogInfo = (string msg) => {
                                 _logger.LogInformation($"{callsign}: {msg}");
                             },
@@ -202,7 +205,7 @@ namespace SaunaSim.Api.Controllers
 
 
 
-                        
+
                         // Add to temp list
                         pilots.Add(lastPilot);
                     } else if (line.StartsWith("$FP"))

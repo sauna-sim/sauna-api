@@ -2,13 +2,13 @@
 using FsdConnectorNet.Args;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using sauna_vatsim_private;
 using SaunaSim.Core.Data;
 using SaunaSim.Core.Simulator.Aircraft.Control;
 using SaunaSim.Core.Simulator.Commands;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
@@ -45,6 +45,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
         private AircraftPosition _position;
         private bool disposedValue;
         private bool _shouldUpdatePosition = false;
+        private ClientInfo _clientInfo;
 
         // Connection Info
         public LoginInfo LoginInfo { get; private set; }
@@ -106,9 +107,10 @@ namespace SaunaSim.Core.Simulator.Aircraft
         public ConstraintType Assigned_IAS_Type { get; set; } = ConstraintType.FREE;
 
 
-        public SimAircraft(string callsign, string networkId, string password, string fullname, string hostname, ushort port, ProtocolRevision protocol, double lat, double lon, double alt, double hdg_mag, int delayMs = 0)
+        public SimAircraft(string callsign, string networkId, string password, string fullname, string hostname, ushort port, ProtocolRevision protocol, ClientInfo clientInfo, double lat, double lon, double alt, double hdg_mag, int delayMs = 0)
         {
             LoginInfo = new LoginInfo(networkId, password, callsign, fullname, PilotRatingType.Student, hostname, protocol, AppSettingsManager.CommandFrequency, port);
+            _clientInfo = clientInfo;
             Connection = new Connection();
             Connection.Connected += OnConnectionEstablished;
             Connection.Disconnected += OnConnectionTerminated;
@@ -180,8 +182,8 @@ namespace SaunaSim.Core.Simulator.Aircraft
             DelayMs = -1;
             _delayTimer?.Stop();
 
-            Connection.Connect(new ClientInfo(ClientInformation.ClientName, ClientInformation.ClientId, ClientInformation.PrivateKey, ClientInformation.Version.Item1, ClientInformation.Version.Item2, ClientInformation.Version.Item3),
-                LoginInfo, GetFsdPilotPosition(), AircraftConfig, new PlaneInfo(AircraftType, AirlineCode));
+            // Connect to FSD Server
+            Connection.Connect(_clientInfo, LoginInfo, GetFsdPilotPosition(), AircraftConfig, new PlaneInfo(AircraftType, AirlineCode));
             ConnectionStatus = ConnectionStatusType.CONNECTING;
         }
 
