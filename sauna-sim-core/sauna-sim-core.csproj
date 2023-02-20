@@ -19,6 +19,6 @@
     <PackageReference Include="PShivaraman.AviationCalcUtilNet.$(RunId)" Version="1.0.12" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\FsdConnectorNet\FsdConnectorNet\FsdConnectorNet.csproj" />
+    <ProjectReference Include="..\FsdConnectorNet\FsdConnectorNet\FsdConnectorNet.csproj" />
   </ItemGroup>
 </Project>
