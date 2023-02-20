@@ -24,6 +24,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="fsd_connector_ffi.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="magnetic\WMM.COF">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
