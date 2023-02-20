@@ -16,6 +16,9 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="13.0.2" />
-    <PackageReference Include="PShivaraman.AviationCalcUtilNet.$(RunId)" Version="1.0.12"/>
+    <PackageReference Include="PShivaraman.AviationCalcUtilNet.$(RunId)" Version="1.0.12" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\FsdConnectorNet\FsdConnectorNet\FsdConnectorNet.csproj" />
   </ItemGroup>
 </Project>

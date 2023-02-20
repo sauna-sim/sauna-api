@@ -11,6 +11,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="PShivaraman.AviationCalcUtilNet.win-x64" Version="1.0.12" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\FsdConnectorNet\FsdConnectorNet\FsdConnectorNet.csproj" />
     <ProjectReference Include="..\sauna-sim-core\sauna-sim-core.csproj" />
   </ItemGroup>
 

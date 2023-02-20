@@ -12,7 +12,7 @@ namespace SaunaSim.Core.Simulator.Commands
 {
     public class DepartOnHeadingCommand : IAircraftCommand
     {
-        public VatsimClientPilot Aircraft { get; set; }
+        public SimAircraft Aircraft { get; set; }
         public Action<string> Logger { get; set; }
 
         private int hdg;
@@ -28,7 +28,7 @@ namespace SaunaSim.Core.Simulator.Commands
             }
         }
 
-        public bool HandleCommand(VatsimClientPilot aircraft, Action<string> logger, string waypoint, int heading)
+        public bool HandleCommand(SimAircraft aircraft, Action<string> logger, string waypoint, int heading)
         {
             Aircraft = aircraft;
             Logger = logger;

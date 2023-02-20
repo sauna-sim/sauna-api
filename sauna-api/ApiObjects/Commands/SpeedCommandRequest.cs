@@ -1,4 +1,5 @@
 using SaunaSim.Core;
+using SaunaSim.Core.Simulator.Aircraft;
 
 namespace SaunaSim.Api.ApiObjects.Commands
 {

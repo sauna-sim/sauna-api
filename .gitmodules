@@ -1,0 +1,3 @@
+[submodule "FsdConnectorNet"]
+	path = FsdConnectorNet
+	url = git@github.com:caspianmerlin/FsdConnectorNet.git

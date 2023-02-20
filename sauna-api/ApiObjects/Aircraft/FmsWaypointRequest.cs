@@ -1,5 +1,6 @@
 
 using SaunaSim.Core;
+using SaunaSim.Core.Simulator.Aircraft;
 using SaunaSim.Core.Simulator.Aircraft.Control.FMS;
 
 namespace SaunaSim.Api.ApiObjects.Aircraft

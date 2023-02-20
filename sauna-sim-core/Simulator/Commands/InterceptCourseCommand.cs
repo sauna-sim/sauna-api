@@ -11,7 +11,7 @@ namespace SaunaSim.Core.Simulator.Commands
 {
     public class InterceptCourseCommand : IAircraftCommand
     {
-        public VatsimClientPilot Aircraft { get; set; }
+        public SimAircraft Aircraft { get; set; }
         public Action<string> Logger { get; set; }
 
         private int course;
@@ -22,7 +22,7 @@ namespace SaunaSim.Core.Simulator.Commands
             Aircraft.Control.ArmedLateralInstruction = new InterceptCourseInstruction(new RouteWaypoint(wp), course);
         }
 
-        public bool HandleCommand(VatsimClientPilot aircraft, Action<string> logger, string waypoint, int course)
+        public bool HandleCommand(SimAircraft aircraft, Action<string> logger, string waypoint, int course)
         {
             Aircraft = aircraft;
             Logger = logger;

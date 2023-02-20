@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using SaunaSim.Core.Data;
+using SaunaSim.Core.Simulator.Aircraft;
 using SaunaSim.Core.Simulator.Aircraft.Control.FMS;
 using SaunaSim.Core.Simulator.Aircraft.Control.FMS.Legs;
 
@@ -11,7 +12,7 @@ namespace SaunaSim.Core.Simulator.Commands
 {
     public class HoldCommand : IAircraftCommand
     {
-        public VatsimClientPilot Aircraft { get; set; }
+        public SimAircraft Aircraft { get; set; }
         public Action<string> Logger { get; set; }
 
         public void ExecuteCommand()
@@ -19,7 +20,7 @@ namespace SaunaSim.Core.Simulator.Commands
             
         }
 
-        public bool HandleCommand(VatsimClientPilot aircraft, Action<string> logger, string waypoint, bool isPublishedHold, int inboundCourse, HoldTurnDirectionEnum turnDir, HoldLegLengthTypeEnum legLengthType, double legLength)
+        public bool HandleCommand(SimAircraft aircraft, Action<string> logger, string waypoint, bool isPublishedHold, int inboundCourse, HoldTurnDirectionEnum turnDir, HoldLegLengthTypeEnum legLengthType, double legLength)
         {
             Aircraft = aircraft;
             Logger = logger;

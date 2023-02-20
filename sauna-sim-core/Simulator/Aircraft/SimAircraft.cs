@@ -1,25 +1,42 @@
-﻿using Newtonsoft.Json;
+﻿using FsdConnectorNet;
+using FsdConnectorNet.Args;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using SaunaSim.Core.Data;
 using SaunaSim.Core.Simulator.Aircraft.Control;
+using SaunaSim.Core.Simulator.Commands;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Timers;
 
+
 namespace SaunaSim.Core.Simulator.Aircraft
 {
+
+    public enum ConstraintType
+    {
+        FREE = -2,
+        LESS = -1,
+        EXACT = 0,
+        MORE = 1
+    }
+
+
     public enum ConnectionStatusType
     {
+        WAITING,
         DISCONNECTED,
         CONNECTING,
         CONNECTED
     }
 
-    public class Aircraft : IDisposable
+    public class SimAircraft : IDisposable
     {
         private Thread _posUpdThread;
         private PauseableTimer _delayTimer;
@@ -28,24 +45,22 @@ namespace SaunaSim.Core.Simulator.Aircraft
         private AircraftPosition _position;
         private bool disposedValue;
         private bool _shouldUpdatePosition = false;
+        private ClientInfo _clientInfo;
 
         // Connection Info
-        public string Callsign { get; private set; }
-        public string NetworkId { get; private set; }
-        public string Password { get; private set; }
-        public string Fullname { get; private set; } = "Simulator Pilot";
-        public string Hostname { get; private set; }
-        public string Protocol { get; private set; }
-        public int Port { get; private set; }
-        public bool IsVatsimServer { get; private set; } = false;
-        public int Rating { get; set; } = 1;
-        public ConnectionStatusType ConnectionStatus => ConnectionStatusType.DISCONNECTED;
+        public LoginInfo LoginInfo { get; private set; }
+        public string Callsign => LoginInfo.callsign;
+        public ConnectionStatusType ConnectionStatus { get; private set; } = ConnectionStatusType.WAITING;
+        public Connection Connection { get; private set; }
 
         // Aircraft Info
         public AircraftPosition Position { get => _position; set => _position = value; }
-        public XpdrMode XpdrMode { get; set; }
+        public TransponderModeType XpdrMode { get; set; }
         public int Squawk { get; set; }
         public int DelayMs { get; set; }
+        public AircraftConfig AircraftConfig { get; set; }
+        public string AircraftType { get; private set; }
+        public string AirlineCode { get; private set; }
 
         // Loggers
         public Action<string> LogInfo { get; set; }
@@ -92,27 +107,29 @@ namespace SaunaSim.Core.Simulator.Aircraft
         public ConstraintType Assigned_IAS_Type { get; set; } = ConstraintType.FREE;
 
 
-        public Aircraft(string callsign, string networkId, string password, string fullname, string hostname, int port, bool vatsim, string protocol, double lat, double lon, double alt, double hdg_mag, int delayMs = 0)
+        public SimAircraft(string callsign, string networkId, string password, string fullname, string hostname, ushort port, ProtocolRevision protocol, ClientInfo clientInfo, double lat, double lon, double alt, double hdg_mag, int delayMs = 0)
         {
-            Callsign = callsign;
-            NetworkId = networkId;
-            Password = password;
-            Fullname = fullname;
-            Hostname = hostname;
-            Port = port;
-            IsVatsimServer = vatsim;
-            Protocol = protocol;
+            LoginInfo = new LoginInfo(networkId, password, callsign, fullname, PilotRatingType.Student, hostname, protocol, AppSettingsManager.CommandFrequency, port);
+            _clientInfo = clientInfo;
+            Connection = new Connection();
+            Connection.Connected += OnConnectionEstablished;
+            Connection.Disconnected += OnConnectionTerminated;
+            Connection.FrequencyMessageReceived += OnFrequencyMessageReceived;
+
             Paused = true;
             Position = new AircraftPosition
             {
                 Latitude = lat,
                 Longitude = lon,
-                IndicatedAirSpeed = alt,
+                IndicatedAltitude = alt,
                 Heading_Mag = hdg_mag
             };
             Control = new AircraftControl(new HeadingHoldInstruction(Convert.ToInt32(hdg_mag)), new AltitudeHoldInstruction(Convert.ToInt32(alt)));
             DelayMs = delayMs;
+            AircraftConfig = new AircraftConfig(true, false, false, true, true, false, false, 0, false, false, new AircraftEngine(true, false), new AircraftEngine(true, false));
             _flightPlan = "";
+            AircraftType = "E75L";
+            AirlineCode = "ASH";
         }
 
         public void Start()
@@ -137,19 +154,42 @@ namespace SaunaSim.Core.Simulator.Aircraft
             }
         }
 
+        private void OnFrequencyMessageReceived(object sender, FrequencyMessageEventArgs e)
+        {
+            if (e.Frequency == AppSettingsManager.CommandFrequency && e.Message.StartsWith($"{Callsign}, "))
+            {
+                // Split message into args
+                List<string> split = e.Message.Replace($"{Callsign}, ", "").Split(' ').ToList();
+
+                // Loop through command list
+                while (split.Count > 0)
+                {
+                    // Get command name
+                    string command = split[0].ToLower();
+                    split.RemoveAt(0);
+                    
+                    split = CommandHandler.HandleCommand(command, this, split, (string msg) =>
+                    {
+                        string returnMsg = msg.Replace($"{Callsign} ", "");
+                        Connection.SendFrequencyMessage(e.Frequency, returnMsg);
+                    });
+                }
+            }
+        }
+
         private void OnTimerElapsed(object sender, ElapsedEventArgs e)
         {
             DelayMs = -1;
-            if (_delayTimer != null)
-            {
-                _delayTimer.Stop();
-            }
+            _delayTimer?.Stop();
 
-            // TODO: Connect to Network
+            // Connect to FSD Server
+            Connection.Connect(_clientInfo, LoginInfo, GetFsdPilotPosition(), AircraftConfig, new PlaneInfo(AircraftType, AirlineCode));
+            ConnectionStatus = ConnectionStatusType.CONNECTING;
         }
 
         private void OnConnectionEstablished(object sender, EventArgs e)
         {
+            ConnectionStatus = ConnectionStatusType.CONNECTED;
             // Start Position Update Thread
             _shouldUpdatePosition = true;
             _posUpdThread = new Thread(new ThreadStart(AircraftPositionWorker));
@@ -162,6 +202,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
 
         private void OnConnectionTerminated(object sender, EventArgs e)
         {
+            ConnectionStatus = ConnectionStatusType.DISCONNECTED;
             _shouldUpdatePosition = false;
             _delayTimer?.Stop();
         }
@@ -190,10 +231,16 @@ namespace SaunaSim.Core.Simulator.Aircraft
                     }
 
                     Control.UpdatePosition(ref _position, AppSettingsManager.PosCalcRate);
+                    Connection.UpdatePosition(GetFsdPilotPosition());
                 }
 
                 Thread.Sleep(AppSettingsManager.PosCalcRate);
             }
+        }
+
+        public PilotPosition GetFsdPilotPosition()
+        {
+            return new PilotPosition(XpdrMode, (ushort)Squawk, Position.Latitude,Position.Longitude, Position.AbsoluteAltitude, Position.AbsoluteAltitude, Position.PressureAltitude, Position.GroundSpeed, Position.Pitch, Position.Bank, Position.Heading_True, false, Position.Velocity_X_MPerS, Position.Velocity_Y_MPerS, Position.Velocity_Z_MPerS, Position.Pitch_Velocity_RadPerS, Position.Heading_Velocity_RadPerS, Position.Bank_Velocity_RadPerS);
         }
 
         protected virtual void Dispose(bool disposing)
@@ -202,15 +249,14 @@ namespace SaunaSim.Core.Simulator.Aircraft
             {
                 if (disposing)
                 {
-                    // TODO: Disconnect from VATSIM
-
+                    Connection.Dispose();
                     _shouldUpdatePosition = false;
-                    _posUpdThread.Join();
+                    _posUpdThread?.Join();
                     _delayTimer?.Stop();
                     _delayTimer?.Dispose();
                 }
 
-                // TODO: Delete Connection Object
+                Connection = null;
                 _posUpdThread = null;
                 Position = null;
                 Control = null;
@@ -219,7 +265,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
             }
         }
 
-        ~Aircraft()
+        ~SimAircraft()
         {
             // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
             Dispose(disposing: false);

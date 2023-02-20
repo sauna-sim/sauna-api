@@ -10,7 +10,7 @@ namespace SaunaSim.Core.Simulator.Commands
 {
     public class TurnRightByHeadingCommand : IAircraftCommand
     {
-        public VatsimClientPilot Aircraft { get; set; }
+        public SimAircraft Aircraft { get; set; }
         public Action<string> Logger { get; set; }
 
         private int hdg;
@@ -19,7 +19,7 @@ namespace SaunaSim.Core.Simulator.Commands
         {
             Aircraft.Control.CurrentLateralInstruction = new HeadingHoldInstruction(hdg);
         }
-        public bool HandleCommand(VatsimClientPilot aircraft, Action<string> logger, int degsToTurn)
+        public bool HandleCommand(SimAircraft aircraft, Action<string> logger, int degsToTurn)
         {
             Aircraft = aircraft;
             Logger = logger;

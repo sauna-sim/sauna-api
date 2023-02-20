@@ -11,7 +11,7 @@ namespace SaunaSim.Core.Simulator.Commands
 {
     public class DirectWaypointCommand : IAircraftCommand
     {
-        public VatsimClientPilot Aircraft { get; set; }
+        public SimAircraft Aircraft { get; set; }
         public Action<string> Logger { get; set; }
 
         private Waypoint wp;
@@ -26,7 +26,7 @@ namespace SaunaSim.Core.Simulator.Commands
             Aircraft.Control.CurrentLateralInstruction = instr;
         }
 
-        public bool HandleCommand(VatsimClientPilot aircraft, Action<string> logger, string waypoint)
+        public bool HandleCommand(SimAircraft aircraft, Action<string> logger, string waypoint)
         {
             this.Aircraft = aircraft;
             this.Logger = logger;

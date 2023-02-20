@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SaunaSim.Core.Simulator.Aircraft;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -56,7 +57,7 @@ namespace SaunaSim.Core.Simulator.Commands
             return false;
         }
 
-        public static List<string> HandleCommand(string commandName, VatsimClientPilot aircraft, List<string> args, Action<string> logger)
+        public static List<string> HandleCommand(string commandName, SimAircraft aircraft, List<string> args, Action<string> logger)
         {
             string cmdNameNormalized = commandName.ToLower();
             IAircraftCommand cmd = null;
@@ -75,7 +76,7 @@ namespace SaunaSim.Core.Simulator.Commands
                 case "remove":
                 case "delete":
                 case "del":
-                    _ = aircraft.Disconnect();
+                    SimAircraftHandler.RemoveAircraftByCallsign(aircraft.Callsign);
                     break;
                 case "fh":
                     cmd = new FlyHeadingCommand();
@@ -165,5 +166,7 @@ namespace SaunaSim.Core.Simulator.Commands
             // Return args
             return args;
         }
+
+        
     }
 }

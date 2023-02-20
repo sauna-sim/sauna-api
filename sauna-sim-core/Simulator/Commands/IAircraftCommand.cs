@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SaunaSim.Core.Simulator.Aircraft;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,7 +9,7 @@ namespace SaunaSim.Core.Simulator.Commands
 {
     public interface IAircraftCommand
     {
-        VatsimClientPilot Aircraft { get; set; }
+        SimAircraft Aircraft { get; set; }
 
         Action<string> Logger { get; set; }
 

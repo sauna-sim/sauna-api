@@ -13,7 +13,7 @@ namespace SaunaSim.Core.Simulator.Commands
 {
     public class IlsCommand : IAircraftCommand
     {
-        public VatsimClientPilot Aircraft { get; set; }
+        public SimAircraft Aircraft { get; set; }
         public Action<string> Logger { get; set; }
 
         private Localizer _loc;
@@ -41,10 +41,10 @@ namespace SaunaSim.Core.Simulator.Commands
 
         public void OnLanded(object sender, EventArgs e)
         {
-            _ = Aircraft.Disconnect();
+            Aircraft.Dispose();
         }
 
-        public bool HandleCommand(VatsimClientPilot aircraft, Action<string> logger, string runway)
+        public bool HandleCommand(SimAircraft aircraft, Action<string> logger, string runway)
         {
             Aircraft = aircraft;
             Logger = logger;
