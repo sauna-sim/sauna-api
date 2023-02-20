@@ -8,10 +8,14 @@
     <OutputType>Exe</OutputType>
     <StartupObject>SaunaSim.Api.Program</StartupObject>
     <AssemblyName>SaunaApi</AssemblyName>
+	<RunId Condition="'$(RuntimeIdentifier)' == '' And $([MSBuild]::IsOSPlatform('Windows'))">win-$(Platform)</RunId>
+	<RunId Condition="'$(RuntimeIdentifier)' == '' And $([MSBuild]::IsOSPlatform('Linux'))">linux-$(Platform)</RunId>
+	<RunId Condition="'$(RuntimeIdentifier)' == '' And $([MSBuild]::IsOSPlatform('OSX'))">osx-$(Platform)</RunId>
+	<RunId Condition="'$(RunId)' == ''">$(RuntimeIdentifier)</RunId>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="PShivaraman.AviationCalcUtilNet.win-x64" Version="1.0.12" />
+    <PackageReference Include="PShivaraman.AviationCalcUtilNet.$(RunId)" Version="1.0.12" />
   </ItemGroup>
 
   <ItemGroup>
