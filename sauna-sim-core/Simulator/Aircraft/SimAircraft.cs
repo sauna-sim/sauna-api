@@ -14,6 +14,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Timers;
+using SaunaSim.Core.Simulator.Aircraft.Autopilot;
 
 
 namespace SaunaSim.Core.Simulator.Aircraft
