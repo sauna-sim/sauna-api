@@ -10,5 +10,6 @@ namespace SaunaSim.Core.Simulator.Aircraft.Performance
         public bool GearDown { get; set; }
         public int NormKias { get; set; }
         public int VsPenalty { get; set; }
+        public double PitchChange { get; set; }
     }
 }
