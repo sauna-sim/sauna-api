@@ -45,8 +45,8 @@ namespace SaunaSim.Core.Simulator.Aircraft
                     _altDens = MathUtil.ConvertMetersToFeet(AtmosUtil.CalculateDensityAltitude(p, T));
                 } else
                 {
-                    double T = MathUtil.ConvertCelsiusToKelvin(AtmosUtil.CalculateIsaTemp(_altPres));
-                    double p = AtmosUtil.ISA_STD_PRES_Pa;
+                    double T = AtmosUtil.CalculateTempAtAlt(MathUtil.ConvertFeetToMeters(_altAbs), 0, AtmosUtil.ISA_STD_TEMP_K);
+                    double p = AtmosUtil.CalculatePressureAtAlt(MathUtil.ConvertFeetToMeters(_altAbs), 0, AtmosUtil.ISA_STD_PRES_Pa, T);
                     _altDens = MathUtil.ConvertMetersToFeet(AtmosUtil.CalculateDensityAltitude(p, T));
                 }
             }
@@ -68,8 +68,8 @@ namespace SaunaSim.Core.Simulator.Aircraft
                 }
                 else
                 {
-                    double T = MathUtil.ConvertCelsiusToKelvin(AtmosUtil.CalculateIsaTemp(_altPres));
-                    double p = AtmosUtil.ISA_STD_PRES_Pa;
+                    double T = AtmosUtil.CalculateTempAtAlt(MathUtil.ConvertFeetToMeters(_altAbs), 0, AtmosUtil.ISA_STD_TEMP_K);
+                    double p = AtmosUtil.CalculatePressureAtAlt(MathUtil.ConvertFeetToMeters(_altAbs), 0, AtmosUtil.ISA_STD_PRES_Pa, T);
                     _altDens = MathUtil.ConvertMetersToFeet(AtmosUtil.CalculateDensityAltitude(p, T));
                 }
             }
@@ -260,8 +260,8 @@ namespace SaunaSim.Core.Simulator.Aircraft
                     _tas = AtmosUtil.ConvertIasToTas(_ias, AtmosUtil.ISA_STD_PRES_hPa, _altAbs, 0, AtmosUtil.ISA_STD_TEMP_K, out _mach);
 
                     // Density Alt
-                    double T = MathUtil.ConvertCelsiusToKelvin(AtmosUtil.CalculateIsaTemp(_altPres));
-                    double p = AtmosUtil.ISA_STD_PRES_Pa;
+                    double T = AtmosUtil.CalculateTempAtAlt(MathUtil.ConvertFeetToMeters(_altAbs), 0, AtmosUtil.ISA_STD_TEMP_K);
+                    double p = AtmosUtil.CalculatePressureAtAlt(MathUtil.ConvertFeetToMeters(_altAbs), 0, AtmosUtil.ISA_STD_PRES_Pa, T);
                     _altDens = MathUtil.ConvertMetersToFeet(AtmosUtil.CalculateDensityAltitude(p, T));
                 }
                 else if (_gribPoint != value)

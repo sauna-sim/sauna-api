@@ -16,7 +16,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Performance
 
         public static PerfDataPoint Interpolate(int x1, int x2, PerfDataPoint x1Dp, PerfDataPoint x2Dp, int x)
         {
-            double multiplier = (double)x / (x2 - x1);
+            double multiplier = (double)(x - x1) / (x2 - x1);
             PerfDataPoint newPoint = new PerfDataPoint()
             {
                 VsClimb = (int)PerfDataHandler.InterpolateNumbers(x1Dp.VsClimb, x2Dp.VsClimb, multiplier),

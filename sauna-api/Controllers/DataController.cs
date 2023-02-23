@@ -17,6 +17,7 @@ using System.Threading.Tasks;
 using FsdConnectorNet;
 using SaunaSim.Core.Data.Loaders;
 using SaunaSim.Api.Utilities;
+using SaunaSim.Core.Simulator.Aircraft.Performance;
 
 namespace SaunaSim.Api.Controllers
 {
@@ -189,6 +190,7 @@ namespace SaunaSim.Api.Controllers
                         //SimAircraft(string callsign, string networkId, string password,        string fullname, string hostname, ushort port, bool vatsim,   ProtocolRevision protocol,      double lat, double lon, double alt, double hdg_mag, int delayMs = 0)
                         lastPilot = new SimAircraft(callsign, request.Cid, request.Password, "Simulator Pilot", request.Server, (ushort)request.Port, request.Protocol,
                             ClientInfoLoader.GetClientInfo((string msg) => { _logger.LogWarning($"{callsign}: {msg}"); }),
+                            PerfDataHandler.LookupForAircraft("A320"),
                             Convert.ToDouble(items[4]), Convert.ToDouble(items[5]), Convert.ToDouble(items[6]), hdg) {
                             LogInfo = (string msg) => {
                                 _logger.LogInformation($"{callsign}: {msg}");
@@ -202,10 +204,7 @@ namespace SaunaSim.Api.Controllers
                             XpdrMode = xpdrMode,
                         };
                         lastPilot.Position.IndicatedAirSpeed = 250.0;
-
-
-
-
+                        
                         // Add to temp list
                         pilots.Add(lastPilot);
                     } else if (line.StartsWith("$FP"))

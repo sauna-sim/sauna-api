@@ -13,6 +13,7 @@ using SaunaSim.Core.Simulator.Aircraft.Control.FMS;
 using SaunaSim.Core.Simulator.Aircraft;
 using System.Runtime.CompilerServices;
 using SaunaSim.Api.Utilities;
+using SaunaSim.Core.Simulator.Aircraft.Performance;
 
 namespace SaunaSim.Api.Controllers
 {
@@ -37,6 +38,7 @@ namespace SaunaSim.Api.Controllers
             {
                 SimAircraft pilot = new SimAircraft(request.Callsign, request.Cid, request.Password, request.FullName, request.Server, (ushort)request.Port, request.Protocol,
                     ClientInfoLoader.GetClientInfo((string msg) => { _logger.LogWarning($"{request.Callsign}: {msg}"); }),
+                    PerfDataHandler.LookupForAircraft("A320"),
                     request.Position.Latitude, request.Position.Longitude, request.Position.IndicatedAltitude, request.Position.MagneticHeading)
                 {
                     LogInfo = (string msg) => {
@@ -139,12 +141,13 @@ namespace SaunaSim.Api.Controllers
         public List<AircraftResponse> GetAllAircraft()
         {
             List<AircraftResponse> pilots = new List<AircraftResponse>();
-            foreach (var pilot in SimAircraftHandler.Aircraft)
+            SimAircraftHandler.PerformOnAircraft((list =>
             {
-
-                pilots.Add(new AircraftResponse(pilot));
-
-            }
+                foreach (var pilot in list)
+                {
+                    pilots.Add(new AircraftResponse(pilot));
+                }
+            }));
             return pilots;
         }
 
@@ -152,10 +155,13 @@ namespace SaunaSim.Api.Controllers
         public List<AircraftResponse> GetAllAircraftWithFms()
         {
             List<AircraftResponse> pilots = new List<AircraftResponse>();
-            foreach (var pilot in SimAircraftHandler.Aircraft)
+            SimAircraftHandler.PerformOnAircraft((list =>
             {
-                pilots.Add(new AircraftResponse(pilot, true));
-            }
+                foreach (var pilot in list)
+                {
+                    pilots.Add(new AircraftResponse(pilot, true));
+                }
+            }));
             return pilots;
         }
 

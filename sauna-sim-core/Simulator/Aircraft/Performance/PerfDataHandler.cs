@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using AviationCalcUtilNet.MathTools;
 
 namespace SaunaSim.Core.Simulator.Aircraft.Performance
 {
@@ -70,11 +71,15 @@ namespace SaunaSim.Core.Simulator.Aircraft.Performance
                 MZFW_kg = 62500,
                 OEW_kg = 42600,
                 MFuel_kg = 23963,
+                DeltaMassVsPenalty_fpm = -900,
+                SpeedBrakeVsPenalty_fpm = -800,
+                DataPointMass_kg = 59000,
+                DataPointDeltaMass_kg = 74400,
                 DataPoints = new List<(int, List<(int, PerfDataPoint)>)>()
             };
             
             // Load PerfDataPoints from file
-            string[] filelines = System.IO.File.ReadAllLines(@".\perf-data-files\A320.csv");
+            string[] filelines = System.IO.File.ReadAllLines(AppDomain.CurrentDomain.BaseDirectory+ @"perf-data-files/A320.csv");
             (int, List<(int, PerfDataPoint)>) curAlt = (-1, null);
             foreach (var line in filelines)
             {
@@ -112,8 +117,8 @@ namespace SaunaSim.Core.Simulator.Aircraft.Performance
         public static (double accelFwd, double vs) CalculatePerformance(PerfData perfData, double pitch_degs, double thrustLeverPos, double ias_kts, double dens_alt_ft, double mass_kg, double spdBrake, int config)
         {
             PerfDataPoint dataPoint = perfData.GetDataPoint((int) dens_alt_ft, (int) ias_kts, (int) mass_kg, spdBrake, config);
-            double pitchPerc = (pitch_degs - dataPoint.PitchDescent) / (dataPoint.PitchClimb - dataPoint.PitchDescent);
-            double vs = pitchPerc * (dataPoint.VsClimb - dataPoint.VsDescent);
+            double pitchPerc = (pitch_degs + dataPoint.PitchDescent) / (dataPoint.PitchClimb - dataPoint.PitchDescent);
+            double vs = pitchPerc * (dataPoint.VsClimb - dataPoint.VsDescent) + dataPoint.VsDescent;
             double thrustDelta = thrustLeverPos - pitchPerc;
             double zeroAccelThrust = -dataPoint.AccelLevelIdleThrust / (dataPoint.AccelLevelMaxThrust - dataPoint.AccelLevelIdleThrust);
             double accelFwd = ((zeroAccelThrust + thrustDelta) * (dataPoint.AccelLevelMaxThrust - dataPoint.AccelLevelIdleThrust)) + dataPoint.AccelLevelIdleThrust;
@@ -124,6 +129,44 @@ namespace SaunaSim.Core.Simulator.Aircraft.Performance
         public static double InterpolateNumbers(double start, double end, double multiplier)
         {
             return multiplier * (end - start) + start;
+        }
+        
+        public static double CalculateFinalVelocity(double Vi, double a, double t)
+        {
+            return Vi + a * t;
+        }
+
+        public static double CalculateAcceleration(double Vi, double Vf, double t)
+        {
+            return Vf - Vi / t;
+        }
+
+        public static double CalculateDisplacement(double Vi, double a, double t)
+        {
+            return Vi * t + 0.5 * a * Math.Pow(t, 2);
+        }
+        
+        public static double ConvertTasToGs(double tas, double fpa_rads, double hwind)
+        {
+            double tas_parallel = tas * Math.Cos(fpa_rads);
+            return tas_parallel - hwind;
+        }
+
+        public static double ConvertGsToTas(double gs, double fpa_rads, double hwind)
+        {
+            double tas_parallel = gs + hwind;
+            double cosine = Math.Cos(fpa_rads);
+            return cosine == 0 ? 0 : tas_parallel / Math.Cos(fpa_rads);
+        }
+        
+        public static double ConvertFpmToMpers(double fpm)
+        {
+            return MathUtil.ConvertFeetToMeters(fpm) / 60;
+        }
+        
+        public static double ConvertMpersToFpm(double mpers)
+        {
+            return MathUtil.ConvertMetersToFeet(60 * mpers);
         }
     }
 }
