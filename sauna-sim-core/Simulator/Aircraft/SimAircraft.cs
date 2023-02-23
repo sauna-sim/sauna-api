@@ -153,7 +153,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
 
             // TODO: Remove This
             Position.Pitch = 2.5;
-            ThrustLeverPos = 0.8;
+            ThrustLeverPos = 0;
         }
 
         public void Start()
@@ -240,22 +240,30 @@ namespace SaunaSim.Core.Simulator.Aircraft
                 {
                     // TODO: Run Autopilot
                     // TODO: Remove
-                    if (Position.IndicatedAirSpeed > 250)
+                    double spdDelta = Position.IndicatedAirSpeed - 230;
+                    SpeedBrakePos = 0;
+                    Config = 0;
+                    ThrustLeverPos = 1;
+                    Position.Bank = 0;
+                    Mass_kg = PerformanceData.OEW_kg;
+                    if (spdDelta > double.Epsilon)
                     {
-                        ThrustLeverPos = Math.Max(ThrustLeverPos - 0.001, 0);
+                        if (Math.Abs(spdDelta) > 1)
+                        {
+                            Position.Pitch += 0.1;
+                        }
+                        else
+                        {
+                            Position.Pitch = PerfDataHandler.GetRequiredPitchForThrust(PerformanceData, ThrustLeverPos, 0, Position.IndicatedAirSpeed, Position.DensityAltitude,
+                                Mass_kg, SpeedBrakePos, Config);
+                        }
                     }
-                    else if (Position.IndicatedAirSpeed < 250)
+                    else if (spdDelta < double.Epsilon)
                     {
-                        ThrustLeverPos = Math.Min(ThrustLeverPos + 0.001, 1);
-                    }
-
-                    if (Position.VerticalSpeed > 1)
-                    {
-                        Position.Pitch -= 0.1;
-                    }
-                    else if (Position.VerticalSpeed < 1)
-                    {
-                        Position.Pitch += 0.1;
+                        if (Math.Abs(spdDelta) > 1)
+                        {
+                            Position.Pitch -= 0.1;
+                        }
                     }
 
                     // Calculate Performance Values
@@ -270,12 +278,11 @@ namespace SaunaSim.Core.Simulator.Aircraft
                     Position.VerticalSpeed = vs;
 
                     // Calculate Displacement
-                    double displacement = PerfDataHandler.CalculateDisplacement(MathUtil.ConvertKtsToMpers(curGs),
-                        PerfDataHandler.CalculateAcceleration(MathUtil.ConvertKtsToMpers(curGs), MathUtil.ConvertKtsToMpers(Position.GroundSpeed), t), t);
+                    double displacement = 0.5 * (MathUtil.ConvertKtsToMpers(Position.GroundSpeed + curGs)) * t;
                     double distanceTravelledNMi = MathUtil.ConvertMetersToNauticalMiles(displacement);
 
                     // Calculate Position
-                    if (Position.Bank < double.Epsilon)
+                    if (Math.Abs(Position.Bank) < double.Epsilon)
                     {
                         GeoPoint point = new GeoPoint(Position.PositionGeoPoint);
                         point.MoveByNMi(Position.Track_True, distanceTravelledNMi);
@@ -285,7 +292,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
                     else
                     {
                         // Calculate radius of turn
-                        double radiusOfTurn = GeoUtil.CalculateRadiusOfTurn(Position.Bank, Position.GroundSpeed);
+                        double radiusOfTurn = GeoUtil.CalculateRadiusOfTurn(Math.Abs(Position.Bank), Position.GroundSpeed);
 
                         // Calculate degrees to turn
                         double degreesToTurn = GeoUtil.CalculateDegreesTurned(distanceTravelledNMi, radiusOfTurn);
@@ -302,14 +309,14 @@ namespace SaunaSim.Core.Simulator.Aircraft
                         // Calculate new position
                         Position.Heading_Mag = chordLine.Item1;
                         GeoPoint point = new GeoPoint(Position.PositionGeoPoint);
-                        point.MoveByNMi(chordLine.Item2, distanceTravelledNMi);
+                        point.MoveByNMi(Position.Track_True, distanceTravelledNMi);
                         Position.Latitude = point.Lat;
                         Position.Longitude = point.Lon;
                         Position.Heading_Mag = endHeading;
                     }
 
                     // Calculate Altitude
-                    Position.IndicatedAltitude += PerfDataHandler.CalculateDisplacement(PerfDataHandler.ConvertFpmToMpers(Position.VerticalSpeed), 0, t);
+                    Position.IndicatedAltitude += Position.VerticalSpeed * t / 60;
 
                     /*
                     int slowDownKts = -2;
@@ -330,6 +337,9 @@ namespace SaunaSim.Core.Simulator.Aircraft
 
                     Control.UpdatePosition(ref _position, AppSettingsManager.PosCalcRate);*/
 
+                    // Recalculate values
+                    Position.UpdateGribPoint();
+                    
                     // Update FSD Position
                     Connection.UpdatePosition(GetFsdPilotPosition());
                 }
