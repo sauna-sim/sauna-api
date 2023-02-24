@@ -32,7 +32,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Control.Instructions.Vertical
             double deltaAltFt = MathUtil.ConvertMetersToFeet(MathUtil.ConvertNauticalMilesToMeters(deltaAltNMi));
 
             // Update altitude
-            position.AbsoluteAltitude += deltaAltFt;
+            position.TrueAltitude += deltaAltFt;
 
             // Update V/S
             position.VerticalSpeed = deltaAltFt * 60000 / posCalcInterval;

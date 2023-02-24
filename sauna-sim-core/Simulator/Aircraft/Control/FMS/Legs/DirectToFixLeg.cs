@@ -59,14 +59,14 @@ namespace SaunaSim.Core.Simulator.Aircraft.Control.FMS.Legs
             if (_trueCourse < 0 || _instr == null)
             {
                 _trueCourse = GeoUtil.CalculateDirectBearingAfterTurn(
-                        pos.PositionGeoPoint,
+                        pos.Position,
                         _endPoint.Point.PointPosition,
                         GeoUtil.CalculateRadiusOfTurn(GeoUtil.CalculateMaxBankAngle(pos.GroundSpeed, 25, 3), pos.GroundSpeed),
                         pos.Track_True);
 
                 if (_trueCourse < 0)
                 {
-                    _trueCourse = GeoPoint.FinalBearing(pos.PositionGeoPoint, _endPoint.Point.PointPosition);
+                    _trueCourse = GeoPoint.FinalBearing(pos.Position, _endPoint.Point.PointPosition);
                 }
 
                 _instr = new InterceptCourseInstruction(_endPoint.Point)

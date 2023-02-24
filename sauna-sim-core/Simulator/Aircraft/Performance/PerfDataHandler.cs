@@ -127,6 +127,17 @@ namespace SaunaSim.Core.Simulator.Aircraft.Performance
             return pitch_degs;
         }
 
+        public static double GetRequiredThrustForVs(PerfData perfData, double vs, double desiredAccelFwd, double ias_kts, double dens_alt_ft, double mass_kg, double spdBrake,
+            int config)
+        {
+            PerfDataPoint dataPoint = perfData.GetDataPoint((int) dens_alt_ft, (int) ias_kts, (int) mass_kg, spdBrake, config);
+
+            double zeroAccelThrust = -dataPoint.AccelLevelIdleThrust / (dataPoint.AccelLevelMaxThrust - dataPoint.AccelLevelIdleThrust);
+            double thrustDelta = (desiredAccelFwd - dataPoint.AccelLevelIdleThrust / (dataPoint.AccelLevelMaxThrust - dataPoint.AccelLevelIdleThrust)) - zeroAccelThrust;
+            double pitchPerc = (vs - dataPoint.VsDescent) / (dataPoint.VsClimb - dataPoint.VsDescent);
+            return thrustDelta - pitchPerc;
+        }
+
         public static (double accelFwd, double vs) CalculatePerformance(PerfData perfData, double pitch_degs, double thrustLeverPos, double ias_kts, double dens_alt_ft, double mass_kg, double spdBrake, int config)
         {
             PerfDataPoint dataPoint = perfData.GetDataPoint((int) dens_alt_ft, (int) ias_kts, (int) mass_kg, spdBrake, config);

@@ -17,6 +17,7 @@ using System.Timers;
 using AviationCalcUtilNet.GeoTools;
 using AviationCalcUtilNet.MathTools;
 using SaunaSim.Core.Simulator.Aircraft.Autopilot;
+using SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller;
 using SaunaSim.Core.Simulator.Aircraft.Performance;
 
 
@@ -39,6 +40,21 @@ namespace SaunaSim.Core.Simulator.Aircraft
         CONNECTED
     }
 
+    public enum FlightPhaseType
+    {
+        AT_GATE,
+        PUSH_BACK,
+        TAXI_OUT,
+        TAKE_OFF,
+        DEPARTURE,
+        ENROUTE,
+        ARRIVAL,
+        APPROACH,
+        LANDING,
+        GO_AROUND,
+        TAXI_IN
+    }
+
     public class SimAircraft : IDisposable
     {
         private Thread _posUpdThread;
@@ -49,111 +65,71 @@ namespace SaunaSim.Core.Simulator.Aircraft
         private bool disposedValue;
         private bool _shouldUpdatePosition = false;
         private ClientInfo _clientInfo;
-
-        // Connection Info
-        public LoginInfo LoginInfo { get; private set; }
-        public string Callsign => LoginInfo.callsign;
-        public ConnectionStatusType ConnectionStatus { get; private set; } = ConnectionStatusType.WAITING;
-        public Connection Connection { get; private set; }
-
-        // Aircraft Info
-        public AircraftPosition Position
-        {
-            get => _position;
-            set => _position = value;
-        }
-
-        public int Config { get; set; }
-        public double ThrustLeverPos { get; set; }
-        public double SpeedBrakePos { get; set; }
-        public PerfData PerformanceData { get; set; }
-        public double Mass_kg { get; set; }
-        public TransponderModeType XpdrMode { get; set; }
-        public int Squawk { get; set; }
-        public int DelayMs { get; set; }
-        public AircraftConfig AircraftConfig { get; set; }
-        public string AircraftType { get; private set; }
-        public string AirlineCode { get; private set; }
-
-        // Loggers
-        public Action<string> LogInfo { get; set; }
-        public Action<string> LogWarn { get; set; }
-        public Action<string> LogError { get; set; }
-
-        // TODO: Convert to FlightPlan Struct/Object
-        public string FlightPlan
-        {
-            get => _flightPlan;
-            set
-            {
-                _flightPlan = value;
-                if (ConnectionStatus == ConnectionStatusType.CONNECTED)
-                {
-                    // TODO: Send Flight Plan
-                }
-            }
-        }
-
-        public bool Paused
-        {
-            get => _paused;
-            set
-            {
-                _paused = value;
-                if (DelayMs > 0 && _delayTimer != null)
-                {
-                    if (!_paused)
-                    {
-                        _delayTimer.Start();
-                    }
-                    else
-                    {
-                        _delayTimer.Pause();
-                    }
-                }
-            }
-        }
-
-        // Assigned values
-        public AircraftAutopilot Autopilot { get; private set; }
-        public AircraftControl Control { get; private set; }
-        public int Assigned_IAS { get; set; } = -1;
-        public ConstraintType Assigned_IAS_Type { get; set; } = ConstraintType.FREE;
-
+        private LoginInfo _loginInfo;
+        private ConnectionStatusType _connectionStatus = ConnectionStatusType.WAITING;
+        private Connection _connection;
+        private int _config;
+        private double _thrustLeverPos;
+        private double _speedBrakePos;
+        private PerfData _performanceData;
+        private double _massKg;
+        private TransponderModeType _xpdrMode;
+        private int _squawk;
+        private int _delayMs;
+        private AircraftConfig _aircraftConfig;
+        private string _aircraftType;
+        private string _airlineCode;
+        private Action<string> _logInfo;
+        private Action<string> _logWarn;
+        private Action<string> _logError;
+        private AircraftAutopilot _autopilot;
+        private FlightPhaseType _flightPhase;
+        
+        // TODO: Remove This
+        private AircraftControl _control;
+        private int _assignedIas = -1;
+        private ConstraintType _assignedIasType = ConstraintType.FREE;
 
         public SimAircraft(string callsign, string networkId, string password, string fullname, string hostname, ushort port, ProtocolRevision protocol, ClientInfo clientInfo,
             PerfData perfData, double lat, double lon, double alt, double hdg_mag, int delayMs = 0)
         {
-            LoginInfo = new LoginInfo(networkId, password, callsign, fullname, PilotRatingType.Student, hostname, protocol, AppSettingsManager.CommandFrequency, port);
+            _loginInfo = new LoginInfo(networkId, password, callsign, fullname, PilotRatingType.Student, hostname, protocol, AppSettingsManager.CommandFrequency, port);
             _clientInfo = clientInfo;
-            Connection = new Connection();
-            Connection.Connected += OnConnectionEstablished;
-            Connection.Disconnected += OnConnectionTerminated;
-            Connection.FrequencyMessageReceived += OnFrequencyMessageReceived;
-
-            Paused = true;
-            Position = new AircraftPosition
+            _connection = new Connection();
+            _connection.Connected += OnConnectionEstablished;
+            _connection.Disconnected += OnConnectionTerminated;
+            _connection.FrequencyMessageReceived += OnFrequencyMessageReceived;
+            _paused = true;
+            _position = new AircraftPosition(lat, lon, alt)
             {
-                Latitude = lat,
-                Longitude = lon,
-                IndicatedAltitude = alt,
-                Heading_Mag = hdg_mag
+                Pitch = 2.5,
+                Bank = 0,
+                IndicatedAirSpeed = 250.0
             };
-            Autopilot = new AircraftAutopilot(this);
-            PerformanceData = perfData;
-            Control = new AircraftControl(new HeadingHoldInstruction(Convert.ToInt32(hdg_mag)), new AltitudeHoldInstruction(Convert.ToInt32(alt)));
-            DelayMs = delayMs;
-            AircraftConfig = new AircraftConfig(true, false, false, true, true, false, false, 0, false, false, new AircraftEngine(true, false), new AircraftEngine(true, false));
+            _thrustLeverPos = 0;
+            _speedBrakePos = 0;
+            _autopilot = new AircraftAutopilot(this)
+            {
+                SelectedAltitude = Convert.ToInt32(alt),
+                SelectedHeading = Convert.ToInt32(hdg_mag),
+                SelectedSpeed = Convert.ToInt32(250.0),
+                CurrentLateralMode = LateralModeType.HDG,
+                CurrentThrustMode = ThrustModeType.SPEED,
+                CurrentVerticalMode = VerticalModeType.FLCH
+            };
+            _performanceData = perfData;
+            _delayMs = delayMs;
+            _aircraftConfig = new AircraftConfig(true, false, false, true, true, false, false, 0, false, false, new AircraftEngine(true, false), new AircraftEngine(true, false));
             _flightPlan = "";
-            AircraftType = "A320";
-            AirlineCode = "FFT";
+            _aircraftType = "A320";
+            _airlineCode = "FFT";
 
             // TODO: Change This To Actually Calculate Mass
-            Mass_kg = (perfData.MTOW_kg + perfData.OEW_kg) / 2;
+            _massKg = (perfData.MTOW_kg + perfData.OEW_kg) / 2;
 
             // TODO: Remove This
-            Position.Pitch = 2.5;
-            ThrustLeverPos = 0;
+            _control = new AircraftControl(new HeadingHoldInstruction(Convert.ToInt32(hdg_mag)), new AltitudeHoldInstruction(Convert.ToInt32(alt)));
+
         }
 
         public void Start()
@@ -203,17 +179,17 @@ namespace SaunaSim.Core.Simulator.Aircraft
 
         private void OnTimerElapsed(object sender, ElapsedEventArgs e)
         {
-            DelayMs = -1;
+            _delayMs = -1;
             _delayTimer?.Stop();
 
             // Connect to FSD Server
-            Connection.Connect(_clientInfo, LoginInfo, GetFsdPilotPosition(), AircraftConfig, new PlaneInfo(AircraftType, AirlineCode));
-            ConnectionStatus = ConnectionStatusType.CONNECTING;
+            _connection.Connect(_clientInfo, LoginInfo, GetFsdPilotPosition(), AircraftConfig, new PlaneInfo(AircraftType, AirlineCode));
+            _connectionStatus = ConnectionStatusType.CONNECTING;
         }
 
         private void OnConnectionEstablished(object sender, EventArgs e)
         {
-            ConnectionStatus = ConnectionStatusType.CONNECTED;
+            _connectionStatus = ConnectionStatusType.CONNECTED;
             // Start Position Update Thread
             _shouldUpdatePosition = true;
             _posUpdThread = new Thread(new ThreadStart(AircraftPositionWorker));
@@ -226,7 +202,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
 
         private void OnConnectionTerminated(object sender, EventArgs e)
         {
-            ConnectionStatus = ConnectionStatusType.DISCONNECTED;
+            _connectionStatus = ConnectionStatusType.DISCONNECTED;
             _shouldUpdatePosition = false;
             _delayTimer?.Stop();
         }
@@ -236,111 +212,17 @@ namespace SaunaSim.Core.Simulator.Aircraft
             while (_shouldUpdatePosition)
             {
                 // Calculate position
-                if (!Paused)
+                if (!_paused)
                 {
-                    // TODO: Run Autopilot
-                    // TODO: Remove
-                    double spdDelta = Position.IndicatedAirSpeed - 230;
-                    SpeedBrakePos = 0;
-                    Config = 0;
-                    ThrustLeverPos = 1;
-                    Position.Bank = 0;
-                    Mass_kg = PerformanceData.OEW_kg;
-                    if (spdDelta > double.Epsilon)
-                    {
-                        if (Math.Abs(spdDelta) > 1)
-                        {
-                            Position.Pitch += 0.1;
-                        }
-                        else
-                        {
-                            Position.Pitch = PerfDataHandler.GetRequiredPitchForThrust(PerformanceData, ThrustLeverPos, 0, Position.IndicatedAirSpeed, Position.DensityAltitude,
-                                Mass_kg, SpeedBrakePos, Config);
-                        }
-                    }
-                    else if (spdDelta < double.Epsilon)
-                    {
-                        if (Math.Abs(spdDelta) > 1)
-                        {
-                            Position.Pitch -= 0.1;
-                        }
-                    }
+                    // Run Autopilot
+                    _autopilot.UpdatePosition(AppSettingsManager.PosCalcRate);
 
-                    // Calculate Performance Values
-                    (double accelFwd, double vs) = PerfDataHandler.CalculatePerformance(PerformanceData, Position.Pitch, ThrustLeverPos, Position.IndicatedAirSpeed,
-                        Position.DensityAltitude, Mass_kg, SpeedBrakePos, Config);
-
-                    // Calculate New Velocities
-                    double t = AppSettingsManager.PosCalcRate / 1000.0;
-                    double curGs = Position.GroundSpeed;
-                    Position.IndicatedAirSpeed = MathUtil.ConvertMpersToKts(PerfDataHandler.CalculateFinalVelocity(
-                        MathUtil.ConvertKtsToMpers(Position.IndicatedAirSpeed), MathUtil.ConvertKtsToMpers(accelFwd), t));
-                    Position.VerticalSpeed = vs;
-
-                    // Calculate Displacement
-                    double displacement = 0.5 * (MathUtil.ConvertKtsToMpers(Position.GroundSpeed + curGs)) * t;
-                    double distanceTravelledNMi = MathUtil.ConvertMetersToNauticalMiles(displacement);
-
-                    // Calculate Position
-                    if (Math.Abs(Position.Bank) < double.Epsilon)
-                    {
-                        GeoPoint point = new GeoPoint(Position.PositionGeoPoint);
-                        point.MoveByNMi(Position.Track_True, distanceTravelledNMi);
-                        Position.Latitude = point.Lat;
-                        Position.Longitude = point.Lon;
-                    }
-                    else
-                    {
-                        // Calculate radius of turn
-                        double radiusOfTurn = GeoUtil.CalculateRadiusOfTurn(Math.Abs(Position.Bank), Position.GroundSpeed);
-
-                        // Calculate degrees to turn
-                        double degreesToTurn = GeoUtil.CalculateDegreesTurned(distanceTravelledNMi, radiusOfTurn);
-
-                        // Figure out turn direction
-                        bool isRightTurn = Position.Bank > 0;
-
-                        // Calculate end heading
-                        double endHeading = GeoUtil.CalculateEndHeading(Position.Heading_Mag, degreesToTurn, isRightTurn);
-
-                        // Calculate chord line data
-                        Tuple<double, double> chordLine = GeoUtil.CalculateChordHeadingAndDistance(Position.Heading_Mag, degreesToTurn, radiusOfTurn, isRightTurn);
-
-                        // Calculate new position
-                        Position.Heading_Mag = chordLine.Item1;
-                        GeoPoint point = new GeoPoint(Position.PositionGeoPoint);
-                        point.MoveByNMi(Position.Track_True, distanceTravelledNMi);
-                        Position.Latitude = point.Lat;
-                        Position.Longitude = point.Lon;
-                        Position.Heading_Mag = endHeading;
-                    }
-
-                    // Calculate Altitude
-                    Position.IndicatedAltitude += Position.VerticalSpeed * t / 60;
-
-                    /*
-                    int slowDownKts = -2;
-                    int speedUpKts = 5;
-
-                    // Calculate Speed Change
-                    if (Assigned_IAS != -1)
-                    {
-                        if (Assigned_IAS <= Position.IndicatedAirSpeed)
-                        {
-                            Position.IndicatedAirSpeed = Math.Max(Assigned_IAS, Position.IndicatedAirSpeed + (slowDownKts * AppSettingsManager.PosCalcRate / 1000.0));
-                        }
-                        else
-                        {
-                            Position.IndicatedAirSpeed = Math.Min(Assigned_IAS, Position.IndicatedAirSpeed + (speedUpKts * AppSettingsManager.PosCalcRate / 1000.0));
-                        }
-                    }
-
-                    Control.UpdatePosition(ref _position, AppSettingsManager.PosCalcRate);*/
-
-                    // Recalculate values
+                    // TODO: Update Mass
+                    
+                    // Update Grib Data
                     Position.UpdateGribPoint();
                     
-                    // Update FSD Position
+                    // Update FSD
                     Connection.UpdatePosition(GetFsdPilotPosition());
                 }
 
@@ -350,9 +232,154 @@ namespace SaunaSim.Core.Simulator.Aircraft
 
         public PilotPosition GetFsdPilotPosition()
         {
-            return new PilotPosition(XpdrMode, (ushort)Squawk, Position.Latitude, Position.Longitude, Position.AbsoluteAltitude, Position.AbsoluteAltitude,
-                Position.PressureAltitude, Position.GroundSpeed, Position.Pitch, Position.Bank, Position.Heading_True, false, Position.Velocity_X_MPerS, Position.Velocity_Y_MPerS,
+            return new PilotPosition(XpdrMode, (ushort)Squawk, Position.Latitude, Position.Longitude, Position.TrueAltitude, Position.TrueAltitude,
+                Position.PressureAltitude, Position.GroundSpeed, Position.Pitch, Position.Bank, Position.Heading_True, Position.OnGround, Position.Velocity_X_MPerS, Position.Velocity_Y_MPerS,
                 Position.Velocity_Z_MPerS, Position.Pitch_Velocity_RadPerS, Position.Heading_Velocity_RadPerS, Position.Bank_Velocity_RadPerS);
+        }
+
+        public LoginInfo LoginInfo => _loginInfo;
+        public string Callsign => LoginInfo.callsign;
+        public ConnectionStatusType ConnectionStatus => _connectionStatus;
+        public Connection Connection => _connection;
+        
+        public AircraftPosition Position
+        {
+            get => _position;
+            set => _position = value;
+        }
+
+        public int Config
+        {
+            get => _config;
+            set => _config = value;
+        }
+
+        public double ThrustLeverPos
+        {
+            get => _thrustLeverPos;
+            set => _thrustLeverPos = value;
+        }
+
+        public double SpeedBrakePos
+        {
+            get => _speedBrakePos;
+            set => _speedBrakePos = value;
+        }
+
+        public PerfData PerformanceData
+        {
+            get => _performanceData;
+            set => _performanceData = value;
+        }
+
+        public double Mass_kg
+        {
+            get => _massKg;
+            set => _massKg = value;
+        }
+
+        public TransponderModeType XpdrMode
+        {
+            get => _xpdrMode;
+            set => _xpdrMode = value;
+        }
+
+        public int Squawk
+        {
+            get => _squawk;
+            set => _squawk = value;
+        }
+
+        public int DelayMs
+        {
+            get => _delayMs;
+            set => _delayMs = value;
+        }
+
+        public AircraftConfig AircraftConfig
+        {
+            get => _aircraftConfig;
+            set => _aircraftConfig = value;
+        }
+
+        public string AircraftType => _aircraftType;
+
+        public string AirlineCode => _airlineCode;
+
+        // Loggers
+        public Action<string> LogInfo
+        {
+            get => _logInfo;
+            set => _logInfo = value;
+        }
+
+        public Action<string> LogWarn
+        {
+            get => _logWarn;
+            set => _logWarn = value;
+        }
+
+        public Action<string> LogError
+        {
+            get => _logError;
+            set => _logError = value;
+        }
+
+        // TODO: Convert to FlightPlan Struct/Object
+        public string FlightPlan
+        {
+            get => _flightPlan;
+            set
+            {
+                _flightPlan = value;
+                if (ConnectionStatus == ConnectionStatusType.CONNECTED)
+                {
+                    // TODO: Send Flight Plan
+                }
+            }
+        }
+
+        public bool Paused
+        {
+            get => _paused;
+            set
+            {
+                _paused = value;
+                if (DelayMs > 0 && _delayTimer != null)
+                {
+                    if (!_paused)
+                    {
+                        _delayTimer.Start();
+                    }
+                    else
+                    {
+                        _delayTimer.Pause();
+                    }
+                }
+            }
+        }
+
+        // Assigned values
+        public AircraftAutopilot Autopilot => _autopilot;
+        public AircraftControl Control => _control;
+
+        // TODO: Remove This
+        public int Assigned_IAS
+        {
+            get => _assignedIas;
+            set => _assignedIas = value;
+        }
+
+        public ConstraintType Assigned_IAS_Type
+        {
+            get => _assignedIasType;
+            set => _assignedIasType = value;
+        }
+
+        public FlightPhaseType FlightPhase
+        {
+            get => _flightPhase;
+            set => _flightPhase = value;
         }
 
         protected virtual void Dispose(bool disposing)
@@ -361,17 +388,17 @@ namespace SaunaSim.Core.Simulator.Aircraft
             {
                 if (disposing)
                 {
-                    Connection.Dispose();
+                    _connection.Dispose();
                     _shouldUpdatePosition = false;
                     _posUpdThread?.Join();
                     _delayTimer?.Stop();
                     _delayTimer?.Dispose();
                 }
 
-                Connection = null;
+                _connection = null;
                 _posUpdThread = null;
-                Position = null;
-                Control = null;
+                _position = null;
+                _control = null;
                 _delayTimer = null;
                 disposedValue = true;
             }

@@ -69,10 +69,10 @@ namespace SaunaSim.Core.Simulator.Aircraft.Control.FMS.Legs
             {
                 if (_trueCourse < 0)
                 {
-                    _trueCourse = MagneticUtil.ConvertMagneticToTrueTile(_magneticCourse, pos.PositionGeoPoint);
+                    _trueCourse = MagneticUtil.ConvertMagneticToTrueTile(_magneticCourse, pos.Position);
                 } else if (_magneticCourse < 0)
                 {
-                    _magneticCourse = MagneticUtil.ConvertTrueToMagneticTile(_trueCourse, pos.PositionGeoPoint);
+                    _magneticCourse = MagneticUtil.ConvertTrueToMagneticTile(_trueCourse, pos.Position);
                 }
                 _beginAlt = pos.IndicatedAltitude;
 

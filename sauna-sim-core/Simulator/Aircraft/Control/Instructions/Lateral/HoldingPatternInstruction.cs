@@ -151,8 +151,8 @@ namespace SaunaSim.Core.Simulator.Aircraft.Control.Instructions.Lateral
                     outPoint.MoveByNMi(outCourse, outDist);
                     double tdBear = GeoPoint.InitialBearing(startPoint, outPoint);
 
-                    outPoint.Alt = position.AbsoluteAltitude;
-                    _teardropDistance = GeoPoint.DistanceNMi(new GeoPoint(startPoint.Lat, startPoint.Lon, position.AbsoluteAltitude), outPoint);
+                    outPoint.Alt = position.TrueAltitude;
+                    _teardropDistance = GeoPoint.DistanceNMi(new GeoPoint(startPoint.Lat, startPoint.Lon, position.TrueAltitude), outPoint);
 
                     _outboundCourseInstr = new InterceptCourseInstruction(_routePoint)
                     {
@@ -234,7 +234,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Control.Instructions.Lateral
             if (Math.Abs(_turnInstr.AssignedTrack - outCourse) >= 1)
             {
                 double alongTrackM;
-                GeoUtil.CalculateCrossTrackErrorM(position.PositionGeoPoint, new GeoPoint(_routePoint.PointPosition), halfTurnCourse, out _, out alongTrackM);
+                GeoUtil.CalculateCrossTrackErrorM(position.Position, new GeoPoint(_routePoint.PointPosition), halfTurnCourse, out _, out alongTrackM);
 
                 if (MathUtil.ConvertMetersToNauticalMiles(alongTrackM) <= -_r)
                 {
