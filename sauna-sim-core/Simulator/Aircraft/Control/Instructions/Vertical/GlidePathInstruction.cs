@@ -34,7 +34,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Control.Instructions.Vertical
 
         private double GetAltAtNextPosition(AircraftPosition pos, int posCalcInterval)
         {
-            GeoPoint acftPos = pos.Position;
+            GeoPoint acftPos = pos.PositionGeoPoint;
             acftPos.MoveByNMi(pos.Track_True, GeoUtil.CalculateDistanceTravelledNMi(pos.GroundSpeed, posCalcInterval));
 
             // Calculate glideslope altitude
@@ -57,7 +57,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Control.Instructions.Vertical
         public void UpdatePosition(ref AircraftPosition position, ref AircraftFms fms, int posCalcInterval)
         {
             // Calculate glideslope altitude
-            position.TrueAltitude = GetAltAtPosition(position.Position);
+            position.TrueAltitude = GetAltAtPosition(position.PositionGeoPoint);
         }
 
         public override string ToString()

@@ -11,7 +11,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
     {
         public static void SetNextLatLon(ref AircraftPosition position, double distanceNMi)
         {
-            GeoPoint point = new GeoPoint(position.Position);
+            GeoPoint point = new GeoPoint(position.PositionGeoPoint);
             point.MoveByNMi(position.Track_True, distanceNMi);
             position.Latitude = point.Lat;
             position.Longitude = point.Lon;

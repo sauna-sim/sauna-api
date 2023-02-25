@@ -52,7 +52,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot
             _selSpd = 250;
         }
 
-        public void UpdatePosition(int intervalMs)
+        public void OnPositionUpdate(int intervalMs)
         {
             UpdateBank(intervalMs);
         }
@@ -89,8 +89,8 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot
                     }
                     
                     // Desired bank angle
-                    double desiredBank = AutopilotUtil.CalculateDesiredRollAngle(hdgDelta, _parentAircraft.Position.Bank, _parentAircraft.Position.GroundSpeed);
-                    _parentAircraft.Position.BankRate = AutopilotUtil.CalculateRollRate(desiredBank, _parentAircraft.Position.Bank);
+                    double desiredBank = AutopilotUtil.CalculateDemandedRollForTurn(hdgDelta, _parentAircraft.Position.Bank, _parentAircraft.Position.GroundSpeed, intervalMs);
+                    _parentAircraft.Position.BankRate = AutopilotUtil.CalculateRollRate(desiredBank, _parentAircraft.Position.Bank, intervalMs);
                 }
                 else
                 {

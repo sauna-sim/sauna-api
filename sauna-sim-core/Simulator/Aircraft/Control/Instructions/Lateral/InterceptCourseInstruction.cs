@@ -109,7 +109,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
                 previousWindDir = position.WindDirection;
                 previousWindSpd = position.WindSpeed;
 
-                leadInDistance = GeoUtil.CalculateTurnLeadDistance(position.Position, AssignedWaypoint.PointPosition, previousTrack,
+                leadInDistance = GeoUtil.CalculateTurnLeadDistance(position.PositionGeoPoint, AssignedWaypoint.PointPosition, previousTrack,
                     previousTas, _trueCourse, previousWindDir, previousWindSpd, out radiusOfTurn, out intersection);
             }
         }

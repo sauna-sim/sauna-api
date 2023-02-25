@@ -11,10 +11,12 @@ namespace SaunaSim.Core.Simulator.Aircraft
 {
     public class AircraftPosition
     {
-        private GeoPoint _position;
+        private double _lat;
+        private double _lon;
         private double _altInd;
         private double _altPres;
         private double _altDens;
+        private double _altTrue;
         private double _magneticHdg;
         private double _trueHdg;
         private double _trueTrack;
@@ -37,21 +39,22 @@ namespace SaunaSim.Core.Simulator.Aircraft
 
         public AircraftPosition(double lat, double lon, double indAlt)
         {
-            _position = new GeoPoint(lat, lon);
+            _lat = lat;
+            _lon = lon;
             IndicatedAltitude = indAlt;
         }
 
         // Position
         public double Latitude
         {
-            get => _position.Lat;
-            set => _position.Lat = value;
+            get => _lat;
+            set => _lat = value;
         }
 
         public double Longitude
         {
-            get => _position.Lon;
-            set => _position.Lon = value;
+            get => _lon;
+            set => _lon = value;
         }
 
         public double IndicatedAltitude
@@ -61,16 +64,16 @@ namespace SaunaSim.Core.Simulator.Aircraft
             {
                 _altInd = value;
                 _altPres = AtmosUtil.ConvertIndicatedToPressureAlt(_altInd, _altSetting_hPa);
-                _position.Alt = AtmosUtil.ConvertIndicatedToAbsoluteAlt(_altInd, _altSetting_hPa, SurfacePressure_hPa);
+                _altTrue = AtmosUtil.ConvertIndicatedToAbsoluteAlt(_altInd, _altSetting_hPa, SurfacePressure_hPa);
                 if (_gribPoint != null)
                 {
-                    double T = AtmosUtil.CalculateTempAtAlt(MathUtil.ConvertFeetToMeters(_position.Alt), _gribPoint.GeoPotentialHeight_M, _gribPoint.Temp_K);
-                    double p = AtmosUtil.CalculatePressureAtAlt(MathUtil.ConvertFeetToMeters(_position.Alt), _gribPoint.GeoPotentialHeight_M, _gribPoint.Level_hPa * 100, T);
+                    double T = AtmosUtil.CalculateTempAtAlt(MathUtil.ConvertFeetToMeters(_altTrue), _gribPoint.GeoPotentialHeight_M, _gribPoint.Temp_K);
+                    double p = AtmosUtil.CalculatePressureAtAlt(MathUtil.ConvertFeetToMeters(_altTrue), _gribPoint.GeoPotentialHeight_M, _gribPoint.Level_hPa * 100, T);
                     _altDens = MathUtil.ConvertMetersToFeet(AtmosUtil.CalculateDensityAltitude(p, T));
                 } else
                 {
-                    double T = AtmosUtil.CalculateTempAtAlt(MathUtil.ConvertFeetToMeters(_position.Alt), 0, AtmosUtil.ISA_STD_TEMP_K);
-                    double p = AtmosUtil.CalculatePressureAtAlt(MathUtil.ConvertFeetToMeters(_position.Alt), 0, AtmosUtil.ISA_STD_PRES_Pa, T);
+                    double T = AtmosUtil.CalculateTempAtAlt(MathUtil.ConvertFeetToMeters(_altTrue), 0, AtmosUtil.ISA_STD_TEMP_K);
+                    double p = AtmosUtil.CalculatePressureAtAlt(MathUtil.ConvertFeetToMeters(_altTrue), 0, AtmosUtil.ISA_STD_PRES_Pa, T);
                     _altDens = MathUtil.ConvertMetersToFeet(AtmosUtil.CalculateDensityAltitude(p, T));
                 }
             }
@@ -78,22 +81,22 @@ namespace SaunaSim.Core.Simulator.Aircraft
 
         public double TrueAltitude
         {
-            get => _position.Alt;
+            get => _altTrue;
             set
             {
-                _position.Alt = value;
-                _altInd = AtmosUtil.ConvertAbsoluteToIndicatedAlt(_position.Alt, _altSetting_hPa, _sfcPress_hPa);
+                _altTrue = value;
+                _altInd = AtmosUtil.ConvertAbsoluteToIndicatedAlt(_altTrue, _altSetting_hPa, _sfcPress_hPa);
                 _altPres = AtmosUtil.ConvertIndicatedToPressureAlt(_altInd, _altSetting_hPa);
                 if (_gribPoint != null)
                 {
-                    double T = AtmosUtil.CalculateTempAtAlt(MathUtil.ConvertFeetToMeters(_position.Alt), _gribPoint.GeoPotentialHeight_M, _gribPoint.Temp_K);
-                    double p = AtmosUtil.CalculatePressureAtAlt(MathUtil.ConvertFeetToMeters(_position.Alt), _gribPoint.GeoPotentialHeight_M, _gribPoint.Level_hPa * 100, T);
+                    double T = AtmosUtil.CalculateTempAtAlt(MathUtil.ConvertFeetToMeters(_altTrue), _gribPoint.GeoPotentialHeight_M, _gribPoint.Temp_K);
+                    double p = AtmosUtil.CalculatePressureAtAlt(MathUtil.ConvertFeetToMeters(_altTrue), _gribPoint.GeoPotentialHeight_M, _gribPoint.Level_hPa * 100, T);
                     _altDens = MathUtil.ConvertMetersToFeet(AtmosUtil.CalculateDensityAltitude(p, T));
                 }
                 else
                 {
-                    double T = AtmosUtil.CalculateTempAtAlt(MathUtil.ConvertFeetToMeters(_position.Alt), 0, AtmosUtil.ISA_STD_TEMP_K);
-                    double p = AtmosUtil.CalculatePressureAtAlt(MathUtil.ConvertFeetToMeters(_position.Alt), 0, AtmosUtil.ISA_STD_PRES_Pa, T);
+                    double T = AtmosUtil.CalculateTempAtAlt(MathUtil.ConvertFeetToMeters(_altTrue), 0, AtmosUtil.ISA_STD_TEMP_K);
+                    double p = AtmosUtil.CalculatePressureAtAlt(MathUtil.ConvertFeetToMeters(_altTrue), 0, AtmosUtil.ISA_STD_PRES_Pa, T);
                     _altDens = MathUtil.ConvertMetersToFeet(AtmosUtil.CalculateDensityAltitude(p, T));
                 }
             }
@@ -111,7 +114,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
                 _magneticHdg = value;
 
                 // Calculate True Heading
-                _trueHdg = MagneticUtil.ConvertMagneticToTrueTile(_magneticHdg, _position);
+                _trueHdg = MagneticUtil.ConvertMagneticToTrueTile(_magneticHdg, PositionGeoPoint);
 
                 // Calculate True Track
                 double wca = _tas == 0 ? 0 : Math.Acos(WindXComp / _tas);
@@ -128,7 +131,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
                 _trueHdg = value;
 
                 // Set Magnetic Heading
-                _magneticHdg = MagneticUtil.ConvertTrueToMagneticTile(_trueHdg, _position);
+                _magneticHdg = MagneticUtil.ConvertTrueToMagneticTile(_trueHdg, PositionGeoPoint);
 
                 // Calculate True Track
                 double wca = _tas == 0 ? 0 : Math.Acos(WindXComp / _tas);
@@ -149,7 +152,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
                 _trueHdg = GeoUtil.NormalizeHeading(_trueTrack - wca);
 
                 // Set Magnetic Heading
-                _magneticHdg = MagneticUtil.ConvertTrueToMagneticTile(_trueHdg, _position);
+                _magneticHdg = MagneticUtil.ConvertTrueToMagneticTile(_trueHdg, PositionGeoPoint);
             }
         }
 
@@ -175,11 +178,11 @@ namespace SaunaSim.Core.Simulator.Aircraft
 
                 if (_gribPoint != null)
                 {
-                    _tas = AtmosUtil.ConvertIasToTas(_ias, _gribPoint.Level_hPa, _position.Alt, _gribPoint.GeoPotentialHeight_Ft, _gribPoint.Temp_K, out _mach);
+                    _tas = AtmosUtil.ConvertIasToTas(_ias, _gribPoint.Level_hPa, _altTrue, _gribPoint.GeoPotentialHeight_Ft, _gribPoint.Temp_K, out _mach);
                 }
                 else
                 {
-                    _tas = AtmosUtil.ConvertIasToTas(_ias, AtmosUtil.ISA_STD_PRES_hPa, _position.Alt, 0, AtmosUtil.ISA_STD_TEMP_K, out _mach);
+                    _tas = AtmosUtil.ConvertIasToTas(_ias, AtmosUtil.ISA_STD_PRES_hPa, _altTrue, 0, AtmosUtil.ISA_STD_TEMP_K, out _mach);
                 }
                 _gs = _tas == 0 ? 0 : (_tas - WindHComp);
             }
@@ -196,11 +199,11 @@ namespace SaunaSim.Core.Simulator.Aircraft
                 _tas = _gs + WindHComp;
                 if (_gribPoint != null)
                 {
-                    _ias = AtmosUtil.ConvertTasToIas(_tas, _gribPoint.Level_hPa, _position.Alt, _gribPoint.GeoPotentialHeight_Ft, _gribPoint.Temp_K, out _mach);
+                    _ias = AtmosUtil.ConvertTasToIas(_tas, _gribPoint.Level_hPa, _altTrue, _gribPoint.GeoPotentialHeight_Ft, _gribPoint.Temp_K, out _mach);
                 }
                 else
                 {
-                    _ias = AtmosUtil.ConvertIasToTas(_tas, AtmosUtil.ISA_STD_PRES_hPa, _position.Alt, 0, AtmosUtil.ISA_STD_TEMP_K, out _mach);
+                    _ias = AtmosUtil.ConvertIasToTas(_tas, AtmosUtil.ISA_STD_PRES_hPa, _altTrue, 0, AtmosUtil.ISA_STD_TEMP_K, out _mach);
                 }
             }
         }
@@ -213,15 +216,15 @@ namespace SaunaSim.Core.Simulator.Aircraft
                 _mach = value;
                 if (_gribPoint != null)
                 {
-                    double T = AtmosUtil.CalculateTempAtAlt(MathUtil.ConvertFeetToMeters(_position.Alt), _gribPoint.GeoPotentialHeight_M, _gribPoint.Temp_K);
+                    double T = AtmosUtil.CalculateTempAtAlt(MathUtil.ConvertFeetToMeters(_altTrue), _gribPoint.GeoPotentialHeight_M, _gribPoint.Temp_K);
                     _tas = MathUtil.ConvertMpersToKts(AtmosUtil.ConvertMachToTas(_mach, T));
-                    _ias = AtmosUtil.ConvertTasToIas(_tas, _gribPoint.Level_hPa, _position.Alt, _gribPoint.GeoPotentialHeight_Ft, _gribPoint.Temp_K, out _);
+                    _ias = AtmosUtil.ConvertTasToIas(_tas, _gribPoint.Level_hPa, _altTrue, _gribPoint.GeoPotentialHeight_Ft, _gribPoint.Temp_K, out _);
                 }
                 else
                 {
-                    double T = AtmosUtil.CalculateTempAtAlt(MathUtil.ConvertFeetToMeters(_position.Alt), 0, AtmosUtil.ISA_STD_TEMP_K);
+                    double T = AtmosUtil.CalculateTempAtAlt(MathUtil.ConvertFeetToMeters(_altTrue), 0, AtmosUtil.ISA_STD_TEMP_K);
                     _tas = MathUtil.ConvertMpersToKts(AtmosUtil.ConvertMachToTas(_mach, T));
-                    _ias = AtmosUtil.ConvertTasToIas(_tas, AtmosUtil.ISA_STD_PRES_hPa, _position.Alt, 0, AtmosUtil.ISA_STD_TEMP_K, out _);
+                    _ias = AtmosUtil.ConvertTasToIas(_tas, AtmosUtil.ISA_STD_PRES_hPa, _altTrue, 0, AtmosUtil.ISA_STD_TEMP_K, out _);
                 }
                 _gs = _tas == 0 ? 0 : (_tas - WindHComp);
             }
@@ -251,7 +254,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
                 _altSetting_hPa = value;
 
                 // Backwards compute new Indicated Alt
-                _altInd = AtmosUtil.ConvertAbsoluteToIndicatedAlt(_position.Alt, _altSetting_hPa, _sfcPress_hPa);
+                _altInd = AtmosUtil.ConvertAbsoluteToIndicatedAlt(_altTrue, _altSetting_hPa, _sfcPress_hPa);
                 _altPres = AtmosUtil.ConvertIndicatedToPressureAlt(_altInd, _altSetting_hPa);
             }
         }
@@ -263,7 +266,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
                 _sfcPress_hPa = value;
 
                 // Backwards compute new Indicated Alt
-                _altInd = AtmosUtil.ConvertAbsoluteToIndicatedAlt(_position.Alt, _altSetting_hPa, _sfcPress_hPa);
+                _altInd = AtmosUtil.ConvertAbsoluteToIndicatedAlt(_altTrue, _altSetting_hPa, _sfcPress_hPa);
                 _altPres = AtmosUtil.ConvertIndicatedToPressureAlt(_altInd, _altSetting_hPa);
             }
         }
@@ -302,11 +305,11 @@ namespace SaunaSim.Core.Simulator.Aircraft
                     _trueTrack = GeoUtil.NormalizeHeading(_trueHdg + wca);
 
                     // Calculate TAS
-                    _tas = AtmosUtil.ConvertIasToTas(_ias, AtmosUtil.ISA_STD_PRES_hPa, _position.Alt, 0, AtmosUtil.ISA_STD_TEMP_K, out _mach);
+                    _tas = AtmosUtil.ConvertIasToTas(_ias, AtmosUtil.ISA_STD_PRES_hPa, _altTrue, 0, AtmosUtil.ISA_STD_TEMP_K, out _mach);
 
                     // Density Alt
-                    double T = AtmosUtil.CalculateTempAtAlt(MathUtil.ConvertFeetToMeters(_position.Alt), 0, AtmosUtil.ISA_STD_TEMP_K);
-                    double p = AtmosUtil.CalculatePressureAtAlt(MathUtil.ConvertFeetToMeters(_position.Alt), 0, AtmosUtil.ISA_STD_PRES_Pa, T);
+                    double T = AtmosUtil.CalculateTempAtAlt(MathUtil.ConvertFeetToMeters(_altTrue), 0, AtmosUtil.ISA_STD_TEMP_K);
+                    double p = AtmosUtil.CalculatePressureAtAlt(MathUtil.ConvertFeetToMeters(_altTrue), 0, AtmosUtil.ISA_STD_PRES_Pa, T);
                     _altDens = MathUtil.ConvertMetersToFeet(AtmosUtil.CalculateDensityAltitude(p, T));
                 }
                 else if (_gribPoint != value)
@@ -325,22 +328,18 @@ namespace SaunaSim.Core.Simulator.Aircraft
                     SurfacePressure_hPa = _gribPoint.SfcPress_hPa != 0 ? _gribPoint.SfcPress_hPa : AtmosUtil.ISA_STD_PRES_hPa;
 
                     // Density Alt
-                    double T = AtmosUtil.CalculateTempAtAlt(MathUtil.ConvertFeetToMeters(_position.Alt), _gribPoint.GeoPotentialHeight_M, _gribPoint.Temp_K);
-                    double p = AtmosUtil.CalculatePressureAtAlt(MathUtil.ConvertFeetToMeters(_position.Alt), _gribPoint.GeoPotentialHeight_M, _gribPoint.Level_hPa * 100, T);
+                    double T = AtmosUtil.CalculateTempAtAlt(MathUtil.ConvertFeetToMeters(_altTrue), _gribPoint.GeoPotentialHeight_M, _gribPoint.Temp_K);
+                    double p = AtmosUtil.CalculatePressureAtAlt(MathUtil.ConvertFeetToMeters(_altTrue), _gribPoint.GeoPotentialHeight_M, _gribPoint.Level_hPa * 100, T);
                     _altDens = MathUtil.ConvertMetersToFeet(AtmosUtil.CalculateDensityAltitude(p, T));
 
                     // Calculate TAS
-                    _tas = AtmosUtil.ConvertIasToTas(_ias, _gribPoint.Level_hPa, _position.Alt, _gribPoint.GeoPotentialHeight_Ft, _gribPoint.Temp_K, out _mach);
+                    _tas = AtmosUtil.ConvertIasToTas(_ias, _gribPoint.Level_hPa, _altTrue, _gribPoint.GeoPotentialHeight_Ft, _gribPoint.Temp_K, out _mach);
                 }
                 _gs = _tas == 0 ? 0 : (_tas - WindHComp);
             }
         }
 
-        public GeoPoint Position
-        {
-            get => _position;
-            set => _position = value;
-        }
+        public GeoPoint PositionGeoPoint => new GeoPoint(_lat, _lon, _altTrue);
 
         public bool OnGround
         {
@@ -368,8 +367,15 @@ namespace SaunaSim.Core.Simulator.Aircraft
 
         public void UpdateGribPoint()
         {
-            GribTile tile = GribTile.FindOrCreateGribTile(_position, DateTime.UtcNow);
-            GribPoint = tile?.GetClosestPoint(_position);
+            GribTile tile = GribTile.FindOrCreateGribTile(PositionGeoPoint, DateTime.UtcNow);
+            if (tile == null)
+            {
+                _gribPoint = null;
+            }
+            else
+            {
+                _gribPoint = tile.GetClosestPoint(PositionGeoPoint);
+            }
         }
         
     }

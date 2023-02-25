@@ -234,7 +234,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Control.Instructions.Lateral
             if (Math.Abs(_turnInstr.AssignedTrack - outCourse) >= 1)
             {
                 double alongTrackM;
-                GeoUtil.CalculateCrossTrackErrorM(position.Position, new GeoPoint(_routePoint.PointPosition), halfTurnCourse, out _, out alongTrackM);
+                GeoUtil.CalculateCrossTrackErrorM(position.PositionGeoPoint, new GeoPoint(_routePoint.PointPosition), halfTurnCourse, out _, out alongTrackM);
 
                 if (MathUtil.ConvertMetersToNauticalMiles(alongTrackM) <= -_r)
                 {

@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using SaunaSim.Core.Simulator.Aircraft;
+using SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller;
 
 namespace SaunaSim.Core.Simulator.Commands
 {
@@ -18,6 +19,8 @@ namespace SaunaSim.Core.Simulator.Commands
 
         public void ExecuteCommand()
         {
+            Aircraft.Autopilot.SelectedHeading = Hdg;
+            Aircraft.Autopilot.HdgKnobTurnDirection = McpKnobDirection.SHORTEST;
             Aircraft.Control.CurrentLateralInstruction = new HeadingHoldInstruction(Hdg);
         }
 
