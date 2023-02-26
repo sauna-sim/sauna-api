@@ -12,13 +12,14 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
         public const double ROLL_RATE_MAX = 10.0;
         public const double ROLL_LIMIT = 25.0;
         public const double HDG_MAX_RATE = 3.0;
-        public const double ROLL_TIME_BUFFER = 0.1; 
+        public const double ROLL_TIME_BUFFER = 0.1;
 
         // Pitch
 
         // Thrust
         public const double THRUST_TIME = 0.5;
         public const double THRUST_RATE_MAX = 30.0;
+        public const double THRUST_TIME_BUFFER = 0.1;
 
         /// <summary>
         /// Calculates required rate.
@@ -36,13 +37,13 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
             {
                 corrTime = 2 * intervalMs / 1000.0;
             }
-            
+
             // Calculate value delta
             double valueDelta = demandedValue - measuredValue;
-            
+
             // Calculate Rate
             double requiredRate = valueDelta / corrTime;
-            
+
             // Limit Rate
             if (rateMax > 0 && requiredRate < -rateMax)
             {
@@ -80,6 +81,61 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
             return CalculateRate(demandedRollAngle, measuredRollAngle, ROLL_TIME, ROLL_RATE_MAX, intervalMs);
         }
 
+        public static double CalculateDemandedInput(double deltaToTarget, double curInput, double maxInputLimit, double minInputLimit,
+            Func<double, double, double> inputRateFunction, Func<double, double> targetRateFunction, double zeroTargetRateInput, double inputTimeBuffer)
+        {
+            if (Math.Abs(deltaToTarget) <= double.Epsilon)
+            {
+                return zeroTargetRateInput;
+            }
+
+            // Figure out time to get to 0 from max input and to get to max input from current input
+            double maxInput = deltaToTarget < 0 ? minInputLimit : maxInputLimit;
+            
+            double curInputTargetRate = targetRateFunction(curInput);
+            double maxInputTargetRate = targetRateFunction(maxInput);
+            double inputOutTargetDelta = 0;
+            double inputInTargetDelta = 0;
+            
+            // Calculate time and target delta to get from maximum input to zero rate input if there is a difference
+            if (Math.Abs(zeroTargetRateInput - maxInput) > double.Epsilon)
+            {
+                double maxInputOutRate = inputRateFunction(zeroTargetRateInput, maxInput);
+                double maxInputOut_t = Math.Abs(Math.Abs(maxInput - zeroTargetRateInput) / maxInputOutRate) * (1 + inputTimeBuffer);
+                double inputOutTarget_a = PerfDataHandler.CalculateAcceleration(maxInputTargetRate, 0, maxInputOut_t);
+                inputOutTargetDelta = PerfDataHandler.CalculateDisplacement(maxInputTargetRate, inputOutTarget_a, maxInputOut_t);
+                
+            }
+            
+            // Calculate time and target delta to get from current input to maximum input if there is a difference
+            if (Math.Abs(curInput - maxInput) > double.Epsilon)
+            {
+                double maxInputInRate = inputRateFunction(maxInput, curInput);
+                double maxInputIn_t = Math.Abs(Math.Abs(curInput - maxInput) / maxInputInRate) * (1 + inputTimeBuffer);
+                double inputInTarget_a = PerfDataHandler.CalculateAcceleration(curInputTargetRate, maxInputTargetRate, maxInputIn_t);
+                inputInTargetDelta = PerfDataHandler.CalculateDisplacement(curInputTargetRate, inputInTarget_a, maxInputIn_t);
+                
+            }
+
+            // Find midpoint of the two
+            (double m1, double b1) = PerfDataHandler.CreateLineEquation(0, curInput, inputInTargetDelta, maxInput);
+            (double m2, double b2) = PerfDataHandler.CreateLineEquation(deltaToTarget - inputOutTargetDelta, maxInput, deltaToTarget, zeroTargetRateInput);
+            (double midPointTargetDelta, double midPointInput) = PerfDataHandler.FindLinesIntersection(m1, b1, m2, b2);
+
+            // Figure out the desired input value
+            if (midPointTargetDelta < 0 && deltaToTarget > 0 || midPointTargetDelta > 0 && deltaToTarget < 0)
+            {
+                return zeroTargetRateInput;
+            }
+
+            if (Math.Abs(midPointInput) >= Math.Abs(maxInput))
+            {
+                return maxInput;
+            }
+
+            return midPointInput;
+        }
+
         /// <summary>
         /// Calculate the required roll rate for a turn.
         /// </summary>
@@ -90,47 +146,31 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
         /// <returns>Desired roll rate (degrees/s)</returns>
         public static double CalculateDemandedRollForTurn(double turnAmt, double curRoll, double groundSpeed, int intervalMs)
         {
-            if (Math.Abs(turnAmt) <= double.Epsilon)
-            {
-                return 0;
-            }
-            // Figure out time to roll out from max roll and roll into max roll
             double maxRoll = GeoUtil.CalculateMaxBankAngle(groundSpeed, ROLL_LIMIT, HDG_MAX_RATE);
-            if (turnAmt < 0)
-            {
-                maxRoll *= -1;
-            }
-            double maxRollOutRate = CalculateRollRate(0, maxRoll, intervalMs);
-            double maxRollOut_t = Math.Abs(maxRoll / maxRollOutRate) * (1 - ROLL_TIME_BUFFER);
-            double maxRollInRate = CalculateRollRate(maxRoll, curRoll, intervalMs);
-            double maxRollIn_t = Math.Abs(Math.Abs(curRoll - maxRoll) / maxRollInRate)  * (1 - ROLL_TIME_BUFFER);
-            
-            // Find turn degrees required to roll out from max roll and roll into max roll
-            double curRollTurnRate = Math.Tan(MathUtil.ConvertDegreesToRadians(curRoll)) * 1091 / groundSpeed;
-            double maxRollTurnRate = Math.Tan(MathUtil.ConvertDegreesToRadians(maxRoll)) * 1091 / groundSpeed;
-            double rollInTurn_a = PerfDataHandler.CalculateAcceleration(curRollTurnRate, maxRollTurnRate, maxRollIn_t);
-            double rollOutTurn_a = PerfDataHandler.CalculateAcceleration(maxRollTurnRate, 0, maxRollOut_t);
-            double rollInTurn_degs = PerfDataHandler.CalculateDisplacement(curRollTurnRate, rollInTurn_a, maxRollIn_t);
-            double rollOutTurn_degs = PerfDataHandler.CalculateDisplacement(maxRollTurnRate, rollOutTurn_a, maxRollOut_t);
-            
-            // Find midpoint of the two
-            if (rollInTurn_degs < 0 && rollOutTurn_degs < 0 || rollOutTurn_degs > 0 && rollInTurn_degs > 0)
-            {
-                if (rollInTurn_degs < 0)
-                {
-                    double midPointDelta = Math.Abs(rollInTurn_degs - rollOutTurn_degs) / 2;
-                }
-            }
-            double turnAmtMidPoint = (rollOutTurn_degs / (rollInTurn_degs + rollOutTurn_degs)) * turnAmt;
+            return CalculateDemandedInput(
+                turnAmt,
+                curRoll,
+                maxRoll,
+                -maxRoll,
+                (double demandedRoll, double measuredRoll) => CalculateRollRate(demandedRoll, measuredRoll, intervalMs),
+                (double roll) => Math.Tan(MathUtil.ConvertDegreesToRadians(roll)) * 1091 / groundSpeed,
+                0,
+                ROLL_TIME_BUFFER
+            );
+        }
 
-            // Figure out the desired roll angle
-            double rollAngle = maxRoll;
-            if ((turnAmt < 0 && turnAmt >= turnAmtMidPoint) || (turnAmt > 0 && turnAmt <= turnAmtMidPoint))
-            {
-                rollAngle = 0;
-            }
-
-            return rollAngle;
+        public static double CalculateDemandedThrottleForSpeed(double speedDelta, double curThrottle, double thrustForZeroAccel, Func<double, double> thrustToSpeedAccelFunction, int intervalMs)
+        {
+            return CalculateDemandedInput(
+                -speedDelta,
+                curThrottle,
+                100,
+                0,
+                (demandedThrottle, measuredThrottle) => CalculateThrustRate(demandedThrottle, measuredThrottle, intervalMs),
+                thrustToSpeedAccelFunction,
+                thrustForZeroAccel,
+                THRUST_TIME_BUFFER
+            );
         }
     }
 }

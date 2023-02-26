@@ -70,7 +70,8 @@ namespace SaunaSim.Core.Simulator.Aircraft
                     double T = AtmosUtil.CalculateTempAtAlt(MathUtil.ConvertFeetToMeters(_altTrue), _gribPoint.GeoPotentialHeight_M, _gribPoint.Temp_K);
                     double p = AtmosUtil.CalculatePressureAtAlt(MathUtil.ConvertFeetToMeters(_altTrue), _gribPoint.GeoPotentialHeight_M, _gribPoint.Level_hPa * 100, T);
                     _altDens = MathUtil.ConvertMetersToFeet(AtmosUtil.CalculateDensityAltitude(p, T));
-                } else
+                }
+                else
                 {
                     double T = AtmosUtil.CalculateTempAtAlt(MathUtil.ConvertFeetToMeters(_altTrue), 0, AtmosUtil.ISA_STD_TEMP_K);
                     double p = AtmosUtil.CalculatePressureAtAlt(MathUtil.ConvertFeetToMeters(_altTrue), 0, AtmosUtil.ISA_STD_PRES_Pa, T);
@@ -184,6 +185,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
                 {
                     _tas = AtmosUtil.ConvertIasToTas(_ias, AtmosUtil.ISA_STD_PRES_hPa, _altTrue, 0, AtmosUtil.ISA_STD_TEMP_K, out _mach);
                 }
+
                 _gs = _tas == 0 ? 0 : (_tas - WindHComp);
             }
         }
@@ -226,6 +228,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
                     _tas = MathUtil.ConvertMpersToKts(AtmosUtil.ConvertMachToTas(_mach, T));
                     _ias = AtmosUtil.ConvertTasToIas(_tas, AtmosUtil.ISA_STD_PRES_hPa, _altTrue, 0, AtmosUtil.ISA_STD_TEMP_K, out _);
                 }
+
                 _gs = _tas == 0 ? 0 : (_tas - WindHComp);
             }
         }
@@ -238,13 +241,13 @@ namespace SaunaSim.Core.Simulator.Aircraft
 
         public double Velocity_X_MPerS => MathUtil.ConvertKtsToMpers(GroundSpeed) * Math.Sin(MathUtil.ConvertDegreesToRadians(Track_True));
         public double Velocity_Y_MPerS => MathUtil.ConvertFeetToMeters(VerticalSpeed) / 60;
-         public double Velocity_Z_MPerS => MathUtil.ConvertKtsToMpers(GroundSpeed) * Math.Cos(MathUtil.ConvertDegreesToRadians(Track_True));
+        public double Velocity_Z_MPerS => MathUtil.ConvertKtsToMpers(GroundSpeed) * Math.Cos(MathUtil.ConvertDegreesToRadians(Track_True));
 
         // Rotational Velocities
         public double Heading_Velocity_RadPerS => MathUtil.ConvertDegreesToRadians(_yawRate);
         public double Bank_Velocity_RadPerS => MathUtil.ConvertDegreesToRadians(_bankRate);
         public double Pitch_Velocity_RadPerS => MathUtil.ConvertDegreesToRadians(_pitchRate);
-        
+
         // Atmospheric Data        
         public double AltimeterSetting_hPa
         {
@@ -258,6 +261,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
                 _altPres = AtmosUtil.ConvertIndicatedToPressureAlt(_altInd, _altSetting_hPa);
             }
         }
+
         public double SurfacePressure_hPa
         {
             get => _sfcPress_hPa;
@@ -286,7 +290,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
         public double WindXComp => WindSpeed * Math.Sin(MathUtil.ConvertDegreesToRadians(Heading_True - WindDirection));
 
         public double WindHComp => GeoUtil.HeadwindComponent(WindSpeed, WindDirection, Heading_True);
-        
+
         public GribDataPoint GribPoint
         {
             get => _gribPoint;
@@ -325,6 +329,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
                         double wca = TrueAirSpeed == 0 ? 0 : Math.Acos(WindXComp / TrueAirSpeed);
                         _trueTrack = GeoUtil.NormalizeHeading(_trueHdg + wca);
                     }
+
                     SurfacePressure_hPa = _gribPoint.SfcPress_hPa != 0 ? _gribPoint.SfcPress_hPa : AtmosUtil.ISA_STD_PRES_hPa;
 
                     // Density Alt
@@ -335,6 +340,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
                     // Calculate TAS
                     _tas = AtmosUtil.ConvertIasToTas(_ias, _gribPoint.Level_hPa, _altTrue, _gribPoint.GeoPotentialHeight_Ft, _gribPoint.Temp_K, out _mach);
                 }
+
                 _gs = _tas == 0 ? 0 : (_tas - WindHComp);
             }
         }
@@ -377,6 +383,5 @@ namespace SaunaSim.Core.Simulator.Aircraft
                 _gribPoint = tile.GetClosestPoint(PositionGeoPoint);
             }
         }
-        
     }
 }

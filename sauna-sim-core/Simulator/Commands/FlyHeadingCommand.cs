@@ -21,7 +21,6 @@ namespace SaunaSim.Core.Simulator.Commands
         {
             Aircraft.Autopilot.SelectedHeading = Hdg;
             Aircraft.Autopilot.HdgKnobTurnDirection = McpKnobDirection.SHORTEST;
-            Aircraft.Control.CurrentLateralInstruction = new HeadingHoldInstruction(Hdg);
         }
 
         public bool HandleCommand(SimAircraft aircraft, Action<string> logger, int hdg)

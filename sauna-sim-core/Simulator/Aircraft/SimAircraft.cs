@@ -245,7 +245,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
             ThrustLeverPos += PerfDataHandler.CalculateDisplacement(ThrustLeverVel, 0, t);
             
             // Calculate Performance Values
-            (double accelFwd, double vs) = PerfDataHandler.CalculatePerformance(PerformanceData, Position.Pitch, ThrustLeverPos, Position.IndicatedAirSpeed,
+            (double accelFwd, double vs) = PerfDataHandler.CalculatePerformance(PerformanceData, Position.Pitch, ThrustLeverPos / 100.0, Position.IndicatedAirSpeed,
                 Position.DensityAltitude, Mass_kg, SpeedBrakePos, Config);
             
             // Calculate New Velocities

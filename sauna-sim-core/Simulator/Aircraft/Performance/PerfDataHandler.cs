@@ -133,9 +133,9 @@ namespace SaunaSim.Core.Simulator.Aircraft.Performance
             PerfDataPoint dataPoint = perfData.GetDataPoint((int) dens_alt_ft, (int) ias_kts, (int) mass_kg, spdBrake, config);
 
             double zeroAccelThrust = -dataPoint.AccelLevelIdleThrust / (dataPoint.AccelLevelMaxThrust - dataPoint.AccelLevelIdleThrust);
-            double thrustDelta = (desiredAccelFwd - dataPoint.AccelLevelIdleThrust / (dataPoint.AccelLevelMaxThrust - dataPoint.AccelLevelIdleThrust)) - zeroAccelThrust;
+            double thrustDelta = ((desiredAccelFwd - dataPoint.AccelLevelIdleThrust) / (dataPoint.AccelLevelMaxThrust - dataPoint.AccelLevelIdleThrust)) - zeroAccelThrust;
             double pitchPerc = (vs - dataPoint.VsDescent) / (dataPoint.VsClimb - dataPoint.VsDescent);
-            return thrustDelta - pitchPerc;
+            return thrustDelta + pitchPerc;
         }
 
         public static (double accelFwd, double vs) CalculatePerformance(PerfData perfData, double pitch_degs, double thrustLeverPos, double ias_kts, double dens_alt_ft, double mass_kg, double spdBrake, int config)
@@ -191,6 +191,26 @@ namespace SaunaSim.Core.Simulator.Aircraft.Performance
         public static double ConvertMpersToFpm(double mpers)
         {
             return MathUtil.ConvertMetersToFeet(60 * mpers);
+        }
+
+        public static (double, double) CreateLineEquation(double x1, double y1, double x2, double y2)
+        {
+            double m = (y2 - y1) / (x2 - x1);
+            double b = y1 - (m * x1);
+
+            return (m, b);
+        }
+
+        public static (double, double) FindLinesIntersection(double m1, double b1, double m2, double b2)
+        {
+            double x = (b1 - b2) / (m2 - m1);
+            double y = m1 * x + b1;
+            return (x, y);
+        }
+
+        public static Func<double, double> GenerateLineFunction(double m, double b)
+        {
+            return (x) => m * x + b;
         }
     }
 }
