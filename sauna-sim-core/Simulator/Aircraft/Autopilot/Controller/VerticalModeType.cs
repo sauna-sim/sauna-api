@@ -5,6 +5,8 @@
         FLCH,
         VS,
         FPA,
+        ASEL,
+        ALT,
         VNAV,
         TOGA,
         LDG,

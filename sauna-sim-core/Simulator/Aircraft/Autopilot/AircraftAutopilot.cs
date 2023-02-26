@@ -11,6 +11,11 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot
     public class AircraftAutopilot
     {
         private SimAircraft _parentAircraft;
+        
+        // Autopilot internal variables
+        private double _targetThrust;
+        private double _targetBank;
+        private double _targetPitch;
 
         // Modes
         private LateralModeType _curLatMode;
@@ -22,7 +27,6 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot
 
         // MCP
         private McpKnobDirection _hdgKnobDir;
-        private double _selThrust;
         private int _selHdg;
         private int _selAlt;
         private int _selVs;
@@ -57,24 +61,51 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot
         public void OnPositionUpdate(int intervalMs)
         {
             // Run Bank Controller
-            UpdateBank(intervalMs);
+            RunRollController(intervalMs);
             
             // Run Pitch Controller
-            // TODO: Remove
-            if (_parentAircraft.Position.VerticalSpeed > 1)
-            {
-                _parentAircraft.Position.Pitch -= 0.1;
-            }
-            else if (_parentAircraft.Position.VerticalSpeed < 1)
-            {
-                _parentAircraft.Position.Pitch += 0.1;
-            }
+            RunPitchController(intervalMs);
             
             // Run Thrust Controller
-            UpdateThrust(intervalMs);
+            RunThrustController(intervalMs);
         }
 
-        private void UpdateThrust(int intervalMs)
+        private bool PitchShouldAsel(int intervalMs)
+        {
+            return false;
+        }
+
+        private void PitchHandleAsel(int intervalMs)
+        {
+            
+        }
+
+        private void PitchHandleFlch(int intervalMs)
+        {
+            
+        }
+
+        private void RunPitchController(int intervalMs)
+        {
+            if (_curVertMode == VerticalModeType.ALT)
+            {
+                // Check if we're off altitude
+                double altDelta = _parentAircraft.Position.IndicatedAltitude - _selAlt;
+                if (Math.Abs(altDelta) > double.Epsilon)
+                {
+                    // If we are, treat it like flight level change
+                    PitchHandleFlch(intervalMs);
+                }
+                else
+                {
+                    
+                }
+                
+
+            }
+        }
+
+        private void RunThrustController(int intervalMs)
         {
             if (_curThrustMode == ThrustModeType.SPEED)
             {
@@ -82,7 +113,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot
                 double zeroAccelThrust = PerfDataHandler.GetRequiredThrustForVs(_parentAircraft.PerformanceData, _parentAircraft.Position.VerticalSpeed, 0,
                     _selSpd, _parentAircraft.Position.DensityAltitude, _parentAircraft.Mass_kg,
                     _parentAircraft.SpeedBrakePos, _parentAircraft.Config);
-                _selThrust = AutopilotUtil.CalculateDemandedThrottleForSpeed(
+                _targetThrust = AutopilotUtil.CalculateDemandedThrottleForSpeed(
                     speedDelta,
                     _parentAircraft.ThrustLeverPos,
                     zeroAccelThrust * 100.0,
@@ -92,19 +123,19 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot
                             _parentAircraft.Config).Item1,
                     intervalMs
                 );
-                _parentAircraft.ThrustLeverVel = AutopilotUtil.CalculateThrustRate(_selThrust, _parentAircraft.ThrustLeverPos, intervalMs);
+                _parentAircraft.ThrustLeverVel = AutopilotUtil.CalculateThrustRate(_targetThrust, _parentAircraft.ThrustLeverPos, intervalMs);
             } else if (_curThrustMode == ThrustModeType.THRUST)
             {
-                _parentAircraft.ThrustLeverVel = AutopilotUtil.CalculateThrustRate(_selThrust, _parentAircraft.ThrustLeverPos, intervalMs);
+                _parentAircraft.ThrustLeverVel = AutopilotUtil.CalculateThrustRate(_targetThrust, _parentAircraft.ThrustLeverPos, intervalMs);
             }
         }
 
-        private void UpdateBank(int intervalMs)
+        private void RunRollController(int intervalMs)
         {
             if (_curLatMode == LateralModeType.BANK)
             {
                 // No change needed
-                _parentAircraft.Position.BankRate = 0;
+                _parentAircraft.Position.BankRate = AutopilotUtil.CalculateRollRate(_targetBank, _parentAircraft.Position.Bank, intervalMs);
             }
             else if (_curLatMode == LateralModeType.HDG)
             {
@@ -131,8 +162,8 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot
                     }
                     
                     // Desired bank angle
-                    double desiredBank = AutopilotUtil.CalculateDemandedRollForTurn(hdgDelta, _parentAircraft.Position.Bank, _parentAircraft.Position.GroundSpeed, intervalMs);
-                    _parentAircraft.Position.BankRate = AutopilotUtil.CalculateRollRate(desiredBank, _parentAircraft.Position.Bank, intervalMs);
+                    _targetBank = AutopilotUtil.CalculateDemandedRollForTurn(hdgDelta, _parentAircraft.Position.Bank, _parentAircraft.Position.GroundSpeed, intervalMs);
+                    _parentAircraft.Position.BankRate = AutopilotUtil.CalculateRollRate(_targetBank, _parentAircraft.Position.Bank, intervalMs);
                 }
                 else
                 {
