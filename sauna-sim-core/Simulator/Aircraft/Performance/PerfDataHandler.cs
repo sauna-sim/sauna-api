@@ -120,7 +120,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Performance
             PerfDataPoint dataPoint = perfData.GetDataPoint((int) dens_alt_ft, (int) ias_kts, (int) mass_kg, spdBrake, config);
 
             double zeroAccelThrust = -dataPoint.AccelLevelIdleThrust / (dataPoint.AccelLevelMaxThrust - dataPoint.AccelLevelIdleThrust);
-            double thrustDelta = (desiredAccelFwd - dataPoint.AccelLevelIdleThrust / (dataPoint.AccelLevelMaxThrust - dataPoint.AccelLevelIdleThrust)) - zeroAccelThrust;
+            double thrustDelta = ((desiredAccelFwd - dataPoint.AccelLevelIdleThrust) / (dataPoint.AccelLevelMaxThrust - dataPoint.AccelLevelIdleThrust)) - zeroAccelThrust;
             double pitchPerc = thrustLeverPos - thrustDelta;
             double pitch_degs = pitchPerc * (dataPoint.PitchClimb - dataPoint.PitchDescent) - dataPoint.PitchDescent;
 
@@ -203,6 +203,20 @@ namespace SaunaSim.Core.Simulator.Aircraft.Performance
 
         public static (double, double) FindLinesIntersection(double m1, double b1, double m2, double b2)
         {
+            if (double.IsNaN(m1) && double.IsNaN(m2))
+            {
+                return (0, 0);
+            }
+
+            if (double.IsNaN(m1))
+            {
+                return (0, b2);
+            }
+
+            if (double.IsNaN(m2))
+            {
+                return (0, b1);
+            }
             double x = (b1 - b2) / (m2 - m1);
             double y = m1 * x + b1;
             return (x, y);

@@ -77,12 +77,59 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot
 
         private void PitchHandleAsel(int intervalMs)
         {
-            
+            // Check if we're at altitude
+            double altDelta = _parentAircraft.Position.IndicatedAltitude - _selAlt;
+            if (Math.Abs(_parentAircraft.Position.VerticalSpeed) < double.Epsilon && Math.Abs(altDelta) < double.Epsilon)
+            {
+                _curVertMode = VerticalModeType.ALT;
+            }
+            else
+            {
+                
+            }
         }
 
         private void PitchHandleFlch(int intervalMs)
         {
-            
+            // Figure out thrust setting
+            double altDelta = _parentAircraft.Position.IndicatedAltitude - _selAlt;
+
+            if (_curThrustMode != ThrustModeType.THRUST)
+            {
+                _curThrustMode = ThrustModeType.THRUST;
+            }
+
+            if (altDelta > 0 && _targetThrust > double.Epsilon)
+            {
+                _targetThrust = 0;
+            } else if (altDelta < 0 && _targetThrust < 100)
+            {
+                _targetThrust = 100;
+            }
+
+            // Convert selected mach # to IAS if required
+            double selSpdKts = _selSpd;
+            if (_spdUnits == McpSpeedUnitsType.MACH)
+            {
+                selSpdKts = ConvertMachToKts(_selSpd);
+            }
+                
+            // Calculate required pitch
+            double speedDelta = _parentAircraft.Position.IndicatedAirSpeed - selSpdKts;
+            double zeroAccelPitch = PerfDataHandler.GetRequiredPitchForThrust(_parentAircraft.PerformanceData, _parentAircraft.ThrustLeverPos / 100.0, 0,
+                selSpdKts, _parentAircraft.Position.DensityAltitude, _parentAircraft.Mass_kg,
+                _parentAircraft.SpeedBrakePos, _parentAircraft.Config);
+            _targetPitch = AutopilotUtil.CalculateDemandedPitchForSpeed(
+                speedDelta,
+                _parentAircraft.Position.Pitch,
+                zeroAccelPitch,
+                (pitch) =>
+                    PerfDataHandler.CalculatePerformance(_parentAircraft.PerformanceData, pitch, _parentAircraft.ThrustLeverPos / 100.0,
+                        _parentAircraft.Position.IndicatedAirSpeed, _parentAircraft.Position.DensityAltitude, _parentAircraft.Mass_kg, _parentAircraft.SpeedBrakePos,
+                        _parentAircraft.Config).accelFwd,
+                intervalMs
+            );
+            _parentAircraft.Position.PitchRate = AutopilotUtil.CalculatePitchRate(_targetPitch, _parentAircraft.Position.Pitch, intervalMs);
         }
 
         private void RunPitchController(int intervalMs)
@@ -102,7 +149,24 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot
                 }
                 
 
+            } else if (_curVertMode == VerticalModeType.FLCH)
+            {
+                PitchHandleFlch(intervalMs);
             }
+        }
+
+        private double ConvertMachToKts(double speedMach)
+        {
+            GribDataPoint gribPoint = _parentAircraft.Position.GribPoint;
+            double trueAlt_ft = _parentAircraft.Position.TrueAltitude;
+            double trueAlt_m = MathUtil.ConvertFeetToMeters(trueAlt_ft);
+            double refPres_hPa = gribPoint?.Level_hPa ?? AtmosUtil.ISA_STD_PRES_hPa;
+            double refAlt_ft = gribPoint?.GeoPotentialHeight_Ft ?? 0;
+            double refAlt_m = gribPoint?.GeoPotentialHeight_M ?? 0;
+            double refTemp_K = gribPoint?.Temp_K ?? AtmosUtil.ISA_STD_TEMP_K;
+            double T = AtmosUtil.CalculateTempAtAlt(trueAlt_m, refAlt_m, refTemp_K);
+            double selTas = MathUtil.ConvertMpersToKts(AtmosUtil.ConvertMachToTas(speedMach / 100.0, T));
+            return AtmosUtil.ConvertTasToIas(selTas, refPres_hPa, trueAlt_ft, refAlt_ft, refTemp_K, out _);
         }
 
         private void RunThrustController(int intervalMs)
@@ -113,16 +177,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot
                 double selSpdKts = _selSpd;
                 if (_spdUnits == McpSpeedUnitsType.MACH)
                 {
-                    GribDataPoint gribPoint = _parentAircraft.Position.GribPoint;
-                    double trueAlt_ft = _parentAircraft.Position.TrueAltitude;
-                    double trueAlt_m = MathUtil.ConvertFeetToMeters(trueAlt_ft);
-                    double refPres_hPa = gribPoint?.Level_hPa ?? AtmosUtil.ISA_STD_PRES_hPa;
-                    double refAlt_ft = gribPoint?.GeoPotentialHeight_Ft ?? 0;
-                    double refAlt_m = gribPoint?.GeoPotentialHeight_M ?? 0;
-                    double refTemp_K = gribPoint?.Temp_K ?? AtmosUtil.ISA_STD_TEMP_K;
-                    double T = AtmosUtil.CalculateTempAtAlt(trueAlt_m, refAlt_m, refTemp_K);
-                    double selTas = MathUtil.ConvertMpersToKts(AtmosUtil.ConvertMachToTas(_selSpd / 100.0, T));
-                    selSpdKts = (int)AtmosUtil.ConvertTasToIas(selTas, refPres_hPa, trueAlt_ft, refAlt_ft, refTemp_K, out _);
+                    selSpdKts = ConvertMachToKts(_selSpd);
                 }
                 
                 // Calculate required thrust
@@ -137,7 +192,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot
                     (thrust) =>
                         PerfDataHandler.CalculatePerformance(_parentAircraft.PerformanceData, _parentAircraft.Position.Pitch, thrust / 100.0,
                             _parentAircraft.Position.IndicatedAirSpeed, _parentAircraft.Position.DensityAltitude, _parentAircraft.Mass_kg, _parentAircraft.SpeedBrakePos,
-                            _parentAircraft.Config).Item1,
+                            _parentAircraft.Config).accelFwd,
                     intervalMs
                 );
                 _parentAircraft.ThrustLeverVel = AutopilotUtil.CalculateThrustRate(_targetThrust, _parentAircraft.ThrustLeverPos, intervalMs);

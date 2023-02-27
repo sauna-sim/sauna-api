@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using SaunaSim.Core.Simulator.Aircraft;
+using SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller;
 
 namespace SaunaSim.Core.Simulator.Commands
 {
@@ -35,7 +36,10 @@ namespace SaunaSim.Core.Simulator.Commands
                 }
             }
 
-            int vs = 0;
+            Aircraft.Autopilot.SelectedAltitude = alt;
+            Aircraft.Autopilot.CurrentVerticalMode = VerticalModeType.FLCH;
+
+            /*int vs = 0;
             if (alt < Aircraft.Position.IndicatedAltitude)
             {
                 vs = -1800;
@@ -44,7 +48,7 @@ namespace SaunaSim.Core.Simulator.Commands
                 vs = 2500;
             }
             Aircraft.Control.CurrentVerticalInstruction = new VerticalSpeedInstruction(vs);
-            Aircraft.Control.AddArmedVerticalInstruction(new AltitudeHoldInstruction(alt));
+            Aircraft.Control.AddArmedVerticalInstruction(new AltitudeHoldInstruction(alt));*/
         }
 
         public bool HandleCommand(SimAircraft aircraft, Action<string> logger, int alt, bool isFlightLevel, double altimSetting, bool pressureInHg)

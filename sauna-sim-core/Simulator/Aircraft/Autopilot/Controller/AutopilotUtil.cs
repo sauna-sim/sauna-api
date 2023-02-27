@@ -15,6 +15,11 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
         public const double ROLL_TIME_BUFFER = 0.1;
 
         // Pitch
+        public const double PITCH_TIME = 0.5;
+        public const double PITCH_LIMIT_MAX = 30.0;
+        public const double PITCH_LIMIT_MIN = -15.0;
+        public const double PITCH_TIME_BUFFER = 0.1;
+        public const double PITCH_RATE_MAX = 5.0;
 
         // Thrust
         public const double THRUST_TIME = 0.5;
@@ -81,6 +86,18 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
             return CalculateRate(demandedRollAngle, measuredRollAngle, ROLL_TIME, ROLL_RATE_MAX, intervalMs);
         }
 
+        /// <summary>
+        /// Calculates pitch rate.
+        /// </summary>
+        /// <param name="demandedPitchAngle">Demanded Pitch Angle (degrees)</param>
+        /// <param name="measuredPitchAngle">Measured Pitch Angle (degrees)</param>
+        /// <param name="intervalMs">Update Interval Time (ms)</param>
+        /// <returns>Pitch Rate (degrees/sec)</returns>
+        public static double CalculatePitchRate(double demandedPitchAngle, double measuredPitchAngle, int intervalMs)
+        {
+            return CalculateRate(demandedPitchAngle, measuredPitchAngle, PITCH_TIME, PITCH_RATE_MAX, intervalMs);
+        }
+
         public static double CalculateDemandedInput(double deltaToTarget, double curInput, double maxInputLimit, double minInputLimit,
             Func<double, double, double> inputRateFunction, Func<double, double> targetRateFunction, double zeroTargetRateInput, double inputTimeBuffer)
         {
@@ -123,7 +140,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
             (double midPointTargetDelta, double midPointInput) = PerfDataHandler.FindLinesIntersection(m1, b1, m2, b2);
 
             // Figure out the desired input value
-            if (midPointTargetDelta < 0 && deltaToTarget > 0 || midPointTargetDelta > 0 && deltaToTarget < 0)
+            if (midPointTargetDelta <= 0 && deltaToTarget > 0 || midPointTargetDelta >= 0 && deltaToTarget < 0)
             {
                 return zeroTargetRateInput;
             }
@@ -170,6 +187,21 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
                 thrustToSpeedAccelFunction,
                 thrustForZeroAccel,
                 THRUST_TIME_BUFFER
+            );
+        }
+
+        public static double CalculateDemandedPitchForSpeed(double speedDelta, double curPitch, double pitchForZeroAccel, Func<double, double> pitchToSpeedAccelFunction,
+            int intervalMs)
+        {
+            return CalculateDemandedInput(
+                -speedDelta,
+                curPitch,
+                PITCH_LIMIT_MAX,
+                PITCH_LIMIT_MIN,
+                (demandedPitch, measuredPitch) => CalculatePitchRate(demandedPitch, measuredPitch, intervalMs),
+                pitchToSpeedAccelFunction,
+                pitchForZeroAccel,
+                PITCH_TIME_BUFFER
             );
         }
     }
