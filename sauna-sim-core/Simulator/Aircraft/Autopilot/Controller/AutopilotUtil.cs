@@ -190,14 +190,14 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
             );
         }
 
-        public static double CalculateDemandedPitchForSpeed(double speedDelta, double curPitch, double pitchForZeroAccel, Func<double, double> pitchToSpeedAccelFunction,
+        public static double CalculateDemandedPitchForSpeed(double speedDelta, double curPitch, double pitchForZeroAccel, double maxPitch, double minPitch, Func<double, double> pitchToSpeedAccelFunction,
             int intervalMs)
         {
             return CalculateDemandedInput(
                 -speedDelta,
                 curPitch,
-                PITCH_LIMIT_MAX,
-                PITCH_LIMIT_MIN,
+                minPitch,
+                maxPitch,
                 (demandedPitch, measuredPitch) => CalculatePitchRate(demandedPitch, measuredPitch, intervalMs),
                 pitchToSpeedAccelFunction,
                 pitchForZeroAccel,

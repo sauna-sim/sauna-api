@@ -18,6 +18,7 @@ using FsdConnectorNet;
 using SaunaSim.Core.Data.Loaders;
 using SaunaSim.Api.Utilities;
 using SaunaSim.Core.Simulator.Aircraft.Performance;
+using SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller;
 
 namespace SaunaSim.Api.Controllers
 {
@@ -208,13 +209,8 @@ namespace SaunaSim.Api.Controllers
                             try
                             {
                                 int reqAlt = Convert.ToInt32(items[2]);
-                                reqAlt /= 100;
-
-                                List<string> args = new List<string>
-                                {
-                                    $"FL{reqAlt}"
-                                };
-                                CommandHandler.HandleCommand("dm", lastPilot, args, (string msg) => _logger.LogInformation(msg));
+                                lastPilot.Autopilot.SelectedAltitude = reqAlt;
+                                lastPilot.Autopilot.CurrentVerticalMode = VerticalModeType.FLCH;
                             } catch (Exception) { }
                         }
                     } else if (line.StartsWith("$ROUTE"))
