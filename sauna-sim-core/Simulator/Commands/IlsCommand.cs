@@ -5,7 +5,6 @@ using System.Text;
 using System.Threading.Tasks;
 using SaunaSim.Core.Data;
 using SaunaSim.Core.Simulator.Aircraft;
-using SaunaSim.Core.Simulator.Aircraft.Control.FMS;
 using SaunaSim.Core.Simulator.Aircraft.Control.Instructions.Lateral;
 using SaunaSim.Core.Simulator.Aircraft.Control.Instructions.Vertical;
 
@@ -21,7 +20,7 @@ namespace SaunaSim.Core.Simulator.Commands
         public void ExecuteCommand()
         {
 
-            if ((Aircraft.Control.CurrentLateralInstruction is IlsApproachInstruction instr1) && instr1.Type == LateralControlMode.APPROACH)
+            /*if ((Aircraft.Control.CurrentLateralInstruction is IlsApproachInstruction instr1) && instr1.Type == LateralControlMode.APPROACH)
             {
                 instr1.AircraftLanded += OnLanded;
             }
@@ -36,7 +35,7 @@ namespace SaunaSim.Core.Simulator.Commands
 
                 Aircraft.Control.ArmedLateralInstruction = instr;
             }
-            Aircraft.Control.AddArmedVerticalInstruction(new GlidePathInstruction(_loc.Location, 3));
+            Aircraft.Control.AddArmedVerticalInstruction(new GlidePathInstruction(_loc.Location, 3));*/
         }
 
         public void OnLanded(object sender, EventArgs e)

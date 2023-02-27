@@ -1,12 +1,7 @@
 ﻿using AviationCalcUtilNet.GeoTools;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using SaunaSim.Core.Data;
 
-namespace SaunaSim.Core.Simulator.Aircraft.Control.FMS
+namespace SaunaSim.Core.Simulator.Aircraft.FMS
 {
     public class RouteWaypoint : IRoutePoint
     {

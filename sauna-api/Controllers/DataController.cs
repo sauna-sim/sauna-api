@@ -2,8 +2,6 @@
 using SaunaSim.Core;
 using SaunaSim.Core.Data;
 using SaunaSim.Core.Simulator.Aircraft;
-using SaunaSim.Core.Simulator.Aircraft.Control.FMS;
-using SaunaSim.Core.Simulator.Aircraft.Control.FMS.Legs;
 using SaunaSim.Core.Simulator.Commands;
 using AviationCalcUtilNet.GeoTools;
 using AviationCalcUtilNet.GeoTools.MagneticTools;
@@ -19,6 +17,8 @@ using SaunaSim.Core.Data.Loaders;
 using SaunaSim.Api.Utilities;
 using SaunaSim.Core.Simulator.Aircraft.Performance;
 using SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller;
+using SaunaSim.Core.Simulator.Aircraft.FMS;
+using SaunaSim.Core.Simulator.Aircraft.FMS.Legs;
 
 namespace SaunaSim.Api.Controllers
 {
@@ -259,14 +259,13 @@ namespace SaunaSim.Api.Controllers
 
                             foreach (IRouteLeg leg in legs)
                             {
-                                lastPilot.Control.FMS.AddRouteLeg(leg);
+                                lastPilot.Fms.AddRouteLeg(leg);
                             }
 
                             if (legs.Count > 0)
                             {
-                                lastPilot.Control.FMS.ActivateDirectTo(legs[0].StartPoint.Point);
-                                LnavRouteInstruction instr = new LnavRouteInstruction();
-                                lastPilot.Control.CurrentLateralInstruction = instr;
+                                lastPilot.Fms.ActivateDirectTo(legs[0].StartPoint.Point);
+                                lastPilot.Autopilot.AddArmedLateralMode(LateralModeType.LNAV);
                             }
                         }
                     } else if (line.StartsWith("START"))

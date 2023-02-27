@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using SaunaSim.Core.Data;
 using SaunaSim.Core.Simulator.Aircraft;
-using SaunaSim.Core.Simulator.Aircraft.Control.FMS;
+using SaunaSim.Core.Simulator.Aircraft.FMS;
 
 namespace SaunaSim.Core.Simulator.Commands
 {
@@ -19,7 +19,7 @@ namespace SaunaSim.Core.Simulator.Commands
 
         public void ExecuteCommand()
         {
-            Aircraft.Control.ArmedLateralInstruction = new InterceptCourseInstruction(new RouteWaypoint(wp), course);
+            //Aircraft.Control.ArmedLateralInstruction = new InterceptCourseInstruction(new RouteWaypoint(wp), course);
         }
 
         public bool HandleCommand(SimAircraft aircraft, Action<string> logger, string waypoint, int course)

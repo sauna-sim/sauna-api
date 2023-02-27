@@ -18,6 +18,7 @@ using AviationCalcUtilNet.GeoTools;
 using AviationCalcUtilNet.MathTools;
 using SaunaSim.Core.Simulator.Aircraft.Autopilot;
 using SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller;
+using SaunaSim.Core.Simulator.Aircraft.FMS;
 using SaunaSim.Core.Simulator.Aircraft.Performance;
 
 
@@ -84,12 +85,8 @@ namespace SaunaSim.Core.Simulator.Aircraft
         private Action<string> _logWarn;
         private Action<string> _logError;
         private AircraftAutopilot _autopilot;
+        private AircraftFms _fms;
         private FlightPhaseType _flightPhase;
-        
-        // TODO: Remove This
-        private AircraftControl _control;
-        private int _assignedIas = -1;
-        private ConstraintType _assignedIasType = ConstraintType.FREE;
 
         public SimAircraft(string callsign, string networkId, string password, string fullname, string hostname, ushort port, ProtocolRevision protocol, ClientInfo clientInfo,
             PerfData perfData, double lat, double lon, double alt, double hdg_mag, int delayMs = 0)
@@ -119,6 +116,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
                 CurrentThrustMode = ThrustModeType.SPEED,
                 CurrentVerticalMode = VerticalModeType.FLCH
             };
+            _fms = new AircraftFms();
             _performanceData = perfData;
             _delayMs = delayMs;
             _aircraftConfig = new AircraftConfig(true, false, false, true, true, false, false, 0, false, false, new AircraftEngine(true, false), new AircraftEngine(true, false));
@@ -128,10 +126,6 @@ namespace SaunaSim.Core.Simulator.Aircraft
 
             // TODO: Change This To Actually Calculate Mass
             _massKg = (perfData.MTOW_kg + perfData.OEW_kg) / 2;
-
-            // TODO: Remove This
-            _control = new AircraftControl(new HeadingHoldInstruction(Convert.ToInt32(hdg_mag)), new AltitudeHoldInstruction(Convert.ToInt32(alt)));
-
         }
 
         public void Start()
@@ -427,20 +421,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
 
         // Assigned values
         public AircraftAutopilot Autopilot => _autopilot;
-        public AircraftControl Control => _control;
-
-        // TODO: Remove This
-        public int Assigned_IAS
-        {
-            get => _assignedIas;
-            set => _assignedIas = value;
-        }
-
-        public ConstraintType Assigned_IAS_Type
-        {
-            get => _assignedIasType;
-            set => _assignedIasType = value;
-        }
+        public AircraftFms Fms => _fms;
 
         public FlightPhaseType FlightPhase
         {
@@ -470,8 +451,8 @@ namespace SaunaSim.Core.Simulator.Aircraft
                 _connection = null;
                 _posUpdThread = null;
                 _position = null;
-                _control = null;
                 _autopilot = null;
+                _fms = null;
                 _delayTimer = null;
                 disposedValue = true;
             }

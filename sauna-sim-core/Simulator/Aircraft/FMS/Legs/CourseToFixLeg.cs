@@ -1,23 +1,37 @@
-﻿using AviationCalcUtilNet.GeoTools;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System;
 
-namespace SaunaSim.Core.Simulator.Aircraft.Control.FMS.Legs
+namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
 {
-    public class DirectToFixLeg : IRouteLeg
+    public class CourseToFixLeg : IRouteLeg
     {
         private FmsPoint _endPoint;
+        private double _magneticCourse;
         private double _trueCourse;
         private InterceptCourseInstruction _instr;
 
-        public DirectToFixLeg(FmsPoint point)
+        public CourseToFixLeg(FmsPoint endPoint, BearingTypeEnum courseType, double course)
         {
-            _endPoint = point;
-            _trueCourse = -1;
+            _endPoint = endPoint;
+            if (courseType == BearingTypeEnum.TRUE)
+            {
+                _trueCourse = course;
+                _instr = new InterceptCourseInstruction(_endPoint.Point)
+                {
+                    TrueCourse = course
+                };
+                _magneticCourse = _instr.MagneticCourse;
+            }
+            else
+            {
+                _magneticCourse = course;
+                _instr = new InterceptCourseInstruction(_endPoint.Point, course);
+                _trueCourse = _instr.TrueCourse;
+            }
         }
+
+        public ILateralControlInstruction Instruction => _instr;
+
+        public RouteLegTypeEnum LegType => RouteLegTypeEnum.COURSE_TO_FIX;
 
         public FmsPoint StartPoint => null;
 
@@ -27,54 +41,13 @@ namespace SaunaSim.Core.Simulator.Aircraft.Control.FMS.Legs
 
         public double FinalTrueCourse => _trueCourse;
 
-        public ILateralControlInstruction Instruction => _instr;
-
-        public RouteLegTypeEnum LegType => RouteLegTypeEnum.DIRECT_TO_FIX;
-
-        public bool HasLegTerminated(AircraftPosition pos, ref AircraftFms fms)
-        {
-            if (_instr == null)
-            {
-                return false;
-            }
-
-            // Leg terminates when aircraft passes abeam/over terminating point
-            _instr.UpdateInfo(pos, ref fms);
-            return _instr.AlongTrackM <= 0;
-        }
-
         public bool ShouldBeginTurn(AircraftPosition pos, AircraftFms fms, int posCalcIntvl)
         {
-            if (_instr == null)
-            {
-                return false;
-            }
-
             return _instr.ShouldActivateInstruction(pos, fms, posCalcIntvl);
         }
 
         public void UpdateLateralPosition(ref AircraftPosition pos, ref AircraftFms fms, int posCalcIntvl)
         {
-            // Check if track has been set
-            if (_trueCourse < 0 || _instr == null)
-            {
-                _trueCourse = GeoUtil.CalculateDirectBearingAfterTurn(
-                        pos.PositionGeoPoint,
-                        _endPoint.Point.PointPosition,
-                        GeoUtil.CalculateRadiusOfTurn(GeoUtil.CalculateMaxBankAngle(pos.GroundSpeed, 25, 3), pos.GroundSpeed),
-                        pos.Track_True);
-
-                if (_trueCourse < 0)
-                {
-                    _trueCourse = GeoPoint.FinalBearing(pos.PositionGeoPoint, _endPoint.Point.PointPosition);
-                }
-
-                _instr = new InterceptCourseInstruction(_endPoint.Point)
-                {
-                    TrueCourse = _trueCourse
-                };
-            }
-
             IRouteLeg nextLeg = fms.GetFirstLeg();
 
             // Only sequence if next leg exists and fms is not suspended
@@ -101,14 +74,21 @@ namespace SaunaSim.Core.Simulator.Aircraft.Control.FMS.Legs
             _instr.UpdatePosition(ref pos, ref fms, posCalcIntvl);
         }
 
+        public override string ToString()
+        {
+            return $"{_magneticCourse:000.0} =(CF)=> {_endPoint}";
+        }
+
         public void UpdateVerticalPosition(ref AircraftPosition pos, ref AircraftFms fms, int posCalcIntvl)
         {
             throw new NotImplementedException();
         }
 
-        public override string ToString()
+        public bool HasLegTerminated(AircraftPosition pos, ref AircraftFms fms)
         {
-            return $"PPOS =(DF)=> {_endPoint}";
+            // Leg terminates when aircraft passes abeam/over terminating point
+            _instr.UpdateInfo(pos, ref fms);
+            return _instr.AlongTrackM <= 0;
         }
     }
 }

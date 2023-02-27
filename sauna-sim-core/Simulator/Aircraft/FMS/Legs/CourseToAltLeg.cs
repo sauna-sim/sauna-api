@@ -1,12 +1,7 @@
-﻿using AviationCalcUtilNet.GeoTools;
+﻿using System;
 using AviationCalcUtilNet.GeoTools.MagneticTools;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace SaunaSim.Core.Simulator.Aircraft.Control.FMS.Legs
+namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
 {
     public class CourseToAltLeg : IRouteLeg
     {

@@ -5,8 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using SaunaSim.Core.Data;
 using SaunaSim.Core.Simulator.Aircraft;
-using SaunaSim.Core.Simulator.Aircraft.Control.FMS;
-using SaunaSim.Core.Simulator.Aircraft.Control.FMS.Legs;
+using SaunaSim.Core.Simulator.Aircraft.FMS;
 
 namespace SaunaSim.Core.Simulator.Commands
 {
@@ -45,7 +44,7 @@ namespace SaunaSim.Core.Simulator.Commands
                 }
                 IRoutePoint holdPt = new RouteWaypoint(wp);
 
-                if (!Aircraft.Control.FMS.AddHold(holdPt, pubHold.InboundCourse, pubHold.TurnDirection, pubHold.LegLengthType, pubHold.LegLength))
+                if (!Aircraft.Fms.AddHold(holdPt, pubHold.InboundCourse, pubHold.TurnDirection, pubHold.LegLengthType, pubHold.LegLength))
                 {
                     Logger?.Invoke($"ERROR - {wp.Identifier} not found in flight plan!");
                     return false;
@@ -55,7 +54,7 @@ namespace SaunaSim.Core.Simulator.Commands
                 return true;
             }
 
-            if (!Aircraft.Control.FMS.AddHold(new RouteWaypoint(wp), inboundCourse, turnDir, legLengthType, legLength))
+            if (!Aircraft.Fms.AddHold(new RouteWaypoint(wp), inboundCourse, turnDir, legLengthType, legLength))
             {
                 Logger?.Invoke($"ERROR - {wp.Identifier} not found in flight plan!");
                 return false;
@@ -137,7 +136,7 @@ namespace SaunaSim.Core.Simulator.Commands
                             }
                         }                        
                     }
-                    if (!Aircraft.Control.FMS.AddHold(new RouteWaypoint(wp), inbdCrs, turnDir, lengthType, legLength))
+                    if (!Aircraft.Fms.AddHold(new RouteWaypoint(wp), inbdCrs, turnDir, lengthType, legLength))
                     {
                         Logger?.Invoke($"ERROR - {wp.Identifier} not found in flight plan!");
                         return false;
@@ -175,7 +174,7 @@ namespace SaunaSim.Core.Simulator.Commands
             }
             IRoutePoint holdPt = new RouteWaypoint(wp);
 
-            if (!Aircraft.Control.FMS.AddHold(holdPt, pubHold.InboundCourse, pubHold.TurnDirection, pubHold.LegLengthType, pubHold.LegLength))
+            if (!Aircraft.Fms.AddHold(holdPt, pubHold.InboundCourse, pubHold.TurnDirection, pubHold.LegLengthType, pubHold.LegLength))
             {
                 Logger?.Invoke($"ERROR - {wp.Identifier} not found in flight plan!");
                 return false;

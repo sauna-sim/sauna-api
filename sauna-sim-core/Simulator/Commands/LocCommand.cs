@@ -18,8 +18,8 @@ namespace SaunaSim.Core.Simulator.Commands
 
         public void ExecuteCommand()
         {
-            IlsApproachInstruction instr = new IlsApproachInstruction(_loc);
-            Aircraft.Control.ArmedLateralInstruction = instr;
+            //IlsApproachInstruction instr = new IlsApproachInstruction(_loc);
+            //Aircraft.Control.ArmedLateralInstruction = instr;
         }
 
         public bool HandleCommand(SimAircraft aircraft, Action<string> logger, string runway)

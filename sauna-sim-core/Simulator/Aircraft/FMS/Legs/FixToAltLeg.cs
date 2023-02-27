@@ -1,21 +1,21 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace SaunaSim.Core.Simulator.Aircraft.Control.FMS.Legs
+namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
 {
-    public class FixToManualLeg : IRouteLeg
+    public class FixToAltLeg : IRouteLeg
     {
         private FmsPoint _startPoint;
         private double _magneticCourse;
         private double _trueCourse;
+        private double _endAlt;
+        private double _beginAlt;
         private InterceptCourseInstruction _instr;
 
-        public FixToManualLeg(FmsPoint startPoint, BearingTypeEnum courseType, double course)
+        public FixToAltLeg(FmsPoint startPoint, BearingTypeEnum courseType, double course, double endAlt)
         {
             _startPoint = startPoint;
+            _endAlt = endAlt;
+            _beginAlt = -1;
 
             if (courseType == BearingTypeEnum.TRUE)
             {
@@ -42,12 +42,20 @@ namespace SaunaSim.Core.Simulator.Aircraft.Control.FMS.Legs
 
         public ILateralControlInstruction Instruction => _instr;
 
-        public RouteLegTypeEnum LegType => RouteLegTypeEnum.FIX_TO_MANUAL;
+        public RouteLegTypeEnum LegType => RouteLegTypeEnum.FIX_TO_ALT;
 
         public bool HasLegTerminated(AircraftPosition pos, ref AircraftFms fms)
         {
-            // Manual termination
-            return false;
+            if (_beginAlt < 0)
+            {
+                _beginAlt = pos.IndicatedAltitude;
+            }
+
+            if (_beginAlt <= _endAlt)
+            {
+                return pos.IndicatedAltitude >= _endAlt;
+            }
+            return pos.IndicatedAltitude <= _endAlt;
         }
 
         public bool ShouldBeginTurn(AircraftPosition pos, AircraftFms fms, int posCalcIntvl)
@@ -57,7 +65,24 @@ namespace SaunaSim.Core.Simulator.Aircraft.Control.FMS.Legs
 
         public void UpdateLateralPosition(ref AircraftPosition pos, ref AircraftFms fms, int posCalcIntvl)
         {
-            // Will not auto sequence
+            if (_beginAlt < 0)
+            {
+                _beginAlt = pos.IndicatedAltitude;
+            }
+
+            IRouteLeg nextLeg = fms.GetFirstLeg();
+
+            // Only sequence if next leg exists and fms is not suspended
+            if (nextLeg != null && !fms.Suspended)
+            {
+                if (HasLegTerminated(pos, ref fms))
+                {
+                    // Activate next leg on termination
+                    fms.ActivateNextLeg();
+                }
+            }
+
+            // Otherwise update position as normal
             _instr.UpdatePosition(ref pos, ref fms, posCalcIntvl);
         }
 
@@ -68,7 +93,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Control.FMS.Legs
 
         public override string ToString()
         {
-            return $"{_startPoint.Point.PointName}-{_magneticCourse:000} =(FM)=> MANUAL";
+            return $"{_startPoint.Point.PointName}-{_magneticCourse:000} =(FA)=> {_endAlt}";
         }
     }
 }

@@ -20,10 +20,13 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot
         // Modes
         private LateralModeType _curLatMode;
         private List<LateralModeType> _armedLatModes;
+        private object _armedLatModesLock;
         private VerticalModeType _curVertMode;
         private List<VerticalModeType> _armedVertModes;
+        private object _armedVertModesLock;
         private ThrustModeType _curThrustMode;
         private List<ThrustModeType> _armedThrustModes;
+        private object _armedThrustModesLock;
 
         // MCP
         private McpKnobDirection _hdgKnobDir;
@@ -220,6 +223,26 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot
                     _curVertMode = VerticalModeType.ALT;
                 }
                 PitchHandleAsel(intervalMs);
+            } else if (_curVertMode == VerticalModeType.VS)
+            {
+                if (PitchShouldAsel(intervalMs))
+                {
+                    _curVertMode = VerticalModeType.ASEL;
+                    PitchHandleAsel(intervalMs);
+                } else
+                {
+                    // Set thrust mode to speed
+                    if (_curThrustMode != ThrustModeType.SPEED)
+                    {
+                        _curThrustMode = ThrustModeType.SPEED;
+                    }
+                    
+                    // Calculate pitch and pitch rate
+                    _targetPitch = PerfDataHandler.GetRequiredPitchForVs(_parentAircraft.PerformanceData, _selVs,
+                        _parentAircraft.Position.IndicatedAirSpeed, _parentAircraft.Position.DensityAltitude, _parentAircraft.Mass_kg,
+                        _parentAircraft.SpeedBrakePos, _parentAircraft.Config);
+                    _parentAircraft.Position.PitchRate = AutopilotUtil.CalculatePitchRate(_targetPitch, _parentAircraft.Position.Pitch, intervalMs);
+                }
             }
         }
 
@@ -309,6 +332,87 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot
                 {
                     _parentAircraft.Position.BankRate = 0;
                 }
+            }
+        }
+
+        public void AddArmedLateralMode(LateralModeType mode)
+        {
+            lock (_armedLatModesLock)
+            {
+                if (!_armedLatModes.Contains(mode))
+                {
+                    _armedLatModes.Add(mode);
+                }
+            }
+        }
+
+        public void RemoveArmedLateralMode(LateralModeType mode)
+        {
+            lock (_armedLatModesLock)
+            {
+                _armedLatModes.Remove(mode);
+            }
+        }
+
+        public void ClearArmedLateralModes()
+        {
+            lock (_armedLatModesLock)
+            {
+                _armedLatModes.Clear();
+            }
+        }
+        
+        public void AddArmedVerticalMode(VerticalModeType mode)
+        {
+            lock (_armedVertModesLock)
+            {
+                if (!_armedVertModes.Contains(mode))
+                {
+                    _armedVertModes.Add(mode);
+                }
+            }
+        }
+
+        public void RemoveArmedVerticalMode(VerticalModeType mode)
+        {
+            lock (_armedVertModesLock)
+            {
+                _armedVertModes.Remove(mode);
+            }
+        }
+
+        public void ClearArmedVerticalModes()
+        {
+            lock (_armedVertModesLock)
+            {
+                _armedVertModes.Clear();
+            }
+        }
+        
+        public void AddArmedThrustMode(ThrustModeType mode)
+        {
+            lock (_armedThrustModesLock)
+            {
+                if (!_armedThrustModes.Contains(mode))
+                {
+                    _armedThrustModes.Add(mode);
+                }
+            }
+        }
+
+        public void RemoveArmedThrustMode(ThrustModeType mode)
+        {
+            lock (_armedThrustModesLock)
+            {
+                _armedThrustModes.Remove(mode);
+            }
+        }
+
+        public void ClearArmedThrustModes()
+        {
+            lock (_armedThrustModesLock)
+            {
+                _armedThrustModes.Clear();
             }
         }
 
@@ -411,8 +515,13 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot
 
         public List<LateralModeType> ArmedLateralModes
         {
-            get => _armedLatModes;
-            set => _armedLatModes = value;
+            get
+            {
+                lock (_armedLatModesLock)
+                {
+                    return new List<LateralModeType>(_armedLatModes);
+                }
+            }
         }
 
         public VerticalModeType CurrentVerticalMode
@@ -423,8 +532,13 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot
 
         public List<VerticalModeType> ArmedVerticalModes
         {
-            get => _armedVertModes;
-            set => _armedVertModes = value;
+            get
+            {
+                lock (_armedVertModesLock)
+                {
+                    return new List<VerticalModeType>(_armedVertModes);
+                }
+            }
         }
 
         public ThrustModeType CurrentThrustMode
@@ -435,8 +549,13 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot
 
         public List<ThrustModeType> ArmedThrustModes
         {
-            get => _armedThrustModes;
-            set => _armedThrustModes = value;
+            get
+            {
+                lock (_armedThrustModesLock)
+                {
+                    return new List<ThrustModeType>(_armedThrustModes);
+                }
+            }
         }
 
         public McpKnobDirection HdgKnobTurnDirection

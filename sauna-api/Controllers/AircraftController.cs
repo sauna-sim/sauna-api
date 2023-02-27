@@ -8,11 +8,12 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using SaunaSim.Core.Simulator.Aircraft.Control.FMS.Legs;
-using SaunaSim.Core.Simulator.Aircraft.Control.FMS;
 using SaunaSim.Core.Simulator.Aircraft;
 using System.Runtime.CompilerServices;
 using SaunaSim.Api.Utilities;
+using SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller;
+using SaunaSim.Core.Simulator.Aircraft.FMS;
+using SaunaSim.Core.Simulator.Aircraft.FMS.Legs;
 using SaunaSim.Core.Simulator.Aircraft.Performance;
 
 namespace SaunaSim.Api.Controllers
@@ -126,18 +127,14 @@ namespace SaunaSim.Api.Controllers
 
                 foreach (IRouteLeg leg in legs)
                 {
-                    pilot.Control.FMS.AddRouteLeg(leg);
+                    pilot.Fms.AddRouteLeg(leg);
                 }
 
                 if (legs.Count > 0)
                 {
-                    pilot.Control.FMS.ActivateDirectTo(legs[0].StartPoint.Point);
-                    LnavRouteInstruction lnavInstr = new LnavRouteInstruction();
-                    pilot.Control.CurrentLateralInstruction = lnavInstr;
+                    pilot.Fms.ActivateDirectTo(legs[0].StartPoint.Point);
+                    pilot.Autopilot.AddArmedLateralMode(LateralModeType.LNAV);
                 }
-
-                AltitudeHoldInstruction altInstr = new AltitudeHoldInstruction((int)pilot.Position.IndicatedAltitude);
-                pilot.Control.CurrentVerticalInstruction = altInstr;
 
                 SimAircraftHandler.AddAircraft(pilot);
                 pilot.Start();

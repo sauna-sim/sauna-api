@@ -1,11 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using SaunaSim.Core.Data;
 
-namespace SaunaSim.Core.Simulator.Aircraft.Control.FMS.Legs
+namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
 {
     public enum RouteLegTypeEnum
     {

@@ -1,8 +1,7 @@
 using SaunaSim.Core.Data;
-using SaunaSim.Core.Simulator.Aircraft.Control.FMS;
-using SaunaSim.Core.Simulator.Aircraft.Control.FMS.Legs;
 using System.Collections.Generic;
 using System.Text;
+using SaunaSim.Core.Simulator.Aircraft.FMS;
 
 namespace SaunaSim.Api.ApiObjects.Aircraft
 {

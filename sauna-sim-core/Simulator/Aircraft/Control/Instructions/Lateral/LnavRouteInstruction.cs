@@ -5,8 +5,8 @@ using System.Text;
 using System.Threading.Tasks;
 using SaunaSim.Core.Data;
 using SaunaSim.Core.Simulator.Aircraft.Control;
-using SaunaSim.Core.Simulator.Aircraft.Control.FMS;
-using SaunaSim.Core.Simulator.Aircraft.Control.FMS.Legs;
+using SaunaSim.Core.Simulator.Aircraft.FMS;
+using SaunaSim.Core.Simulator.Aircraft.FMS.Legs;
 
 namespace SaunaSim.Core.Simulator.Aircraft
 {

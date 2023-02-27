@@ -1,50 +1,39 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using SaunaSim.Core.Data;
+using AviationCalcUtilNet.GeoTools;
 
-namespace SaunaSim.Core.Simulator.Aircraft.Control.FMS.Legs
+namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
 {
-    public class CourseToFixLeg : IRouteLeg
+    public class TrackToFixLeg : IRouteLeg
     {
+        private FmsPoint _startPoint;
         private FmsPoint _endPoint;
-        private double _magneticCourse;
-        private double _trueCourse;
+        private double _initialBearing;
+        private double _finalBearing;
         private InterceptCourseInstruction _instr;
 
-        public CourseToFixLeg(FmsPoint endPoint, BearingTypeEnum courseType, double course)
+        public TrackToFixLeg(FmsPoint startPoint, FmsPoint endPoint)
         {
+            _startPoint = startPoint;
             _endPoint = endPoint;
-            if (courseType == BearingTypeEnum.TRUE)
+            _initialBearing = GeoPoint.InitialBearing(_startPoint.Point.PointPosition, _endPoint.Point.PointPosition);
+            _finalBearing = GeoPoint.FinalBearing(_startPoint.Point.PointPosition, _endPoint.Point.PointPosition);
+            _instr = new InterceptCourseInstruction(_endPoint.Point)
             {
-                _trueCourse = course;
-                _instr = new InterceptCourseInstruction(_endPoint.Point)
-                {
-                    TrueCourse = course
-                };
-                _magneticCourse = _instr.MagneticCourse;
-            }
-            else
-            {
-                _magneticCourse = course;
-                _instr = new InterceptCourseInstruction(_endPoint.Point, course);
-                _trueCourse = _instr.TrueCourse;
-            }
+                TrueCourse = _finalBearing
+            };
         }
 
         public ILateralControlInstruction Instruction => _instr;
 
-        public RouteLegTypeEnum LegType => RouteLegTypeEnum.COURSE_TO_FIX;
+        public RouteLegTypeEnum LegType => RouteLegTypeEnum.TRACK_TO_FIX;
 
-        public FmsPoint StartPoint => null;
+        public double InitialTrueCourse => _initialBearing;
+
+        public double FinalTrueCourse => _finalBearing;
 
         public FmsPoint EndPoint => _endPoint;
 
-        public double InitialTrueCourse => -1;
-
-        public double FinalTrueCourse => _trueCourse;
+        public FmsPoint StartPoint => _startPoint;
 
         public bool ShouldBeginTurn(AircraftPosition pos, AircraftFms fms, int posCalcIntvl)
         {
@@ -81,7 +70,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Control.FMS.Legs
 
         public override string ToString()
         {
-            return $"{_magneticCourse:000.0} =(CF)=> {_endPoint}";
+            return $"{_startPoint} =(TF)=> {_endPoint}";
         }
 
         public void UpdateVerticalPosition(ref AircraftPosition pos, ref AircraftFms fms, int posCalcIntvl)

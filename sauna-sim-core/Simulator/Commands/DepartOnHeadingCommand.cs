@@ -5,8 +5,9 @@ using System.Text;
 using System.Threading.Tasks;
 using SaunaSim.Core.Data;
 using SaunaSim.Core.Simulator.Aircraft;
-using SaunaSim.Core.Simulator.Aircraft.Control.FMS;
-using SaunaSim.Core.Simulator.Aircraft.Control.FMS.Legs;
+using SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller;
+using SaunaSim.Core.Simulator.Aircraft.FMS;
+using SaunaSim.Core.Simulator.Aircraft.FMS.Legs;
 
 namespace SaunaSim.Core.Simulator.Commands
 {
@@ -24,7 +25,9 @@ namespace SaunaSim.Core.Simulator.Commands
         {
             if (e.RoutePoint.Equals(point))
             {
-                Aircraft.Control.CurrentLateralInstruction = new HeadingHoldInstruction(hdg);
+                Aircraft.Autopilot.SelectedHeading = hdg;
+                Aircraft.Autopilot.HdgKnobTurnDirection = McpKnobDirection.SHORTEST;
+                Aircraft.Autopilot.CurrentLateralMode = LateralModeType.HDG;
             }
         }
 
@@ -43,7 +46,7 @@ namespace SaunaSim.Core.Simulator.Commands
             }
 
             // Get Route Leg
-            IRouteLeg leg = Aircraft.Control.FMS.GetLegToPoint(new RouteWaypoint(wp));
+            IRouteLeg leg = Aircraft.Fms.GetLegToPoint(new RouteWaypoint(wp));
 
             if (leg == null)
             {
@@ -54,7 +57,7 @@ namespace SaunaSim.Core.Simulator.Commands
             hdg = heading;
             leg.EndPoint.PointType = RoutePointTypeEnum.FLY_OVER;
             point = leg.EndPoint.Point;
-            Aircraft.Control.FMS.WaypointPassed += OnReachingWaypoint;
+            Aircraft.Fms.WaypointPassed += OnReachingWaypoint;
 
             Logger?.Invoke($"{Aircraft.Callsign} will depart {waypoint} heading {heading:000} degrees.");
             return true;
@@ -83,7 +86,7 @@ namespace SaunaSim.Core.Simulator.Commands
             }
 
             // Get Route Leg
-            IRouteLeg leg = Aircraft.Control.FMS.GetLegToPoint(new RouteWaypoint(wp));
+            IRouteLeg leg = Aircraft.Fms.GetLegToPoint(new RouteWaypoint(wp));
 
             if (leg == null)
             {
@@ -102,7 +105,7 @@ namespace SaunaSim.Core.Simulator.Commands
 
                 leg.EndPoint.PointType = RoutePointTypeEnum.FLY_OVER;
                 point = leg.EndPoint.Point;
-                Aircraft.Control.FMS.WaypointPassed += OnReachingWaypoint;
+                Aircraft.Fms.WaypointPassed += OnReachingWaypoint;
 
                 Logger?.Invoke($"{Aircraft.Callsign} will depart {wpStr} heading {headingString} degrees.");
             }
