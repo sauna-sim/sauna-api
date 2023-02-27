@@ -109,9 +109,26 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot
         {
             if (_curThrustMode == ThrustModeType.SPEED)
             {
-                double speedDelta = _parentAircraft.Position.IndicatedAirSpeed - _selSpd;
+                // Convert selected mach # to IAS if required
+                double selSpdKts = _selSpd;
+                if (_spdUnits == McpSpeedUnitsType.MACH)
+                {
+                    GribDataPoint gribPoint = _parentAircraft.Position.GribPoint;
+                    double trueAlt_ft = _parentAircraft.Position.TrueAltitude;
+                    double trueAlt_m = MathUtil.ConvertFeetToMeters(trueAlt_ft);
+                    double refPres_hPa = gribPoint?.Level_hPa ?? AtmosUtil.ISA_STD_PRES_hPa;
+                    double refAlt_ft = gribPoint?.GeoPotentialHeight_Ft ?? 0;
+                    double refAlt_m = gribPoint?.GeoPotentialHeight_M ?? 0;
+                    double refTemp_K = gribPoint?.Temp_K ?? AtmosUtil.ISA_STD_TEMP_K;
+                    double T = AtmosUtil.CalculateTempAtAlt(trueAlt_m, refAlt_m, refTemp_K);
+                    double selTas = MathUtil.ConvertMpersToKts(AtmosUtil.ConvertMachToTas(_selSpd / 100.0, T));
+                    selSpdKts = (int)AtmosUtil.ConvertTasToIas(selTas, refPres_hPa, trueAlt_ft, refAlt_ft, refTemp_K, out _);
+                }
+                
+                // Calculate required thrust
+                double speedDelta = _parentAircraft.Position.IndicatedAirSpeed - selSpdKts;
                 double zeroAccelThrust = PerfDataHandler.GetRequiredThrustForVs(_parentAircraft.PerformanceData, _parentAircraft.Position.VerticalSpeed, 0,
-                    _selSpd, _parentAircraft.Position.DensityAltitude, _parentAircraft.Mass_kg,
+                    selSpdKts, _parentAircraft.Position.DensityAltitude, _parentAircraft.Mass_kg,
                     _parentAircraft.SpeedBrakePos, _parentAircraft.Config);
                 _targetThrust = AutopilotUtil.CalculateDemandedThrottleForSpeed(
                     speedDelta,

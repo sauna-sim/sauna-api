@@ -376,11 +376,11 @@ namespace SaunaSim.Core.Simulator.Aircraft
             GribTile tile = GribTile.FindOrCreateGribTile(PositionGeoPoint, DateTime.UtcNow);
             if (tile == null)
             {
-                _gribPoint = null;
+                GribPoint = null;
             }
             else
             {
-                _gribPoint = tile.GetClosestPoint(PositionGeoPoint);
+                GribPoint = tile.GetClosestPoint(PositionGeoPoint);
             }
         }
     }

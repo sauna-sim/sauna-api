@@ -60,21 +60,6 @@ namespace SaunaSim.Api.Controllers
             return Ok(new AppSettingsRequestResponse(AppSettingsManager.Settings));
         }
 
-        [HttpPost("loadMagneticFile")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public ActionResult<string> LoadMagneticFile()
-        {
-            try
-            {
-                MagneticUtil.LoadData();
-            } catch (Exception)
-            {
-                return BadRequest("There was an error loading the WMM.COF file. Ensure that WMM.COF is placed in the 'magnetic' folder.");
-            }
-            return Ok("Magnetic File Loaded");
-        }
-
         [HttpPost("loadSectorFile")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]

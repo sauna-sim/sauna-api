@@ -8,6 +8,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using System.Collections.Generic;
 using FsdConnectorNet;
+using SaunaSim.Core.Simulator.Aircraft.Autopilot;
 
 namespace SaunaSim.Api.ApiObjects.Aircraft
 {
@@ -22,6 +23,7 @@ namespace SaunaSim.Api.ApiObjects.Aircraft
         public int Squawk { get; set; }
         public AircraftPosition Position { get; set; }
         public AircraftControlResponse Control { get; set; }
+        public AircraftAutopilot Autopilot { get; set; }
         public int Assigned_IAS { get; set; }
         public ConstraintType Assigned_IAS_Type { get; set; }
         public ConnectionStatusType ConnectionStatus { get; set; }
@@ -45,6 +47,7 @@ namespace SaunaSim.Api.ApiObjects.Aircraft
             Assigned_IAS_Type = pilot.Assigned_IAS_Type;
             ConnectionStatus = pilot.ConnectionStatus;
             ThrustLeverPos = pilot.ThrustLeverPos;
+            Autopilot = pilot.Autopilot;
         }
 
         public class AircraftControlResponse
