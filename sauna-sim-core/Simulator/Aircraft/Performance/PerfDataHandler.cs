@@ -127,6 +127,17 @@ namespace SaunaSim.Core.Simulator.Aircraft.Performance
             return pitch_degs;
         }
 
+        public static double GetRequiredPitchForVs(PerfData perfData, double desiredVs, double ias_kts, double dens_alt_ft, double mass_kg,
+            double spdBrake, int config)
+        {
+            PerfDataPoint dataPoint = perfData.GetDataPoint((int)dens_alt_ft, (int)ias_kts, (int)mass_kg, spdBrake, config);
+
+            double pitchPerc = (desiredVs - dataPoint.VsDescent) / (dataPoint.VsClimb - dataPoint.VsDescent);
+            double pitch_degs = (pitchPerc * (dataPoint.PitchClimb - dataPoint.PitchDescent)) - dataPoint.PitchDescent;
+
+            return pitch_degs;
+        }
+
         public static double GetRequiredThrustForVs(PerfData perfData, double vs, double desiredAccelFwd, double ias_kts, double dens_alt_ft, double mass_kg, double spdBrake,
             int config)
         {

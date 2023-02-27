@@ -72,21 +72,73 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot
 
         private bool PitchShouldAsel(int intervalMs)
         {
-            return false;
+            double altDelta = _parentAircraft.Position.IndicatedAltitude - _selAlt;
+            
+            // Convert selected mach # to IAS if required
+            double selSpdKts = _selSpd;
+            if (_spdUnits == McpSpeedUnitsType.MACH)
+            {
+                selSpdKts = ConvertMachToKts(_selSpd);
+            }
+
+            // Calculate required ASEL pitch
+            double zeroVsPitch = PerfDataHandler.GetRequiredPitchForVs(_parentAircraft.PerformanceData, 0,
+                selSpdKts, _parentAircraft.Position.DensityAltitude, _parentAircraft.Mass_kg,
+                _parentAircraft.SpeedBrakePos, _parentAircraft.Config);
+            double idlePitch = PerfDataHandler.GetRequiredPitchForThrust(_parentAircraft.PerformanceData, 0, 0, selSpdKts, _parentAircraft.Position.DensityAltitude, _parentAircraft.Mass_kg, _parentAircraft.SpeedBrakePos, _parentAircraft.Config);
+            double maxPitch = PerfDataHandler.GetRequiredPitchForThrust(_parentAircraft.PerformanceData, 1, 0, selSpdKts, _parentAircraft.Position.DensityAltitude, _parentAircraft.Mass_kg, _parentAircraft.SpeedBrakePos, _parentAircraft.Config);
+            double pitchTarget = AutopilotUtil.CalculateDemandedPitchForAltitude(
+                altDelta,
+                _parentAircraft.Position.Pitch,
+                zeroVsPitch,
+                idlePitch,
+                maxPitch,
+                (pitch) =>
+                    PerfDataHandler.CalculatePerformance(_parentAircraft.PerformanceData, pitch, _parentAircraft.ThrustLeverPos / 100.0,
+                        _parentAircraft.Position.IndicatedAirSpeed, _parentAircraft.Position.DensityAltitude, _parentAircraft.Mass_kg, _parentAircraft.SpeedBrakePos,
+                        _parentAircraft.Config).vs / 60,
+                intervalMs
+            );
+
+            return Math.Abs(zeroVsPitch - pitchTarget) < double.Epsilon;
         }
 
         private void PitchHandleAsel(int intervalMs)
         {
-            // Check if we're at altitude
             double altDelta = _parentAircraft.Position.IndicatedAltitude - _selAlt;
-            if (Math.Abs(_parentAircraft.Position.VerticalSpeed) < double.Epsilon && Math.Abs(altDelta) < double.Epsilon)
+
+            if (_curThrustMode != ThrustModeType.SPEED)
             {
-                _curVertMode = VerticalModeType.ALT;
+                _curThrustMode = ThrustModeType.SPEED;
             }
-            else
+
+            // Convert selected mach # to IAS if required
+            double selSpdKts = _selSpd;
+            if (_spdUnits == McpSpeedUnitsType.MACH)
             {
-                
+                selSpdKts = ConvertMachToKts(_selSpd);
             }
+
+            // Calculate required ASEL pitch
+            double zeroVsPitch = PerfDataHandler.GetRequiredPitchForVs(_parentAircraft.PerformanceData, 0,
+                selSpdKts, _parentAircraft.Position.DensityAltitude, _parentAircraft.Mass_kg,
+                _parentAircraft.SpeedBrakePos, _parentAircraft.Config);
+            double idlePitch = PerfDataHandler.GetRequiredPitchForThrust(_parentAircraft.PerformanceData, 0, 0, selSpdKts, _parentAircraft.Position.DensityAltitude, _parentAircraft.Mass_kg, _parentAircraft.SpeedBrakePos, _parentAircraft.Config);
+            double maxPitch = PerfDataHandler.GetRequiredPitchForThrust(_parentAircraft.PerformanceData, 1, 0, selSpdKts, _parentAircraft.Position.DensityAltitude, _parentAircraft.Mass_kg, _parentAircraft.SpeedBrakePos, _parentAircraft.Config);
+            _targetPitch = AutopilotUtil.CalculateDemandedPitchForAltitude(
+                altDelta,
+                _parentAircraft.Position.Pitch,
+                zeroVsPitch,
+                idlePitch,
+                maxPitch,
+                (pitch) =>
+                    PerfDataHandler.CalculatePerformance(_parentAircraft.PerformanceData, pitch, _parentAircraft.ThrustLeverPos / 100.0,
+                        _parentAircraft.Position.IndicatedAirSpeed, _parentAircraft.Position.DensityAltitude, _parentAircraft.Mass_kg, _parentAircraft.SpeedBrakePos,
+                        _parentAircraft.Config).vs / 60,
+                intervalMs
+            );
+
+            _parentAircraft.Position.PitchRate = AutopilotUtil.CalculatePitchRate(_targetPitch, _parentAircraft.Position.Pitch, intervalMs);
         }
 
         private void PitchHandleFlch(int intervalMs)
@@ -136,22 +188,36 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot
         {
             if (_curVertMode == VerticalModeType.ALT)
             {
-                // Check if we're off altitude
+                // Check if we're off altitude by more than 200ft
                 double altDelta = _parentAircraft.Position.IndicatedAltitude - _selAlt;
-                if (Math.Abs(altDelta) > double.Epsilon)
+                if (Math.Abs(altDelta) > 200)
                 {
-                    // If we are, treat it like flight level change
+                    _curVertMode = VerticalModeType.FLCH;
                     PitchHandleFlch(intervalMs);
                 }
                 else
                 {
-                    
+                    PitchHandleAsel(intervalMs);
                 }
-                
-
             } else if (_curVertMode == VerticalModeType.FLCH)
             {
-                PitchHandleFlch(intervalMs);
+                if (PitchShouldAsel(intervalMs))
+                {
+                    _curVertMode = VerticalModeType.ASEL;
+                    PitchHandleAsel(intervalMs);
+                } else
+                {
+                    PitchHandleFlch(intervalMs);
+                }
+            } else if (_curVertMode == VerticalModeType.ASEL)
+            {
+                // Check if we're at altitude
+                double altDelta = _parentAircraft.Position.IndicatedAltitude - _selAlt;
+                if (Math.Abs(_parentAircraft.Position.VerticalSpeed) < double.Epsilon && Math.Abs(altDelta) < double.Epsilon)
+                {
+                    _curVertMode = VerticalModeType.ALT;
+                }
+                PitchHandleAsel(intervalMs);
             }
         }
 

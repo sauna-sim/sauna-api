@@ -204,5 +204,19 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
                 PITCH_TIME_BUFFER
             );
         }
+
+        public static double CalculateDemandedPitchForAltitude(double altDelta, double curPitch, double pitchForZeroVs, double pitchIdle, double pitchMax, Func<double, double> pitchToVsFunction, int intervalMs)
+        {
+            return CalculateDemandedInput(
+                -altDelta,
+                curPitch,
+                pitchMax,
+                pitchIdle,
+                (demandedPitch, measuredPitch) => CalculatePitchRate(demandedPitch, measuredPitch, intervalMs),
+                pitchToVsFunction,
+                pitchForZeroVs,
+                PITCH_TIME_BUFFER
+            );
+        }
     }
 }
