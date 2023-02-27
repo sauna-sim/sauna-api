@@ -133,6 +133,12 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
                 inputInTargetDelta = PerfDataHandler.CalculateDisplacement(curInputTargetRate, inputInTarget_a, maxInputIn_t);
                 
             }
+            
+            // Return max if we're going in the wrong direction.
+            if (inputInTargetDelta > 0 && deltaToTarget < 0 || inputInTargetDelta < 0 && deltaToTarget > 0)
+            {
+                return maxInput;
+            }
 
             // Find midpoint of the two
             (double m1, double b1) = PerfDataHandler.CreateLineEquation(0, curInput, inputInTargetDelta, maxInput);
