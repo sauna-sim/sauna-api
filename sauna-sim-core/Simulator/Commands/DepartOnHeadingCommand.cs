@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using SaunaSim.Core.Data;
 using SaunaSim.Core.Simulator.Aircraft;
+using SaunaSim.Core.Simulator.Aircraft.Autopilot;
 using SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller;
 using SaunaSim.Core.Simulator.Aircraft.FMS;
 using SaunaSim.Core.Simulator.Aircraft.FMS.Legs;

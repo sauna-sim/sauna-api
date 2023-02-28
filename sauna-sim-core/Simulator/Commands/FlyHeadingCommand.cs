@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using SaunaSim.Core.Simulator.Aircraft;
+using SaunaSim.Core.Simulator.Aircraft.Autopilot;
 using SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller;
 
 namespace SaunaSim.Core.Simulator.Commands

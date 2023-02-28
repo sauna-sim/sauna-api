@@ -157,6 +157,8 @@ namespace SaunaSim.Core.Simulator.Aircraft
             }
         }
 
+        public double Track_Mag => MagneticUtil.ConvertTrueToMagneticTile(_trueTrack, PositionGeoPoint);
+
         public double Bank
         {
             get => _bank;

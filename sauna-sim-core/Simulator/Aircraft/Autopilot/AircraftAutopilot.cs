@@ -10,7 +10,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot
 {
     public class AircraftAutopilot
     {
-        private SimAircraft _parentAircraft;
+        private readonly SimAircraft _parentAircraft;
         
         // Autopilot internal variables
         private double _targetThrust;
@@ -19,14 +19,14 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot
 
         // Modes
         private LateralModeType _curLatMode;
-        private List<LateralModeType> _armedLatModes;
-        private object _armedLatModesLock;
+        private readonly List<LateralModeType> _armedLatModes;
+        private readonly object _armedLatModesLock = new object();
         private VerticalModeType _curVertMode;
-        private List<VerticalModeType> _armedVertModes;
-        private object _armedVertModesLock;
+        private readonly List<VerticalModeType> _armedVertModes;
+        private readonly object _armedVertModesLock = new object();
         private ThrustModeType _curThrustMode;
-        private List<ThrustModeType> _armedThrustModes;
-        private object _armedThrustModesLock;
+        private readonly List<ThrustModeType> _armedThrustModes;
+        private readonly object _armedThrustModesLock = new object();
 
         // MCP
         private McpKnobDirection _hdgKnobDir;
@@ -71,6 +71,149 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot
             
             // Run Thrust Controller
             RunThrustController(intervalMs);
+        }
+        
+        private void RunThrustController(int intervalMs)
+        {
+            if (_curThrustMode == ThrustModeType.SPEED)
+            {
+                // Convert selected mach # to IAS if required
+                double selSpdKts = _selSpd;
+                if (_spdUnits == McpSpeedUnitsType.MACH)
+                {
+                    selSpdKts = ConvertMachToKts(_selSpd);
+                }
+                
+                // Calculate required thrust
+                double speedDelta = _parentAircraft.Position.IndicatedAirSpeed - selSpdKts;
+                double zeroAccelThrust = PerfDataHandler.GetRequiredThrustForVs(_parentAircraft.PerformanceData, _parentAircraft.Position.VerticalSpeed, 0,
+                    selSpdKts, _parentAircraft.Position.DensityAltitude, _parentAircraft.Mass_kg,
+                    _parentAircraft.SpeedBrakePos, _parentAircraft.Config);
+                _targetThrust = AutopilotUtil.CalculateDemandedThrottleForSpeed(
+                    speedDelta,
+                    _parentAircraft.ThrustLeverPos,
+                    zeroAccelThrust * 100.0,
+                    (thrust) =>
+                        PerfDataHandler.CalculatePerformance(_parentAircraft.PerformanceData, _parentAircraft.Position.Pitch, thrust / 100.0,
+                            _parentAircraft.Position.IndicatedAirSpeed, _parentAircraft.Position.DensityAltitude, _parentAircraft.Mass_kg, _parentAircraft.SpeedBrakePos,
+                            _parentAircraft.Config).accelFwd,
+                    intervalMs
+                );
+                _parentAircraft.ThrustLeverVel = AutopilotUtil.CalculateThrustRate(_targetThrust, _parentAircraft.ThrustLeverPos, intervalMs);
+            } else if (_curThrustMode == ThrustModeType.THRUST)
+            {
+                _parentAircraft.ThrustLeverVel = AutopilotUtil.CalculateThrustRate(_targetThrust, _parentAircraft.ThrustLeverPos, intervalMs);
+            }
+        }
+        
+        private void RunPitchController(int intervalMs)
+        {
+            if (_curVertMode == VerticalModeType.ALT)
+            {
+                // Check if we're off altitude by more than 200ft
+                double altDelta = _parentAircraft.Position.IndicatedAltitude - _selAlt;
+                if (Math.Abs(altDelta) > 200)
+                {
+                    _curVertMode = VerticalModeType.FLCH;
+                    PitchHandleFlch(intervalMs);
+                }
+                else
+                {
+                    PitchHandleAsel(intervalMs);
+                }
+            } else if (_curVertMode == VerticalModeType.FLCH)
+            {
+                if (PitchShouldAsel(intervalMs))
+                {
+                    _curVertMode = VerticalModeType.ASEL;
+                    PitchHandleAsel(intervalMs);
+                } else
+                {
+                    PitchHandleFlch(intervalMs);
+                }
+            } else if (_curVertMode == VerticalModeType.ASEL)
+            {
+                // Check if we're at altitude
+                double altDelta = _parentAircraft.Position.IndicatedAltitude - _selAlt;
+                if (Math.Abs(_parentAircraft.Position.VerticalSpeed) < 50 && Math.Abs(altDelta) < 1)
+                {
+                    _curVertMode = VerticalModeType.ALT;
+                }
+                PitchHandleAsel(intervalMs);
+            } else if (_curVertMode == VerticalModeType.VS)
+            {
+                if (PitchShouldAsel(intervalMs))
+                {
+                    _curVertMode = VerticalModeType.ASEL;
+                    PitchHandleAsel(intervalMs);
+                } else
+                {
+                    // Set thrust mode to speed
+                    if (_curThrustMode != ThrustModeType.SPEED)
+                    {
+                        _curThrustMode = ThrustModeType.SPEED;
+                    }
+                    
+                    // Calculate pitch and pitch rate
+                    _targetPitch = PerfDataHandler.GetRequiredPitchForVs(_parentAircraft.PerformanceData, _selVs,
+                        _parentAircraft.Position.IndicatedAirSpeed, _parentAircraft.Position.DensityAltitude, _parentAircraft.Mass_kg,
+                        _parentAircraft.SpeedBrakePos, _parentAircraft.Config);
+                    _parentAircraft.Position.PitchRate = AutopilotUtil.CalculatePitchRate(_targetPitch, _parentAircraft.Position.Pitch, intervalMs);
+                }
+            }
+        }
+
+        private void RunRollController(int intervalMs)
+        {
+            if (_curLatMode == LateralModeType.BANK)
+            {
+                // No change needed
+                _parentAircraft.Position.BankRate = AutopilotUtil.CalculateRollRate(_targetBank, _parentAircraft.Position.Bank, intervalMs);
+            }
+            else if (_curLatMode == LateralModeType.HDG)
+            {
+                RollHdgTrackHold(_parentAircraft.Position.Heading_Mag, _selHdg, intervalMs);
+            } else if (_curLatMode == LateralModeType.TRACK)
+            {
+                RollHdgTrackHold(_parentAircraft.Position.Track_Mag, _selHdg, intervalMs);
+            } else if (_curLatMode == LateralModeType.LNAV)
+            {
+                
+            }
+        }
+
+        private void RollHdgTrackHold(double currentBearing, double targetBearing, int intervalMs)
+        {
+            double hdgDelta = GeoUtil.CalculateTurnAmount(currentBearing, targetBearing);
+
+            // Go the shortest way if we're almost at the heading
+            if (Math.Abs(hdgDelta) < 1)
+            {
+                _hdgKnobDir = McpKnobDirection.SHORTEST;
+            }
+
+            if (Math.Abs(hdgDelta) > double.Epsilon || Math.Abs(_parentAircraft.Position.Bank) > double.Epsilon)
+            {
+                // Figure out turn direction
+                bool isRightTurn = (_hdgKnobDir == McpKnobDirection.SHORTEST) ? (hdgDelta > 0) : (_hdgKnobDir == McpKnobDirection.RIGHT);
+                    
+                // Get new hdgDelta
+                if (isRightTurn && hdgDelta < 0)
+                {
+                    hdgDelta += 360;
+                } else if (!isRightTurn && hdgDelta > 0)
+                {
+                    hdgDelta -= 360;
+                }
+                    
+                // Desired bank angle
+                _targetBank = AutopilotUtil.CalculateDemandedRollForTurn(hdgDelta, _parentAircraft.Position.Bank, _parentAircraft.Position.GroundSpeed, intervalMs);
+                _parentAircraft.Position.BankRate = AutopilotUtil.CalculateRollRate(_targetBank, _parentAircraft.Position.Bank, intervalMs);
+            }
+            else
+            {
+                _parentAircraft.Position.BankRate = 0;
+            }
         }
 
         private bool PitchShouldAsel(int intervalMs)
@@ -189,63 +332,6 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot
             _parentAircraft.Position.PitchRate = AutopilotUtil.CalculatePitchRate(_targetPitch, _parentAircraft.Position.Pitch, intervalMs);
         }
 
-        private void RunPitchController(int intervalMs)
-        {
-            if (_curVertMode == VerticalModeType.ALT)
-            {
-                // Check if we're off altitude by more than 200ft
-                double altDelta = _parentAircraft.Position.IndicatedAltitude - _selAlt;
-                if (Math.Abs(altDelta) > 200)
-                {
-                    _curVertMode = VerticalModeType.FLCH;
-                    PitchHandleFlch(intervalMs);
-                }
-                else
-                {
-                    PitchHandleAsel(intervalMs);
-                }
-            } else if (_curVertMode == VerticalModeType.FLCH)
-            {
-                if (PitchShouldAsel(intervalMs))
-                {
-                    _curVertMode = VerticalModeType.ASEL;
-                    PitchHandleAsel(intervalMs);
-                } else
-                {
-                    PitchHandleFlch(intervalMs);
-                }
-            } else if (_curVertMode == VerticalModeType.ASEL)
-            {
-                // Check if we're at altitude
-                double altDelta = _parentAircraft.Position.IndicatedAltitude - _selAlt;
-                if (Math.Abs(_parentAircraft.Position.VerticalSpeed) < 50 && Math.Abs(altDelta) < 1)
-                {
-                    _curVertMode = VerticalModeType.ALT;
-                }
-                PitchHandleAsel(intervalMs);
-            } else if (_curVertMode == VerticalModeType.VS)
-            {
-                if (PitchShouldAsel(intervalMs))
-                {
-                    _curVertMode = VerticalModeType.ASEL;
-                    PitchHandleAsel(intervalMs);
-                } else
-                {
-                    // Set thrust mode to speed
-                    if (_curThrustMode != ThrustModeType.SPEED)
-                    {
-                        _curThrustMode = ThrustModeType.SPEED;
-                    }
-                    
-                    // Calculate pitch and pitch rate
-                    _targetPitch = PerfDataHandler.GetRequiredPitchForVs(_parentAircraft.PerformanceData, _selVs,
-                        _parentAircraft.Position.IndicatedAirSpeed, _parentAircraft.Position.DensityAltitude, _parentAircraft.Mass_kg,
-                        _parentAircraft.SpeedBrakePos, _parentAircraft.Config);
-                    _parentAircraft.Position.PitchRate = AutopilotUtil.CalculatePitchRate(_targetPitch, _parentAircraft.Position.Pitch, intervalMs);
-                }
-            }
-        }
-
         private double ConvertMachToKts(double speedMach)
         {
             GribDataPoint gribPoint = _parentAircraft.Position.GribPoint;
@@ -260,80 +346,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot
             return AtmosUtil.ConvertTasToIas(selTas, refPres_hPa, trueAlt_ft, refAlt_ft, refTemp_K, out _);
         }
 
-        private void RunThrustController(int intervalMs)
-        {
-            if (_curThrustMode == ThrustModeType.SPEED)
-            {
-                // Convert selected mach # to IAS if required
-                double selSpdKts = _selSpd;
-                if (_spdUnits == McpSpeedUnitsType.MACH)
-                {
-                    selSpdKts = ConvertMachToKts(_selSpd);
-                }
-                
-                // Calculate required thrust
-                double speedDelta = _parentAircraft.Position.IndicatedAirSpeed - selSpdKts;
-                double zeroAccelThrust = PerfDataHandler.GetRequiredThrustForVs(_parentAircraft.PerformanceData, _parentAircraft.Position.VerticalSpeed, 0,
-                    selSpdKts, _parentAircraft.Position.DensityAltitude, _parentAircraft.Mass_kg,
-                    _parentAircraft.SpeedBrakePos, _parentAircraft.Config);
-                _targetThrust = AutopilotUtil.CalculateDemandedThrottleForSpeed(
-                    speedDelta,
-                    _parentAircraft.ThrustLeverPos,
-                    zeroAccelThrust * 100.0,
-                    (thrust) =>
-                        PerfDataHandler.CalculatePerformance(_parentAircraft.PerformanceData, _parentAircraft.Position.Pitch, thrust / 100.0,
-                            _parentAircraft.Position.IndicatedAirSpeed, _parentAircraft.Position.DensityAltitude, _parentAircraft.Mass_kg, _parentAircraft.SpeedBrakePos,
-                            _parentAircraft.Config).accelFwd,
-                    intervalMs
-                );
-                _parentAircraft.ThrustLeverVel = AutopilotUtil.CalculateThrustRate(_targetThrust, _parentAircraft.ThrustLeverPos, intervalMs);
-            } else if (_curThrustMode == ThrustModeType.THRUST)
-            {
-                _parentAircraft.ThrustLeverVel = AutopilotUtil.CalculateThrustRate(_targetThrust, _parentAircraft.ThrustLeverPos, intervalMs);
-            }
-        }
-
-        private void RunRollController(int intervalMs)
-        {
-            if (_curLatMode == LateralModeType.BANK)
-            {
-                // No change needed
-                _parentAircraft.Position.BankRate = AutopilotUtil.CalculateRollRate(_targetBank, _parentAircraft.Position.Bank, intervalMs);
-            }
-            else if (_curLatMode == LateralModeType.HDG)
-            {
-                double hdgDelta = GeoUtil.CalculateTurnAmount(_parentAircraft.Position.Heading_Mag, _selHdg);
-
-                // Go the shortest way if we're almost at the heading
-                if (Math.Abs(hdgDelta) < 1)
-                {
-                    _hdgKnobDir = McpKnobDirection.SHORTEST;
-                }
-
-                if (Math.Abs(hdgDelta) > double.Epsilon || Math.Abs(_parentAircraft.Position.Bank) > double.Epsilon)
-                {
-                    // Figure out turn direction
-                    bool isRightTurn = (_hdgKnobDir == McpKnobDirection.SHORTEST) ? (hdgDelta > 0) : (_hdgKnobDir == McpKnobDirection.RIGHT);
-                    
-                    // Get new hdgDelta
-                    if (isRightTurn && hdgDelta < 0)
-                    {
-                        hdgDelta += 360;
-                    } else if (!isRightTurn && hdgDelta > 0)
-                    {
-                        hdgDelta -= 360;
-                    }
-                    
-                    // Desired bank angle
-                    _targetBank = AutopilotUtil.CalculateDemandedRollForTurn(hdgDelta, _parentAircraft.Position.Bank, _parentAircraft.Position.GroundSpeed, intervalMs);
-                    _parentAircraft.Position.BankRate = AutopilotUtil.CalculateRollRate(_targetBank, _parentAircraft.Position.Bank, intervalMs);
-                }
-                else
-                {
-                    _parentAircraft.Position.BankRate = 0;
-                }
-            }
-        }
+        
 
         public void AddArmedLateralMode(LateralModeType mode)
         {

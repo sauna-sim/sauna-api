@@ -4,18 +4,12 @@
     {
         BANK,
         HDG,
+        TRACK,
         LNAV,
         TO,
         GA,
         APCH,
         LDG,
         TAXI
-    }
-
-    public enum McpKnobDirection
-    {
-        LEFT,
-        RIGHT,
-        SHORTEST
     }
 }
