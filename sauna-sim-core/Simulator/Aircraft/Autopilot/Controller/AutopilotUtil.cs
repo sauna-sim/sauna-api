@@ -13,6 +13,12 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
         public const double ROLL_LIMIT = 25.0;
         public const double HDG_MAX_RATE = 3.0;
         public const double ROLL_TIME_BUFFER = 0.1;
+        
+        // LNAV
+        public const double MAX_INTC_ANGLE = 45;
+        public const double MIN_XTK_M = 3;
+        public const double MAX_CRS_DEV = 0.1;
+        public const double MAX_INTC_XTK_M = 1852.0;
 
         // Pitch
         public const double PITCH_TIME = 0.5;
