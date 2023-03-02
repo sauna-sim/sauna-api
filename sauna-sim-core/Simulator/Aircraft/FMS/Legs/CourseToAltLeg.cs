@@ -9,7 +9,6 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
         private double _trueCourse;
         private double _endAlt;
         private double _beginAlt;
-        private TrackHoldInstruction _instr;
 
         public CourseToAltLeg(double endAlt, BearingTypeEnum courseType, double course)
         {
@@ -34,65 +33,59 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
 
         public double FinalTrueCourse => _trueCourse;
 
-        public ILateralControlInstruction Instruction => _instr;
-
         public RouteLegTypeEnum LegType => RouteLegTypeEnum.COURSE_TO_ALT;
-
-        public bool HasLegTerminated(AircraftPosition pos, ref AircraftFms fms)
+        public bool HasLegTerminated(SimAircraft aircraft)
         {
             if (_beginAlt < 0)
             {
-                _beginAlt = pos.IndicatedAltitude;
+                _beginAlt = aircraft.Position.IndicatedAltitude;
             }
 
             if (_beginAlt <= _endAlt)
             {
-                return pos.IndicatedAltitude >= _endAlt;
+                return aircraft.Position.IndicatedAltitude >= _endAlt;
             }
-            return pos.IndicatedAltitude <= _endAlt;
+            return aircraft.Position.IndicatedAltitude <= _endAlt;
         }
 
-        public bool ShouldBeginTurn(AircraftPosition pos, AircraftFms fms, int posCalcIntvl)
+        public (double requiredTrueCourse, double crossTrackError) UpdateForLnav(SimAircraft aircraft, int intervalMs)
         {
-            // Never preempt turn
-            return false;
+            // Check if we should start turning towards the next leg
+            IRouteLeg nextLeg = aircraft.Fms.GetFirstLeg();
+            
+            if (nextLeg != null && !aircraft.Fms.Suspended)
+            {
+                if (HasLegTerminated(aircraft))
+                {
+                    // Activate next leg on termination
+                    aircraft.Fms.ActivateNextLeg();
+                }
+            }
+            
+            return (GetCourseInterceptInfo(aircraft).requiredTrueCourse, 0);
         }
 
-        public void UpdateLateralPosition(ref AircraftPosition pos, ref AircraftFms fms, int posCalcIntvl)
+        public (double requiredTrueCourse, double crossTrackError, double alongTrackDistance) GetCourseInterceptInfo(SimAircraft aircraft)
         {
-            if (_beginAlt < 0 || _instr == null)
+            if (_beginAlt < 0)
             {
                 if (_trueCourse < 0)
                 {
-                    _trueCourse = MagneticUtil.ConvertMagneticToTrueTile(_magneticCourse, pos.PositionGeoPoint);
+                    _trueCourse = MagneticUtil.ConvertMagneticToTrueTile(_magneticCourse, aircraft.Position.PositionGeoPoint);
                 } else if (_magneticCourse < 0)
                 {
-                    _magneticCourse = MagneticUtil.ConvertTrueToMagneticTile(_trueCourse, pos.PositionGeoPoint);
+                    _magneticCourse = MagneticUtil.ConvertTrueToMagneticTile(_trueCourse, aircraft.Position.PositionGeoPoint);
                 }
-                _beginAlt = pos.IndicatedAltitude;
-
-                _instr = new TrackHoldInstruction(_trueCourse);
+                _beginAlt = aircraft.Position.IndicatedAltitude;
             }
 
-            IRouteLeg nextLeg = fms.GetFirstLeg();
-
-            // Only sequence if next leg exists and fms is not suspended
-            if (nextLeg != null && !fms.Suspended)
-            {
-                if (HasLegTerminated(pos, ref fms))
-                {
-                    // Activate next leg on termination
-                    fms.ActivateNextLeg();
-                }
-            }
-
-            // Otherwise update position as normal
-            _instr.UpdatePosition(ref pos, ref fms, posCalcIntvl);
+            return (_trueCourse, 0, 0);
         }
 
-        public void UpdateVerticalPosition(ref AircraftPosition pos, ref AircraftFms fms, int posCalcIntvl)
+        public bool ShouldActivateLeg(SimAircraft aircraft, int intervalMs)
         {
-            throw new NotImplementedException();
+            // Never preempt turn
+            return false;
         }
 
         public override string ToString()

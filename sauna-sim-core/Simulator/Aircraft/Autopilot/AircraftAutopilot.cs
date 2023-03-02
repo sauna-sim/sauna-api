@@ -209,12 +209,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot
         {
             IRouteLeg leg = _parentAircraft.Fms.GetFirstLeg();
 
-            if (leg == null)
-            {
-                return false;
-            }
-
-            return leg.ShouldBeginTurn(_parentAircraft.Position, _parentAircraft.Fms, intervalMs);
+            return leg?.ShouldActivateLeg(_parentAircraft, intervalMs) ?? false;
         }
 
         private void RollHandleLnav(int intervalMs)
@@ -238,20 +233,29 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot
                 fms.ActivateNextLeg();
             }
 
-            // Update position
-            fms.ActiveLeg?.UpdateLateralPosition(ref position, ref fms, intervalMs);
-        }
+            // Only sequence if next leg exists and fms is not suspended
+            if (fms.GetFirstLeg() != null && !fms.Suspended)
+            {
+                if (fms.ActiveLeg?.HasLegTerminated(_parentAircraft) ?? true)
+                {
+                    // Activate next leg on termination
+                    fms.ActivateNextLeg();
+                }
+            }
 
-        private void RollHandleCourseIntercept(IRoutePoint waypoint, double trueCourse, int intervalMs)
-        {
-            // Calculate Along Track and Cross Track error
-            double xTk_m = GeoUtil.CalculateCrossTrackErrorM(
-                _parentAircraft.Position.PositionGeoPoint,
-                waypoint.PointPosition,
-                trueCourse,
-                out double requiredTrueCourse,
-                out double aTk_m
-            );
+            if (fms.ActiveLeg == null)
+            {
+                return;
+            }
+
+            // Get True Course and crossTrackError
+            (double requiredTrueCourse, double crossTrackError) = fms.ActiveLeg.UpdateForLnav(_parentAircraft, intervalMs);
+            
+            // Calculate Bank Angle & Rate
+            _targetBank = AutopilotUtil.CalculateDemandedRollForNav(crossTrackError, _parentAircraft.Position.Track_True, requiredTrueCourse,
+                _parentAircraft.Position.Bank, _parentAircraft.Position.GroundSpeed, intervalMs).demandedRoll;
+            
+            _parentAircraft.Position.BankRate = AutopilotUtil.CalculateRollRate(_targetBank, _parentAircraft.Position.Bank, intervalMs);
         }
 
         private void RollHdgTrackHold(double currentBearing, double targetBearing, int intervalMs)
