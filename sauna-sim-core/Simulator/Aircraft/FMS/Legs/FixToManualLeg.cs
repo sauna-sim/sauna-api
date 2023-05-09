@@ -1,4 +1,7 @@
 ﻿using System;
+using AviationCalcUtilNet.GeoTools;
+using AviationCalcUtilNet.GeoTools.MagneticTools;
+using SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller;
 
 namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
 {
@@ -7,7 +10,6 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
         private FmsPoint _startPoint;
         private double _magneticCourse;
         private double _trueCourse;
-        private InterceptCourseInstruction _instr;
 
         public FixToManualLeg(FmsPoint startPoint, BearingTypeEnum courseType, double course)
         {
@@ -15,16 +17,13 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
 
             if (courseType == BearingTypeEnum.TRUE)
             {
-                _instr = new InterceptCourseInstruction(_startPoint.Point)
-                {
-                    TrueCourse = course
-                };
-                _magneticCourse = _instr.MagneticCourse;
+                _trueCourse = course;
+                _magneticCourse = MagneticUtil.ConvertTrueToMagneticTile(_trueCourse, startPoint.Point.PointPosition);
             }
             else
             {
-                _instr = new InterceptCourseInstruction(_startPoint.Point, course);
-                _trueCourse = _instr.TrueCourse;
+                _magneticCourse = course;
+                _trueCourse = MagneticUtil.ConvertMagneticToTrueTile(_magneticCourse, startPoint.Point.PointPosition);
             }
         }
 
@@ -36,30 +35,48 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
 
         public double FinalTrueCourse => -1;
 
-        public ILateralControlInstruction Instruction => _instr;
-
         public RouteLegTypeEnum LegType => RouteLegTypeEnum.FIX_TO_MANUAL;
 
-        public bool HasLegTerminated(AircraftPosition pos, ref AircraftFms fms)
+        public bool HasLegTerminated(SimAircraft aircraft)
         {
             // Manual termination
             return false;
         }
 
-        public bool ShouldBeginTurn(AircraftPosition pos, AircraftFms fms, int posCalcIntvl)
+        public (double requiredTrueCourse, double crossTrackError) UpdateForLnav(SimAircraft aircraft, int intervalMs)
         {
-            return _instr.ShouldActivateInstruction(pos, fms, posCalcIntvl);
+            // Update CrossTrackError, etc
+            (double requiredTrueCourse, double crossTrackError, _) = GetCourseInterceptInfo(aircraft);
+
+            return (requiredTrueCourse, crossTrackError);
         }
 
-        public void UpdateLateralPosition(ref AircraftPosition pos, ref AircraftFms fms, int posCalcIntvl)
+        public (double requiredTrueCourse, double crossTrackError, double alongTrackDistance) GetCourseInterceptInfo(SimAircraft aircraft)
         {
-            // Will not auto sequence
-            _instr.UpdatePosition(ref pos, ref fms, posCalcIntvl);
+            // Otherwise calculate cross track error for this leg
+            double crossTrackError = GeoUtil.CalculateCrossTrackErrorM(aircraft.Position.PositionGeoPoint, _startPoint.Point.PointPosition, _trueCourse,
+                out double requiredTrueCourse, out double alongTrackDistance);
+
+            return (requiredTrueCourse, crossTrackError, alongTrackDistance);
         }
 
-        public void UpdateVerticalPosition(ref AircraftPosition pos, ref AircraftFms fms, int posCalcIntvl)
+        public bool ShouldActivateLeg(SimAircraft aircraft, int intervalMs)
         {
-            throw new NotImplementedException();
+            (double requiredTrueCourse, double crossTrackError, _) = GetCourseInterceptInfo(aircraft);
+
+            // If there's no error
+            double trackDelta = GeoUtil.CalculateTurnAmount(requiredTrueCourse, aircraft.Position.Track_True);
+            if (Math.Abs(trackDelta) < double.Epsilon)
+            {
+                return false;
+            }
+
+            // Find cross track error to start turn (distance from intersection)
+            double demandedTrack = AutopilotUtil.CalculateDemandedTrackOnCurrentTrack(crossTrackError, aircraft.Position.Track_True, requiredTrueCourse, aircraft.Position.Bank,
+                aircraft.Position.GroundSpeed, intervalMs).demandedTrack;
+
+            double requestedTurnDelta = GeoUtil.CalculateTurnAmount(demandedTrack, aircraft.Position.Track_True);
+            return (trackDelta > 0 && requestedTurnDelta > 0 || trackDelta < 0 && requestedTurnDelta < 0);
         }
 
         public override string ToString()

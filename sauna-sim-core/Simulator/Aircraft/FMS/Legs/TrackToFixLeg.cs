@@ -1,5 +1,6 @@
 ﻿using System;
 using AviationCalcUtilNet.GeoTools;
+using SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller;
 
 namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
 {
@@ -9,7 +10,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
         private FmsPoint _endPoint;
         private double _initialBearing;
         private double _finalBearing;
-        private InterceptCourseInstruction _instr;
+        private double _prevAlongTrackDist;
 
         public TrackToFixLeg(FmsPoint startPoint, FmsPoint endPoint)
         {
@@ -17,13 +18,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
             _endPoint = endPoint;
             _initialBearing = GeoPoint.InitialBearing(_startPoint.Point.PointPosition, _endPoint.Point.PointPosition);
             _finalBearing = GeoPoint.FinalBearing(_startPoint.Point.PointPosition, _endPoint.Point.PointPosition);
-            _instr = new InterceptCourseInstruction(_endPoint.Point)
-            {
-                TrueCourse = _finalBearing
-            };
         }
-
-        public ILateralControlInstruction Instruction => _instr;
 
         public RouteLegTypeEnum LegType => RouteLegTypeEnum.TRACK_TO_FIX;
 
@@ -35,54 +30,83 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
 
         public FmsPoint StartPoint => _startPoint;
 
-        public bool ShouldBeginTurn(AircraftPosition pos, AircraftFms fms, int posCalcIntvl)
+        public bool HasLegTerminated(SimAircraft aircraft)
         {
-            return _instr.ShouldActivateInstruction(pos, fms, posCalcIntvl);
+            // Leg terminates when aircraft passes abeam/over terminating point
+            GeoUtil.CalculateCrossTrackErrorM(aircraft.Position.PositionGeoPoint, _endPoint.Point.PointPosition, _finalBearing,
+                out _, out double alongTrackDistance);
+
+            return alongTrackDistance <= 0;
         }
 
-        public void UpdateLateralPosition(ref AircraftPosition pos, ref AircraftFms fms, int posCalcIntvl)
+        public (double requiredTrueCourse, double crossTrackError) UpdateForLnav(SimAircraft aircraft, int intervalMs)
         {
-            IRouteLeg nextLeg = fms.GetFirstLeg();
+            // Check if we should start turning towards the next leg
+            IRouteLeg nextLeg = aircraft.Fms.GetFirstLeg();
 
-            // Only sequence if next leg exists and fms is not suspended
-            if (nextLeg != null && !fms.Suspended)
+            if (nextLeg != null && !aircraft.Fms.Suspended)
             {
-                if (HasLegTerminated(pos, ref fms))
+                if (HasLegTerminated(aircraft))
                 {
                     // Activate next leg on termination
-                    fms.ActivateNextLeg();
+                    aircraft.Fms.ActivateNextLeg();
                 }
                 else if (_endPoint.PointType == RoutePointTypeEnum.FLY_BY &&
-                    nextLeg.ShouldBeginTurn(pos, fms, posCalcIntvl) &&
-                    nextLeg.InitialTrueCourse >= 0 &&
-                    Math.Abs(FinalTrueCourse - nextLeg.InitialTrueCourse) > 0.5)
+                         nextLeg.ShouldActivateLeg(aircraft, intervalMs) &&
+                         nextLeg.InitialTrueCourse >= 0 &&
+                         Math.Abs(FinalTrueCourse - nextLeg.InitialTrueCourse) > 0.5)
                 {
                     // Begin turn to next leg, but do not activate
-                    nextLeg.Instruction.UpdatePosition(ref pos, ref fms, posCalcIntvl);
+                    (double nextRequiredTrueCourse, double nextCrossTrackError, _) = nextLeg.GetCourseInterceptInfo(aircraft);
 
-                    return;
+                    return (nextRequiredTrueCourse, nextCrossTrackError);
                 }
             }
 
-            // Otherwise update position as normal
-            _instr.UpdatePosition(ref pos, ref fms, posCalcIntvl);
+            // Update CrossTrackError, etc
+            (double requiredTrueCourse, double crossTrackError, _) = GetCourseInterceptInfo(aircraft);
+
+            return (requiredTrueCourse, crossTrackError);
+        }
+
+        public (double requiredTrueCourse, double crossTrackError, double alongTrackDistance) GetCourseInterceptInfo(SimAircraft aircraft)
+        {
+            // Otherwise calculate cross track error for this leg
+            double crossTrackError = GeoUtil.CalculateCrossTrackErrorM(aircraft.Position.PositionGeoPoint, _endPoint.Point.PointPosition, _finalBearing,
+                out double requiredTrueCourse, out double alongTrackDistance);
+
+            if (alongTrackDistance <= AutopilotUtil.MIN_XTK_M && AutopilotUtil.MIN_XTK_M <= _prevAlongTrackDist)
+            {
+                aircraft.Fms.WaypointPassed?.Invoke(this, new WaypointPassedEventArgs(_endPoint.Point));
+            }
+
+            _prevAlongTrackDist = alongTrackDistance;
+
+            return (requiredTrueCourse, crossTrackError, alongTrackDistance);
+        }
+
+        public bool ShouldActivateLeg(SimAircraft aircraft, int intervalMs)
+        {
+            (double requiredTrueCourse, double crossTrackError, _) = GetCourseInterceptInfo(aircraft);
+
+            // If there's no error
+            double trackDelta = GeoUtil.CalculateTurnAmount(requiredTrueCourse, aircraft.Position.Track_True);
+            if (Math.Abs(trackDelta) < double.Epsilon)
+            {
+                return false;
+            }
+
+            // Find cross track error to start turn (distance from intersection)
+            double demandedTrack = AutopilotUtil.CalculateDemandedTrackOnCurrentTrack(crossTrackError, aircraft.Position.Track_True, requiredTrueCourse, aircraft.Position.Bank,
+                aircraft.Position.GroundSpeed, intervalMs).demandedTrack;
+
+            double requestedTurnDelta = GeoUtil.CalculateTurnAmount(demandedTrack, aircraft.Position.Track_True);
+            return (trackDelta > 0 && requestedTurnDelta > 0 || trackDelta < 0 && requestedTurnDelta < 0);
         }
 
         public override string ToString()
         {
             return $"{_startPoint} =(TF)=> {_endPoint}";
-        }
-
-        public void UpdateVerticalPosition(ref AircraftPosition pos, ref AircraftFms fms, int posCalcIntvl)
-        {
-            throw new NotImplementedException();
-        }
-
-        public bool HasLegTerminated(AircraftPosition pos, ref AircraftFms fms)
-        {
-            // Leg terminates when aircraft passes abeam/over terminating point
-            _instr.UpdateInfo(pos, ref fms);
-            return _instr.AlongTrackM <= 0;
         }
     }
 }

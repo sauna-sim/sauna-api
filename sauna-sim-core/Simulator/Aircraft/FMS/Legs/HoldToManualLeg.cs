@@ -1,6 +1,6 @@
 ﻿using System;
 using SaunaSim.Core.Data;
-using SaunaSim.Core.Simulator.Aircraft.Control.Instructions.Lateral;
+using SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller;
 
 namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
 {
@@ -8,14 +8,14 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
     {
         private FmsPoint _startPoint;
         private FmsPoint _endPoint;
-        private HoldingPatternInstruction _instr;
+        private ApFmsHoldController _instr;
         private bool _exitArmed;
 
         public HoldToManualLeg(FmsPoint startPoint, BearingTypeEnum courseType, double inboundCourse, HoldTurnDirectionEnum turnDir, HoldLegLengthTypeEnum legLengthType, double legLength)
         {
             _startPoint = startPoint;
             _endPoint = new FmsPoint(startPoint.Point, RoutePointTypeEnum.FLY_OVER);
-            _instr = new HoldingPatternInstruction(startPoint.Point, courseType, inboundCourse, turnDir, legLengthType, legLength);
+            _instr = new ApFmsHoldController(startPoint.Point, courseType, inboundCourse, turnDir, legLengthType, legLength);
             _exitArmed = false;
         }
 
@@ -26,8 +26,6 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
         public double InitialTrueCourse => _instr.TrueCourse;
 
         public double FinalTrueCourse => _instr.TrueCourse;
-
-        public ILateralControlInstruction Instruction => _instr;
 
         public RouteLegTypeEnum LegType => RouteLegTypeEnum.HOLD_TO_MANUAL;
 
@@ -70,6 +68,26 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
         public override string ToString()
         {
             return $"{_startPoint} =(HM)=> {_instr.HoldPhase.ToString()}";
+        }
+
+        public bool HasLegTerminated(SimAircraft aircraft)
+        {
+            throw new NotImplementedException();
+        }
+
+        public (double requiredTrueCourse, double crossTrackError) UpdateForLnav(SimAircraft aircraft, int intervalMs)
+        {
+            throw new NotImplementedException();
+        }
+
+        public (double requiredTrueCourse, double crossTrackError, double alongTrackDistance) GetCourseInterceptInfo(SimAircraft aircraft)
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool ShouldActivateLeg(SimAircraft aircraft, int intervalMs)
+        {
+            throw new NotImplementedException();
         }
     }
 }

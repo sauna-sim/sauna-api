@@ -2,12 +2,14 @@
 using System.Collections.Generic;
 using System.Linq;
 using SaunaSim.Core.Data;
+using SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller;
 using SaunaSim.Core.Simulator.Aircraft.FMS.Legs;
 
 namespace SaunaSim.Core.Simulator.Aircraft.FMS
 {
     public class AircraftFms
     {
+        private SimAircraft _parentAircraft;
         private Waypoint _depApt;
         private Waypoint _arrApt;
         private int _cruiseAlt;
@@ -18,8 +20,9 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
 
         public EventHandler<WaypointPassedEventArgs> WaypointPassed;
 
-        public AircraftFms()
+        public AircraftFms(SimAircraft parentAircraft)
         {
+            _parentAircraft = parentAircraft;
             _routeLegsLock = new object();
 
             lock (_routeLegsLock)
@@ -222,6 +225,18 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
                     _routeLegs.RemoveAt(0);
                 }
             }
+        }
+
+        public bool ShouldActivateLnav(int intervalMs)
+        {
+            IRouteLeg leg = GetFirstLeg();
+
+            return leg?.ShouldActivateLeg(_parentAircraft, intervalMs) ?? false;
+        }
+
+        public void OnPositionUpdate(int intervalMs)
+        {
+            
         }
     }
 }

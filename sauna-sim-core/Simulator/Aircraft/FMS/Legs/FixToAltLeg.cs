@@ -1,4 +1,8 @@
 ﻿using System;
+using System.Net;
+using AviationCalcUtilNet.GeoTools;
+using AviationCalcUtilNet.GeoTools.MagneticTools;
+using SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller;
 
 namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
 {
@@ -9,7 +13,6 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
         private double _trueCourse;
         private double _endAlt;
         private double _beginAlt;
-        private InterceptCourseInstruction _instr;
 
         public FixToAltLeg(FmsPoint startPoint, BearingTypeEnum courseType, double course, double endAlt)
         {
@@ -19,16 +22,13 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
 
             if (courseType == BearingTypeEnum.TRUE)
             {
-                _instr = new InterceptCourseInstruction(_startPoint.Point)
-                {
-                    TrueCourse = course
-                };
-                _magneticCourse = _instr.MagneticCourse;
+                _trueCourse = course;
+                _magneticCourse = MagneticUtil.ConvertTrueToMagneticTile(_trueCourse, startPoint.Point.PointPosition);
             }
             else
             {
-                _instr = new InterceptCourseInstruction(_startPoint.Point, course);
-                _trueCourse = _instr.TrueCourse;
+                _magneticCourse = course;
+                _trueCourse = MagneticUtil.ConvertMagneticToTrueTile(_magneticCourse, startPoint.Point.PointPosition);
             }
         }
 
@@ -40,60 +40,73 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
 
         public double FinalTrueCourse => -1;
 
-        public ILateralControlInstruction Instruction => _instr;
-
         public RouteLegTypeEnum LegType => RouteLegTypeEnum.FIX_TO_ALT;
-
-        public bool HasLegTerminated(AircraftPosition pos, ref AircraftFms fms)
-        {
-            if (_beginAlt < 0)
-            {
-                _beginAlt = pos.IndicatedAltitude;
-            }
-
-            if (_beginAlt <= _endAlt)
-            {
-                return pos.IndicatedAltitude >= _endAlt;
-            }
-            return pos.IndicatedAltitude <= _endAlt;
-        }
-
-        public bool ShouldBeginTurn(AircraftPosition pos, AircraftFms fms, int posCalcIntvl)
-        {
-            return _instr.ShouldActivateInstruction(pos, fms, posCalcIntvl);
-        }
-
-        public void UpdateLateralPosition(ref AircraftPosition pos, ref AircraftFms fms, int posCalcIntvl)
-        {
-            if (_beginAlt < 0)
-            {
-                _beginAlt = pos.IndicatedAltitude;
-            }
-
-            IRouteLeg nextLeg = fms.GetFirstLeg();
-
-            // Only sequence if next leg exists and fms is not suspended
-            if (nextLeg != null && !fms.Suspended)
-            {
-                if (HasLegTerminated(pos, ref fms))
-                {
-                    // Activate next leg on termination
-                    fms.ActivateNextLeg();
-                }
-            }
-
-            // Otherwise update position as normal
-            _instr.UpdatePosition(ref pos, ref fms, posCalcIntvl);
-        }
-
-        public void UpdateVerticalPosition(ref AircraftPosition pos, ref AircraftFms fms, int posCalcIntvl)
-        {
-            throw new NotImplementedException();
-        }
 
         public override string ToString()
         {
             return $"{_startPoint.Point.PointName}-{_magneticCourse:000} =(FA)=> {_endAlt}";
+        }
+
+        public bool HasLegTerminated(SimAircraft aircraft)
+        {
+            if (_beginAlt < 0)
+            {
+                _beginAlt = aircraft.Position.IndicatedAltitude;
+            }
+
+            if (_beginAlt <= _endAlt)
+            {
+                return aircraft.Position.IndicatedAltitude >= _endAlt;
+            }
+            return aircraft.Position.IndicatedAltitude <= _endAlt;
+        }
+
+        public (double requiredTrueCourse, double crossTrackError) UpdateForLnav(SimAircraft aircraft, int intervalMs)
+        {
+            // Check if we should start turning towards the next leg
+            IRouteLeg nextLeg = aircraft.Fms.GetFirstLeg();
+
+            if (nextLeg != null && !aircraft.Fms.Suspended)
+            {
+                if (HasLegTerminated(aircraft))
+                {
+                    // Activate next leg on termination
+                    aircraft.Fms.ActivateNextLeg();
+                }
+            }
+
+            // Update CrossTrackError, etc
+            (double requiredTrueCourse, double crossTrackError, _) = GetCourseInterceptInfo(aircraft);
+
+            return (requiredTrueCourse, crossTrackError);
+        }
+
+        public (double requiredTrueCourse, double crossTrackError, double alongTrackDistance) GetCourseInterceptInfo(SimAircraft aircraft)
+        {
+            // Otherwise calculate cross track error for this leg
+            double crossTrackError = GeoUtil.CalculateCrossTrackErrorM(aircraft.Position.PositionGeoPoint, _startPoint.Point.PointPosition, _trueCourse,
+                out double requiredTrueCourse, out double alongTrackDistance);
+
+            return (requiredTrueCourse, crossTrackError, alongTrackDistance);
+        }
+
+        public bool ShouldActivateLeg(SimAircraft aircraft, int intervalMs)
+        {
+            (double requiredTrueCourse, double crossTrackError, _) = GetCourseInterceptInfo(aircraft);
+
+            // If there's no error
+            double trackDelta = GeoUtil.CalculateTurnAmount(requiredTrueCourse, aircraft.Position.Track_True);
+            if (Math.Abs(trackDelta) < double.Epsilon)
+            {
+                return false;
+            }
+
+            // Find cross track error to start turn (distance from intersection)
+            double demandedTrack = AutopilotUtil.CalculateDemandedTrackOnCurrentTrack(crossTrackError, aircraft.Position.Track_True, requiredTrueCourse, aircraft.Position.Bank,
+                aircraft.Position.GroundSpeed, intervalMs).demandedTrack;
+
+            double requestedTurnDelta = GeoUtil.CalculateTurnAmount(demandedTrack, aircraft.Position.Track_True);
+            return (trackDelta > 0 && requestedTurnDelta > 0 || trackDelta < 0 && requestedTurnDelta < 0);
         }
     }
 }
