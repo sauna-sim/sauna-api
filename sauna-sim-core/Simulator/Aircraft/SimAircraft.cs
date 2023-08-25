@@ -41,7 +41,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
         private Thread _posUpdThread;
         private PauseableTimer _delayTimer;
         private bool _paused;
-        private string _flightPlan;
+        private FlightPlan _flightPlan;
         private AircraftPosition _position;
         private bool disposedValue;
         private bool _shouldUpdatePosition = false;
@@ -68,7 +68,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
         public Action<string> LogError { get; set; }
 
         // TODO: Convert to FlightPlan Struct/Object
-        public string FlightPlan
+        public FlightPlan FlightPlan
         {
             get => _flightPlan;
             set
@@ -76,7 +76,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
                 _flightPlan = value;
                 if (ConnectionStatus == ConnectionStatusType.CONNECTED)
                 {
-                    // TODO: Send Flight Plan
+                    Connection.SendFlightPlan(value);
                 }
             }
         }
@@ -127,7 +127,6 @@ namespace SaunaSim.Core.Simulator.Aircraft
             Control = new AircraftControl(new HeadingHoldInstruction(Convert.ToInt32(hdg_mag)), new AltitudeHoldInstruction(Convert.ToInt32(alt)));
             DelayMs = delayMs;
             AircraftConfig = new AircraftConfig(true, false, false, true, true, false, false, 0, false, false, new AircraftEngine(true, false), new AircraftEngine(true, false));
-            _flightPlan = "";
             AircraftType = "E75L";
             AirlineCode = "ASH";
         }
@@ -197,7 +196,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
             _posUpdThread.Start();
 
             // Send Flight Plan
-            // TODO: Send Flight Plan
+            Connection.SendFlightPlan(FlightPlan);
         }
 
         private void OnConnectionTerminated(object sender, EventArgs e)

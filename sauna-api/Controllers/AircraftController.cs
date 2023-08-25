@@ -52,7 +52,7 @@ namespace SaunaSim.Api.Controllers
                     XpdrMode = request.TransponderMode,
                     Squawk = request.Squawk,
                     Paused = request.Paused,
-                    FlightPlan = request.FlightPlan,
+                    //TODO: flight plan
                 };
 
 

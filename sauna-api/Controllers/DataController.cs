@@ -212,7 +212,18 @@ namespace SaunaSim.Api.Controllers
                     {
                         if (lastPilot != null)
                         {
-                            lastPilot.FlightPlan = line;
+                            FlightPlan flightPlan;
+                            try
+                            {
+                                flightPlan = FlightPlan.ParseFromEsScenarioFile(line);
+                            }
+                            catch (FlightPlanException e)
+                            {
+                                Console.WriteLine("Error parsing flight plan");
+                                Console.WriteLine(e.Message);
+                                continue;
+                            }
+                            lastPilot.FlightPlan = flightPlan;
                         }
                     } else if (line.StartsWith("REQALT"))
                     {
