@@ -184,12 +184,25 @@ namespace SaunaSim.Api.Controllers
                                 xpdrMode = TransponderModeType.ModeC;
                                 break;
                         }
+                        // Load the coordinates. These could be in decimal or DMS format.
+                        // TODO: If this fails, skip this aircraft. Right now, we set pos to 0,0!
+
+                        double lat = 0;
+                        double lon = 0;
+
+                        try
+                        {
+                            (lat, lon) = CoordinateUtil.ParseCoordinate(items[4], items[5]);
+                        } catch (FormatException e)
+                        {
+                            Console.WriteLine($"ERROR loading aircraft {callsign}: Could not parse coordinates");
+                        }
 
                         EuroScopeLoader.ReadVatsimPosFlag(Convert.ToInt32(items[8]), out double hdg, out double bank, out double pitch, out bool onGround);
                         //SimAircraft(string callsign, string networkId, string password,        string fullname, string hostname, ushort port, bool vatsim,   ProtocolRevision protocol,      double lat, double lon, double alt, double hdg_mag, int delayMs = 0)
                         lastPilot = new SimAircraft(callsign, request.Cid, request.Password, "Simulator Pilot", request.Server, (ushort)request.Port, request.Protocol,
                             ClientInfoLoader.GetClientInfo((string msg) => { _logger.LogWarning($"{callsign}: {msg}"); }),
-                            Convert.ToDouble(items[4]), Convert.ToDouble(items[5]), Convert.ToDouble(items[6]), hdg) {
+                            lat, lon, Convert.ToDouble(items[6]), hdg) {
                             LogInfo = (string msg) => {
                                 _logger.LogInformation($"{callsign}: {msg}");
                             },
