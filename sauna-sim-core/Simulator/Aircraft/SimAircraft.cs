@@ -59,7 +59,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
         public int Squawk { get; set; }
         public int DelayMs { get; set; }
 
-        public int DelayRemainingMs => _delayTimer.TimeRemainingMs();
+        public int DelayRemainingMs => _delayTimer?.TimeRemainingMs() ?? DelayMs;
 
         public AircraftConfig AircraftConfig { get; set; }
         public string AircraftType { get; private set; }
