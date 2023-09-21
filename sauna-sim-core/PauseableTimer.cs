@@ -12,6 +12,7 @@ namespace SaunaSim.Core
         private double _timeMs;
         private double _timeLeftMs;
         private DateTime _started;
+        private bool _running;
 
         public event ElapsedEventHandler Elapsed;
 
@@ -46,23 +47,37 @@ namespace SaunaSim.Core
             }
             _timer.Interval = _timeLeftMs;
             _timer.Start();
+            _running = true;
         }
 
         public void Pause()
         {
             _timer.Stop();
+            _running = false;
             _timeLeftMs = _timeMs - (DateTime.UtcNow - _started).TotalMilliseconds;
         }
 
         public void Stop()
         {
             _timer.Stop();
+            _running = false;
             _timeLeftMs = _timeMs;
         }
 
         public void Dispose()
         {
             _timer.Dispose();
+        }
+
+        public int TimeRemainingMs()
+        {
+            if (!_running)
+            {
+                return (int) _timeLeftMs;
+            } else
+            {
+                return (int) (_timeMs - (DateTime.UtcNow - _started).TotalSeconds);
+            }
         }
     }
 }

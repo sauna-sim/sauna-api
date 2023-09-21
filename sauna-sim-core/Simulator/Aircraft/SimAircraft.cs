@@ -58,6 +58,9 @@ namespace SaunaSim.Core.Simulator.Aircraft
         public TransponderModeType XpdrMode { get; set; }
         public int Squawk { get; set; }
         public int DelayMs { get; set; }
+
+        public int DelayRemainingMs => _delayTimer.TimeRemainingMs();
+
         public AircraftConfig AircraftConfig { get; set; }
         public string AircraftType { get; private set; }
         public string AirlineCode { get; private set; }

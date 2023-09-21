@@ -33,7 +33,7 @@ namespace SaunaSim.Api.ApiObjects.Aircraft
         public AircraftResponse(SimAircraft pilot, bool includeFms = false)
         {
             Callsign = pilot.Callsign;
-            DelayMs = pilot.DelayMs;
+            DelayMs = pilot.DelayRemainingMs;
             Paused = pilot.Paused;
             FlightPlan = pilot.FlightPlan;
             XpdrMode = pilot.XpdrMode;
