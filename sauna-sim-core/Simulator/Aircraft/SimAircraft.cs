@@ -41,7 +41,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
         private Thread _posUpdThread;
         private PauseableTimer _delayTimer;
         private bool _paused;
-        private FlightPlan _flightPlan;
+        private FlightPlan? _flightPlan;
         private AircraftPosition _position;
         private bool disposedValue;
         private bool _shouldUpdatePosition = false;
@@ -71,7 +71,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
         public Action<string> LogError { get; set; }
 
         // TODO: Convert to FlightPlan Struct/Object
-        public FlightPlan FlightPlan
+        public FlightPlan? FlightPlan
         {
             get => _flightPlan;
             set
