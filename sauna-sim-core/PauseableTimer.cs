@@ -76,7 +76,7 @@ namespace SaunaSim.Core
                 return (int) _timeLeftMs;
             } else
             {
-                return (int) (_timeMs - (DateTime.UtcNow - _started).TotalSeconds);
+                return (int) (_timeMs - (DateTime.UtcNow - _started).TotalMilliseconds);
             }
         }
     }
