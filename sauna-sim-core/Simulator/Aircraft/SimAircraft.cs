@@ -41,7 +41,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
         private Thread _posUpdThread;
         private PauseableTimer _delayTimer;
         private bool _paused;
-        private FlightPlan _flightPlan;
+        private FlightPlan? _flightPlan;
         private AircraftPosition _position;
         private bool disposedValue;
         private bool _shouldUpdatePosition = false;
@@ -58,6 +58,9 @@ namespace SaunaSim.Core.Simulator.Aircraft
         public TransponderModeType XpdrMode { get; set; }
         public int Squawk { get; set; }
         public int DelayMs { get; set; }
+
+        public int DelayRemainingMs => _delayTimer?.TimeRemainingMs() ?? DelayMs;
+
         public AircraftConfig AircraftConfig { get; set; }
         public string AircraftType { get; private set; }
         public string AirlineCode { get; private set; }
@@ -68,7 +71,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
         public Action<string> LogError { get; set; }
 
         // TODO: Convert to FlightPlan Struct/Object
-        public FlightPlan FlightPlan
+        public FlightPlan? FlightPlan
         {
             get => _flightPlan;
             set
