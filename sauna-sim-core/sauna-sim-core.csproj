@@ -20,5 +20,6 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\FsdConnectorNet\FsdConnectorNet\FsdConnectorNet.csproj" />
+    <ProjectReference Include="..\NavData-Interface\NavData-Interface\NavData-Interface.csproj" />
   </ItemGroup>
 </Project>

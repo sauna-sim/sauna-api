@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using NavData_Interface.Objects.Fix;
 using SaunaSim.Core.Data;
 using SaunaSim.Core.Simulator.Aircraft.Control.FMS.Legs;
 
@@ -10,8 +11,8 @@ namespace SaunaSim.Core.Simulator.Aircraft.Control.FMS
 {
     public class AircraftFms
     {
-        private Waypoint _depApt;
-        private Waypoint _arrApt;
+        private Fix _depApt;
+        private Fix _arrApt;
         private int _cruiseAlt;
         private IRouteLeg _activeLeg;
         private List<IRouteLeg> _routeLegs;
@@ -44,13 +45,13 @@ namespace SaunaSim.Core.Simulator.Aircraft.Control.FMS
             set => _cruiseAlt = value;
         }
 
-        public Waypoint DepartureAirport
+        public Fix DepartureAirport
         {
             get => _depApt;
             set => _depApt = value;
         }
 
-        public Waypoint ArrivalAirport
+        public Fix ArrivalAirport
         {
             get => _arrApt;
             set => _arrApt = value;

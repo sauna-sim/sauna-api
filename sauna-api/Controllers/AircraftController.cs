@@ -13,6 +13,7 @@ using SaunaSim.Core.Simulator.Aircraft.Control.FMS;
 using SaunaSim.Core.Simulator.Aircraft;
 using System.Runtime.CompilerServices;
 using SaunaSim.Api.Utilities;
+using NavData_Interface.Objects.Fix;
 
 namespace SaunaSim.Api.Controllers
 {
@@ -85,7 +86,7 @@ namespace SaunaSim.Api.Controllers
                         }
                     } else
                     {
-                        Waypoint nextWp = DataHandler.GetClosestWaypointByIdentifier(waypoint.Identifier, pilot.Position.Latitude, pilot.Position.Longitude);
+                        Fix nextWp = DataHandler.GetClosestWaypointByIdentifier(waypoint.Identifier, pilot.Position.Latitude, pilot.Position.Longitude);
 
                         if (nextWp != null)
                         {

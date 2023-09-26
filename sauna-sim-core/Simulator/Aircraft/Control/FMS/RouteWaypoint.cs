@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using SaunaSim.Core.Data;
+using NavData_Interface.Objects.Fix;
 
 namespace SaunaSim.Core.Simulator.Aircraft.Control.FMS
 {
@@ -13,7 +14,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Control.FMS
         private string _waypointName;
         private GeoPoint _pointPosition;
 
-        public RouteWaypoint(Waypoint wp)
+        public RouteWaypoint(Fix wp)
         {
             _waypointName = wp.Identifier;
             _pointPosition = new GeoPoint(wp.Location);

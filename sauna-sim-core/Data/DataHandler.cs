@@ -1,4 +1,7 @@
 ﻿using AviationCalcUtilNet.GeoTools;
+using NavData_Interface;
+using NavData_Interface.DataSources;
+using NavData_Interface.Objects.Fix;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,8 +12,12 @@ namespace SaunaSim.Core.Data
 {
     public static class DataHandler
     {
-        private static List<Waypoint> waypoints = new List<Waypoint>();
+        private static List<Localizer> waypoints = new List<Localizer>();
         private static object waypointsLock = new object();
+
+        private static NavDataInterface _navDataInterface = new NavDataInterface(new DFDSource("e_dfd_2301.s3db"));
+        private static object _navDataInterfaceLock = new object();
+
         private static List<PublishedHold> publishedHolds = new List<PublishedHold>();
         private static object publishedHoldsLock = new object();
 
@@ -38,34 +45,52 @@ namespace SaunaSim.Core.Data
             return null;
         }
 
-        public static void AddWaypoint(Waypoint wp)
+        public static void AddLocalizer(Localizer wp)
         {
-            lock (waypointsLock)
+            lock(waypointsLock)
             {
                 waypoints.Add(wp);
             }
         }
 
-        public static Waypoint GetClosestWaypointByIdentifier(string wpId, double lat, double lon)
+        public static Fix GetClosestWaypointByIdentifier(string wpId, double lat, double lon)
         {
-            Waypoint foundWp = null;
-            double minDistance = double.MaxValue;
-
-            lock (waypointsLock)
+            lock (_navDataInterfaceLock)
             {
-                foreach (Waypoint wp in waypoints)
-                {
-                    double dist = GeoPoint.FlatDistanceNMi(new GeoPoint(lat, lon), new GeoPoint(wp.Latitude, wp.Longitude));
+                GeoPoint point = new GeoPoint(lat, lon);
 
-                    if (wp.Identifier == wpId.ToUpper() && (foundWp == null || dist < minDistance))
+                List<Fix> fixes = new List<Fix>();
+
+                var tempFix = _navDataInterface.GetClosestFixByIdentifier(new GeoPoint(lat, lon), wpId);
+
+                if (tempFix != null)
+                {
+                    fixes.Add(tempFix);
+                }
+                
+                foreach (Fix wp in waypoints)
+                {
+                    if (wp.Identifier == wpId)
                     {
-                        foundWp = wp;
-                        minDistance = dist;
+                        fixes.Add(wp);
                     }
                 }
-            }
 
-            return foundWp;
+                Fix closestFix = null;
+                double closestDistance = double.MaxValue;
+
+                foreach (var fix in fixes)
+                {
+                    double distance = GeoPoint.DistanceM(point, fix.Location);
+                    if (distance < closestDistance)
+                    {
+                        closestDistance = distance;
+                        closestFix = fix;
+                    }
+                }
+
+                return closestFix;
+            }
         }
     }
 }

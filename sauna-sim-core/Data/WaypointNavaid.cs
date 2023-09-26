@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace SaunaSim.Core.Data
 {
-    public enum NavaidType
+    /*public enum NavaidType
     {
         VOR,
         NDB,
@@ -26,5 +26,5 @@ namespace SaunaSim.Core.Data
             this.Frequency = frequency;
             this.Type = type;
         }
-    }
+    }*/
 }

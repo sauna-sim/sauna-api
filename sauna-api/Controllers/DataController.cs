@@ -17,6 +17,7 @@ using System.Threading.Tasks;
 using FsdConnectorNet;
 using SaunaSim.Core.Data.Loaders;
 using SaunaSim.Api.Utilities;
+using NavData_Interface.Objects.Fix;
 
 namespace SaunaSim.Api.Controllers
 {
@@ -74,7 +75,7 @@ namespace SaunaSim.Api.Controllers
             return Ok("Magnetic File Loaded");
         }
 
-        [HttpPost("loadSectorFile")]
+        /*[HttpPost("loadSectorFile")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public ActionResult LoadSectorFile(LoadFileRequest request)
@@ -146,7 +147,7 @@ namespace SaunaSim.Api.Controllers
                 return BadRequest(ex.Message);
             }
             return Ok();
-        }
+        }*/
 
         [HttpPost("loadEuroscopeScenario")]
         [ProducesResponseType(StatusCodes.Status200OK)]
@@ -284,7 +285,7 @@ namespace SaunaSim.Api.Controllers
                                     }
                                 } else
                                 {
-                                    Waypoint nextWp = DataHandler.GetClosestWaypointByIdentifier(waypoints[i], lastPilot.Position.Latitude, lastPilot.Position.Longitude);
+                                    Fix nextWp = DataHandler.GetClosestWaypointByIdentifier(waypoints[i], lastPilot.Position.Latitude, lastPilot.Position.Longitude);
 
                                     if (nextWp != null)
                                     {
@@ -343,7 +344,7 @@ namespace SaunaSim.Api.Controllers
                                 course = MagneticUtil.ConvertTrueToMagneticTile(GeoPoint.InitialBearing(threshold, otherThreshold), threshold);
                             }
 
-                            DataHandler.AddWaypoint(new Localizer(wpId, threshold.Lat, threshold.Lon, wpId, 0, course));
+                            DataHandler.AddLocalizer(new Localizer(wpId, threshold.Lat, threshold.Lon, wpId, 0, course));
                         } catch (Exception)
                         {
                             Console.WriteLine("Well that didn't work did it.");
