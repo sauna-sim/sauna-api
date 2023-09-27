@@ -49,11 +49,12 @@ namespace SaunaSim.Api
             {
                 MagneticUtil.LoadData();
                 logger.LogInformation("Magnetic File Loaded");
-            } catch (Exception)
+            }
+            catch (Exception)
             {
                 logger.LogError("There was an error loading the WMM.COF file. Ensure that WMM.COF is placed in the 'magnetic' folder.");
             }
-            
+
             // Register shutdown
             applicationLifetime.ApplicationStopping.Register(OnShutdown);
 

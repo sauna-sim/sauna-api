@@ -32,71 +32,116 @@ namespace SaunaSim.Core.Simulator.Aircraft
         MORE = 1
     }
 
-
-    public enum ConnectionStatusType
-    {
-        WAITING,
-        DISCONNECTED,
-        CONNECTING,
-        CONNECTED
-    }
-
-    public enum FlightPhaseType
-    {
-        AT_GATE,
-        PUSH_BACK,
-        TAXI_OUT,
-        TAKE_OFF,
-        DEPARTURE,
-        ENROUTE,
-        ARRIVAL,
-        APPROACH,
-        LANDING,
-        GO_AROUND,
-        TAXI_IN
-    }
-
     public class SimAircraft : IDisposable
     {
         private Thread _posUpdThread;
         private PauseableTimer _delayTimer;
         private bool _paused;
-        private string _flightPlan;
-        private AircraftPosition _position;
+        private FlightPlan? _flightPlan;
         private bool disposedValue;
         private bool _shouldUpdatePosition = false;
         private ClientInfo _clientInfo;
-        private LoginInfo _loginInfo;
-        private ConnectionStatusType _connectionStatus = ConnectionStatusType.WAITING;
-        private Connection _connection;
-        private int _config;
-        private double _thrustLeverPos;
-        private double _thrustLeverVel;
-        private double _speedBrakePos;
-        private PerfData _performanceData;
-        private double _massKg;
-        private TransponderModeType _xpdrMode;
-        private int _squawk;
-        private int _delayMs;
-        private AircraftConfig _aircraftConfig;
-        private string _aircraftType;
-        private string _airlineCode;
-        private Action<string> _logInfo;
-        private Action<string> _logWarn;
-        private Action<string> _logError;
+
+        // Connection Info
+        public LoginInfo LoginInfo { get; private set; }
+
+        public string Callsign => LoginInfo.callsign;
+
+        public Connection Connection { get; private set; }
+
+        public ConnectionStatusType ConnectionStatus { get; private set; } = ConnectionStatusType.WAITING;
+
+        // Simulator Data
+        public bool Paused
+        {
+            get => _paused;
+            set
+            {
+                _paused = value;
+                if (DelayMs > 0 && _delayTimer != null)
+                {
+                    if (!_paused)
+                    {
+                        _delayTimer.Start();
+                    }
+                    else
+                    {
+                        _delayTimer.Pause();
+                    }
+                }
+            }
+        }
+
+        // Aircraft Info
+        private AircraftPosition _position;
+        public AircraftPosition Position => _position;
+        
         private AircraftAutopilot _autopilot;
+        public AircraftAutopilot Autopilot => _autopilot;
+        
         private AircraftFms _fms;
-        private FlightPhaseType _flightPhase;
+        public AircraftFms Fms => _fms;
+
+        public int Config { get; set; }
+
+        public double ThrustLeverPos { get; set; }
+
+        public double SpeedBrakePos { get; set; }
+
+        public PerfData PerformanceData {get; set;}
+
+        public double Mass_kg { get; set; }
+
+        public TransponderModeType XpdrMode { get; set; }
+
+        public int Squawk { get; set; }
+
+        public int DelayMs { get; set; }
+
+        public int DelayRemainingMs => _delayTimer?.TimeRemainingMs() ?? DelayMs;
+
+        public AircraftConfig AircraftConfig { get; set; }
+
+        public string AircraftType { get; private set; }
+
+        public string AirlineCode { get; private set; }
+
+        public FlightPlan? FlightPlan
+        {
+            get => _flightPlan;
+            set
+            {
+                _flightPlan = value;
+                if (ConnectionStatus == ConnectionStatusType.CONNECTED)
+                {
+                    Connection.SendFlightPlan(value);
+                }
+            }
+        }        
+
+        public FlightPhaseType FlightPhase { get; set; }
+
+        // Loggers
+        public Action<string> LogInfo { get; set; }
+
+        public Action<string> LogWarn { get; set; }
+
+        public Action<string> LogError { get; set; }
+        
+
+        // Assigned values
+        //public AircraftControl Control { get; private set; }
+        public int Assigned_IAS { get; set; } = -1;
+        public ConstraintType Assigned_IAS_Type { get; set; } = ConstraintType.FREE;
+
+        public double ThrustLeverVel { get; set; }
+
 
         public SimAircraft(string callsign, string networkId, string password, string fullname, string hostname, ushort port, ProtocolRevision protocol, ClientInfo clientInfo,
             PerfData perfData, double lat, double lon, double alt, double hdg_mag, int delayMs = 0)
         {
-            _loginInfo = new LoginInfo(networkId, password, callsign, fullname, PilotRatingType.Student, hostname, protocol, AppSettingsManager.CommandFrequency, port);
+            LoginInfo = new LoginInfo(networkId, password, callsign, fullname, PilotRatingType.Student, hostname, protocol, AppSettingsManager.CommandFrequency, port);
             _clientInfo = clientInfo;
-            _connection = new Connection();
-            _connection.Connected += OnConnectionEstablished;
-            _connection.Disconnected += OnConnectionTerminated;
-            _connection.FrequencyMessageReceived += OnFrequencyMessageReceived;
             _paused = true;
             _position = new AircraftPosition(lat, lon, alt)
             {
@@ -105,8 +150,8 @@ namespace SaunaSim.Core.Simulator.Aircraft
                 IndicatedAirSpeed = 250.0,
                 Heading_Mag = hdg_mag
             };
-            _thrustLeverPos = 0;
-            _speedBrakePos = 0;
+            ThrustLeverPos = 0;
+            SpeedBrakePos = 0;
             _autopilot = new AircraftAutopilot(this)
             {
                 SelectedAltitude = Convert.ToInt32(alt),
@@ -116,16 +161,16 @@ namespace SaunaSim.Core.Simulator.Aircraft
                 CurrentThrustMode = ThrustModeType.SPEED,
                 CurrentVerticalMode = VerticalModeType.FLCH
             };
-            _fms = new AircraftFms();
-            _performanceData = perfData;
-            _delayMs = delayMs;
-            _aircraftConfig = new AircraftConfig(true, false, false, true, true, false, false, 0, false, false, new AircraftEngine(true, false), new AircraftEngine(true, false));
-            _flightPlan = "";
-            _aircraftType = "A320";
-            _airlineCode = "FFT";
+            _fms = new AircraftFms(this);
+            PerformanceData = perfData;
+            // Control = new AircraftControl(new HeadingHoldInstruction(Convert.ToInt32(hdg_mag)), new AltitudeHoldInstruction(Convert.ToInt32(alt)));
+            DelayMs = delayMs;
+            AircraftConfig = new AircraftConfig(true, false, false, true, true, false, false, 0, false, false, new AircraftEngine(true, false), new AircraftEngine(true, false));
+            AircraftType = "A320";
+            AirlineCode = "JBU";
 
             // TODO: Change This To Actually Calculate Mass
-            _massKg = (perfData.MTOW_kg + perfData.OEW_kg) / 2;
+            Mass_kg = (perfData.MTOW_kg + perfData.OEW_kg) / 2;
         }
 
         public void Start()
@@ -175,17 +220,17 @@ namespace SaunaSim.Core.Simulator.Aircraft
 
         private void OnTimerElapsed(object sender, ElapsedEventArgs e)
         {
-            _delayMs = -1;
+            DelayMs = -1;
             _delayTimer?.Stop();
 
             // Connect to FSD Server
-            _connection.Connect(_clientInfo, LoginInfo, GetFsdPilotPosition(), AircraftConfig, new PlaneInfo(AircraftType, AirlineCode));
-            _connectionStatus = ConnectionStatusType.CONNECTING;
+            Connection.Connect(_clientInfo, LoginInfo, GetFsdPilotPosition(), AircraftConfig, new PlaneInfo(AircraftType, AirlineCode));
+            ConnectionStatus = ConnectionStatusType.CONNECTING;
         }
 
         private void OnConnectionEstablished(object sender, EventArgs e)
         {
-            _connectionStatus = ConnectionStatusType.CONNECTED;
+            ConnectionStatus = ConnectionStatusType.CONNECTED;
             // Start Position Update Thread
             _shouldUpdatePosition = true;
             _posUpdThread = new Thread(new ThreadStart(AircraftPositionWorker));
@@ -193,12 +238,12 @@ namespace SaunaSim.Core.Simulator.Aircraft
             _posUpdThread.Start();
 
             // Send Flight Plan
-            // TODO: Send Flight Plan
+            Connection.SendFlightPlan(FlightPlan);
         }
 
         private void OnConnectionTerminated(object sender, EventArgs e)
         {
-            _connectionStatus = ConnectionStatusType.DISCONNECTED;
+            ConnectionStatus = ConnectionStatusType.DISCONNECTED;
             _shouldUpdatePosition = false;
             _delayTimer?.Stop();
         }
@@ -297,162 +342,25 @@ namespace SaunaSim.Core.Simulator.Aircraft
                 Position.Velocity_Z_MPerS, Position.Pitch_Velocity_RadPerS, Position.Heading_Velocity_RadPerS, Position.Bank_Velocity_RadPerS);
         }
 
-        public LoginInfo LoginInfo => _loginInfo;
-        public string Callsign => LoginInfo.callsign;
-        public ConnectionStatusType ConnectionStatus => _connectionStatus;
-        public Connection Connection => _connection;
-        
-        public AircraftPosition Position
-        {
-            get => _position;
-            set => _position = value;
-        }
-
-        public int Config
-        {
-            get => _config;
-            set => _config = value;
-        }
-
-        public double ThrustLeverPos
-        {
-            get => _thrustLeverPos;
-            set => _thrustLeverPos = value;
-        }
-
-        public double SpeedBrakePos
-        {
-            get => _speedBrakePos;
-            set => _speedBrakePos = value;
-        }
-
-        public PerfData PerformanceData
-        {
-            get => _performanceData;
-            set => _performanceData = value;
-        }
-
-        public double Mass_kg
-        {
-            get => _massKg;
-            set => _massKg = value;
-        }
-
-        public TransponderModeType XpdrMode
-        {
-            get => _xpdrMode;
-            set => _xpdrMode = value;
-        }
-
-        public int Squawk
-        {
-            get => _squawk;
-            set => _squawk = value;
-        }
-
-        public int DelayMs
-        {
-            get => _delayMs;
-            set => _delayMs = value;
-        }
-
-        public AircraftConfig AircraftConfig
-        {
-            get => _aircraftConfig;
-            set => _aircraftConfig = value;
-        }
-
-        public string AircraftType => _aircraftType;
-
-        public string AirlineCode => _airlineCode;
-
-        // Loggers
-        public Action<string> LogInfo
-        {
-            get => _logInfo;
-            set => _logInfo = value;
-        }
-
-        public Action<string> LogWarn
-        {
-            get => _logWarn;
-            set => _logWarn = value;
-        }
-
-        public Action<string> LogError
-        {
-            get => _logError;
-            set => _logError = value;
-        }
-
-        // TODO: Convert to FlightPlan Struct/Object
-        public string FlightPlan
-        {
-            get => _flightPlan;
-            set
-            {
-                _flightPlan = value;
-                if (ConnectionStatus == ConnectionStatusType.CONNECTED)
-                {
-                    // TODO: Send Flight Plan
-                }
-            }
-        }
-
-        public bool Paused
-        {
-            get => _paused;
-            set
-            {
-                _paused = value;
-                if (DelayMs > 0 && _delayTimer != null)
-                {
-                    if (!_paused)
-                    {
-                        _delayTimer.Start();
-                    }
-                    else
-                    {
-                        _delayTimer.Pause();
-                    }
-                }
-            }
-        }
-
-        // Assigned values
-        public AircraftAutopilot Autopilot => _autopilot;
-        public AircraftFms Fms => _fms;
-
-        public FlightPhaseType FlightPhase
-        {
-            get => _flightPhase;
-            set => _flightPhase = value;
-        }
-
-        public double ThrustLeverVel
-        {
-            get => _thrustLeverVel;
-            set => _thrustLeverVel = value;
-        }
-
         protected virtual void Dispose(bool disposing)
         {
             if (!disposedValue)
             {
                 if (disposing)
                 {
-                    _connection.Dispose();
+                    Connection.Dispose();
                     _shouldUpdatePosition = false;
                     _posUpdThread?.Join();
                     _delayTimer?.Stop();
                     _delayTimer?.Dispose();
                 }
 
-                _connection = null;
+                Connection = null;
                 _posUpdThread = null;
                 _position = null;
                 _autopilot = null;
                 _fms = null;
+                //Control = null;
                 _delayTimer = null;
                 disposedValue = true;
             }
