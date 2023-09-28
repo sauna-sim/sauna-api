@@ -75,79 +75,23 @@ namespace SaunaSim.Api.Controllers
             return Ok("Magnetic File Loaded");
         }
 
-        /*[HttpPost("loadSectorFile")]
+        [HttpPost("loadDFDNavData")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public ActionResult LoadSectorFile(LoadFileRequest request)
+        public ActionResult LoadDFDNavData(LoadFileRequest request)
         {
-            // Read file
-            string filename = request.FileName;
             try
             {
-                string[] filelines = System.IO.File.ReadAllLines(filename);
-
-                string sectionName = "";
-
-                // Loop through sector file
-                foreach (string line in filelines)
-                {
-                    // Ignore comments
-                    if (line.Trim().StartsWith(";"))
-                    {
-                        continue;
-                    }
-
-                    if (line.StartsWith("["))
-                    {
-                        // Get section name
-                        sectionName = line.Replace("[", "").Replace("]", "").Trim();
-                    } else
-                    {
-                        NavaidType type = NavaidType.VOR;
-                        string[] items;
-                        switch (sectionName)
-                        {
-                            case "VOR":
-                                type = NavaidType.VOR;
-                                goto case "AIRPORT";
-                            case "NDB":
-                                type = NavaidType.NDB;
-                                goto case "AIRPORT";
-                            case "AIRPORT":
-                                type = NavaidType.AIRPORT;
-
-                                items = line.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-
-                                if (items.Length >= 4)
-                                {
-                                    decimal freq = 0;
-                                    try
-                                    {
-                                        freq = Convert.ToDecimal(items[1]);
-                                    } catch (Exception) { }
-
-                                    GeoUtil.ConvertVrcToDecimalDegs(items[2], items[3], out double lat, out double lon);
-                                    DataHandler.AddWaypoint(new WaypointNavaid(items[0], lat, lon, "", freq, type));
-                                }
-                                break;
-                            case "FIXES":
-                                items = line.Split(' ');
-
-                                if (items.Length >= 3)
-                                {
-                                    GeoUtil.ConvertVrcToDecimalDegs(items[1], items[2], out double lat, out double lon);
-                                    DataHandler.AddWaypoint(new Waypoint(items[0], lat, lon));
-                                }
-                                break;
-                        }
-                    }
-                }
+                DataHandler.LoadNavDataFile(request.FileName);
+                return Ok();
+            } catch (System.IO.FileNotFoundException ex)
+            {
+                return BadRequest("The file could not be found.");
             } catch (Exception ex)
             {
-                return BadRequest(ex.Message);
+                return BadRequest("The file is not a vaid NavData file.");
             }
-            return Ok();
-        }*/
+        }
 
         [HttpPost("loadEuroscopeScenario")]
         [ProducesResponseType(StatusCodes.Status200OK)]
@@ -216,9 +160,6 @@ namespace SaunaSim.Api.Controllers
                             XpdrMode = xpdrMode,
                         };
                         lastPilot.Position.IndicatedAirSpeed = 250.0;
-
-
-
 
                         // Add to temp list
                         pilots.Add(lastPilot);

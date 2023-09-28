@@ -15,11 +15,16 @@ namespace SaunaSim.Core.Data
         private static List<Localizer> waypoints = new List<Localizer>();
         private static object waypointsLock = new object();
 
-        private static NavDataInterface _navDataInterface = new NavDataInterface(new DFDSource("e_dfd_2301.s3db"));
+        private static NavDataInterface _navDataInterface;
         private static object _navDataInterfaceLock = new object();
 
         private static List<PublishedHold> publishedHolds = new List<PublishedHold>();
         private static object publishedHoldsLock = new object();
+
+        public static void LoadNavDataFile(string fileName)
+        {
+            _navDataInterface = new NavDataInterface(new DFDSource(fileName));
+        }
 
         public static void AddPublishedHold(PublishedHold hold)
         {
@@ -53,43 +58,24 @@ namespace SaunaSim.Core.Data
             }
         }
 
+        public static Localizer GetLocalizer(string localizerFakeName)
+        {
+            foreach(var wp in waypoints)
+            {
+                if (wp.Name == localizerFakeName)
+                {
+                    return wp;
+                }
+            }
+
+            return null;
+        }
+
         public static Fix GetClosestWaypointByIdentifier(string wpId, double lat, double lon)
         {
             lock (_navDataInterfaceLock)
             {
-                GeoPoint point = new GeoPoint(lat, lon);
-
-                List<Fix> fixes = new List<Fix>();
-
-                var tempFix = _navDataInterface.GetClosestFixByIdentifier(new GeoPoint(lat, lon), wpId);
-
-                if (tempFix != null)
-                {
-                    fixes.Add(tempFix);
-                }
-                
-                foreach (Fix wp in waypoints)
-                {
-                    if (wp.Identifier == wpId)
-                    {
-                        fixes.Add(wp);
-                    }
-                }
-
-                Fix closestFix = null;
-                double closestDistance = double.MaxValue;
-
-                foreach (var fix in fixes)
-                {
-                    double distance = GeoPoint.DistanceM(point, fix.Location);
-                    if (distance < closestDistance)
-                    {
-                        closestDistance = distance;
-                        closestFix = fix;
-                    }
-                }
-
-                return closestFix;
+                return _navDataInterface.GetClosestFixByIdentifier(new GeoPoint(lat, lon), wpId);
             }
         }
     }
