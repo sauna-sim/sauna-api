@@ -28,15 +28,15 @@ namespace SaunaSim.Core.Simulator.Commands
             Aircraft = aircraft;
             Logger = logger;
             // Find Waypoint
-            Fix wp = DataHandler.GetClosestWaypointByIdentifier($"ILS{runway}", Aircraft.Position.Latitude, Aircraft.Position.Longitude);
+            Localizer wp = DataHandler.GetLocalizer($"ILS{runway}");
 
-            if (wp == null || !(wp is Localizer))
+            if (wp == null)
             {
                 Logger?.Invoke($"ERROR: Localizer {runway} not found!");
                 return false;
             }
 
-            _loc = (Localizer)wp;
+            _loc = wp;
 
             Logger?.Invoke($"{Aircraft.Callsign} intercepting localizer {runway}");
 
@@ -58,15 +58,15 @@ namespace SaunaSim.Core.Simulator.Commands
             args.RemoveAt(0);
 
             // Find Waypoint
-            Fix wp = DataHandler.GetClosestWaypointByIdentifier($"ILS{rwyStr}", Aircraft.Position.Latitude, Aircraft.Position.Longitude);
+            Localizer wp = DataHandler.GetLocalizer($"ILS{rwyStr}");
 
-            if (wp == null || !(wp is Localizer))
+            if (wp == null)
             {
                 Logger?.Invoke($"ERROR: Localizer {rwyStr} not found!");
                 return false;
             }
 
-            _loc = (Localizer)wp;
+            _loc = wp;
 
             Logger?.Invoke($"{Aircraft.Callsign} intercepting localizer {rwyStr}");
 
