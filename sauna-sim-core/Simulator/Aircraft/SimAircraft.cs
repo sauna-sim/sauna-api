@@ -142,6 +142,11 @@ namespace SaunaSim.Core.Simulator.Aircraft
         {
             LoginInfo = new LoginInfo(networkId, password, callsign, fullname, PilotRatingType.Student, hostname, protocol, AppSettingsManager.CommandFrequency, port);
             _clientInfo = clientInfo;
+            Connection = new Connection();
+            Connection.Connected += OnConnectionEstablished;
+            Connection.Disconnected += OnConnectionTerminated;
+            Connection.FrequencyMessageReceived += OnFrequencyMessageReceived;
+
             _paused = true;
             _position = new AircraftPosition(lat, lon, alt)
             {
