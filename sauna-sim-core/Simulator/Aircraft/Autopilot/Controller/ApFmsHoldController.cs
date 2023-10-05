@@ -39,6 +39,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
         private double _teardropDistance;
         private double _outCourse = -1;
         private IRoutePoint _outStartPoint = null;
+        public double AlongTrack_M { get; private set; }
 
         public ApFmsHoldController(IRoutePoint holdingPoint, BearingTypeEnum courseType, double inboundCourse, HoldTurnDirectionEnum turnDir, HoldLegLengthTypeEnum legType, double legLength)
         {
@@ -207,40 +208,11 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
 
         private (double requiredTrueCourse, double crossTrackError) HandleOutboundTurn(SimAircraft aircraft, int posCalcIntvl)
         {
-            double turnAmt = GetTurnAmount();
-            double outCourse = GeoUtil.NormalizeHeading(_trueCourse + turnAmt);
-            TurnDirection turnD = _turnDir == HoldTurnDirectionEnum.RIGHT ? TurnDirection.RIGHT : TurnDirection.LEFT;
-            double halfTurnCourse = GeoUtil.NormalizeHeading(_trueCourse + (turnAmt / 2));
+            SetOutboundCourseInstr(aircraft.Position);
 
-            // Calculate outbound turn parameters
-            if (_turnInstr == null)
-            {
-                SetOutboundCourseInstr(position);
-                _turnInstr = new TrackHoldInstruction(turnD, halfTurnCourse, _r);
-            }
+            _holdPhase = HoldPhaseEnum.OUTBOUND;
 
-            if (Math.Abs(_turnInstr.AssignedTrack - outCourse) >= 1)
-            {
-                double alongTrackM;
-                GeoUtil.CalculateCrossTrackErrorM(position.PositionGeoPoint, new GeoPoint(_routePoint.PointPosition), halfTurnCourse, out _, out alongTrackM);
-
-                if (MathUtil.ConvertMetersToNauticalMiles(alongTrackM) <= -_r)
-                {
-                    _turnInstr = new TrackHoldInstruction(turnD, outCourse, _r);
-                }
-            }
-
-            // Has turn finished
-            if (Math.Abs(outCourse - position.Track_True) < 1)
-            {
-                _holdPhase = HoldPhaseEnum.OUTBOUND;
-                _turnInstr = null;
-                return HandleOutboundLeg(aircraft, posCalcIntvl);
-            }
-            else
-            {
-                _turnInstr.UpdatePosition(ref position, ref fms, posCalcIntvl);
-            }
+            return HandleOutboundLeg(aircraft, posCalcIntvl);
         }
 
         private double GetOutboundDistance(AircraftPosition position)
@@ -281,66 +253,52 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
 
         private (double requiredTrueCourse, double crossTrackError) HandleOutboundLeg(SimAircraft aircraft, int posCalcIntvl)
         {
-            if (_outboundCourseInstr == null)
+            if (_outCourse < 0)
             {
-                SetOutboundCourseInstr(position);
+                SetOutboundCourseInstr(aircraft.Position);
             }
 
+            double crossTrackError = GeoUtil.CalculateCrossTrackErrorM(aircraft.Position.PositionGeoPoint, _outStartPoint.PointPosition, _outCourse,
+                out double requiredTrueCourse, out double alongTrackDistance);
+
             // Has leg finished
-            double aTrackNMi = MathUtil.ConvertMetersToNauticalMiles(_outboundCourseInstr.AlongTrackM);
-            double obDistNMi = -GetOutboundDistance(position);
+            double aTrackNMi = MathUtil.ConvertMetersToNauticalMiles(alongTrackDistance);
+            double obDistNMi = -GetOutboundDistance(aircraft.Position);
             if (aTrackNMi <= obDistNMi)
             {
                 _holdPhase = HoldPhaseEnum.TURN_INBOUND;
-                _outboundCourseInstr = null;
-                HandleInboundTurn(ref position, ref fms, posCalcIntvl);
+                _outCourse = -1;
+                return HandleInboundTurn(aircraft, posCalcIntvl);
             }
             else
             {
-                _outboundCourseInstr.UpdatePosition(ref position, ref fms, posCalcIntvl);
+                return (requiredTrueCourse, crossTrackError);
             }
         }
 
         private (double requiredTrueCourse, double crossTrackError) HandleInboundTurn(SimAircraft aircraft, int posCalcIntvl)
         {
-            // Calculate outbound turn parameters
-            if (_turnInstr == null)
-            {
-                TurnDirection turnD = _turnDir == HoldTurnDirectionEnum.RIGHT ? TurnDirection.RIGHT : TurnDirection.LEFT;
-                _turnInstr = new TrackHoldInstruction(turnD, _trueCourse, _r);
-            }
+            _holdPhase = HoldPhaseEnum.INBOUND;
 
-            // Has turn finished
-            if (Math.Abs(_turnInstr.AssignedTrack - position.Track_True) < 1)
-            {
-                _holdPhase = HoldPhaseEnum.INBOUND;
-                _turnInstr = null;
-                HandleOutboundLeg(ref position, ref fms, posCalcIntvl);
-            }
-            else
-            {
-                _turnInstr.UpdatePosition(ref position, ref fms, posCalcIntvl);
-            }
+            return HandleInboundLeg(aircraft, posCalcIntvl);
         }
 
         private (double requiredTrueCourse, double crossTrackError) HandleInboundLeg(SimAircraft aircraft, int posCalcIntvl)
         {
-            if (_inboundCourseInstr == null)
-            {
-                _inboundCourseInstr = new InterceptCourseInstruction(_routePoint);
-                _inboundCourseInstr.TrueCourse = _trueCourse;
-            }
+            double crossTrackError = GeoUtil.CalculateCrossTrackErrorM(aircraft.Position.PositionGeoPoint, _routePoint.PointPosition, _trueCourse,
+                out double requiredTrueCourse, out double alongTrackDistance);
+
+            AlongTrack_M = alongTrackDistance;
 
             // Check if leg is complete
-            if (_inboundCourseInstr.AlongTrackM < 0)
+            if (alongTrackDistance < 0)
             {
                 _holdPhase = HoldPhaseEnum.TURN_OUTBOUND;
-                _inboundCourseInstr = null;
-                HandleOutboundTurn(ref position, ref fms, posCalcIntvl);
+                return HandleOutboundTurn(aircraft, posCalcIntvl);
             }
             else
             {
-                _inboundCourseInstr.UpdatePosition(ref position, ref fms, posCalcIntvl);
+                return (requiredTrueCourse, crossTrackError);
             }
         }
 
@@ -379,6 +337,14 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
                     _holdEntry = HoldEntryEnum.DIRECT;
                 }
             }
+        }
+
+        public (double requiredTrueCourse, double crossTrackError, double alongTrackDistance) GetCourseInterceptInfo(SimAircraft aircraft)
+        {
+            double crossTrackError = GeoUtil.CalculateCrossTrackErrorM(aircraft.Position.PositionGeoPoint, _routePoint.PointPosition, _trueCourse,
+    out double requiredTrueCourse, out double alongTrackDistance);
+
+            return (requiredTrueCourse, crossTrackError, alongTrackDistance);
         }
     }
 }
