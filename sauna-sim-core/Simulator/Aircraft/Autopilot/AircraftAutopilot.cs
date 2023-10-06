@@ -18,8 +18,6 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot
         private double _targetThrust;
         private double _targetBank;
         private double _targetPitch;
-        private double _xTk;
-        private double _aTk;
 
         // Modes
         private LateralModeType _curLatMode;
