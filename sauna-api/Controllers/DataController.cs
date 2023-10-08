@@ -60,19 +60,30 @@ namespace SaunaSim.Api.Controllers
             return Ok(new AppSettingsRequestResponse(AppSettingsManager.Settings));
         }
 
-        [HttpPost("loadMagneticFile")]
+        [HttpGet("navigraphApiCreds")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public ActionResult<string> LoadMagneticFile()
+        public ActionResult<NavigraphApiCreds> GetNavigraphApiCreds()
         {
-            try
+            string error = "";
+            var navigraphCreds = PrivateInfoLoader.GetNavigraphCreds((string s) =>
             {
-                MagneticUtil.LoadData();
-            } catch (Exception)
+                error = s;
+            });
+
+            if (navigraphCreds == null)
             {
-                return BadRequest("There was an error loading the WMM.COF file. Ensure that WMM.COF is placed in the 'magnetic' folder.");
+                return BadRequest(error);
             }
-            return Ok("Magnetic File Loaded");
+
+            return navigraphCreds;
+        }
+
+        [HttpGet("hasNavigraphDataLoaded")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        public ActionResult<bool> GetHasNavigraphDataLoaded()
+        {
+            return Ok(DataHandler.HasNavigraphDataLoaded());
         }
 
         [HttpPost("loadDFDNavData")]
@@ -82,7 +93,7 @@ namespace SaunaSim.Api.Controllers
         {
             try
             {
-                DataHandler.LoadNavDataFile(request.FileName);
+                DataHandler.LoadNavigraphDataFile(request.FileName);
                 return Ok();
             } catch (System.IO.FileNotFoundException ex)
             {
@@ -146,15 +157,19 @@ namespace SaunaSim.Api.Controllers
                         EuroScopeLoader.ReadVatsimPosFlag(Convert.ToInt32(items[8]), out double hdg, out double bank, out double pitch, out bool onGround);
                         //SimAircraft(string callsign, string networkId, string password,        string fullname, string hostname, ushort port, bool vatsim,   ProtocolRevision protocol,      double lat, double lon, double alt, double hdg_mag, int delayMs = 0)
                         lastPilot = new SimAircraft(callsign, request.Cid, request.Password, "Simulator Pilot", request.Server, (ushort)request.Port, request.Protocol,
-                            ClientInfoLoader.GetClientInfo((string msg) => { _logger.LogWarning($"{callsign}: {msg}"); }),
-                            lat, lon, Convert.ToDouble(items[6]), hdg) {
-                            LogInfo = (string msg) => {
+                            PrivateInfoLoader.GetClientInfo((string msg) => { _logger.LogWarning($"{callsign}: {msg}"); }),
+                            lat, lon, Convert.ToDouble(items[6]), hdg)
+                        {
+                            LogInfo = (string msg) =>
+                            {
                                 _logger.LogInformation($"{callsign}: {msg}");
                             },
-                            LogWarn = (string msg) => {
+                            LogWarn = (string msg) =>
+                            {
                                 _logger.LogWarning($"{callsign}: {msg}");
                             },
-                            LogError = (string msg) => {
+                            LogError = (string msg) =>
+                            {
                                 _logger.LogError($"{callsign}: {msg}");
                             },
                             XpdrMode = xpdrMode,
@@ -171,8 +186,7 @@ namespace SaunaSim.Api.Controllers
                             try
                             {
                                 flightPlan = FlightPlan.ParseFromEsScenarioFile(line);
-                            }
-                            catch (FlightPlanException e)
+                            } catch (FlightPlanException e)
                             {
                                 Console.WriteLine("Error parsing flight plan");
                                 Console.WriteLine(e.Message);

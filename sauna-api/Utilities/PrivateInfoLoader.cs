@@ -5,8 +5,43 @@ using System.Runtime.Loader;
 
 namespace SaunaSim.Api.Utilities
 {
-    public static class ClientInfoLoader
+    public static class PrivateInfoLoader
     {
+        public static NavigraphApiCreds GetNavigraphCreds(Action<string> logger)
+        {
+            // Load Navigraph Info
+            string clientId = "";
+            string clientSecret = "";
+            try
+            {
+                // Load DLL and ClientInformation class
+                string assemblyPath = AppDomain.CurrentDomain.BaseDirectory + "sauna-vatsim-private.dll";
+                Assembly clientInfoDll = AssemblyLoadContext.Default.LoadFromAssemblyPath(assemblyPath);
+                Type clientInfoClass = clientInfoDll.GetType("sauna_vatsim_private.NavigraphApiCreds");
+                
+                // Extract Properties
+                foreach (PropertyInfo p in clientInfoClass.GetProperties())
+                {
+                    object value = p.GetValue(null);
+                    switch (p.Name)
+                    {
+                        case "ClientId":
+                            clientId = (string)value;
+                            break;
+                        case "ClientSecret":
+                            clientSecret = (string)value;
+                            break;
+                    }
+                }
+            } catch (Exception ex)
+            {
+                logger("There was an error loading the Navigraph API Credentials. Navigraph API cannot be accessed!");
+                return null;
+            }
+
+            return new NavigraphApiCreds(clientId, clientSecret);
+        }
+
         public static ClientInfo GetClientInfo(Action<string> logger)
         {
             // Load Client Info

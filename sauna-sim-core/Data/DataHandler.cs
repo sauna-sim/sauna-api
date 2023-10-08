@@ -21,9 +21,20 @@ namespace SaunaSim.Core.Data
         private static List<PublishedHold> publishedHolds = new List<PublishedHold>();
         private static object publishedHoldsLock = new object();
 
-        public static void LoadNavDataFile(string fileName)
+        public static bool HasNavigraphDataLoaded()
         {
-            _navDataInterface = new NavDataInterface(new DFDSource(fileName));
+            lock (_navDataInterfaceLock)
+            {
+                return _navDataInterface != null;
+            }
+        }
+
+        public static void LoadNavigraphDataFile(string fileName)
+        {
+            lock (_navDataInterfaceLock)
+            {
+                _navDataInterface = new NavDataInterface(new DFDSource(fileName));
+            }
         }
 
         public static void AddPublishedHold(PublishedHold hold)
