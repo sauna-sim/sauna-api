@@ -37,7 +37,6 @@ namespace SaunaSim.Core.Simulator.Aircraft
         private bool disposedValue;
         private bool _shouldUpdatePosition = false;
         private ClientInfo _clientInfo;
-        private AircraftFms _fms;
 
         // Connection Info
         public LoginInfo LoginInfo { get; private set; }
