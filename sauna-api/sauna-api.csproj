@@ -8,10 +8,10 @@
     <OutputType>Exe</OutputType>
     <StartupObject>SaunaSim.Api.Program</StartupObject>
     <AssemblyName>SaunaApi</AssemblyName>
-    <AssemblyVersion>0.5.0</AssemblyVersion>
-    <FileVersion>0.5.0</FileVersion>
+    <AssemblyVersion>0.7.0</AssemblyVersion>
+    <FileVersion>0.7.0</FileVersion>
     <NeutralLanguage>en-US</NeutralLanguage>
-    <Version>0.5.0</Version>
+    <Version>0.7.0</Version>
 	<RunId Condition="'$(RuntimeIdentifier)' == '' And $([MSBuild]::IsOSPlatform('Windows'))">win-$(Platform)</RunId>
 	<RunId Condition="'$(RuntimeIdentifier)' == '' And $([MSBuild]::IsOSPlatform('Linux'))">linux-$(Platform)</RunId>
 	<RunId Condition="'$(RuntimeIdentifier)' == '' And $([MSBuild]::IsOSPlatform('OSX'))">osx-$(Platform)</RunId>

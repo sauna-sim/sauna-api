@@ -194,16 +194,18 @@ namespace SaunaSim.Api.Controllers
                             LogInfo = (string msg) => {
                                 _logger.LogInformation($"{callsign}: {msg}");
                             },
-                            LogWarn = (string msg) => {
+                            LogWarn = (string msg) =>
+                            {
                                 _logger.LogWarning($"{callsign}: {msg}");
                             },
-                            LogError = (string msg) => {
+                            LogError = (string msg) =>
+                            {
                                 _logger.LogError($"{callsign}: {msg}");
                             },
                             XpdrMode = xpdrMode,
                         };
                         lastPilot.Position.IndicatedAirSpeed = 250.0;
-                        
+
                         // Add to temp list
                         pilots.Add(lastPilot);
                     } else if (line.StartsWith("$FP"))
@@ -214,8 +216,7 @@ namespace SaunaSim.Api.Controllers
                             try
                             {
                                 flightPlan = FlightPlan.ParseFromEsScenarioFile(line);
-                            }
-                            catch (FlightPlanException e)
+                            } catch (FlightPlanException e)
                             {
                                 Console.WriteLine("Error parsing flight plan");
                                 Console.WriteLine(e.Message);
@@ -277,19 +278,18 @@ namespace SaunaSim.Api.Controllers
 
                                                 waypoints[i] = splitWp[0];
 
-                                            }
-                                            catch (Exception e)
+                                            } catch (Exception e)
                                             {
                                                 Console.Error.WriteLine($"Invalid altitude restriction {splitWp[1]}");
                                                 continue;
                                             }
-                                        }
-                                        else
+                                        } else
                                         {
                                             Console.Error.WriteLine($"Invalid waypoint name {waypoints[i]}");
                                         }
+                                    }
 
-                                        Waypoint nextWp = DataHandler.GetClosestWaypointByIdentifier(waypoints[i], lastPilot.Position.Latitude, lastPilot.Position.Longitude);
+                                    Waypoint nextWp = DataHandler.GetClosestWaypointByIdentifier(waypoints[i], lastPilot.Position.Latitude, lastPilot.Position.Longitude);
 
                                     if (nextWp != null)
                                     {
