@@ -182,6 +182,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot
                     {
                         RemoveArmedLateralMode(mode);
                         _curLatMode = LateralModeType.LNAV;
+                        break;
                     }
                 }
             }
