@@ -8,7 +8,7 @@
     <Description>Sauna Simulator Core Library</Description>
     <Authors>Prithvisagar Shivaraman</Authors>
     <RootNamespace>SaunaSim.Core</RootNamespace>
-    <AssemblyName>SaunaSimCore</AssemblyName>	
+    <AssemblyName>SaunaSimCore</AssemblyName>
 	<RunId Condition="'$(RuntimeIdentifier)' == '' And $([MSBuild]::IsOSPlatform('Windows'))">win-$(Platform)</RunId>
 	<RunId Condition="'$(RuntimeIdentifier)' == '' And $([MSBuild]::IsOSPlatform('Linux'))">linux-$(Platform)</RunId>
 	<RunId Condition="'$(RuntimeIdentifier)' == '' And $([MSBuild]::IsOSPlatform('OSX'))">osx-$(Platform)</RunId>

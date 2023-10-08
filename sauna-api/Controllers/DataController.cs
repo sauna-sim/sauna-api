@@ -184,12 +184,25 @@ namespace SaunaSim.Api.Controllers
                                 xpdrMode = TransponderModeType.ModeC;
                                 break;
                         }
+                        // Load the coordinates. These could be in decimal or DMS format.
+                        // TODO: If this fails, skip this aircraft. Right now, we set pos to 0,0!
+
+                        double lat = 0;
+                        double lon = 0;
+
+                        try
+                        {
+                            (lat, lon) = CoordinateUtil.ParseCoordinate(items[4], items[5]);
+                        } catch (FormatException e)
+                        {
+                            Console.WriteLine($"ERROR loading aircraft {callsign}: Could not parse coordinates");
+                        }
 
                         EuroScopeLoader.ReadVatsimPosFlag(Convert.ToInt32(items[8]), out double hdg, out double bank, out double pitch, out bool onGround);
                         //SimAircraft(string callsign, string networkId, string password,        string fullname, string hostname, ushort port, bool vatsim,   ProtocolRevision protocol,      double lat, double lon, double alt, double hdg_mag, int delayMs = 0)
                         lastPilot = new SimAircraft(callsign, request.Cid, request.Password, "Simulator Pilot", request.Server, (ushort)request.Port, request.Protocol,
                             ClientInfoLoader.GetClientInfo((string msg) => { _logger.LogWarning($"{callsign}: {msg}"); }),
-                            Convert.ToDouble(items[4]), Convert.ToDouble(items[5]), Convert.ToDouble(items[6]), hdg) {
+                            lat, lon, Convert.ToDouble(items[6]), hdg) {
                             LogInfo = (string msg) => {
                                 _logger.LogInformation($"{callsign}: {msg}");
                             },
@@ -212,7 +225,18 @@ namespace SaunaSim.Api.Controllers
                     {
                         if (lastPilot != null)
                         {
-                            lastPilot.FlightPlan = line;
+                            FlightPlan flightPlan;
+                            try
+                            {
+                                flightPlan = FlightPlan.ParseFromEsScenarioFile(line);
+                            }
+                            catch (FlightPlanException e)
+                            {
+                                Console.WriteLine("Error parsing flight plan");
+                                Console.WriteLine(e.Message);
+                                continue;
+                            }
+                            lastPilot.FlightPlan = flightPlan;
                         }
                     } else if (line.StartsWith("REQALT"))
                     {
@@ -260,7 +284,32 @@ namespace SaunaSim.Api.Controllers
                                     }
                                 } else
                                 {
-                                    Waypoint nextWp = DataHandler.GetClosestWaypointByIdentifier(waypoints[i], lastPilot.Position.Latitude, lastPilot.Position.Longitude);
+                                    if (waypoints[i].Contains("/"))
+                                    {
+                                        var splitWp = waypoints[i].Split("/");
+
+                                        if (splitWp.Length == 2)
+                                        {
+                                            try
+                                            {
+                                                int altitudeRestriction = int.Parse(splitWp[2]);
+                                                // TODO: add the altitude restriction to the FMS
+
+                                                waypoints[i] = splitWp[0];
+
+                                            }
+                                            catch (Exception e)
+                                            {
+                                                Console.Error.WriteLine($"Invalid altitude restriction {splitWp[1]}");
+                                                continue;
+                                            }
+                                        }
+                                        else
+                                        {
+                                            Console.Error.WriteLine($"Invalid waypoint name {waypoints[i]}");
+                                        }
+
+                                        Waypoint nextWp = DataHandler.GetClosestWaypointByIdentifier(waypoints[i], lastPilot.Position.Latitude, lastPilot.Position.Longitude);
 
                                     if (nextWp != null)
                                     {
