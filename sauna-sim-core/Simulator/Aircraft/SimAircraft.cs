@@ -4,6 +4,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using SaunaSim.Core.Data;
 using SaunaSim.Core.Simulator.Aircraft.Control;
+using SaunaSim.Core.Simulator.Aircraft.Control.FMS;
 using SaunaSim.Core.Simulator.Commands;
 using System;
 using System.Collections.Generic;
@@ -27,60 +28,27 @@ namespace SaunaSim.Core.Simulator.Aircraft
         MORE = 1
     }
 
-
-    public enum ConnectionStatusType
-    {
-        WAITING,
-        DISCONNECTED,
-        CONNECTING,
-        CONNECTED
-    }
-
     public class SimAircraft : IDisposable
     {
         private Thread _posUpdThread;
         private PauseableTimer _delayTimer;
         private bool _paused;
-        private FlightPlan _flightPlan;
-        private AircraftPosition _position;
+        private FlightPlan? _flightPlan;
         private bool disposedValue;
         private bool _shouldUpdatePosition = false;
         private ClientInfo _clientInfo;
+        private AircraftFms _fms;
 
         // Connection Info
         public LoginInfo LoginInfo { get; private set; }
+
         public string Callsign => LoginInfo.callsign;
-        public ConnectionStatusType ConnectionStatus { get; private set; } = ConnectionStatusType.WAITING;
+
         public Connection Connection { get; private set; }
 
-        // Aircraft Info
-        public AircraftPosition Position { get => _position; set => _position = value; }
-        public TransponderModeType XpdrMode { get; set; }
-        public int Squawk { get; set; }
-        public int DelayMs { get; set; }
-        public AircraftConfig AircraftConfig { get; set; }
-        public string AircraftType { get; private set; }
-        public string AirlineCode { get; private set; }
+        public ConnectionStatusType ConnectionStatus { get; private set; } = ConnectionStatusType.WAITING;
 
-        // Loggers
-        public Action<string> LogInfo { get; set; }
-        public Action<string> LogWarn { get; set; }
-        public Action<string> LogError { get; set; }
-
-        // TODO: Convert to FlightPlan Struct/Object
-        public FlightPlan FlightPlan
-        {
-            get => _flightPlan;
-            set
-            {
-                _flightPlan = value;
-                if (ConnectionStatus == ConnectionStatusType.CONNECTED)
-                {
-                    Connection.SendFlightPlan(value);
-                }
-            }
-        }
-
+        // Simulator Data
         public bool Paused
         {
             get => _paused;
@@ -101,10 +69,61 @@ namespace SaunaSim.Core.Simulator.Aircraft
             }
         }
 
+        // Aircraft Info
+        private AircraftPosition _position;
+        public AircraftPosition Position => _position;
+
+        public int Config { get; set; }
+
+        public double ThrustLeverPos { get; set; }
+
+        public double SpeedBrakePos { get; set; }
+
+        public double Mass_kg { get; set; }
+
+        public TransponderModeType XpdrMode { get; set; }
+
+        public int Squawk { get; set; }
+
+        public int DelayMs { get; set; }
+
+        public int DelayRemainingMs => _delayTimer?.TimeRemainingMs() ?? DelayMs;
+
+        public AircraftConfig AircraftConfig { get; set; }
+
+        public string AircraftType { get; private set; }
+
+        public string AirlineCode { get; private set; }
+
+        public FlightPlan? FlightPlan
+        {
+            get => _flightPlan;
+            set
+            {
+                _flightPlan = value;
+                if (ConnectionStatus == ConnectionStatusType.CONNECTED)
+                {
+                    Connection.SendFlightPlan(value);
+                }
+            }
+        }
+
+        // Loggers
+        public Action<string> LogInfo { get; set; }
+
+        public Action<string> LogWarn { get; set; }
+
+        public Action<string> LogError { get; set; }
+        
+
         // Assigned values
         public AircraftControl Control { get; private set; }
         public int Assigned_IAS { get; set; } = -1;
         public ConstraintType Assigned_IAS_Type { get; set; } = ConstraintType.FREE;
+
+        public FlightPhaseType FlightPhase { get; set; }
+
+        public double ThrustLeverVel { get; set; }
 
 
         public SimAircraft(string callsign, string networkId, string password, string fullname, string hostname, ushort port, ProtocolRevision protocol, ClientInfo clientInfo, double lat, double lon, double alt, double hdg_mag, int delayMs = 0)
@@ -116,8 +135,8 @@ namespace SaunaSim.Core.Simulator.Aircraft
             Connection.Disconnected += OnConnectionTerminated;
             Connection.FrequencyMessageReceived += OnFrequencyMessageReceived;
 
-            Paused = true;
-            Position = new AircraftPosition
+            _paused = true;
+            _position = new AircraftPosition
             {
                 Latitude = lat,
                 Longitude = lon,
@@ -127,8 +146,8 @@ namespace SaunaSim.Core.Simulator.Aircraft
             Control = new AircraftControl(new HeadingHoldInstruction(Convert.ToInt32(hdg_mag)), new AltitudeHoldInstruction(Convert.ToInt32(alt)));
             DelayMs = delayMs;
             AircraftConfig = new AircraftConfig(true, false, false, true, true, false, false, 0, false, false, new AircraftEngine(true, false), new AircraftEngine(true, false));
-            AircraftType = "E75L";
-            AirlineCode = "ASH";
+            AircraftType = "A320";
+            AirlineCode = "JBU";
         }
 
         public void Start()
@@ -166,7 +185,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
                     // Get command name
                     string command = split[0].ToLower();
                     split.RemoveAt(0);
-                    
+
                     split = CommandHandler.HandleCommand(command, this, split, (string msg) =>
                     {
                         string returnMsg = msg.Replace($"{Callsign} ", "");
@@ -239,7 +258,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
 
         public PilotPosition GetFsdPilotPosition()
         {
-            return new PilotPosition(XpdrMode, (ushort)Squawk, Position.Latitude,Position.Longitude, Position.AbsoluteAltitude, Position.AbsoluteAltitude, Position.PressureAltitude, Position.GroundSpeed, Position.Pitch, Position.Bank, Position.Heading_True, false, Position.Velocity_X_MPerS, Position.Velocity_Y_MPerS, Position.Velocity_Z_MPerS, Position.Pitch_Velocity_RadPerS, Position.Heading_Velocity_RadPerS, Position.Bank_Velocity_RadPerS);
+            return new PilotPosition(XpdrMode, (ushort)Squawk, Position.Latitude, Position.Longitude, Position.AbsoluteAltitude, Position.AbsoluteAltitude, Position.PressureAltitude, Position.GroundSpeed, Position.Pitch, Position.Bank, Position.Heading_True, false, Position.Velocity_X_MPerS, Position.Velocity_Y_MPerS, Position.Velocity_Z_MPerS, Position.Pitch_Velocity_RadPerS, Position.Heading_Velocity_RadPerS, Position.Bank_Velocity_RadPerS);
         }
 
         protected virtual void Dispose(bool disposing)
@@ -257,7 +276,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
 
                 Connection = null;
                 _posUpdThread = null;
-                Position = null;
+                _position = null;
                 Control = null;
                 _delayTimer = null;
                 disposedValue = true;
