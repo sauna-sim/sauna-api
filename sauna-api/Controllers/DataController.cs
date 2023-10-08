@@ -240,6 +240,30 @@ namespace SaunaSim.Api.Controllers
                                     }
                                 } else
                                 {
+                                    if (waypoints[i].Contains("/"))
+                                    {
+                                        var splitWp = waypoints[i].Split("/");
+
+                                        if (splitWp.Length == 2)
+                                        {
+                                            try
+                                            {
+                                                int altitudeRestriction = int.Parse(splitWp[2]);
+                                                // TODO: add the altitude restriction to the FMS
+
+                                                waypoints[i] = splitWp[0];
+
+                                            } catch (Exception e)
+                                            {
+                                                Console.Error.WriteLine($"Invalid altitude restriction {splitWp[1]}");
+                                                continue;
+                                            }
+                                        } else
+                                        {
+                                            Console.Error.WriteLine($"Invalid waypoint name {waypoints[i]}");
+                                        }
+                                    }
+
                                     Fix nextWp = DataHandler.GetClosestWaypointByIdentifier(waypoints[i], lastPilot.Position.Latitude, lastPilot.Position.Longitude);
 
                                     if (nextWp != null)
