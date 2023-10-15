@@ -1,6 +1,0 @@
-[submodule "FsdConnectorNet"]
-	path = FsdConnectorNet
-	url = git@github.com:caspianmerlin/FsdConnectorNet.git
-[submodule "NavData-Interface"]
-	path = NavData-Interface
-	url = git@github.com:samuel-rey/NavData-Interface.git
