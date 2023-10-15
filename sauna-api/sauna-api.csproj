@@ -12,14 +12,12 @@
     <FileVersion>0.7.0</FileVersion>
     <NeutralLanguage>en-US</NeutralLanguage>
     <Version>0.7.0</Version>
-	<RunId Condition="'$(RuntimeIdentifier)' == '' And $([MSBuild]::IsOSPlatform('Windows'))">win-$(Platform)</RunId>
-	<RunId Condition="'$(RuntimeIdentifier)' == '' And $([MSBuild]::IsOSPlatform('Linux'))">linux-$(Platform)</RunId>
-	<RunId Condition="'$(RuntimeIdentifier)' == '' And $([MSBuild]::IsOSPlatform('OSX'))">osx-$(Platform)</RunId>
-	<RunId Condition="'$(RunId)' == ''">$(RuntimeIdentifier)</RunId>
   </PropertyGroup>
 
+  <PropertyGroup Condition=" '$(RunConfiguration)' == 'sauna-api' " />
   <ItemGroup>
-    <PackageReference Include="PShivaraman.AviationCalcUtilNet.$(RunId)" Version="1.0.12" />
+    <PackageReference Include="PShivaraman.AviationCalcUtilNet" Version="1.0.20.1" />
+    <PackageReference Include="CaspianMerlin.FsdConnector" Version="0.2.2" />
   </ItemGroup>
 
   <ItemGroup>
@@ -28,9 +26,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="fsd_connector_ffi.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
     <None Update="magnetic\WMM.COF">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
