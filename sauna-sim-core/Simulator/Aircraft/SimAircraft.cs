@@ -266,11 +266,11 @@ namespace SaunaSim.Core.Simulator.Aircraft
             {
                 if (disposing)
                 {
-                    Connection.Dispose();
-                    _shouldUpdatePosition = false;
-                    _posUpdThread?.Join();
                     _delayTimer?.Stop();
                     _delayTimer?.Dispose();
+                    _shouldUpdatePosition = false;
+                    _posUpdThread?.Join();
+                    Connection.Dispose();
                 }
 
                 Connection = null;
