@@ -12,7 +12,7 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="13.0.2" />
-    <PackageReference Include="PShivaraman.AviationCalcUtilNet" Version="1.1.1" />
+    <PackageReference Include="PShivaraman.AviationCalcUtilNet" Version="1.1.2" />
     <PackageReference Include="CaspianMerlin.FsdConnectorNet" Version="0.2.2" />
   </ItemGroup>
 </Project>
