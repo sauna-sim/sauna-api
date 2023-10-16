@@ -11,9 +11,9 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
         private FmsPoint _startPoint;
         private FmsPoint _endPoint;
 
-        public FmsPoint StartPoint => throw new NotImplementedException();
+        public FmsPoint StartPoint => _startPoint;
 
-        public FmsPoint EndPoint => throw new NotImplementedException();
+        public FmsPoint EndPoint => _endPoint;
 
         private double _initialTrueCourse;
         private double _finalTrueCourse;
@@ -22,7 +22,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
 
         public double FinalTrueCourse => _finalTrueCourse;
 
-        public RouteLegTypeEnum LegType => throw new NotImplementedException();
+        public RouteLegTypeEnum LegType => RouteLegTypeEnum.RADIUS_TO_FIX;
 
         private TurnCircle _turnCircle;
 
@@ -30,6 +30,10 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
         {
             public GeoPoint Center { get; set; }
             public double RadiusNm { get; set; }
+            public override string ToString()
+            {
+                return $"Center: ({Center.Lat}, {Center.Lon}) Radius (nm): {RadiusNm}";
+            }
         }
 
         private enum RfState
@@ -61,14 +65,11 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
                 // Calculate bisector of both legs
                 GeoPoint bisectorIntersection = GeoUtil.FindIntersection(StartPoint.Point.PointPosition, EndPoint.Point.PointPosition, InitialTrueCourse, FinalTrueCourse);
 
-                double firstLegCourse = GeoPoint.InitialBearing(bisectorIntersection, StartPoint.Point.PointPosition);
-                double secondLegCourse = GeoPoint.InitialBearing(bisectorIntersection, EndPoint.Point.PointPosition);
-
-                double bisectorCourse = firstLegCourse + (GeoUtil.CalculateTurnAmount(firstLegCourse, secondLegCourse) / 2);
+                double bisectorCourse = GeoUtil.NormalizeHeading(FinalTrueCourse + (GeoUtil.CalculateTurnAmount(InitialTrueCourse, FinalTrueCourse) / 2));
                 // The bisector is now defined by bisectorIntersection and bisectorCourse
 
                 // Figure out which of the two posible turn circles we want:
-                double intersectionToStartPointAlongTrackDistance = GeoUtil.CalculateCrossTrackErrorM(bisectorIntersection, StartPoint.Point.PointPosition, firstLegCourse, out _, out _);
+                GeoUtil.CalculateCrossTrackErrorM(bisectorIntersection, StartPoint.Point.PointPosition, InitialTrueCourse, out _, out double intersectionToStartPointAlongTrackDistance);
 
                 // either A or B, whichever point we'll be crossing *while in the turn*
                 GeoPoint referenceTangentPoint;
@@ -80,7 +81,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
                 {
                     // This means we're heading into the intersection.
                     // The reference tangent point should be the closest one to the intersection
-                    if (GeoPoint.DistanceNMi(StartPoint.Point.PointPosition, bisectorIntersection) < GeoPoint.DistanceNMi(EndPoint.Point.PointPosition, bisectorIntersection) {
+                    if (GeoPoint.DistanceNMi(StartPoint.Point.PointPosition, bisectorIntersection) < GeoPoint.DistanceNMi(EndPoint.Point.PointPosition, bisectorIntersection)) {
                         perpendicularCourse = GeoUtil.NormalizeHeading(InitialTrueCourse + 90); // perpendicular to StartPoint
                         referenceTangentPoint = StartPoint.Point.PointPosition;
                     } else
@@ -93,7 +94,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
                 {
                     // This means we're heading away from the intersection.
                     // The reference tangent point should be the furthest one to the intersection
-                    if (GeoPoint.DistanceNMi(StartPoint.Point.PointPosition, bisectorIntersection) > GeoPoint.DistanceNMi(EndPoint.Point.PointPosition, bisectorIntersection) {
+                    if (GeoPoint.DistanceNMi(StartPoint.Point.PointPosition, bisectorIntersection) > GeoPoint.DistanceNMi(EndPoint.Point.PointPosition, bisectorIntersection)) {
                         perpendicularCourse = GeoUtil.NormalizeHeading(InitialTrueCourse + 90); // perpendicular to StartPoint
                         referenceTangentPoint = StartPoint.Point.PointPosition;
                     }
@@ -135,6 +136,11 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
         public bool ShouldActivateLeg(SimAircraft aircraft, int intervalMs)
         {
             return GeoUtil.CalculateCrossTrackErrorM(aircraft.Position.PositionGeoPoint, StartPoint.Point.PointPosition, InitialTrueCourse, out _, out _) < 0;
+        }
+
+        public override string ToString()
+        {
+            return $"({StartPoint}) (RF) => ({EndPoint}) TurnCircle: {_turnCircle}";
         }
     }
 }
