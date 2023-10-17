@@ -38,7 +38,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
             return alongTrackDistance <= 0;
         }
 
-        public (double requiredTrueCourse, double crossTrackError) UpdateForLnav(SimAircraft aircraft, int intervalMs)
+        public (double requiredTrueCourse, double crossTrackError, double turnRadius) UpdateForLnav(SimAircraft aircraft, int intervalMs)
         {
             // Check if we should start turning towards the next leg
             IRouteLeg nextLeg = aircraft.Fms.GetFirstLeg();
@@ -58,14 +58,14 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
                     // Begin turn to next leg, but do not activate
                     (double nextRequiredTrueCourse, double nextCrossTrackError, _) = nextLeg.GetCourseInterceptInfo(aircraft);
 
-                    return (nextRequiredTrueCourse, nextCrossTrackError);
+                    return (nextRequiredTrueCourse, nextCrossTrackError, -1);
                 }
             }
             
             // Update CrossTrackError, etc
             (double requiredTrueCourse, double crossTrackError, _) = GetCourseInterceptInfo(aircraft);
 
-            return (requiredTrueCourse, crossTrackError);
+            return (requiredTrueCourse, crossTrackError, -1);
         }
 
         public (double requiredTrueCourse, double crossTrackError, double alongTrackDistance) GetCourseInterceptInfo(SimAircraft aircraft)

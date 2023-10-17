@@ -43,12 +43,12 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
             return false;
         }
 
-        public (double requiredTrueCourse, double crossTrackError) UpdateForLnav(SimAircraft aircraft, int intervalMs)
+        public (double requiredTrueCourse, double crossTrackError, double turnRadius) UpdateForLnav(SimAircraft aircraft, int intervalMs)
         {
             // Update CrossTrackError, etc
             (double requiredTrueCourse, double crossTrackError, _) = GetCourseInterceptInfo(aircraft);
 
-            return (requiredTrueCourse, crossTrackError);
+            return (requiredTrueCourse, crossTrackError, -1);
         }
 
         public (double requiredTrueCourse, double crossTrackError, double alongTrackDistance) GetCourseInterceptInfo(SimAircraft aircraft)

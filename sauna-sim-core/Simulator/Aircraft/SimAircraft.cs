@@ -288,12 +288,12 @@ namespace SaunaSim.Core.Simulator.Aircraft
                 if (!_paused)
                 {
                     // Run Autopilot
-                    _autopilot.OnPositionUpdate(AppSettingsManager.PosCalcRate * (_simRate / 10.0));
+                    _autopilot.OnPositionUpdate((int) (AppSettingsManager.PosCalcRate * (_simRate / 10.0)));
 
                     // TODO: Update Mass
                     
                     // Move Aircraft
-                    MoveAircraft(AppSettingsManager.PosCalcRate * (_simRate / 10.0));
+                    MoveAircraft((int) (AppSettingsManager.PosCalcRate * (_simRate / 10.0)));
                     
                     // Update Grib Data
                     Position.UpdateGribPoint();

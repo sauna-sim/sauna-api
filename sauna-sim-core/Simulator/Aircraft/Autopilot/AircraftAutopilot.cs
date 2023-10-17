@@ -248,11 +248,11 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot
             }
 
             // Get True Course and crossTrackError
-            (double requiredTrueCourse, double crossTrackError) = fms.ActiveLeg.UpdateForLnav(_parentAircraft, intervalMs);
+            (double requiredTrueCourse, double crossTrackError, double turnRadius) = fms.ActiveLeg.UpdateForLnav(_parentAircraft, intervalMs);
             
             // Calculate Bank Angle & Rate
             _targetBank = AutopilotUtil.CalculateDemandedRollForNav(crossTrackError, _parentAircraft.Position.Track_True, requiredTrueCourse,
-                _parentAircraft.Position.Bank, _parentAircraft.Position.GroundSpeed, intervalMs).demandedRoll;
+                turnRadius, _parentAircraft.Position.Bank, _parentAircraft.Position.GroundSpeed, intervalMs).demandedRoll;
             
             _parentAircraft.Position.BankRate = AutopilotUtil.CalculateRollRate(_targetBank, _parentAircraft.Position.Bank, intervalMs);
         }

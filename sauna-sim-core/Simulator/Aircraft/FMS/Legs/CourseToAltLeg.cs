@@ -49,7 +49,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
             return aircraft.Position.IndicatedAltitude <= _endAlt;
         }
 
-        public (double requiredTrueCourse, double crossTrackError) UpdateForLnav(SimAircraft aircraft, int intervalMs)
+        public (double requiredTrueCourse, double crossTrackError, double turnRadius) UpdateForLnav(SimAircraft aircraft, int intervalMs)
         {
             // Check if we should start turning towards the next leg
             IRouteLeg nextLeg = aircraft.Fms.GetFirstLeg();
@@ -63,7 +63,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
                 }
             }
             
-            return (GetCourseInterceptInfo(aircraft).requiredTrueCourse, 0);
+            return (GetCourseInterceptInfo(aircraft).requiredTrueCourse, 0, -1);
         }
 
         public (double requiredTrueCourse, double crossTrackError, double alongTrackDistance) GetCourseInterceptInfo(SimAircraft aircraft)

@@ -107,6 +107,16 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
         public static (double demandedInput, double timeToTarget) CalculateDemandedInput(double deltaToTarget, double curInput, double maxInputLimit, double minInputLimit,
             Func<double, double, double> inputRateFunction, Func<double, double> targetRateFunction, double zeroTargetRateInput, double inputTimeBuffer)
         {
+            // Make sure zero target rate is within bounds
+            if (zeroTargetRateInput < minInputLimit)
+            {
+                zeroTargetRateInput = minInputLimit;
+            } else if (zeroTargetRateInput > maxInputLimit)
+            {
+                zeroTargetRateInput = maxInputLimit;
+            }
+
+            // If we're on target
             if (Math.Abs(deltaToTarget) <= double.Epsilon)
             {
                 return (zeroTargetRateInput, 0);
@@ -185,14 +195,28 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
         }
 
         /// <summary>
-        /// Calculate the required roll rate for a turn.
+        /// Calculate the required roll for a turn.
         /// </summary>
         /// <param name="turnAmt">Amount to turn (degrees)</param>
         /// <param name="curRoll">Current roll (degrees)</param>
         /// <param name="groundSpeed">Current ground speed (knots)</param>
         /// <param name="intervalMs">Update Interval Time (ms)</param>
-        /// <returns>Desired roll rate (degrees/s)</returns>
+        /// <returns>Desired roll (degrees)</returns>
         public static double CalculateDemandedRollForTurn(double turnAmt, double curRoll, double groundSpeed, int intervalMs)
+        {
+            return CalculateDemandedRollForTurn(turnAmt, curRoll, 0, groundSpeed, intervalMs);
+        }
+
+        /// <summary>
+        /// Calculate the required roll for a turn with a potential arc.
+        /// </summary>
+        /// <param name="turnAmt">Amount to turn (degrees)</param>
+        /// <param name="curRoll">Current roll (degrees)</param>
+        /// <param name="zeroRoll">Zero roll (degrees)</param>
+        /// <param name="groundSpeed">Current ground speed (knots)</param>
+        /// <param name="intervalMs">Update Interval Time (ms)</param>
+        /// <returns>Desired roll (degrees)</returns>
+        public static double CalculateDemandedRollForTurn(double turnAmt, double curRoll, double zeroRoll, double groundSpeed, int intervalMs)
         {
             double maxRoll = GeoUtil.CalculateMaxBankAngle(groundSpeed, ROLL_LIMIT, HDG_MAX_RATE);
             return CalculateDemandedInput(
@@ -202,7 +226,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
                 -maxRoll,
                 (double demandedRoll, double measuredRoll) => CalculateRollRate(demandedRoll, measuredRoll, intervalMs),
                 (double roll) => Math.Tan(MathUtil.ConvertDegreesToRadians(roll)) * 1091 / groundSpeed,
-                0,
+                zeroRoll,
                 ROLL_TIME_BUFFER
             ).demandedInput;
         }
@@ -306,7 +330,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
             return (CalculateDemandedRollForTurn(turnAmt, curRoll, groundSpeed, intervalMs), demandedTrack);
         }
 
-        public static (double demandedRoll, double demandedTrack) CalculateDemandedRollForNav(double courseDeviation, double curTrueTrack, double courseTrueTrack, double curRoll, double groundSpeed, int intervalMs)
+        public static (double demandedRoll, double demandedTrack) CalculateDemandedRollForNav(double courseDeviation, double curTrueTrack, double courseTrueTrack, double courseTurnRadius, double curRoll, double groundSpeed, int intervalMs)
         {
             double maxTrack = courseTrueTrack + MAX_INTC_ANGLE;
             double minTrack = courseTrueTrack - MAX_INTC_ANGLE;
@@ -327,7 +351,17 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
             demandedTrack = GeoUtil.NormalizeHeading(demandedTrack);
 
             double turnAmt = GeoUtil.CalculateTurnAmount(curTrueTrack, demandedTrack);
-            return (CalculateDemandedRollForTurn(turnAmt, curRoll, groundSpeed, intervalMs), demandedTrack);
+
+            // Figure out if the course is an arc and adjust the "zero" bank accordingly
+            if (courseTurnRadius <= 0)
+            {
+                return (CalculateDemandedRollForTurn(turnAmt, curRoll, groundSpeed, intervalMs), demandedTrack);
+            }
+
+            // Calculate Roll Angle for desired turn radius
+            double zeroRoll = GeoUtil.CalculateBankAngle(courseTurnRadius, groundSpeed);
+
+            return (CalculateDemandedRollForTurn(turnAmt, curRoll, zeroRoll, groundSpeed, intervalMs), demandedTrack);
         }
     }
 }
