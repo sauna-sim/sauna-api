@@ -68,6 +68,32 @@ namespace SaunaSim.Core.Simulator.Aircraft
             }
         }
 
+        private int _simRate;
+        public int SimRate
+        {
+            get => _simRate;
+            set
+            {
+                if (value > 80)
+                {
+                    _simRate = 80;
+                }
+                else if (value < 1)
+                {
+                    _simRate = 1;
+                }
+                else
+                {
+                    _simRate = value;
+                }
+
+                if (DelayMs > 0 && _delayTimer != null)
+                {
+                    _delayTimer.RatePercent = _simRate * 10;
+                }
+            }
+        }
+
         // Aircraft Info
         private AircraftPosition _position;
         public AircraftPosition Position => _position;
@@ -134,6 +160,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
             Connection.Disconnected += OnConnectionTerminated;
             Connection.FrequencyMessageReceived += OnFrequencyMessageReceived;
 
+            _simRate = 10;
             _paused = true;
             _position = new AircraftPosition
             {
@@ -161,7 +188,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
             }
             else
             {
-                _delayTimer = new PauseableTimer(DelayMs);
+                _delayTimer = new PauseableTimer(DelayMs, _simRate * 10);
                 _delayTimer.Elapsed += OnTimerElapsed;
 
                 if (!_paused)
@@ -239,15 +266,15 @@ namespace SaunaSim.Core.Simulator.Aircraft
                     {
                         if (Assigned_IAS <= Position.IndicatedAirSpeed)
                         {
-                            Position.IndicatedAirSpeed = Math.Max(Assigned_IAS, Position.IndicatedAirSpeed + (slowDownKts * AppSettingsManager.PosCalcRate / 1000.0));
+                            Position.IndicatedAirSpeed = Math.Max(Assigned_IAS, Position.IndicatedAirSpeed + (slowDownKts * (_simRate / 10.0) * AppSettingsManager.PosCalcRate / 1000.0));
                         }
                         else
                         {
-                            Position.IndicatedAirSpeed = Math.Min(Assigned_IAS, Position.IndicatedAirSpeed + (speedUpKts * AppSettingsManager.PosCalcRate / 1000.0));
+                            Position.IndicatedAirSpeed = Math.Min(Assigned_IAS, Position.IndicatedAirSpeed + (speedUpKts * (_simRate / 10.0) * AppSettingsManager.PosCalcRate / 1000.0));
                         }
                     }
 
-                    Control.UpdatePosition(ref _position, AppSettingsManager.PosCalcRate);
+                    Control.UpdatePosition(ref _position, (int) ((_simRate / 10.0) * AppSettingsManager.PosCalcRate));
                     Connection.UpdatePosition(GetFsdPilotPosition());
                 }
 
