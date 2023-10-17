@@ -72,6 +72,32 @@ namespace SaunaSim.Core.Simulator.Aircraft
             }
         }
 
+        private int _simRate;
+        public int SimRate
+        {
+            get => _simRate;
+            set
+            {
+                if (value > 80)
+                {
+                    _simRate = 80;
+                }
+                else if (value < 1)
+                {
+                    _simRate = 1;
+                }
+                else
+                {
+                    _simRate = value;
+                }
+
+                if (DelayMs > 0 && _delayTimer != null)
+                {
+                    _delayTimer.RatePercent = _simRate * 10;
+                }
+            }
+        }
+
         // Aircraft Info
         private AircraftPosition _position;
         public AircraftPosition Position => _position;
@@ -147,6 +173,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
             Connection.Disconnected += OnConnectionTerminated;
             Connection.FrequencyMessageReceived += OnFrequencyMessageReceived;
 
+            _simRate = 10;
             _paused = true;
             _position = new AircraftPosition(lat, lon, alt)
             {
@@ -190,7 +217,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
             }
             else
             {
-                _delayTimer = new PauseableTimer(DelayMs);
+                _delayTimer = new PauseableTimer(DelayMs, _simRate * 10);
                 _delayTimer.Elapsed += OnTimerElapsed;
 
                 if (!_paused)
@@ -261,12 +288,12 @@ namespace SaunaSim.Core.Simulator.Aircraft
                 if (!_paused)
                 {
                     // Run Autopilot
-                    _autopilot.OnPositionUpdate(AppSettingsManager.PosCalcRate);
+                    _autopilot.OnPositionUpdate(AppSettingsManager.PosCalcRate * (_simRate / 10.0));
 
                     // TODO: Update Mass
                     
                     // Move Aircraft
-                    MoveAircraft(AppSettingsManager.PosCalcRate);
+                    MoveAircraft(AppSettingsManager.PosCalcRate * (_simRate / 10.0));
                     
                     // Update Grib Data
                     Position.UpdateGribPoint();
