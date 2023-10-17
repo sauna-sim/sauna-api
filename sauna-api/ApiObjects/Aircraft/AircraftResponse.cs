@@ -37,7 +37,7 @@ namespace SaunaSim.Api.ApiObjects.Aircraft
             SimState = new AircraftStateRequestResponse
             {
                 Paused = pilot.Paused,
-                SimRate = pilot.SimRate
+                SimRate = pilot.SimRate / 10.0
             };
             FlightPlan = pilot.FlightPlan;
             XpdrMode = pilot.XpdrMode;

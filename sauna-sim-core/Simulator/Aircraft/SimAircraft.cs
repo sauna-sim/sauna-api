@@ -87,7 +87,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
                     _simRate = value;
                 }
 
-                if (_delayTimer != null)
+                if (DelayMs > 0 && _delayTimer != null)
                 {
                     _delayTimer.RatePercent = _simRate * 10;
                 }
@@ -160,6 +160,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
             Connection.Disconnected += OnConnectionTerminated;
             Connection.FrequencyMessageReceived += OnFrequencyMessageReceived;
 
+            _simRate = 10;
             _paused = true;
             _position = new AircraftPosition
             {
@@ -265,15 +266,15 @@ namespace SaunaSim.Core.Simulator.Aircraft
                     {
                         if (Assigned_IAS <= Position.IndicatedAirSpeed)
                         {
-                            Position.IndicatedAirSpeed = Math.Max(Assigned_IAS, Position.IndicatedAirSpeed + (slowDownKts * AppSettingsManager.PosCalcRate / 1000.0));
+                            Position.IndicatedAirSpeed = Math.Max(Assigned_IAS, Position.IndicatedAirSpeed + (slowDownKts * (_simRate / 10.0) * AppSettingsManager.PosCalcRate / 1000.0));
                         }
                         else
                         {
-                            Position.IndicatedAirSpeed = Math.Min(Assigned_IAS, Position.IndicatedAirSpeed + (speedUpKts * AppSettingsManager.PosCalcRate / 1000.0));
+                            Position.IndicatedAirSpeed = Math.Min(Assigned_IAS, Position.IndicatedAirSpeed + (speedUpKts * (_simRate / 10.0) * AppSettingsManager.PosCalcRate / 1000.0));
                         }
                     }
 
-                    Control.UpdatePosition(ref _position, AppSettingsManager.PosCalcRate);
+                    Control.UpdatePosition(ref _position, (int) ((_simRate / 10.0) * AppSettingsManager.PosCalcRate));
                     Connection.UpdatePosition(GetFsdPilotPosition());
                 }
 
