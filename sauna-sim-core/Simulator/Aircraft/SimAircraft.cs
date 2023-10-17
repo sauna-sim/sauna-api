@@ -68,6 +68,32 @@ namespace SaunaSim.Core.Simulator.Aircraft
             }
         }
 
+        private int _simRate;
+        public int SimRate
+        {
+            get => _simRate;
+            set
+            {
+                if (value > 80)
+                {
+                    _simRate = 80;
+                }
+                else if (value < 1)
+                {
+                    _simRate = 1;
+                }
+                else
+                {
+                    _simRate = value;
+                }
+
+                if (_delayTimer != null)
+                {
+                    _delayTimer.RatePercent = _simRate * 10;
+                }
+            }
+        }
+
         // Aircraft Info
         private AircraftPosition _position;
         public AircraftPosition Position => _position;
@@ -161,7 +187,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
             }
             else
             {
-                _delayTimer = new PauseableTimer(DelayMs);
+                _delayTimer = new PauseableTimer(DelayMs, _simRate * 10);
                 _delayTimer.Elapsed += OnTimerElapsed;
 
                 if (!_paused)

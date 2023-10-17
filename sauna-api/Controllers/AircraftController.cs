@@ -135,6 +135,7 @@ namespace SaunaSim.Api.Controllers
                 return BadRequest(e);
             }
         }
+
         [HttpGet("getAll")]
         public List<AircraftResponse> GetAllAircraft()
         {
@@ -189,18 +190,69 @@ namespace SaunaSim.Api.Controllers
             return Ok(new AircraftResponse(client, true));
         }
 
-        [HttpPost("all/pause")]
-        public ActionResult PauseAll()
+        [HttpPost("all/simState")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        public ActionResult<AircraftStateRequestResponse> SetAllSimState(AircraftStateRequestResponse request)
         {
-            SimAircraftHandler.AllPaused = true;
-            return Ok();
+            SimAircraftHandler.AllPaused = request.Paused;
+            SimAircraftHandler.SimRate = request.SimRate;
+
+            return Ok(new AircraftStateRequestResponse {
+                Paused = SimAircraftHandler.AllPaused,
+                SimRate = SimAircraftHandler.SimRate
+            });
         }
 
-        [HttpPost("all/unpause")]
-        public ActionResult UnpauseAll()
+        [HttpGet("all/simState")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        public ActionResult<AircraftStateRequestResponse> GetAllSimState()
         {
-            SimAircraftHandler.AllPaused = false;
-            return Ok();
+            return Ok(new AircraftStateRequestResponse
+            {
+                Paused = SimAircraftHandler.AllPaused,
+                SimRate = SimAircraftHandler.SimRate
+            });
+        }
+
+        [HttpPost("byCallsign/{callsign}/simState")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public ActionResult<AircraftStateRequestResponse> SetAircraftSimState(string callsign, AircraftStateRequestResponse request)
+        {
+            SimAircraft client = SimAircraftHandler.GetAircraftByCallsign(callsign);
+
+            if (client == null)
+            {
+                return BadRequest("The aircraft was not found!");
+            }
+
+            client.Paused = request.Paused;
+            client.SimRate = (int)(request.SimRate * 10);
+
+            return Ok(new AircraftStateRequestResponse
+            {
+                Paused = client.Paused,
+                SimRate = client.SimRate / 10.0
+            });
+        }
+
+        [HttpGet("byCallsign/{callsign}/simState")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public ActionResult<AircraftStateRequestResponse> GetAircraftSimState(string callsign)
+        {
+            SimAircraft client = SimAircraftHandler.GetAircraftByCallsign(callsign);
+
+            if (client == null)
+            {
+                return BadRequest("The aircraft was not found!");
+            }
+
+            return Ok(new AircraftStateRequestResponse
+            {
+                Paused = SimAircraftHandler.AllPaused,
+                SimRate = SimAircraftHandler.SimRate
+            });
         }
 
         [HttpDelete("removeByCallsign/{callsign}")]
@@ -221,6 +273,7 @@ namespace SaunaSim.Api.Controllers
         }
 
         [HttpDelete("all/remove")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
         public ActionResult RemoveAll()
         {
             SimAircraftHandler.DeleteAllAircraft();
