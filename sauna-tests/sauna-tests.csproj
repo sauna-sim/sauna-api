@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <RootNamespace>sauna_tests</RootNamespace>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.1.0" />
+    <PackageReference Include="NUnit" Version="3.13.3" />
+    <PackageReference Include="NUnit3TestAdapter" Version="4.2.1" />
+    <PackageReference Include="NUnit.Analyzers" Version="3.3.0" />
+    <PackageReference Include="coverlet.collector" Version="3.1.2" />
+    <PackageReference Include="PShivaraman.AviationCalcUtilNet" Version="1.1.2" />
+    <PackageReference Include="Microsoft.AspNetCore.TestHost" Version="6.0.23" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="6.0.23" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\sauna-api\sauna-api.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Remove="PShivaraman.AviationCalcUtilNet" />
+    <None Remove="Microsoft.AspNetCore.TestHost" />
+    <None Remove="Microsoft.AspNetCore.Mvc.Testing" />
+  </ItemGroup>
+</Project>
