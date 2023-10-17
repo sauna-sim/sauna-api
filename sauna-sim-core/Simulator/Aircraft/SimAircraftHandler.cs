@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace SaunaSim.Core.Simulator.Aircraft
 {
@@ -7,6 +8,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
         private static List<SimAircraft> _aircrafts;
         private static object _aircraftsLock = new object();
         private static bool _allPaused = true;
+        private static int _simRate = 10;
 
         static SimAircraftHandler()
         {
@@ -23,6 +25,31 @@ namespace SaunaSim.Core.Simulator.Aircraft
                     return _aircrafts;
                 }
             } 
+        }
+
+        public static double SimRate
+        {
+            get => _simRate / 10.0;
+            set
+            {
+                if (value > 8.0)
+                {
+                    _simRate = 80;
+                } else if (value < 0.1)
+                {
+                    _simRate = 1;
+                } else
+                {
+                    _simRate = (int)(value * 10);
+                }
+                lock (_aircraftsLock)
+                {
+                    foreach (SimAircraft aircraft in _aircrafts)
+                    {
+                        aircraft.SimRate = _simRate;
+                    }
+                }
+            }
         }
 
         public static bool AllPaused {
@@ -74,6 +101,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
                     }
                 }
 
+                aircraft.Paused = _allPaused;
                 _aircrafts.Add(aircraft);
             }
             return true;

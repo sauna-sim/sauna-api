@@ -5,7 +5,9 @@ VisualStudioVersion = 17.4.33213.308
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "sauna-sim-core", "sauna-sim-core\sauna-sim-core.csproj", "{15909C10-9FBB-41F2-BD09-DEE552B56592}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "sauna-api", "sauna-api\sauna-api.csproj", "{1110C8D5-9AD1-47BD-91F5-5D2F44E52025}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "sauna-api", "sauna-api\sauna-api.csproj", "{1110C8D5-9AD1-47BD-91F5-5D2F44E52025}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "sauna-tests", "sauna-tests\sauna-tests.csproj", "{43601CBE-2921-4D26-92BB-0F06296C4B91}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NavData-Interface", "NavData-Interface\NavData-Interface\NavData-Interface.csproj", "{0C54860F-B4B0-44C9-B71D-1FC4966F32F2}"
 EndProject
@@ -41,6 +43,14 @@ Global
 		{0C54860F-B4B0-44C9-B71D-1FC4966F32F2}.Release|x64.Build.0 = Release|Any CPU
 		{0C54860F-B4B0-44C9-B71D-1FC4966F32F2}.Release|x86.ActiveCfg = Release|x86
 		{0C54860F-B4B0-44C9-B71D-1FC4966F32F2}.Release|x86.Build.0 = Release|x86
+		{43601CBE-2921-4D26-92BB-0F06296C4B91}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{43601CBE-2921-4D26-92BB-0F06296C4B91}.Debug|x64.Build.0 = Debug|Any CPU
+		{43601CBE-2921-4D26-92BB-0F06296C4B91}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{43601CBE-2921-4D26-92BB-0F06296C4B91}.Debug|x86.Build.0 = Debug|Any CPU
+		{43601CBE-2921-4D26-92BB-0F06296C4B91}.Release|x64.ActiveCfg = Release|Any CPU
+		{43601CBE-2921-4D26-92BB-0F06296C4B91}.Release|x64.Build.0 = Release|Any CPU
+		{43601CBE-2921-4D26-92BB-0F06296C4B91}.Release|x86.ActiveCfg = Release|Any CPU
+		{43601CBE-2921-4D26-92BB-0F06296C4B91}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
