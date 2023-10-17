@@ -1,24 +1,18 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
-    <AssemblyVersion>0.6.2</AssemblyVersion>
-    <FileVersion>0.6.2</FileVersion>
+    <AssemblyVersion>0.7.0</AssemblyVersion>
+    <FileVersion>0.7.0</FileVersion>
     <Platforms>x86;x64</Platforms>
-    <Version>0.6.2</Version>
+    <Version>0.7.0</Version>
     <Description>Sauna Simulator Core Library</Description>
     <Authors>Prithvisagar Shivaraman</Authors>
     <RootNamespace>SaunaSim.Core</RootNamespace>
     <AssemblyName>SaunaSimCore</AssemblyName>
-	<RunId Condition="'$(RuntimeIdentifier)' == '' And $([MSBuild]::IsOSPlatform('Windows'))">win-$(Platform)</RunId>
-	<RunId Condition="'$(RuntimeIdentifier)' == '' And $([MSBuild]::IsOSPlatform('Linux'))">linux-$(Platform)</RunId>
-	<RunId Condition="'$(RuntimeIdentifier)' == '' And $([MSBuild]::IsOSPlatform('OSX'))">osx-$(Platform)</RunId>
-	<RunId Condition="'$(RunId)' == ''">$(RuntimeIdentifier)</RunId>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="13.0.2" />
-    <PackageReference Include="PShivaraman.AviationCalcUtilNet.$(RunId)" Version="1.0.12" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\FsdConnectorNet\FsdConnectorNet\FsdConnectorNet.csproj" />
+    <PackageReference Include="PShivaraman.AviationCalcUtilNet" Version="1.1.2" />
+    <PackageReference Include="CaspianMerlin.FsdConnectorNet" Version="0.2.2" />
   </ItemGroup>
 </Project>
