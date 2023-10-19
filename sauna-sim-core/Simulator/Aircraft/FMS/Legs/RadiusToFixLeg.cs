@@ -73,15 +73,48 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
 
         public void CalculateTurnCircle()
         {
-            if (Math.Abs(InitialTrueCourse - FinalTrueCourse) < 5) // TODO: Figure out the margin of error. Probably less than 5.
+            if (Math.Abs(InitialTrueCourse - FinalTrueCourse) < 3) // TODO: Figure out the margin of error. Probably less than 3
             {
+                GeoPoint turnCircleCenter;
+                double turnCircleRadiusM;
+                
                 // Calculate tangential circle to parallel legs:
-                double diameterLineCourse = GeoPoint.InitialBearing(StartPoint.Point.PointPosition, EndPoint.Point.PointPosition);
-                double turnCircleRadiusM = GeoPoint.DistanceM(StartPoint.Point.PointPosition, EndPoint.Point.PointPosition);
+                GeoUtil.CalculateCrossTrackErrorM(StartPoint.Point.PointPosition, EndPoint.Point.PointPosition, FinalTrueCourse, out _, out double startToEndAlongTrackDistance);
+                if (startToEndAlongTrackDistance > 0) 
+                {
+                    // if we turn at StartPoint, we'll have some distance to go to EndPoint
+                    // thus, we'll turn at StartPoint
 
-                GeoPoint turnCircleCenter = new GeoPoint(StartPoint.Point.PointPosition);
-                turnCircleCenter.MoveByM(diameterLineCourse, turnCircleRadiusM);
+                    double diameterCourse = GeoUtil.NormalizeHeading(InitialTrueCourse + 90);
+                    GeoPoint tangentialPointA = StartPoint.Point.PointPosition;
+                    GeoPoint tangentialPointB = GeoUtil.FindIntersection(StartPoint.Point.PointPosition, EndPoint.Point.PointPosition, diameterCourse, FinalTrueCourse);
 
+                    turnCircleRadiusM = GeoPoint.DistanceM(tangentialPointA, tangentialPointB) / 2;
+
+                    // diameterCourse is the correct direction but not necessarily going the correct way
+                    // we'll recalculate it now that we know both tangential points, so it goes the right way
+                    diameterCourse = GeoPoint.InitialBearing(tangentialPointA, tangentialPointB);
+
+                    turnCircleCenter = new GeoPoint(tangentialPointA);
+                    turnCircleCenter.MoveByM(diameterCourse, turnCircleRadiusM);
+                } else
+                {
+                    // if we turn at StartPoint, we'll be past EndPoint.
+                    // we'll turn when we're abeam EndPoint
+
+                    double diameterCourse = GeoUtil.NormalizeHeading(FinalTrueCourse + 90);
+                    GeoPoint tangentialPointA = GeoUtil.FindIntersection(StartPoint.Point.PointPosition, EndPoint.Point.PointPosition, InitialTrueCourse, diameterCourse);
+                    GeoPoint tangentialPointB = EndPoint.Point.PointPosition;
+
+                    turnCircleRadiusM = GeoPoint.DistanceM(tangentialPointB, tangentialPointA) / 2;
+
+                    // diameterCourse is the correct direction but not necessarily going the correct way
+                    // we'll recalculate it now that we know both tangential points, so it goes the right way
+                    diameterCourse = GeoPoint.InitialBearing(tangentialPointB, tangentialPointA);
+
+                    turnCircleCenter = new GeoPoint(tangentialPointB);
+                    turnCircleCenter.MoveByM(diameterCourse, turnCircleRadiusM);
+                }
                 _turnCircle = new TurnCircle(turnCircleCenter, StartPoint.Point.PointPosition, EndPoint.Point.PointPosition, turnCircleRadiusM);
             } else
             {
@@ -177,7 +210,8 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
 
         public bool HasLegTerminated(SimAircraft aircraft)
         {
-            return false; // FOR DEAR GOD CHANGE THIS
+            (double alongTrackDistance, _, _) = GetCourseInterceptInfo(aircraft);
+            return alongTrackDistance < 0;
         }
 
         private bool isClockwise()
@@ -188,14 +222,14 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
             return turnAmount > 0;
         }
 
-        public (double requiredTrueCourse, double crossTrackError) UpdateForLnav(SimAircraft aircraft, int intervalMs)
+        public (double requiredTrueCourse, double crossTrackError, double turnRadius) UpdateForLnav(SimAircraft aircraft, int intervalMs)
         {
             // TODO: Add states (a->Ta, Tb->b). For now this should work for holds though.
             
             double requiredTrueCourse;
             double crossTrackError = GeoUtil.CalculateArcCourseInfo(aircraft.Position.PositionGeoPoint, _turnCircle.Center, _turnCircle.PointARadial, _turnCircle.PointBRadial, _turnCircle.RadiusM, isClockwise(), out requiredTrueCourse, out _);
 
-            return (requiredTrueCourse, crossTrackError);
+            return (requiredTrueCourse, crossTrackError, _turnCircle.RadiusM);
         }
 
         public (double requiredTrueCourse, double crossTrackError, double alongTrackDistance) GetCourseInterceptInfo(SimAircraft aircraft)

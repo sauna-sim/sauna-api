@@ -39,6 +39,10 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
         private double _teardropDistance;
         private double _outCourse = -1;
         private IRoutePoint _outStartPoint = null;
+
+        private RadiusToFixLeg _outboundTurnLeg = null;
+        private RadiusToFixLeg _inboundTurnLeg = null;
+
         public double AlongTrack_M { get; private set; }
 
         public ApFmsHoldController(IRoutePoint holdingPoint, BearingTypeEnum courseType, double inboundCourse, HoldTurnDirectionEnum turnDir, HoldLegLengthTypeEnum legType, double legLength)
@@ -86,7 +90,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
         public double MagneticCourse => _magneticCourse;
         public double TrueCourse => _trueCourse;
 
-        public (double requiredTrueCourse, double crossTrackError) UpdateForLnav(SimAircraft aircraft, int intervalMs)
+        public (double requiredTrueCourse, double crossTrackError, double turnRadius) UpdateForLnav(SimAircraft aircraft, int intervalMs)
         {
             // Check if we need to enter the hold
             if (_holdPhase == HoldPhaseEnum.ENTRY)
@@ -111,7 +115,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
             }
         }
 
-        private (double requiredTrueCourse, double crossTrackError) HandleHoldEntry(SimAircraft aircraft, int posCalcIntvl)
+        private (double requiredTrueCourse, double crossTrackError, double turnRadius) HandleHoldEntry(SimAircraft aircraft, int posCalcIntvl)
         {
             if (_holdEntry == HoldEntryEnum.NONE)
             {
@@ -158,7 +162,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
                 }
                 else
                 {
-                    return (requiredTrueCourse, crossTrackError);
+                    return (requiredTrueCourse, crossTrackError, 0);
                 }
             }
             else
@@ -183,7 +187,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
                 }
                 else
                 {
-                    return (requiredTrueCourse, crossTrackError);
+                    return (requiredTrueCourse, crossTrackError, 0);
                 }
             }
         }
@@ -206,13 +210,23 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
             return _turnDir == HoldTurnDirectionEnum.RIGHT ? 180 : -180;
         }
 
-        private (double requiredTrueCourse, double crossTrackError) HandleOutboundTurn(SimAircraft aircraft, int posCalcIntvl)
+        private (double requiredTrueCourse, double crossTrackError, double turnRadius) StartOutboundTurn(SimAircraft aircraft, int posCalcIntvl)
         {
-            SetOutboundCourseInstr(aircraft.Position);
+            _outboundTurnLeg = new RadiusToFixLeg(new FmsPoint(new RouteWaypoint(_routePoint.PointPosition), RoutePointTypeEnum.FLY_OVER), new FmsPoint(new RouteWaypoint(_outStartPoint.PointPosition), RoutePointTypeEnum.FLY_OVER), TrueCourse, _outCourse);
+            _holdPhase = HoldPhaseEnum.TURN_OUTBOUND;
 
-            _holdPhase = HoldPhaseEnum.OUTBOUND;
+            return HandleOutboundTurn(aircraft, posCalcIntvl);
+        }
 
-            return HandleOutboundLeg(aircraft, posCalcIntvl);
+        private (double requiredTrueCourse, double crossTrackError, double turnRadius) HandleOutboundTurn(SimAircraft aircraft, int posCalcIntvl)
+        {
+            if (_outboundTurnLeg.HasLegTerminated(aircraft))
+            {
+                return StartOutboundLeg(aircraft, posCalcIntvl);
+            } else
+            {
+                return _outboundTurnLeg.UpdateForLnav(aircraft, posCalcIntvl);
+            }
         }
 
         private double GetOutboundDistance(AircraftPosition position)
@@ -240,24 +254,25 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
                 }
             }
 
+            // TODO: This needs to be changed (store result, not calculate it every time)
+
             double inbdGs = GeoUtil.HeadwindComponent(position.WindSpeed, position.WindDirection, _trueCourse) + position.TrueAirSpeed;
             return GeoUtil.CalculateDistanceTravelledNMi(inbdGs, legLengthMs);
         }
 
-        public void SetOutboundCourseInstr(AircraftPosition position)
+        public (double requiredTrueCourse, double crossTrackError, double turnRadius) StartOutboundLeg(SimAircraft aircraft, int posCalcIntvl)
         {
             double turnAmt = GetTurnAmount();
             _outCourse = GeoUtil.NormalizeHeading(_trueCourse + turnAmt);
-            _outStartPoint = GetOutboundStartPoint(position);
+            _outStartPoint = GetOutboundStartPoint(aircraft.Position);
+
+            _holdPhase = HoldPhaseEnum.OUTBOUND;
+
+            return HandleOutboundLeg(aircraft, posCalcIntvl);
         }
 
-        private (double requiredTrueCourse, double crossTrackError) HandleOutboundLeg(SimAircraft aircraft, int posCalcIntvl)
+        private (double requiredTrueCourse, double crossTrackError, double turnRadius) HandleOutboundLeg(SimAircraft aircraft, int posCalcIntvl)
         {
-            if (_outCourse < 0)
-            {
-                SetOutboundCourseInstr(aircraft.Position);
-            }
-
             double crossTrackError = GeoUtil.CalculateCrossTrackErrorM(aircraft.Position.PositionGeoPoint, _outStartPoint.PointPosition, _outCourse,
                 out double requiredTrueCourse, out double alongTrackDistance);
 
@@ -268,22 +283,40 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
             {
                 _holdPhase = HoldPhaseEnum.TURN_INBOUND;
                 _outCourse = -1;
-                return HandleInboundTurn(aircraft, posCalcIntvl);
+                return StartInboundTurn(aircraft, posCalcIntvl);
             }
             else
             {
-                return (requiredTrueCourse, crossTrackError);
+                return (requiredTrueCourse, crossTrackError, -1);
             }
         }
 
-        private (double requiredTrueCourse, double crossTrackError) HandleInboundTurn(SimAircraft aircraft, int posCalcIntvl)
+        private (double requiredTrueCourse, double crossTrackError, double turnRadius) StartInboundTurn(SimAircraft aircraft, int posCalcIntvl)
         {
-            _holdPhase = HoldPhaseEnum.INBOUND;
+            _holdPhase = HoldPhaseEnum.TURN_INBOUND;
+            _outCourse = -1;
 
-            return HandleInboundLeg(aircraft, posCalcIntvl);
+            GeoPoint outEndPoint = new GeoPoint(_outStartPoint.PointPosition);
+            outEndPoint.MoveByNMi(_outCourse, GetOutboundDistance(aircraft.Position));
+
+            _outboundTurnLeg = new RadiusToFixLeg(new FmsPoint(new RouteWaypoint(outEndPoint), RoutePointTypeEnum.FLY_OVER), new FmsPoint(new RouteWaypoint(_routePoint.PointPosition), RoutePointTypeEnum.FLY_OVER), aircraft.Position.Track_True, TrueCourse);
+
+            return HandleInboundTurn(aircraft, posCalcIntvl);
         }
 
-        private (double requiredTrueCourse, double crossTrackError) HandleInboundLeg(SimAircraft aircraft, int posCalcIntvl)
+        private (double requiredTrueCourse, double crossTrackError, double turnRadius) HandleInboundTurn(SimAircraft aircraft, int posCalcIntvl)
+        {
+            if (_inboundTurnLeg.HasLegTerminated(aircraft))
+            {
+                _holdPhase = HoldPhaseEnum.INBOUND;
+                return HandleInboundLeg(aircraft, posCalcIntvl);
+            } else
+            {
+                return _inboundTurnLeg.UpdateForLnav(aircraft, posCalcIntvl);
+            }
+        }
+
+        private (double requiredTrueCourse, double crossTrackError, double turnRadius) HandleInboundLeg(SimAircraft aircraft, int posCalcIntvl)
         {
             double crossTrackError = GeoUtil.CalculateCrossTrackErrorM(aircraft.Position.PositionGeoPoint, _routePoint.PointPosition, _trueCourse,
                 out double requiredTrueCourse, out double alongTrackDistance);
@@ -293,12 +326,11 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
             // Check if leg is complete
             if (alongTrackDistance < 0)
             {
-                _holdPhase = HoldPhaseEnum.TURN_OUTBOUND;
-                return HandleOutboundTurn(aircraft, posCalcIntvl);
+                return StartOutboundTurn(aircraft, posCalcIntvl);
             }
             else
             {
-                return (requiredTrueCourse, crossTrackError);
+                return (requiredTrueCourse, crossTrackError, -1);
             }
         }
 
