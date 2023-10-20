@@ -236,7 +236,23 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
 
         public void OnPositionUpdate(int intervalMs)
         {
-            
+            var position = _parentAircraft.Position;
+
+            // Activate next leg if there's no active leg
+            if (ActiveLeg == null)
+            {
+                ActivateNextLeg();
+            }
+
+            // Only sequence if next leg exists and fms is not suspended
+            if (GetFirstLeg() != null && !Suspended)
+            {
+                if (ActiveLeg?.HasLegTerminated(_parentAircraft) ?? true)
+                {
+                    // Activate next leg on termination
+                    ActivateNextLeg();
+                }
+            }
         }
     }
 }

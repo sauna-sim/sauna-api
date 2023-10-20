@@ -176,7 +176,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot
             {
                 foreach (var mode in _armedLatModes)
                 {
-                    if (mode == LateralModeType.LNAV && RollShouldActivateLnav(intervalMs))
+                    if (mode == LateralModeType.LNAV && _parentAircraft.Fms.ShouldActivateLnav(intervalMs))
                     {
                         RemoveArmedLateralMode(mode);
                         _curLatMode = LateralModeType.LNAV;
@@ -202,13 +202,6 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot
             {
                 RollHandleLnav(intervalMs);
             }
-        }
-
-        private bool RollShouldActivateLnav(int intervalMs)
-        {
-            IRouteLeg leg = _parentAircraft.Fms.GetFirstLeg();
-
-            return leg?.ShouldActivateLeg(_parentAircraft, intervalMs) ?? false;
         }
 
         private void RollHandleLnav(int intervalMs)
