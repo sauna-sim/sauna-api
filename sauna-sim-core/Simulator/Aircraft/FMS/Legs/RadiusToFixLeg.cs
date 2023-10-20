@@ -53,6 +53,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
                 TangentialPointB = tangentialPointB;
                 RadiusM = radiusM;
             }
+
         }
 
         private enum RfState
@@ -62,7 +63,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
             TRACK_FROM_RF
         }
 
-        private RfState _legState;
+        private RfState _legState = RfState.TRACK_TO_RF;
 
         public RadiusToFixLeg(FmsPoint startPoint, FmsPoint endPoint, double initialTrueCourse, double finalTrueCourse)
         {
@@ -284,17 +285,28 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
 
         public (double requiredTrueCourse, double crossTrackError, double alongTrackDistance) GetCourseInterceptInfo(SimAircraft aircraft)
         {
-            // TODO: Add states (a->Ta, Tb->b). For now this should work for holds though.
-
             double requiredTrueCourse;
-            double alongTrackDistance;
-            double crossTrackError = GeoUtil.CalculateArcCourseInfo(aircraft.Position.PositionGeoPoint, _turnCircle.Center, _turnCircle.PointARadial, _turnCircle.PointBRadial, _turnCircle.RadiusM, isClockwise(), out requiredTrueCourse, out alongTrackDistance);
+            double alongTrackDistance = 0;
+            double crossTrackError = GeoUtil.CalculateArcCourseInfo(aircraft.Position.PositionGeoPoint, _turnCircle.Center, _turnCircle.PointARadial, _turnCircle.PointBRadial, _turnCircle.RadiusM, isClockwise(), out requiredTrueCourse, out double alongTrackDistanceRFTurn);
 
+            // Depending on how far along the leg we are, we'll add the along track distances of the relevant internal legs.
             switch (_legState)
             {
                 case RfState.TRACK_TO_RF:
-                    (_, _,  double fromRFAlongTrackDistance) _trackFromRFLeg.GetCourseInterceptInfo(aircraft);
+                    (_, _,  double toRFAlongTrackDistance) = _trackToRFLeg.GetCourseInterceptInfo(aircraft);
+                    alongTrackDistance += toRFAlongTrackDistance;
+                    alongTrackDistance += alongTrackDistanceRFTurn;
+                    alongTrackDistance += GeoPoint.DistanceM(_turnCircle.TangentialPointB, EndPoint.Point.PointPosition);
 
+                    break;
+                case RfState.IN_RF:
+                    alongTrackDistance += alongTrackDistanceRFTurn;
+                    alongTrackDistance += GeoPoint.DistanceM(_turnCircle.TangentialPointB, EndPoint.Point.PointPosition);
+                    break;
+                case RfState.TRACK_FROM_RF:
+                    (_, _, double fromRFAlongTrackDistance) = _trackFromRFLeg.GetCourseInterceptInfo(aircraft);
+                    alongTrackDistance += fromRFAlongTrackDistance;
+                    break;
             }
 
             return (requiredTrueCourse, crossTrackError, alongTrackDistance);
