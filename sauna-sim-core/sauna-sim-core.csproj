@@ -15,4 +15,10 @@
     <PackageReference Include="PShivaraman.AviationCalcUtilNet" Version="1.1.3" />
     <PackageReference Include="CaspianMerlin.FsdConnectorNet" Version="0.2.2" />
   </ItemGroup>
+  <ItemGroup>
+    <None Remove="JsonSchemas\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="JsonSchemas\" />
+  </ItemGroup>
 </Project>
