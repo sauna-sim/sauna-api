@@ -78,22 +78,22 @@ namespace SaunaSim.Api.Controllers
 
             return navigraphCreds;
         }
-
+        	
         [HttpGet("hasNavigraphDataLoaded")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public ActionResult<bool> GetHasNavigraphDataLoaded()
+        public ActionResult<NavigraphLoadedResponse> GetHasNavigraphDataLoaded()
         {
-            return Ok(DataHandler.HasNavigraphDataLoaded());
+            return Ok(new NavigraphLoadedResponse() { Loaded = DataHandler.HasNavigraphDataLoaded(), Uuid = DataHandler.GetNavigraphFileUuid()});
         }
 
         [HttpPost("loadDFDNavData")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public ActionResult LoadDFDNavData(LoadFileRequest request)
+        public ActionResult LoadDFDNavData(LoadDfdFileRequest request)
         {
             try
             {
-                DataHandler.LoadNavigraphDataFile(request.FileName);
+                DataHandler.LoadNavigraphDataFile(request.FileName, request.Uuid);
                 return Ok();
             } catch (System.IO.FileNotFoundException ex)
             {

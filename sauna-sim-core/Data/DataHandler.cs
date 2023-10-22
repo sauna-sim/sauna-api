@@ -16,6 +16,7 @@ namespace SaunaSim.Core.Data
         private static object waypointsLock = new object();
 
         private static NavDataInterface _navDataInterface;
+        private static string _uuid;
         private static object _navDataInterfaceLock = new object();
 
         private static List<PublishedHold> publishedHolds = new List<PublishedHold>();
@@ -29,11 +30,20 @@ namespace SaunaSim.Core.Data
             }
         }
 
-        public static void LoadNavigraphDataFile(string fileName)
+        public static string GetNavigraphFileUuid()
+        {
+            lock (_navDataInterfaceLock)
+            {
+                return _uuid;
+            }
+        }
+
+        public static void LoadNavigraphDataFile(string fileName, string uuid)
         {
             lock (_navDataInterfaceLock)
             {
                 _navDataInterface = new NavDataInterface(new DFDSource(fileName));
+                _uuid = uuid;
             }
         }
 
