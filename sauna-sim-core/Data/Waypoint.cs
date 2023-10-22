@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace SaunaSim.Core.Data
 {
-    public class Waypoint
+    /*public class Waypoint
     {
         private string _identifier;
         private GeoPoint _pointPosition;
@@ -43,5 +43,5 @@ namespace SaunaSim.Core.Data
         {
             return _pointPosition.GetHashCode();
         }
-    }
+    }*/
 }

@@ -17,6 +17,7 @@ using System.Threading.Tasks;
 using FsdConnectorNet;
 using SaunaSim.Core.Data.Loaders;
 using SaunaSim.Api.Utilities;
+using NavData_Interface.Objects.Fix;
 
 namespace SaunaSim.Api.Controllers
 {
@@ -59,93 +60,48 @@ namespace SaunaSim.Api.Controllers
             return Ok(new AppSettingsRequestResponse(AppSettingsManager.Settings));
         }
 
-        [HttpPost("loadMagneticFile")]
+        [HttpGet("navigraphApiCreds")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public ActionResult<string> LoadMagneticFile()
+        public ActionResult<NavigraphApiCreds> GetNavigraphApiCreds()
         {
-            try
+            string error = "";
+            var navigraphCreds = PrivateInfoLoader.GetNavigraphCreds((string s) =>
             {
-                MagneticUtil.LoadData();
-            } catch (Exception)
+                error = s;
+            });
+
+            if (navigraphCreds == null)
             {
-                return BadRequest("There was an error loading the WMM.COF file. Ensure that WMM.COF is placed in the 'magnetic' folder.");
+                return BadRequest(error);
             }
-            return Ok("Magnetic File Loaded");
+
+            return navigraphCreds;
+        }
+        	
+        [HttpGet("hasNavigraphDataLoaded")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        public ActionResult<NavigraphLoadedResponse> GetHasNavigraphDataLoaded()
+        {
+            return Ok(new NavigraphLoadedResponse() { Loaded = DataHandler.HasNavigraphDataLoaded(), Uuid = DataHandler.GetNavigraphFileUuid()});
         }
 
-        [HttpPost("loadSectorFile")]
+        [HttpPost("loadDFDNavData")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public ActionResult LoadSectorFile(LoadFileRequest request)
+        public ActionResult LoadDFDNavData(LoadDfdFileRequest request)
         {
-            // Read file
-            string filename = request.FileName;
             try
             {
-                string[] filelines = System.IO.File.ReadAllLines(filename);
-
-                string sectionName = "";
-
-                // Loop through sector file
-                foreach (string line in filelines)
-                {
-                    // Ignore comments
-                    if (line.Trim().StartsWith(";"))
-                    {
-                        continue;
-                    }
-
-                    if (line.StartsWith("["))
-                    {
-                        // Get section name
-                        sectionName = line.Replace("[", "").Replace("]", "").Trim();
-                    } else
-                    {
-                        NavaidType type = NavaidType.VOR;
-                        string[] items;
-                        switch (sectionName)
-                        {
-                            case "VOR":
-                                type = NavaidType.VOR;
-                                goto case "AIRPORT";
-                            case "NDB":
-                                type = NavaidType.NDB;
-                                goto case "AIRPORT";
-                            case "AIRPORT":
-                                type = NavaidType.AIRPORT;
-
-                                items = line.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-
-                                if (items.Length >= 4)
-                                {
-                                    decimal freq = 0;
-                                    try
-                                    {
-                                        freq = Convert.ToDecimal(items[1]);
-                                    } catch (Exception) { }
-
-                                    GeoUtil.ConvertVrcToDecimalDegs(items[2], items[3], out double lat, out double lon);
-                                    DataHandler.AddWaypoint(new WaypointNavaid(items[0], lat, lon, "", freq, type));
-                                }
-                                break;
-                            case "FIXES":
-                                items = line.Split(' ');
-
-                                if (items.Length >= 3)
-                                {
-                                    GeoUtil.ConvertVrcToDecimalDegs(items[1], items[2], out double lat, out double lon);
-                                    DataHandler.AddWaypoint(new Waypoint(items[0], lat, lon));
-                                }
-                                break;
-                        }
-                    }
-                }
+                DataHandler.LoadNavigraphDataFile(request.FileName, request.Uuid);
+                return Ok();
+            } catch (System.IO.FileNotFoundException ex)
+            {
+                return BadRequest("The file could not be found.");
             } catch (Exception ex)
             {
-                return BadRequest(ex.Message);
+                return BadRequest("The file is not a vaid NavData file.");
             }
-            return Ok();
         }
 
         [HttpPost("loadEuroscopeScenario")]
@@ -201,7 +157,7 @@ namespace SaunaSim.Api.Controllers
                         EuroScopeLoader.ReadVatsimPosFlag(Convert.ToInt32(items[8]), out double hdg, out double bank, out double pitch, out bool onGround);
                         //SimAircraft(string callsign, string networkId, string password,        string fullname, string hostname, ushort port, bool vatsim,   ProtocolRevision protocol,      double lat, double lon, double alt, double hdg_mag, int delayMs = 0)
                         lastPilot = new SimAircraft(callsign, request.Cid, request.Password, "Simulator Pilot", request.Server, (ushort)request.Port, request.Protocol,
-                            ClientInfoLoader.GetClientInfo((string msg) => { _logger.LogWarning($"{callsign}: {msg}"); }),
+                            PrivateInfoLoader.GetClientInfo((string msg) => { _logger.LogWarning($"{callsign}: {msg}"); }),
                             lat, lon, Convert.ToDouble(items[6]), hdg)
                         {
                             LogInfo = (string msg) =>
@@ -308,7 +264,7 @@ namespace SaunaSim.Api.Controllers
                                         }
                                     }
 
-                                    Waypoint nextWp = DataHandler.GetClosestWaypointByIdentifier(waypoints[i], lastPilot.Position.Latitude, lastPilot.Position.Longitude);
+                                    Fix nextWp = DataHandler.GetClosestWaypointByIdentifier(waypoints[i], lastPilot.Position.Latitude, lastPilot.Position.Longitude);
 
                                     if (nextWp != null)
                                     {
@@ -367,7 +323,7 @@ namespace SaunaSim.Api.Controllers
                                 course = MagneticUtil.ConvertTrueToMagneticTile(GeoPoint.InitialBearing(threshold, otherThreshold), threshold);
                             }
 
-                            DataHandler.AddWaypoint(new Localizer(wpId, threshold.Lat, threshold.Lon, wpId, 0, course));
+                            DataHandler.AddLocalizer(new Localizer(wpId, threshold.Lat, threshold.Lon, wpId, 0, course));
                         } catch (Exception)
                         {
                             Console.WriteLine("Well that didn't work did it.");

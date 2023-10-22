@@ -1,4 +1,7 @@
 ﻿using AviationCalcUtilNet.GeoTools;
+using NavData_Interface;
+using NavData_Interface.DataSources;
+using NavData_Interface.Objects.Fix;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,10 +12,40 @@ namespace SaunaSim.Core.Data
 {
     public static class DataHandler
     {
-        private static List<Waypoint> waypoints = new List<Waypoint>();
+        private static List<Localizer> waypoints = new List<Localizer>();
         private static object waypointsLock = new object();
+
+        private static NavDataInterface _navDataInterface;
+        private static string _uuid;
+        private static object _navDataInterfaceLock = new object();
+
         private static List<PublishedHold> publishedHolds = new List<PublishedHold>();
         private static object publishedHoldsLock = new object();
+
+        public static bool HasNavigraphDataLoaded()
+        {
+            lock (_navDataInterfaceLock)
+            {
+                return _navDataInterface != null;
+            }
+        }
+
+        public static string GetNavigraphFileUuid()
+        {
+            lock (_navDataInterfaceLock)
+            {
+                return _uuid;
+            }
+        }
+
+        public static void LoadNavigraphDataFile(string fileName, string uuid)
+        {
+            lock (_navDataInterfaceLock)
+            {
+                _navDataInterface = new NavDataInterface(new DFDSource(fileName));
+                _uuid = uuid;
+            }
+        }
 
         public static void AddPublishedHold(PublishedHold hold)
         {
@@ -38,34 +71,33 @@ namespace SaunaSim.Core.Data
             return null;
         }
 
-        public static void AddWaypoint(Waypoint wp)
+        public static void AddLocalizer(Localizer wp)
         {
-            lock (waypointsLock)
+            lock(waypointsLock)
             {
                 waypoints.Add(wp);
             }
         }
 
-        public static Waypoint GetClosestWaypointByIdentifier(string wpId, double lat, double lon)
+        public static Localizer GetLocalizer(string localizerFakeName)
         {
-            Waypoint foundWp = null;
-            double minDistance = double.MaxValue;
-
-            lock (waypointsLock)
+            foreach(var wp in waypoints)
             {
-                foreach (Waypoint wp in waypoints)
+                if (wp.Name == localizerFakeName)
                 {
-                    double dist = GeoPoint.FlatDistanceNMi(new GeoPoint(lat, lon), new GeoPoint(wp.Latitude, wp.Longitude));
-
-                    if (wp.Identifier == wpId.ToUpper() && (foundWp == null || dist < minDistance))
-                    {
-                        foundWp = wp;
-                        minDistance = dist;
-                    }
+                    return wp;
                 }
             }
 
-            return foundWp;
+            return null;
+        }
+
+        public static Fix GetClosestWaypointByIdentifier(string wpId, double lat, double lon)
+        {
+            lock (_navDataInterfaceLock)
+            {
+                return _navDataInterface.GetClosestFixByIdentifier(new GeoPoint(lat, lon), wpId);
+            }
         }
     }
 }

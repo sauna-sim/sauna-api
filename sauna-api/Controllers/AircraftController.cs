@@ -13,6 +13,7 @@ using SaunaSim.Core.Simulator.Aircraft.Control.FMS;
 using SaunaSim.Core.Simulator.Aircraft;
 using System.Runtime.CompilerServices;
 using SaunaSim.Api.Utilities;
+using NavData_Interface.Objects.Fix;
 
 namespace SaunaSim.Api.Controllers
 {
@@ -36,7 +37,7 @@ namespace SaunaSim.Api.Controllers
             try
             {
                 SimAircraft pilot = new SimAircraft(request.Callsign, request.Cid, request.Password, request.FullName, request.Server, (ushort)request.Port, request.Protocol,
-                    ClientInfoLoader.GetClientInfo((string msg) => { _logger.LogWarning($"{request.Callsign}: {msg}"); }),
+                    PrivateInfoLoader.GetClientInfo((string msg) => { _logger.LogWarning($"{request.Callsign}: {msg}"); }),
                     request.Position.Latitude, request.Position.Longitude, request.Position.IndicatedAltitude, request.Position.MagneticHeading)
                 {
                     LogInfo = (string msg) => {
@@ -85,7 +86,7 @@ namespace SaunaSim.Api.Controllers
                         }
                     } else
                     {
-                        Waypoint nextWp = DataHandler.GetClosestWaypointByIdentifier(waypoint.Identifier, pilot.Position.Latitude, pilot.Position.Longitude);
+                        Fix nextWp = DataHandler.GetClosestWaypointByIdentifier(waypoint.Identifier, pilot.Position.Latitude, pilot.Position.Longitude);
 
                         if (nextWp != null)
                         {
