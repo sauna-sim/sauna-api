@@ -37,7 +37,7 @@ namespace SaunaSim.Core.Simulator.Commands
 
             if (isPublishedHold)
             {
-                PublishedHold pubHold = DataHandler.GetPublishedHold(wp.Identifier);
+                PublishedHold pubHold = DataHandler.GetPublishedHold(wp.Identifier, wp.Location.Lat, wp.Location.Lon);
 
                 if (pubHold == null)
                 {
@@ -167,7 +167,7 @@ namespace SaunaSim.Core.Simulator.Commands
 
         public bool TryGetPublishedHold(Fix wp, ref List<string> args)
         {
-            PublishedHold pubHold = DataHandler.GetPublishedHold(wp.Identifier);
+            PublishedHold pubHold = DataHandler.GetPublishedHold(wp.Identifier, wp.Location.Lat, wp.Location.Lon);
 
             if (pubHold == null)
             {

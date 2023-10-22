@@ -75,7 +75,7 @@ namespace SaunaSim.Api.Controllers
                 {
                     if (waypoint.Identifier.ToLower() == "hold" && lastPoint != null)
                     {
-                        PublishedHold pubHold = DataHandler.GetPublishedHold(lastPoint.Point.PointName);
+                        PublishedHold pubHold = DataHandler.GetPublishedHold(lastPoint.Point.PointName, lastPoint.Point.PointPosition.Lat, lastPoint.Point.PointPosition.Lon);
 
                         if (pubHold != null)
                         {

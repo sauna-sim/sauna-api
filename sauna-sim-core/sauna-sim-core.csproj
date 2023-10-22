@@ -18,4 +18,10 @@
   <ItemGroup>
     <ProjectReference Include="..\NavData-Interface\NavData-Interface\NavData-Interface.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <None Remove="Data\NavData\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Data\NavData\" />
+  </ItemGroup>
 </Project>

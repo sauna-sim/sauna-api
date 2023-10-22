@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using NavData_Interface.Objects;
+using NavData_Interface.Objects.Fix;
 using SaunaSim.Core.Data;
 using SaunaSim.Core.Simulator.Aircraft.Control.FMS;
 
@@ -18,7 +20,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Control.Instructions.Lateral
         public IlsApproachInstruction(Localizer loc)
         {
             _loc = loc;
-            _instr = new InterceptCourseInstruction(new RouteWaypoint(_loc), _loc.Course);
+            _instr = new InterceptCourseInstruction(new RouteWaypoint(new Waypoint(_loc.Runway_identifier, _loc.Loc_location, "", "")), _loc.Loc_bearing);
         }
 
         public LateralControlMode Type => LateralControlMode.APPROACH;
@@ -39,7 +41,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Control.Instructions.Lateral
 
         public override string ToString()
         {
-            return $"APP {_loc.Name}";
+            return $"APP {_loc.Runway_identifier}";
         }
     }
 }

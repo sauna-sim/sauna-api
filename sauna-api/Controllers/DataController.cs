@@ -18,6 +18,7 @@ using FsdConnectorNet;
 using SaunaSim.Core.Data.Loaders;
 using SaunaSim.Api.Utilities;
 using NavData_Interface.Objects.Fix;
+using NavData_Interface.Objects;
 
 namespace SaunaSim.Api.Controllers
 {
@@ -116,6 +117,9 @@ namespace SaunaSim.Api.Controllers
                 List<SimAircraft> pilots = new List<SimAircraft>();
 
                 SimAircraft lastPilot = null;
+
+                double refLat = 0;
+                double refLon = 0;
 
                 foreach (string line in filelines)
                 {
@@ -229,7 +233,7 @@ namespace SaunaSim.Api.Controllers
                             {
                                 if (waypoints[i].ToLower() == "hold" && lastPoint != null)
                                 {
-                                    PublishedHold pubHold = DataHandler.GetPublishedHold(lastPoint.Point.PointName);
+                                    PublishedHold pubHold = DataHandler.GetPublishedHold(lastPoint.Point.PointName, lastPoint.Point.PointPosition.Lat, lastPoint.Point.PointPosition.Lon);
 
                                     if (pubHold != null)
                                     {
@@ -308,11 +312,15 @@ namespace SaunaSim.Api.Controllers
                     } else if (line.StartsWith("ILS"))
                     {
                         string[] items = line.Split(':');
-                        string wpId = items[0];
+                        string wpId = items[0].Replace("ILS", "");
 
                         try
                         {
                             GeoPoint threshold = new GeoPoint(Convert.ToDouble(items[1]), Convert.ToDouble(items[2]));
+
+                            refLat = threshold.Lat;
+                            refLon = threshold.Lon;
+
                             double course = 0;
                             if (items.Length == 4)
                             {
@@ -323,7 +331,7 @@ namespace SaunaSim.Api.Controllers
                                 course = MagneticUtil.ConvertTrueToMagneticTile(GeoPoint.InitialBearing(threshold, otherThreshold), threshold);
                             }
 
-                            DataHandler.AddLocalizer(new Localizer(wpId, threshold.Lat, threshold.Lon, wpId, 0, course));
+                            DataHandler.AddLocalizer(new Localizer("", "", "_fake_airport", wpId, wpId, threshold, 0, course, 0, IlsCategory.CATI, 0));
                         } catch (Exception)
                         {
                             Console.WriteLine("Well that didn't work did it.");
@@ -337,8 +345,8 @@ namespace SaunaSim.Api.Controllers
                             string wpId = items[1];
                             double inboundCourse = Convert.ToDouble(items[2]);
                             HoldTurnDirectionEnum turnDirection = (HoldTurnDirectionEnum)Convert.ToInt32(items[3]);
-
-                            DataHandler.AddPublishedHold(new PublishedHold(wpId, inboundCourse, turnDirection));
+                            Fix fix = DataHandler.GetClosestWaypointByIdentifier(wpId, refLat, refLon);
+                            DataHandler.AddPublishedHold(new PublishedHold(fix, inboundCourse, turnDirection));
                         } catch (Exception)
                         {
                             Console.WriteLine("Well that didn't work did it.");
