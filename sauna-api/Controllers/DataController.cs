@@ -87,6 +87,25 @@ namespace SaunaSim.Api.Controllers
             return Ok(new NavigraphLoadedResponse() { Loaded = DataHandler.HasNavigraphDataLoaded(), Uuid = DataHandler.GetNavigraphFileUuid()});
         }
 
+        [HttpPost("loadSectorFile")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public ActionResult LoadSectorFile(LoadFileRequest request)
+        {
+            try
+            {
+                DataHandler.LoadSectorFile(request.FileName);
+                return Ok();
+            } catch (System.IO.FileNotFoundException)
+            {
+                return BadRequest("The file could not be found.");
+            }
+            catch (Exception)
+            {
+                return BadRequest("The file is not a vaid Sector file.");
+            }
+        }
+
         [HttpPost("loadDFDNavData")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
