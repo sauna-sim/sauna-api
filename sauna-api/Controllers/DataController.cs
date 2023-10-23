@@ -144,8 +144,8 @@ namespace SaunaSim.Api.Controllers
 
                 SimAircraft lastPilot = null;
 
-                double refLat = 0;
-                double refLon = 0;
+                double refLat = 190;
+                double refLon = 190;
 
                 foreach (string line in filelines)
                 {
@@ -344,8 +344,11 @@ namespace SaunaSim.Api.Controllers
                         {
                             GeoPoint threshold = new GeoPoint(Convert.ToDouble(items[1]), Convert.ToDouble(items[2]));
 
-                            refLat = threshold.Lat;
-                            refLon = threshold.Lon;
+                            if (refLat > 180 || refLon > 180)
+                            {
+                                refLat = threshold.Lat;
+                                refLon = threshold.Lon;
+                            }
 
                             double course = 0;
                             if (items.Length == 4)
