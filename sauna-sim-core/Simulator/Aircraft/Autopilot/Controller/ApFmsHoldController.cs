@@ -26,7 +26,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
     }
 
     public class ApFmsHoldController
-	{
+    {
         private HoldPhaseEnum _holdPhase;
         private HoldEntryEnum _holdEntry;
         private IRoutePoint _routePoint;
@@ -35,13 +35,15 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
         private HoldTurnDirectionEnum _turnDir;
         private HoldLegLengthTypeEnum _legLengthType;
         private double _legLength;
-        private double _r;
-        private double _teardropDistance;
-        private double _outCourse = -1;
+
         private IRoutePoint _outStartPoint = null;
+        private IRoutePoint _outEndPoint = null;
+        private IRoutePoint _inStartPoint = null;
 
         private RadiusToFixLeg _outboundTurnLeg = null;
+        private TrackToFixLeg _outboundLeg = null;
         private RadiusToFixLeg _inboundTurnLeg = null;
+        private TrackToFixLeg _inboundLeg = null;
 
         public double AlongTrack_M { get; private set; }
 
@@ -124,86 +126,22 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
 
             if (_holdEntry == HoldEntryEnum.DIRECT)
             {
+                CalculateDirectEntry(aircraft);
                 _holdPhase = HoldPhaseEnum.TURN_OUTBOUND;
-                CalculateHold(aircraft);
                 return HandleOutboundTurn(aircraft, posCalcIntvl);
             }
             else if (_holdEntry == HoldEntryEnum.TEARDROP)
             {
-                if (_outCourse < 0)
-                {
-                    // Calculate required radius of turn
-                    double turnAmt = GetTurnAmount();
-                    double outCourse = GeoUtil.NormalizeHeading(_trueCourse + turnAmt);
-
-                    // Calculate teardrop bearing and distance
-                    GeoPoint startPoint = _routePoint.PointPosition;
-                    double outDist = GetOutboundDistance(aircraft.Position);
-                    GeoPoint outPoint = new GeoPoint(GetOutboundStartPoint(aircraft.Position).PointPosition);
-
-                    outPoint.MoveByNMi(outCourse, outDist);
-                    double tdBear = GeoPoint.InitialBearing(startPoint, outPoint);
-
-                    outPoint.Alt = aircraft.Position.TrueAltitude;
-                    _teardropDistance = GeoPoint.DistanceNMi(new GeoPoint(startPoint.Lat, startPoint.Lon, aircraft.Position.TrueAltitude), outPoint);
-
-                    _outStartPoint = _routePoint;
-                    _outCourse = tdBear;
-                }
-
-                // Check if we should turn inbound
-                double crossTrackError = GeoUtil.CalculateCrossTrackErrorM(aircraft.Position.PositionGeoPoint, _outStartPoint.PointPosition, _outCourse,
-                out double requiredTrueCourse, out double alongTrackDistance);
-                if (MathUtil.ConvertMetersToNauticalMiles(alongTrackDistance) <= -_teardropDistance)
-                {
-                    
-
-
-                    return HandleInboundTurn(aircraft, posCalcIntvl);
-                }
-                else
-                {
-                    return (requiredTrueCourse, crossTrackError, 0);
-                }
+                CalculateTeardropEntry(aircraft);
+                _holdPhase = HoldPhaseEnum.OUTBOUND;
+                return HandleOutboundLeg(aircraft, posCalcIntvl);
             }
             else
             {
-                if (_outCourse < 0)
-                {
-                    _outCourse = GeoUtil.NormalizeHeading(_trueCourse + 180);
-                    _outStartPoint = _routePoint;
-                }
-
-                // Check if we should turn inbound
-                double crossTrackError = GeoUtil.CalculateCrossTrackErrorM(aircraft.Position.PositionGeoPoint, _outStartPoint.PointPosition, _outCourse,
-                out double requiredTrueCourse, out double alongTrackDistance);
-                if (MathUtil.ConvertMetersToNauticalMiles(alongTrackDistance) <= -GetOutboundDistance(aircraft.Position))
-                {
-                    _holdPhase = HoldPhaseEnum.TURN_INBOUND;
-                    _outCourse = -1;
-                    _outStartPoint = null;
-                    double turnAmt = -GetTurnAmount();
-                    TurnDirection dir = turnAmt >= 0 ? TurnDirection.RIGHT : TurnDirection.LEFT;
-                    return HandleInboundTurn(aircraft, posCalcIntvl);
-                }
-                else
-                {
-                    return (requiredTrueCourse, crossTrackError, 0);
-                }
+                CalculateParallelEntry(aircraft);
+                _holdPhase = HoldPhaseEnum.OUTBOUND;
+                return HandleOutboundLeg(aircraft, posCalcIntvl);
             }
-        }
-
-        private IRoutePoint GetOutboundStartPoint(AircraftPosition position)
-        {
-            // Calculate required radius of turn
-            double turnAmt = GetTurnAmount();
-            double outCourse = GeoUtil.NormalizeHeading(_trueCourse + turnAmt);
-            double outR = GeoUtil.CalculateConstantRadiusTurn(_trueCourse, turnAmt, position.WindDirection, position.WindSpeed, position.TrueAirSpeed);
-            double inR = GeoUtil.CalculateConstantRadiusTurn(outCourse, turnAmt, position.WindDirection, position.WindSpeed, position.TrueAirSpeed);
-
-            _r = Math.Max(outR, inR);
-            double bearingToOutStart = GeoUtil.NormalizeHeading(_trueCourse + (turnAmt / 2));
-            return new RoutePointPbd(_routePoint.PointPosition, bearingToOutStart, _r * 2, _routePoint.PointName);
         }
 
         private double GetTurnAmount()
@@ -211,26 +149,167 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
             return _turnDir == HoldTurnDirectionEnum.RIGHT ? 180 : -180;
         }
 
-        private void CalculateHold(SimAircraft aircraft)
+        private double CalculateMinRadiusOfTurn(double turnAmt, double inboundCourse, double outboundCourse, double windDir, double windSpd, double tas)
         {
-            // Prepare outbound leg
-            double turnAmt = GetTurnAmount();
-            _outCourse = GeoUtil.NormalizeHeading(_trueCourse + turnAmt);
-            _outStartPoint = GetOutboundStartPoint(aircraft.Position);
-
-            // Prepare RF turn to outbound leg
-            _outboundTurnLeg = new RadiusToFixLeg(new FmsPoint(new RouteWaypoint(_routePoint.PointPosition), RoutePointTypeEnum.FLY_OVER), new FmsPoint(new RouteWaypoint(_outStartPoint.PointPosition), RoutePointTypeEnum.FLY_OVER), TrueCourse, _outCourse);
+            double outR = GeoUtil.CalculateConstantRadiusTurn(inboundCourse, turnAmt, windDir, windSpd, tas);
+            double inR = GeoUtil.CalculateConstantRadiusTurn(outboundCourse, turnAmt, windDir, windSpd, tas);
+            return Math.Max(outR, inR);
         }
 
-        private (double requiredTrueCourse, double crossTrackError, double turnRadius) HandleOutboundTurn(SimAircraft aircraft, int posCalcIntvl)
+        private void CalculateParallelEntry(SimAircraft aircraft)
         {
-            if (_outboundTurnLeg.HasLegTerminated(aircraft))
+            // Find courses and leg lengths
+            double turnAmt = GetTurnAmount();
+            double outboundCourse = GeoUtil.NormalizeHeading(_trueCourse + turnAmt);
+            double outboundLegLength = GetOutboundDistance(aircraft.Position);
+            double aircraftTurnAmt = GeoUtil.CalculateTurnAmount(aircraft.Position.Track_True, outboundCourse);
+            (double chordHdg, double chordDist) = GeoUtil.CalculateChordHeadingAndDistance(
+                aircraft.Position.Track_True,
+                Math.Abs(aircraftTurnAmt),
+                GeoUtil.CalculateConstantRadiusTurn(aircraft.Position.Track_True, aircraftTurnAmt, aircraft.Position.WindDirection, aircraft.Position.WindSpeed, aircraft.Position.TrueAirSpeed),
+                aircraftTurnAmt > 0
+                );
+
+            // Calculate required radius of turn
+            double r = CalculateMinRadiusOfTurn(turnAmt, _trueCourse, outboundCourse, aircraft.Position.WindDirection, aircraft.Position.WindSpeed, aircraft.Position.TrueAirSpeed);
+
+            // Find Points
+            _outStartPoint = new RoutePointPbd(_routePoint.PointPosition, chordHdg, chordDist, $"{_routePoint.PointName}H_OS");
+            GeoPoint tempOsPoint = new GeoPoint(_routePoint.PointPosition);
+            tempOsPoint.MoveByNMi(outboundCourse, outboundLegLength);
+            double finOsBearing = GeoPoint.FinalBearing(_routePoint.PointPosition, tempOsPoint);
+            GeoPoint intersection = GeoPoint.Intersection(tempOsPoint, GeoUtil.NormalizeHeading(finOsBearing + (turnAmt / 2)), _outStartPoint.PointPosition, outboundCourse);
+
+            if (intersection == null)
             {
-                return HandleOutboundLeg(aircraft, posCalcIntvl);
-            } else
-            {
-                return _outboundTurnLeg.UpdateForLnav(aircraft, posCalcIntvl);
+                intersection = tempOsPoint;
             }
+
+            _outEndPoint = new RouteWaypoint(intersection);
+            double oeCourse = GeoPoint.FinalBearing(_outStartPoint.PointPosition, _outEndPoint.PointPosition);
+            _inStartPoint = new RoutePointPbd(_outEndPoint.PointPosition, GeoUtil.NormalizeHeading(oeCourse - (turnAmt / 2)), r * 2, $"{_routePoint.PointName}H_IS1");
+
+            // Create FmsPoints
+            FmsPoint iePoint = new FmsPoint(_routePoint, RoutePointTypeEnum.FLY_OVER);
+            FmsPoint osPoint = new FmsPoint(_outStartPoint, RoutePointTypeEnum.FLY_OVER);
+            FmsPoint oePoint = new FmsPoint(_outEndPoint, RoutePointTypeEnum.FLY_OVER);
+            FmsPoint isPoint = new FmsPoint(_inStartPoint, RoutePointTypeEnum.FLY_OVER);
+            FmsPoint is2Point = new FmsPoint(new RouteWaypoint(tempOsPoint), RoutePointTypeEnum.FLY_BY);
+
+            // Prepare legs
+            _outboundLeg = new TrackToFixLeg(osPoint, oePoint);
+            _inboundTurnLeg = new RadiusToFixLeg(oePoint, isPoint, oeCourse, GeoPoint.InitialBearing(tempOsPoint, _routePoint.PointPosition));
+            _inboundLeg = new TrackToFixLeg(is2Point, iePoint);
+        }
+
+        private void CalculateTeardropEntry(SimAircraft aircraft)
+        {
+            // Find courses and leg lengths
+            double turnAmt = GetTurnAmount();
+            double outboundCourse = GeoUtil.NormalizeHeading(_trueCourse + turnAmt);
+            double outboundLegLength = GetOutboundDistance(aircraft.Position);
+
+            // Calculate required radius of turn
+            double r = CalculateMinRadiusOfTurn(turnAmt, _trueCourse, outboundCourse, aircraft.Position.WindDirection, aircraft.Position.WindSpeed, aircraft.Position.TrueAirSpeed);
+
+            // Find Points
+            _inStartPoint = new RoutePointPbd(_routePoint.PointPosition, outboundCourse, outboundLegLength, $"{_routePoint.PointName}H_IS");
+            double bearingToOutStart = GeoUtil.NormalizeHeading(GeoPoint.FinalBearing(_routePoint.PointPosition, _inStartPoint.PointPosition) + (turnAmt / 2));
+            _outEndPoint = new RoutePointPbd(_inStartPoint.PointPosition, bearingToOutStart, r * 2, $"{_routePoint.PointName}H_OE");
+
+            double dirFinalCourse = GeoUtil.CalculateDirectBearingAfterTurn(
+                    aircraft.Position.PositionGeoPoint,
+                    _outEndPoint.PointPosition,
+                    GeoUtil.CalculateRadiusOfTurn(GeoUtil.CalculateMaxBankAngle(aircraft.Position.GroundSpeed, 25, 3), aircraft.Position.GroundSpeed),
+                    aircraft.Position.Track_True);
+
+            if (dirFinalCourse < 0)
+            {
+                dirFinalCourse = GeoPoint.FinalBearing(aircraft.Position.PositionGeoPoint, _outEndPoint.PointPosition);
+            }
+
+            _outStartPoint = new RoutePointPbd(_outEndPoint.PointPosition, GeoUtil.NormalizeHeading(dirFinalCourse + 180), GeoPoint.FlatDistanceNMi(aircraft.Position.PositionGeoPoint, _outEndPoint.PointPosition), $"{_routePoint.PointName}H_OS");
+
+            // Create FmsPoints
+            FmsPoint iePoint = new FmsPoint(_routePoint, RoutePointTypeEnum.FLY_OVER);
+            FmsPoint osPoint = new FmsPoint(_outStartPoint, RoutePointTypeEnum.FLY_OVER);
+            FmsPoint oePoint = new FmsPoint(_outEndPoint, RoutePointTypeEnum.FLY_OVER);
+            FmsPoint isPoint = new FmsPoint(_inStartPoint, RoutePointTypeEnum.FLY_OVER);
+
+            // Find other courses
+            double isCourse = GeoPoint.InitialBearing(_inStartPoint.PointPosition, _routePoint.PointPosition);
+
+            // Prepare legs
+            _outboundLeg = new TrackToFixLeg(osPoint, oePoint);
+            _inboundTurnLeg = new RadiusToFixLeg(oePoint, isPoint, dirFinalCourse, isCourse);
+            _inboundLeg = new TrackToFixLeg(isPoint, iePoint);
+        }
+
+        private void CalculateDirectEntry(SimAircraft aircraft)
+        {
+            // Find courses and leg lengths
+            double turnAmt = GetTurnAmount();
+            double outboundCourse = GeoUtil.NormalizeHeading(_trueCourse + turnAmt);
+            double outboundLegLength = GetOutboundDistance(aircraft.Position);
+
+            // Calculate required radius of turn
+            double r = CalculateMinRadiusOfTurn(turnAmt, _trueCourse, outboundCourse, aircraft.Position.WindDirection, aircraft.Position.WindSpeed, aircraft.Position.TrueAirSpeed);
+
+            // Find Points
+            _inStartPoint = new RoutePointPbd(_routePoint.PointPosition, outboundCourse, outboundLegLength, $"{_routePoint.PointName}H_IS");
+            double bearingToOutStart = GeoUtil.NormalizeHeading(GeoPoint.FinalBearing(_routePoint.PointPosition, _inStartPoint.PointPosition) + (turnAmt / 2));
+            _outEndPoint = new RoutePointPbd(_inStartPoint.PointPosition, bearingToOutStart, r * 2, $"{_routePoint.PointName}H_OE");
+            _outStartPoint = new RoutePointPbd(_outEndPoint.PointPosition, GeoUtil.NormalizeHeading(bearingToOutStart - (turnAmt / 2)), MathUtil.ConvertMetersToNauticalMiles(10), $"{_routePoint.PointName}H_OS");
+
+            // Find other courses
+            double oeCourse = GeoPoint.FinalBearing(_outStartPoint.PointPosition, _outEndPoint.PointPosition);
+            double osCourse = GeoPoint.InitialBearing(_outStartPoint.PointPosition, _outEndPoint.PointPosition);
+            double isCourse = GeoPoint.InitialBearing(_inStartPoint.PointPosition, _routePoint.PointPosition);
+
+            // Create FmsPoints
+            FmsPoint iePoint = new FmsPoint(_routePoint, RoutePointTypeEnum.FLY_OVER);
+            FmsPoint osPoint = new FmsPoint(_outStartPoint, RoutePointTypeEnum.FLY_OVER);
+            FmsPoint oePoint = new FmsPoint(_outEndPoint, RoutePointTypeEnum.FLY_OVER);
+            FmsPoint isPoint = new FmsPoint(_inStartPoint, RoutePointTypeEnum.FLY_OVER);
+
+            // Prepare legs
+            _outboundTurnLeg = new RadiusToFixLeg(iePoint, osPoint, aircraft.Position.Track_True, osCourse);
+            _outboundLeg = new TrackToFixLeg(osPoint, oePoint);
+            _inboundTurnLeg = new RadiusToFixLeg(oePoint, isPoint, oeCourse, isCourse);
+            _inboundLeg = new TrackToFixLeg(isPoint, iePoint);
+        }
+
+        private void CalculateHold(SimAircraft aircraft)
+        {
+            // Find Courses and leg lengths
+            double turnAmt = GetTurnAmount();
+            double outboundCourse = GeoUtil.NormalizeHeading(_trueCourse + turnAmt);
+            double outboundLegLength = GetOutboundDistance(aircraft.Position);
+
+            // Calculate required radius of turn
+            double r = CalculateMinRadiusOfTurn(turnAmt, _trueCourse, outboundCourse, aircraft.Position.WindDirection, aircraft.Position.WindSpeed, aircraft.Position.TrueAirSpeed);
+            double bearingToOutStart = GeoUtil.NormalizeHeading(_trueCourse + (turnAmt / 2));
+
+            // Find Points
+            _outStartPoint = new RoutePointPbd(_routePoint.PointPosition, bearingToOutStart, r * 2, $"{_routePoint.PointName}H_OS");
+            _outEndPoint = new RoutePointPbd(_outStartPoint.PointPosition, outboundCourse, outboundLegLength, $"{_routePoint.PointName}H_OE");
+            _inStartPoint = new RoutePointPbd(_routePoint.PointPosition, outboundCourse, outboundLegLength, $"{_routePoint.PointName}H_IS");
+
+            // Find other courses
+            double oeCourse = GeoPoint.FinalBearing(_outStartPoint.PointPosition, _outEndPoint.PointPosition);
+            double isCourse = GeoPoint.InitialBearing(_inStartPoint.PointPosition, _routePoint.PointPosition);
+
+            // Create FmsPoints
+            FmsPoint iePoint = new FmsPoint(_routePoint, RoutePointTypeEnum.FLY_OVER);
+            FmsPoint osPoint = new FmsPoint(_outStartPoint, RoutePointTypeEnum.FLY_OVER);
+            FmsPoint oePoint = new FmsPoint(_outEndPoint, RoutePointTypeEnum.FLY_OVER);
+            FmsPoint isPoint = new FmsPoint(_inStartPoint, RoutePointTypeEnum.FLY_OVER);
+
+            // Prepare legs
+            _outboundTurnLeg = new RadiusToFixLeg(iePoint, osPoint, TrueCourse, outboundCourse);
+            _outboundLeg = new TrackToFixLeg(osPoint, oePoint);
+            _inboundTurnLeg = new RadiusToFixLeg(oePoint, isPoint, oeCourse, isCourse);
+            _inboundLeg = new TrackToFixLeg(isPoint, iePoint);
         }
 
         private double GetOutboundDistance(AircraftPosition position)
@@ -258,47 +337,30 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
                 }
             }
 
-            // TODO: This needs to be changed (store result, not calculate it every time)
-
             double inbdGs = GeoUtil.HeadwindComponent(position.WindSpeed, position.WindDirection, _trueCourse) + position.TrueAirSpeed;
             return GeoUtil.CalculateDistanceTravelledNMi(inbdGs, legLengthMs);
         }
 
-        private (double requiredTrueCourse, double crossTrackError, double turnRadius) HandleOutboundLeg(SimAircraft aircraft, int posCalcIntvl)
+        private (double requiredTrueCourse, double crossTrackError, double turnRadius) HandleOutboundTurn(SimAircraft aircraft, int posCalcIntvl)
         {
-            double crossTrackError = GeoUtil.CalculateCrossTrackErrorM(aircraft.Position.PositionGeoPoint, _outStartPoint.PointPosition, _outCourse,
-                out double requiredTrueCourse, out double alongTrackDistance);
+            if (_outboundTurnLeg.HasLegTerminated(aircraft))
+            {
+                _holdPhase = HoldPhaseEnum.OUTBOUND;
+                return HandleOutboundLeg(aircraft, posCalcIntvl);
+            }
 
-            // Has leg finished
-            double aTrackNMi = MathUtil.ConvertMetersToNauticalMiles(alongTrackDistance);
-            double obDistNMi = -GetOutboundDistance(aircraft.Position);
-            if (aTrackNMi <= obDistNMi)
-            {
-                return StartInboundTurn(aircraft, posCalcIntvl);
-            }
-            else
-            {
-                return (requiredTrueCourse, crossTrackError, -1);
-            }
+            return _outboundTurnLeg.UpdateForLnav(aircraft, posCalcIntvl);
         }
 
-        private (double requiredTrueCourse, double crossTrackError, double turnRadius) StartInboundTurn(SimAircraft aircraft, int posCalcIntvl)
+        private (double requiredTrueCourse, double crossTrackError, double turnRadius) HandleOutboundLeg(SimAircraft aircraft, int posCalcIntvl)
         {
-            _holdPhase = HoldPhaseEnum.TURN_INBOUND;
+            if (_outboundLeg.HasLegTerminated(aircraft))
+            {
+                _holdPhase = HoldPhaseEnum.TURN_INBOUND;
+                return HandleInboundTurn(aircraft, posCalcIntvl);
+            }
 
-            GeoPoint outEndPoint = new GeoPoint(_outStartPoint.PointPosition);
-            outEndPoint.MoveByNMi(_outCourse, GetOutboundDistance(aircraft.Position));
-
-            double finalOutCourse = GeoPoint.FinalBearing(_outStartPoint.PointPosition, outEndPoint);
-
-            GeoPoint inboundTurnEndPoint = GeoUtil.FindIntersection(outEndPoint, _routePoint.PointPosition, GeoUtil.NormalizeHeading(finalOutCourse + 90), TrueCourse);
-
-            _inboundTurnLeg = new RadiusToFixLeg(new FmsPoint(new RouteWaypoint(outEndPoint), RoutePointTypeEnum.FLY_OVER), new FmsPoint(new RouteWaypoint(inboundTurnEndPoint), RoutePointTypeEnum.FLY_OVER), finalOutCourse, TrueCourse);
-
-            _outCourse = -1;
-            _outStartPoint = null;
-
-            return HandleInboundTurn(aircraft, posCalcIntvl);
+            return _outboundLeg.UpdateForLnav(aircraft, posCalcIntvl);
         }
 
         private (double requiredTrueCourse, double crossTrackError, double turnRadius) HandleInboundTurn(SimAircraft aircraft, int posCalcIntvl)
@@ -307,28 +369,23 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
             {
                 _holdPhase = HoldPhaseEnum.INBOUND;
                 return HandleInboundLeg(aircraft, posCalcIntvl);
-            } else
-            {
-                return _inboundTurnLeg.UpdateForLnav(aircraft, posCalcIntvl);
             }
+
+            return _inboundTurnLeg.UpdateForLnav(aircraft, posCalcIntvl);
         }
 
         private (double requiredTrueCourse, double crossTrackError, double turnRadius) HandleInboundLeg(SimAircraft aircraft, int posCalcIntvl)
         {
-            double crossTrackError = GeoUtil.CalculateCrossTrackErrorM(aircraft.Position.PositionGeoPoint, _routePoint.PointPosition, _trueCourse,
-                out double requiredTrueCourse, out double alongTrackDistance);
-
-            AlongTrack_M = alongTrackDistance;
-
-            // Check if leg is complete
-            if (alongTrackDistance < 0)
+            if (_inboundLeg.HasLegTerminated(aircraft))
             {
-                return CalculateHold(aircraft, posCalcIntvl);
+                // Recalculate Hold dimensions
+                CalculateHold(aircraft);
+
+                _holdPhase = HoldPhaseEnum.TURN_OUTBOUND;
+                return HandleOutboundTurn(aircraft, posCalcIntvl);
             }
-            else
-            {
-                return (requiredTrueCourse, crossTrackError, -1);
-            }
+
+            return _inboundLeg.UpdateForLnav(aircraft, posCalcIntvl);
         }
 
         private void DetermineHoldEntry(AircraftPosition position)
