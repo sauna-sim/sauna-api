@@ -87,6 +87,13 @@ namespace SaunaSim.Api.Controllers
             return Ok(new NavigraphLoadedResponse() { Loaded = DataHandler.HasNavigraphDataLoaded(), Uuid = DataHandler.GetNavigraphFileUuid()});
         }
 
+        [HttpGet("loadedSectorFiles")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        public ActionResult<List<string>> GetLoadedSectorFiles()
+        {
+            return Ok(DataHandler.GetSectorFilesLoaded());
+        }
+
         [HttpPost("loadSectorFile")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
