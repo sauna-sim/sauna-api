@@ -73,6 +73,11 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
             _finalTrueCourse = finalTrueCourse;
 
             CalculateTurnCircle();
+
+            // Initial subleg is Track To RF
+            _trackToRFLeg = new TrackToFixLeg(StartPoint, new FmsPoint(new RouteWaypoint(_turnCircle.TangentialPointA), RoutePointTypeEnum.FLY_OVER));
+
+            _legState = RfState.TRACK_TO_RF;
         }
 
         public void CalculateTurnCircle()
