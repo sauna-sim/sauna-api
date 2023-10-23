@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using NavData_Interface.Objects;
 using NavData_Interface.Objects.Fix;
 using SaunaSim.Core.Data;
 using SaunaSim.Core.Simulator.Aircraft;
@@ -28,7 +29,7 @@ namespace SaunaSim.Core.Simulator.Commands
             Aircraft = aircraft;
             Logger = logger;
             // Find Waypoint
-            Localizer wp = DataHandler.GetLocalizer($"ILS{runway}");
+            Localizer wp = DataHandler.GetLocalizer("_fake_airport", runway);
 
             if (wp == null)
             {
@@ -58,7 +59,7 @@ namespace SaunaSim.Core.Simulator.Commands
             args.RemoveAt(0);
 
             // Find Waypoint
-            Localizer wp = DataHandler.GetLocalizer($"ILS{rwyStr}");
+            Localizer wp = DataHandler.GetLocalizer("_fake_airport", rwyStr);
 
             if (wp == null)
             {

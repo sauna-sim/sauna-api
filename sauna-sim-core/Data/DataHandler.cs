@@ -1,10 +1,13 @@
 ﻿using AviationCalcUtilNet.GeoTools;
 using NavData_Interface;
 using NavData_Interface.DataSources;
+using NavData_Interface.Objects;
 using NavData_Interface.Objects.Fix;
+using SaunaSim.Core.Data.NavData;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices.ComTypes;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -12,59 +15,96 @@ namespace SaunaSim.Core.Data
 {
     public static class DataHandler
     {
-        private static List<Localizer> waypoints = new List<Localizer>();
-        private static object waypointsLock = new object();
-
-        private static NavDataInterface _navDataInterface;
+        private static NavDataInterface _navigraphInterface;
         private static string _uuid;
-        private static object _navDataInterfaceLock = new object();
+        private static object _navigraphInterfaceLock = new object();
 
-        private static List<PublishedHold> publishedHolds = new List<PublishedHold>();
-        private static object publishedHoldsLock = new object();
+        private static List<NavDataInterface> _sctFileInterfaces = new List<NavDataInterface>();
+        private static object _sctFileInterfacesLock = new object();
+
+        private static NavDataInterface _customDataInterface = new NavDataInterface(new CustomNavDataSource());
+        private static object _customDataLock = new object();
 
         public static bool HasNavigraphDataLoaded()
         {
-            lock (_navDataInterfaceLock)
+            lock (_navigraphInterfaceLock)
             {
-                return _navDataInterface != null;
+                return _navigraphInterface != null;
             }
         }
 
         public static string GetNavigraphFileUuid()
         {
-            lock (_navDataInterfaceLock)
+            lock (_navigraphInterfaceLock)
             {
                 return _uuid;
             }
         }
 
+        public static List<string> GetSectorFilesLoaded()
+        {
+            List<string> retList = new List<string>();
+            lock (_sctFileInterfacesLock)
+            {
+                foreach (NavDataInterface navdataInterface in _sctFileInterfaces)
+                {
+                    if (navdataInterface.Data_source is SCTSource sctSource)
+                    {
+                        retList.Add(sctSource.FileName);
+                    }
+                }
+            }
+
+            return retList;
+        }
+
+        public static void LoadSectorFile(string filename)
+        {
+            lock (_sctFileInterfacesLock)
+            {
+                foreach (NavDataInterface navdataInterface in _sctFileInterfaces)
+                {
+                    if (navdataInterface.Data_source is SCTSource sctSource)
+                    {
+                        if (sctSource.FileName == filename)
+                        {
+                            return;
+                        }
+                    }
+                }
+                _sctFileInterfaces.Add(new NavDataInterface(new SCTSource(filename)));
+            }
+        }
+
         public static void LoadNavigraphDataFile(string fileName, string uuid)
         {
-            lock (_navDataInterfaceLock)
+            lock (_navigraphInterfaceLock)
             {
-                _navDataInterface = new NavDataInterface(new DFDSource(fileName));
+                _navigraphInterface = new NavDataInterface(new DFDSource(fileName));
                 _uuid = uuid;
             }
         }
 
         public static void AddPublishedHold(PublishedHold hold)
         {
-            lock (publishedHoldsLock)
+            lock (_customDataLock)
             {
-                publishedHolds.Add(hold);
+                if (_customDataInterface.Data_source is CustomNavDataSource customSource)
+                {
+                    customSource.AddPublishedHold(hold);
+                }
             }
         }
 
-        public static PublishedHold GetPublishedHold(string wp)
+        public static PublishedHold GetPublishedHold(string wp, double lat, double lon)
         {
-            lock (publishedHoldsLock)
+            Fix fix = GetClosestWaypointByIdentifier(wp, lat, lon);
+
+            lock (_customDataLock)
             {
-                foreach (PublishedHold hold in publishedHolds)
+                if (fix != null && _customDataInterface.Data_source is CustomNavDataSource customSource)
                 {
-                    if (hold.Waypoint == wp)
-                    {
-                        return hold;
-                    }
+                    return customSource.GetPublishedHold(fix);
                 }
             }
 
@@ -73,31 +113,72 @@ namespace SaunaSim.Core.Data
 
         public static void AddLocalizer(Localizer wp)
         {
-            lock(waypointsLock)
+            lock (_customDataLock)
             {
-                waypoints.Add(wp);
+                if (_customDataInterface.Data_source is CustomNavDataSource customSource)
+                {
+                    customSource.AddLocalizer(wp);
+                }
             }
         }
 
-        public static Localizer GetLocalizer(string localizerFakeName)
+        public static Localizer GetLocalizer(string airportIdent, string rwyIdent)
         {
-            foreach(var wp in waypoints)
+            lock (_customDataLock)
             {
-                if (wp.Name == localizerFakeName)
-                {
-                    return wp;
-                }
+                return _customDataInterface.Data_source.GetLocalizerFromAirportRunway(airportIdent, rwyIdent);
             }
-
-            return null;
         }
 
         public static Fix GetClosestWaypointByIdentifier(string wpId, double lat, double lon)
         {
-            lock (_navDataInterfaceLock)
+            Fix closestFix = null;
+            double closestDistance = double.MaxValue;
+
+            lock (_navigraphInterfaceLock)
             {
-                return _navDataInterface.GetClosestFixByIdentifier(new GeoPoint(lat, lon), wpId);
+                Fix navigraphFix = _navigraphInterface.GetClosestFixByIdentifier(new GeoPoint(lat, lon), wpId);
+                if (navigraphFix != null)
+                {
+                    closestFix = navigraphFix;
+                    closestDistance = GeoPoint.DistanceM(new GeoPoint(lat, lon), closestFix.Location);
+                }
             }
+
+            lock (_sctFileInterfacesLock)
+            {
+                foreach (NavDataInterface navdataInterface in _sctFileInterfaces)
+                {
+                    Fix sctFix = navdataInterface.GetClosestFixByIdentifier(new GeoPoint(lat, lon), wpId);
+                    if (sctFix != null)
+                    {
+                        double distance = GeoPoint.DistanceM(new GeoPoint(lat, lon), sctFix.Location);
+
+                        if (distance < closestDistance - 1000)
+                        {
+                            closestFix = sctFix;
+                            closestDistance = distance;
+                        }
+                    }
+                }
+            }
+
+            lock (_customDataLock)
+            {
+                Fix customFix = _customDataInterface.GetClosestFixByIdentifier(new GeoPoint(lat, lon), wpId);
+                if (customFix != null)
+                {
+                    double distance = GeoPoint.DistanceM(new GeoPoint(lat, lon), customFix.Location);
+
+                    if (distance < closestDistance - 1000)
+                    {
+                        closestFix = customFix;
+                        closestDistance = distance;
+                    }
+                }
+            }
+
+            return closestFix;
         }
     }
 }
