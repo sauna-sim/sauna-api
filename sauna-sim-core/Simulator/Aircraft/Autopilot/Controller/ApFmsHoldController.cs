@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Net;
 using AviationCalcUtilNet.GeoTools;
 using AviationCalcUtilNet.GeoTools.MagneticTools;
 using AviationCalcUtilNet.MathTools;
@@ -431,6 +433,28 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
     out double requiredTrueCourse, out double alongTrackDistance);
 
             return (requiredTrueCourse, crossTrackError, alongTrackDistance);
+        }
+
+        public List<(GeoPoint start, GeoPoint end)> GetUiLines()
+        {
+            var retList = new List<(GeoPoint start, GeoPoint end)>();
+            if (_outboundTurnLeg != null)
+            {
+                retList.AddRange(_outboundTurnLeg.UiLines);
+            }
+            if (_outboundLeg != null)
+            {
+                retList.AddRange(_outboundLeg.UiLines);
+            }
+            if (_inboundTurnLeg != null)
+            {
+                retList.AddRange(_inboundTurnLeg.UiLines);
+            }
+            if (_inboundLeg != null)
+            {
+                retList.AddRange(_inboundLeg.UiLines);
+            }
+            return retList;
         }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using AviationCalcUtilNet.GeoTools;
 using SaunaSim.Core.Data;
 using SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller;
@@ -63,5 +64,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
             // All holds are fly-over waypoints, so we never activate this leg early
             return false;
         }
+
+        public List<(GeoPoint start, GeoPoint end)> UiLines => _instr.GetUiLines();
     }
 }

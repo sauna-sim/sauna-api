@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Net;
 using AviationCalcUtilNet.GeoTools;
 using AviationCalcUtilNet.GeoTools.MagneticTools;
@@ -108,5 +109,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
             double requestedTurnDelta = GeoUtil.CalculateTurnAmount(demandedTrack, aircraft.Position.Track_True);
             return (trackDelta > 0 && requestedTurnDelta > 0 || trackDelta < 0 && requestedTurnDelta < 0);
         }
+
+        public List<(GeoPoint start, GeoPoint end)> UiLines => new List<(GeoPoint start, GeoPoint end)>();
     }
 }

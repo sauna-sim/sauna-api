@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using AviationCalcUtilNet.GeoTools;
 using SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller;
 
@@ -119,5 +120,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
         {
             return $"PPOS =(DF)=> {_endPoint}";
         }
+
+        public List<(GeoPoint start, GeoPoint end)> UiLines => new List<(GeoPoint start, GeoPoint end)>();
     }
 }
