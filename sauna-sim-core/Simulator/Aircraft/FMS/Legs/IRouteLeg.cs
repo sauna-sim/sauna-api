@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using AviationCalcUtilNet.GeoTools;
 
 namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
 {
@@ -66,6 +68,8 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
         /// Route Leg Type
         /// </summary>
         RouteLegTypeEnum LegType { get; }
+
+        List<(GeoPoint start, GeoPoint end)> UiLines { get; }
 
         /// <summary>
         /// Determines whether the current leg has terminated and if control should be passed to next instruction

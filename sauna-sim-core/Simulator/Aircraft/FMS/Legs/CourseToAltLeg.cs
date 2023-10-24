@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using AviationCalcUtilNet.GeoTools;
 using AviationCalcUtilNet.GeoTools.MagneticTools;
 
 namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
@@ -93,5 +95,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
         {
             return $"{_magneticCourse:000} =(CA)=> {_endAlt}";
         }
+
+        public List<(GeoPoint start, GeoPoint end)> UiLines => new List<(GeoPoint start, GeoPoint end)>();
     }
 }

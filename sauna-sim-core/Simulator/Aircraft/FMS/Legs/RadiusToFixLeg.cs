@@ -361,5 +361,15 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
                 $"S->Ta: ({_trackToRFLeg})\n" +
                 $"Tb->E: ({_trackFromRFLeg})";
         }
+
+        public List<(GeoPoint start, GeoPoint end)> UiLines
+        {
+            get
+            {
+                var retList = new List<(GeoPoint start, GeoPoint end)>();
+                retList.Add((StartPoint.Point.PointPosition, EndPoint.Point.PointPosition));
+                return retList;
+            }
+        }
     }
 }
