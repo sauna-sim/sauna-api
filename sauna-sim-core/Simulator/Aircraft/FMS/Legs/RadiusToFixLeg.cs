@@ -43,7 +43,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
 
             public override string ToString()
             {
-                return $"Center: ({Center.Lat}, {Center.Lon}) Radius (nm): {RadiusM}";
+                return $"Center: ({Center.Lat}, {Center.Lon}) Radius (m): {RadiusM}";
             }
 
             public TurnCircle(GeoPoint center, GeoPoint tangentialPointA, GeoPoint tangentialPointB, double radiusM)
@@ -340,7 +340,10 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
 
         public override string ToString()
         {
-            return $"({StartPoint}) (RF) => ({EndPoint}) TurnCircle: {_turnCircle}";
+            return $"({StartPoint}) (RF) => ({EndPoint}) TurnCircle: {_turnCircle}\n" +
+                $"Legs: \n" +
+                $"S->Ta: ({_trackToRFLeg})\n" +
+                $"Tb->E: ({_trackFromRFLeg})";
         }
     }
 }
