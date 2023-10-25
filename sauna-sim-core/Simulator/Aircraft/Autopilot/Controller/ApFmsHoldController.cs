@@ -216,7 +216,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
 
             // Find Points
             _inStartPoint = new RoutePointPbd(_routePoint.PointPosition, outboundCourse, outboundLegLength, $"{_routePoint.PointName}H_IS");
-            double bearingToOutStart = GeoUtil.NormalizeHeading(GeoPoint.FinalBearing(_routePoint.PointPosition, _inStartPoint.PointPosition) + (turnAmt / 2));
+            double bearingToOutStart = GeoUtil.NormalizeHeading(GeoPoint.FinalBearing(_routePoint.PointPosition, _inStartPoint.PointPosition) - (turnAmt / 2));
             _outEndPoint = new RoutePointPbd(_inStartPoint.PointPosition, bearingToOutStart, r * 2, $"{_routePoint.PointName}H_OE");
 
             double dirFinalCourse = GeoUtil.CalculateDirectBearingAfterTurn(
@@ -259,7 +259,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
 
             // Find Points
             _inStartPoint = new RoutePointPbd(_routePoint.PointPosition, outboundCourse, outboundLegLength, $"{_routePoint.PointName}H_IS");
-            double bearingToOutStart = GeoUtil.NormalizeHeading(GeoPoint.FinalBearing(_routePoint.PointPosition, _inStartPoint.PointPosition) + (turnAmt / 2));
+            double bearingToOutStart = GeoUtil.NormalizeHeading(GeoPoint.FinalBearing(_routePoint.PointPosition, _inStartPoint.PointPosition) - (turnAmt / 2));
             _outEndPoint = new RoutePointPbd(_inStartPoint.PointPosition, bearingToOutStart, r * 2, $"{_routePoint.PointName}H_OE");
             _outStartPoint = new RoutePointPbd(_outEndPoint.PointPosition, GeoUtil.NormalizeHeading(bearingToOutStart - (turnAmt / 2)), MathUtil.ConvertMetersToNauticalMiles(10), $"{_routePoint.PointName}H_OS");
 
