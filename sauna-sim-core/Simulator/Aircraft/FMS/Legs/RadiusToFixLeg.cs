@@ -75,9 +75,18 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
             CalculateTurnCircle();
 
             // Initial subleg is Track To RF
-            _trackToRFLeg = new TrackToFixLeg(StartPoint, new FmsPoint(new RouteWaypoint(_turnCircle.TangentialPointA), RoutePointTypeEnum.FLY_OVER));
+
+            if (StartPoint.Point.PointPosition.Equals(_turnCircle.TangentialPointA))
+            {
+                _trackToRFLeg = new TrackToFixLeg(StartPoint, new FmsPoint(new RouteWaypoint(_turnCircle.TangentialPointA), RoutePointTypeEnum.FLY_OVER));
+            }
 
             _legState = RfState.TRACK_TO_RF;
+
+            if (EndPoint.Point.PointPosition.Equals(_turnCircle.TangentialPointB))
+            {
+                _trackFromRFLeg = new TrackToFixLeg(new FmsPoint(new RouteWaypoint(_turnCircle.TangentialPointB), RoutePointTypeEnum.FLY_OVER), EndPoint);
+            }
         }
 
         public void CalculateTurnCircle()
@@ -262,9 +271,13 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
 
         public (double requiredTrueCourse, double crossTrackError, double turnRadius) StartTrackToRF(SimAircraft aircraft, int intervalMs)
         {
-            _trackToRFLeg = new TrackToFixLeg(StartPoint, new FmsPoint(new RouteWaypoint(_turnCircle.TangentialPointA), RoutePointTypeEnum.FLY_OVER));
-
             _legState = RfState.TRACK_TO_RF;
+
+            // if this leg is 0-length, we can skip it
+            if (_trackToRFLeg == null)
+            {
+                return HandleRFTurn(aircraft, intervalMs);
+            }
 
             return HandleTrackToRF(aircraft, intervalMs);
         }
@@ -283,9 +296,12 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
 
         public (double requiredTrueCourse, double crossTrackError, double turnRadius) StartTrackFromRF(SimAircraft aircraft, int intervalMs)
         {
-            _trackFromRFLeg = new TrackToFixLeg(new FmsPoint(new RouteWaypoint(_turnCircle.TangentialPointB), RoutePointTypeEnum.FLY_OVER), EndPoint);
-
             _legState = RfState.TRACK_FROM_RF;
+
+            if (_trackFromRFLeg == null)
+            {
+                return HandleRFTurn(aircraft, intervalMs);
+            }
 
             return HandleTrackFromRF(aircraft, intervalMs);
         }
