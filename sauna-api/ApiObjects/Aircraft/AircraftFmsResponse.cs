@@ -37,18 +37,23 @@ namespace SaunaSim.Api.ApiObjects.Aircraft
             DepartureAirport = fms.DepartureAirport;
             ArrivalAirport = fms.ArrivalAirport;
             ActiveLeg = fms.ActiveLeg;
-            foreach ((GeoPoint start, GeoPoint end) in fms.ActiveLeg.UiLines)
-            {
-                FmsLines.Add(new FmsLine()
-                {
-                    StartLat = start.Lat,
-                    StartLon = start.Lon,
-                    EndLat = end.Lat,
-                    EndLon = end.Lon
-                });
-            }
             RouteLegs = new List<object>();
             FmsLines = new List<FmsLine>();
+
+            if (fms.ActiveLeg != null)
+            {
+                foreach ((GeoPoint start, GeoPoint end) in fms.ActiveLeg.UiLines)
+                {
+                    FmsLines.Add(new FmsLine()
+                    {
+                        StartLat = start.Lat,
+                        StartLon = start.Lon,
+                        EndLat = end.Lat,
+                        EndLon = end.Lon
+                    });
+                }
+            }
+
             StringBuilder sb = new StringBuilder();
             foreach (var leg in fms.GetRouteLegs())
             {
