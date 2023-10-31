@@ -47,6 +47,11 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
         private RadiusToFixLeg _inboundTurnLeg = null;
         private TrackToFixLeg _inboundLeg = null;
 
+        public RadiusToFixLeg OutboundTurnLeg => _outboundTurnLeg;
+        public TrackToFixLeg OutboundLeg => _outboundLeg;
+        public RadiusToFixLeg InboundTurnLeg => _inboundTurnLeg;
+        public TrackToFixLeg InboundLeg => _inboundLeg;
+
         public double AlongTrack_M { get; private set; }
 
         public ApFmsHoldController(IRoutePoint holdingPoint, BearingTypeEnum courseType, double inboundCourse, HoldTurnDirectionEnum turnDir, HoldLegLengthTypeEnum legType, double legLength)

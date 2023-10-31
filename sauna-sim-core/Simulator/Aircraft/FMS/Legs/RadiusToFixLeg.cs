@@ -26,10 +26,12 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
 
         private TurnCircle _turnCircle;
 
+        public TurnCircle TurnCircley => _turnCircle;
+
         private TrackToFixLeg _trackToRFLeg;
         private TrackToFixLeg _trackFromRFLeg;
 
-        private class TurnCircle
+        public class TurnCircle
         {
             public GeoPoint Center { get; set; }
 
@@ -54,6 +56,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
                 RadiusM = radiusM;
             }
 
+            public GeoPoint BisectorIntersection { get; set; }
         }
 
         private enum RfState
@@ -76,14 +79,16 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
 
             // Initial subleg is Track To RF
 
-            if (StartPoint.Point.PointPosition.Equals(_turnCircle.TangentialPointA))
+            if (!StartPoint.Point.PointPosition.Equals(_turnCircle.TangentialPointA))
             {
                 _trackToRFLeg = new TrackToFixLeg(StartPoint, new FmsPoint(new RouteWaypoint(_turnCircle.TangentialPointA), RoutePointTypeEnum.FLY_OVER));
+                _legState = RfState.TRACK_TO_RF;
+            } else
+            {
+                _legState = RfState.IN_RF;
             }
 
-            _legState = RfState.TRACK_TO_RF;
-
-            if (EndPoint.Point.PointPosition.Equals(_turnCircle.TangentialPointB))
+            if (!EndPoint.Point.PointPosition.Equals(_turnCircle.TangentialPointB))
             {
                 _trackFromRFLeg = new TrackToFixLeg(new FmsPoint(new RouteWaypoint(_turnCircle.TangentialPointB), RoutePointTypeEnum.FLY_OVER), EndPoint);
             }
@@ -91,7 +96,11 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
 
         public void CalculateTurnCircle()
         {
-            if (Math.Abs(InitialTrueCourse - FinalTrueCourse) < 3) // TODO: Figure out the margin of error. Probably less than 3
+            double turnAmount = GeoUtil.CalculateTurnAmount(InitialTrueCourse, FinalTrueCourse);
+
+            GeoPoint bisectorIntersection;
+
+            if (Math.Abs(turnAmount) < 3 || Math.Abs(turnAmount) > 177) // TODO: Figure out the margin of error. Probably less than 3
             {
                 GeoPoint turnCircleCenter;
                 double turnCircleRadiusM;
@@ -105,7 +114,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
 
                     double diameterCourse = GeoUtil.NormalizeHeading(InitialTrueCourse + 90);
                     GeoPoint tangentialPointA = StartPoint.Point.PointPosition;
-                    GeoPoint tangentialPointB = GeoUtil.FindIntersection(StartPoint.Point.PointPosition, EndPoint.Point.PointPosition, diameterCourse, FinalTrueCourse);
+                    GeoPoint tangentialPointB = GeoUtil.FindIntersection(EndPoint.Point.PointPosition, StartPoint.Point.PointPosition, FinalTrueCourse, diameterCourse);
 
                     turnCircleRadiusM = GeoPoint.DistanceM(tangentialPointA, tangentialPointB) / 2;
 
@@ -139,7 +148,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
                 // Calculate tangential circle to crossing legs:
 
                 // Calculate bisector of both legs
-                GeoPoint bisectorIntersection = GeoUtil.FindIntersection(StartPoint.Point.PointPosition, EndPoint.Point.PointPosition, InitialTrueCourse, FinalTrueCourse);
+                bisectorIntersection = GeoUtil.FindIntersection(StartPoint.Point.PointPosition, EndPoint.Point.PointPosition, InitialTrueCourse, FinalTrueCourse);
 
                 // Calculate the courses again because great circle
                 double bisectorStartRadial = GeoPoint.InitialBearing(bisectorIntersection, StartPoint.Point.PointPosition);
@@ -173,19 +182,18 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
                         referenceTangentPoint = StartPoint.Point.PointPosition;
                         tangentPointA = StartPoint.Point.PointPosition;
 
-                        turnCircleCenter = GeoUtil.FindIntersection(referenceTangentPoint, bisectorIntersection, referenceTangentPointPerpendicularCourse, bisectorRadial);
+                        turnCircleCenter = GeoUtil.FindIntersection(bisectorIntersection, referenceTangentPoint, bisectorRadial, referenceTangentPointPerpendicularCourse);
 
                         // Calculate the other tangent point
                         double tangentPointBPerpendicularCourse = GeoUtil.NormalizeHeading(FinalTrueCourse + 90);
-                        tangentPointB = GeoUtil.FindIntersection(EndPoint.Point.PointPosition, turnCircleCenter, FinalTrueCourse, tangentPointBPerpendicularCourse);
+                        tangentPointB = GeoUtil.FindIntersection(EndPoint.Point.PointPosition, turnCircleCenter, GeoUtil.NormalizeHeading(FinalTrueCourse + 180), tangentPointBPerpendicularCourse);
                     } else
                     {
                         referenceTangentPointPerpendicularCourse = GeoUtil.NormalizeHeading(FinalTrueCourse + 90); // perpendicular to EndPoint
                         referenceTangentPoint = EndPoint.Point.PointPosition;
                         tangentPointB = EndPoint.Point.PointPosition;
 
-                        turnCircleCenter = GeoUtil.FindIntersection(referenceTangentPoint, bisectorIntersection, referenceTangentPointPerpendicularCourse, bisectorRadial);
-
+                        turnCircleCenter = GeoUtil.FindIntersection(bisectorIntersection, referenceTangentPoint, bisectorRadial, referenceTangentPointPerpendicularCourse);
                         // Calculate the other tangent point
                         double tangentPointAPerpendicularCourse = GeoUtil.NormalizeHeading(InitialTrueCourse + 90);
                         tangentPointA = GeoUtil.FindIntersection(StartPoint.Point.PointPosition, turnCircleCenter, InitialTrueCourse, tangentPointAPerpendicularCourse);
@@ -200,11 +208,10 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
                         referenceTangentPoint = StartPoint.Point.PointPosition;
                         tangentPointA = StartPoint.Point.PointPosition;
 
-                        turnCircleCenter = GeoUtil.FindIntersection(referenceTangentPoint, bisectorIntersection, referenceTangentPointPerpendicularCourse, bisectorRadial);
-
+                        turnCircleCenter = GeoUtil.FindIntersection(bisectorIntersection, referenceTangentPoint, bisectorRadial, referenceTangentPointPerpendicularCourse);
                         // Calculate the other tangent point
                         double tangentPointBPerpendicularCourse = GeoUtil.NormalizeHeading(FinalTrueCourse + 90);
-                        tangentPointB = GeoUtil.FindIntersection(EndPoint.Point.PointPosition, turnCircleCenter, FinalTrueCourse, tangentPointBPerpendicularCourse);
+                        tangentPointB = GeoUtil.FindIntersection(EndPoint.Point.PointPosition, turnCircleCenter, GeoUtil.NormalizeHeading(FinalTrueCourse + 180), tangentPointBPerpendicularCourse);
                     }
                     else
                     {
@@ -212,7 +219,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
                         referenceTangentPoint = EndPoint.Point.PointPosition;
                         tangentPointB = EndPoint.Point.PointPosition;
 
-                        turnCircleCenter = GeoUtil.FindIntersection(referenceTangentPoint, bisectorIntersection, referenceTangentPointPerpendicularCourse, bisectorRadial);
+                        turnCircleCenter = GeoUtil.FindIntersection(bisectorIntersection, referenceTangentPoint, bisectorRadial, referenceTangentPointPerpendicularCourse);
 
                         // Calculate the other tangent point
                         double tangentPointAPerpendicularCourse = GeoUtil.NormalizeHeading(InitialTrueCourse + 90);
@@ -223,6 +230,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
                 double turnCircleRadius = GeoPoint.DistanceM(referenceTangentPoint, turnCircleCenter);
 
                 _turnCircle = new TurnCircle(turnCircleCenter, tangentPointA, tangentPointB, turnCircleRadius);
+                _turnCircle.BisectorIntersection = bisectorIntersection;
             }
         }
 
@@ -261,23 +269,17 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
         {
             double crossTrackError = GeoUtil.CalculateArcCourseInfo(aircraft.Position.PositionGeoPoint, _turnCircle.Center, _turnCircle.PointARadial, _turnCircle.PointBRadial, _turnCircle.RadiusM, isClockwise(), out double requiredTrueCourse, out double alongTrackDistanceM);
 
-            if (alongTrackDistanceM < 0)
+            if (alongTrackDistanceM < 0 && _trackFromRFLeg != null)
             {
                 return StartTrackFromRF(aircraft, intervalMs);
             }
 
-            return (requiredTrueCourse, crossTrackError, _turnCircle.RadiusM);
+            return (requiredTrueCourse, crossTrackError, _turnCircle.RadiusM * (isClockwise() ? 1 : -1));
         }
 
         public (double requiredTrueCourse, double crossTrackError, double turnRadius) StartTrackToRF(SimAircraft aircraft, int intervalMs)
         {
             _legState = RfState.TRACK_TO_RF;
-
-            // if this leg is 0-length, we can skip it
-            if (_trackToRFLeg == null)
-            {
-                return HandleRFTurn(aircraft, intervalMs);
-            }
 
             return HandleTrackToRF(aircraft, intervalMs);
         }
@@ -341,8 +343,15 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
 
                     break;
                 case RfState.TRACK_FROM_RF:
-                    (requiredTrueCourse, crossTrackError, fromRFAlongTrackDistance) = _trackFromRFLeg.GetCourseInterceptInfo(aircraft);
-                    alongTrackDistance = fromRFAlongTrackDistance;
+                    if(_trackFromRFLeg != null)
+                    {
+                        (requiredTrueCourse, crossTrackError, fromRFAlongTrackDistance) = _trackFromRFLeg.GetCourseInterceptInfo(aircraft);
+                        alongTrackDistance = fromRFAlongTrackDistance;
+                    } else
+                    {
+                        goto case RfState.IN_RF;
+                    }
+                    
                     break;
             }
 
@@ -367,7 +376,19 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
             get
             {
                 var retList = new List<(GeoPoint start, GeoPoint end)>();
-                retList.Add((StartPoint.Point.PointPosition, EndPoint.Point.PointPosition));
+                if (!StartPoint.Point.PointPosition.Equals(_turnCircle.TangentialPointA))
+                {
+                    retList.Add((StartPoint.Point.PointPosition, _turnCircle.TangentialPointA));
+                }
+
+                retList.Add((_turnCircle.TangentialPointA, _turnCircle.TangentialPointB));
+                if (!EndPoint.Point.PointPosition.Equals(_turnCircle.TangentialPointA))
+                {
+                    retList.Add((_turnCircle.TangentialPointB, EndPoint.Point.PointPosition));
+                }
+
+                //retList.Add((_turnCircle.TangentialPointA, _turnCircle.Center));
+
                 return retList;
             }
         }

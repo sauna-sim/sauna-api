@@ -11,6 +11,9 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
         private FmsPoint _startPoint;
         private FmsPoint _endPoint;
         private ApFmsHoldController _instr;
+
+        public ApFmsHoldController Instr => _instr;
+
         private bool _exitArmed;
 
         public HoldToManualLeg(FmsPoint startPoint, BearingTypeEnum courseType, double inboundCourse, HoldTurnDirectionEnum turnDir, HoldLegLengthTypeEnum legLengthType, double legLength)
