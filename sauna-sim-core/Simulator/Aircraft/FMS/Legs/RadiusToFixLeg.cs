@@ -130,8 +130,17 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
                     // we'll turn when we're abeam EndPoint
 
                     double diameterCourse = GeoUtil.NormalizeHeading(FinalTrueCourse + 90);
-                    GeoPoint tangentialPointA = GeoUtil.FindIntersection(StartPoint.Point.PointPosition, EndPoint.Point.PointPosition, InitialTrueCourse, diameterCourse);
+                    GeoPoint tangentialPointA = GeoUtil.FindIntersection(EndPoint.Point.PointPosition, StartPoint.Point.PointPosition, diameterCourse, InitialTrueCourse);
                     GeoPoint tangentialPointB = EndPoint.Point.PointPosition;
+
+                    if (GeoPoint.DistanceM(tangentialPointB, EndPoint.Point.PointPosition) > 500000)
+                    {
+                        // the diameter was probably going the wrong way and since we don't have a way of using
+                        // this function with two unknows let's try the other way
+                        diameterCourse = GeoUtil.NormalizeHeading(FinalTrueCourse - 90);
+                        tangentialPointA = GeoUtil.FindIntersection(EndPoint.Point.PointPosition, StartPoint.Point.PointPosition, diameterCourse, InitialTrueCourse);
+                        tangentialPointB = EndPoint.Point.PointPosition;
+                    }
 
                     turnCircleRadiusM = GeoPoint.DistanceM(tangentialPointB, tangentialPointA) / 2;
 
