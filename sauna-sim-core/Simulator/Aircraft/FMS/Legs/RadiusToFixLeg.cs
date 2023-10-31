@@ -269,8 +269,6 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
         {
             double crossTrackError = GeoUtil.CalculateArcCourseInfo(aircraft.Position.PositionGeoPoint, _turnCircle.Center, _turnCircle.PointARadial, _turnCircle.PointBRadial, _turnCircle.RadiusM, isClockwise(), out double requiredTrueCourse, out double alongTrackDistanceM);
 
-            Console.WriteLine($"HANDLERF: {alongTrackDistanceM}");
-
             if (alongTrackDistanceM < 0 && _trackFromRFLeg != null)
             {
                 return StartTrackFromRF(aircraft, intervalMs);
@@ -348,9 +346,6 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
                         fromRFAlongTrackDistance = 0;
                     }
                     
-
-                    Console.WriteLine($"COURSEINFO: {rfTurnLength}");
-
                     alongTrackDistance = rfTurnLength + fromRFAlongTrackDistance;
 
                     break;
