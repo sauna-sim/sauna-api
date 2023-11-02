@@ -109,7 +109,7 @@ namespace SaunaSim.Api.Controllers
             }
             catch (Exception)
             {
-                return BadRequest("The file is not a vaid Sector file.");
+                return BadRequest("The file is not a valid Sector file.");
             }
         }
 
