@@ -114,7 +114,14 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
 
                     double diameterCourse = GeoUtil.NormalizeHeading(InitialTrueCourse + 90);
                     GeoPoint tangentialPointA = StartPoint.Point.PointPosition;
-                    GeoPoint tangentialPointB = GeoUtil.FindIntersection(EndPoint.Point.PointPosition, StartPoint.Point.PointPosition, FinalTrueCourse, diameterCourse);
+                    GeoPoint tangentialPointB = GeoUtil.FindIntersection(StartPoint.Point.PointPosition, EndPoint.Point.PointPosition, diameterCourse, FinalTrueCourse);
+
+                    if (GeoPoint.DistanceM(tangentialPointB, EndPoint.Point.PointPosition) > 500000){
+                        // the diameter was probably going the wrong way and since we don't have a way of using
+                        // this function with two unknowns let's try the other way
+                        diameterCourse = GeoUtil.NormalizeHeading(InitialTrueCourse - 90);
+                        tangentialPointB = GeoUtil.FindIntersection(StartPoint.Point.PointPosition, EndPoint.Point.PointPosition, diameterCourse, FinalTrueCourse);
+                    }
 
                     turnCircleRadiusM = GeoPoint.DistanceM(tangentialPointA, tangentialPointB) / 2;
 
@@ -133,13 +140,12 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
                     GeoPoint tangentialPointA = GeoUtil.FindIntersection(EndPoint.Point.PointPosition, StartPoint.Point.PointPosition, diameterCourse, InitialTrueCourse);
                     GeoPoint tangentialPointB = EndPoint.Point.PointPosition;
 
-                    if (GeoPoint.DistanceM(tangentialPointB, EndPoint.Point.PointPosition) > 500000)
+                    if (GeoPoint.DistanceM(tangentialPointA, StartPoint.Point.PointPosition) > 500000)
                     {
                         // the diameter was probably going the wrong way and since we don't have a way of using
                         // this function with two unknows let's try the other way
                         diameterCourse = GeoUtil.NormalizeHeading(FinalTrueCourse - 90);
                         tangentialPointA = GeoUtil.FindIntersection(EndPoint.Point.PointPosition, StartPoint.Point.PointPosition, diameterCourse, InitialTrueCourse);
-                        tangentialPointB = EndPoint.Point.PointPosition;
                     }
 
                     turnCircleRadiusM = GeoPoint.DistanceM(tangentialPointB, tangentialPointA) / 2;
