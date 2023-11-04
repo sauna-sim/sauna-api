@@ -135,13 +135,16 @@ namespace SaunaSim.Core.Data
             Fix closestFix = null;
             double closestDistance = double.MaxValue;
 
-            lock (_navigraphInterfaceLock)
+            if (HasNavigraphDataLoaded())
             {
-                Fix navigraphFix = _navigraphInterface.GetClosestFixByIdentifier(new GeoPoint(lat, lon), wpId);
-                if (navigraphFix != null)
+                lock (_navigraphInterfaceLock)
                 {
-                    closestFix = navigraphFix;
-                    closestDistance = GeoPoint.DistanceM(new GeoPoint(lat, lon), closestFix.Location);
+                    Fix navigraphFix = _navigraphInterface.GetClosestFixByIdentifier(new GeoPoint(lat, lon), wpId);
+                    if (navigraphFix != null)
+                    {
+                        closestFix = navigraphFix;
+                        closestDistance = GeoPoint.DistanceM(new GeoPoint(lat, lon), closestFix.Location);
+                    }
                 }
             }
 
