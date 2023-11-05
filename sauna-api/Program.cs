@@ -23,6 +23,29 @@ namespace SaunaSim.Api
             Host.CreateDefaultBuilder(args)
                 .ConfigureWebHostDefaults(webBuilder => {
                     webBuilder.UseStartup<Startup>();
+                    if (CheckForUserDefinedPort(args, out ushort port))
+                    {
+                        webBuilder.UseUrls($"http://localhost:{port}");
+                    }
                 });
+
+
+        static bool CheckForUserDefinedPort(string[] args, out ushort port)
+        {
+            for (int i = 0; i < args.Length - 1; i++)
+            {
+                if (args[i].ToLower() == "-p")
+                {
+                    ushort p;
+                    if (UInt16.TryParse(args[i + 1], out p))
+                    {
+                        port = p;
+                        return true;
+                    }
+                }
+            }
+            port = 0;
+            return false;
+        }
     }
 }
