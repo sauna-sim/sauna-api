@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using NavData_Interface.Objects.Fix;
 using SaunaSim.Core.Simulator.Aircraft;
 
 namespace SaunaSim.Core.Data
@@ -22,13 +23,13 @@ namespace SaunaSim.Core.Data
 
     public class PublishedHold
     {
-        private string _wp;
+        private Fix _wp;
         private double _inboundCourse;
         private HoldTurnDirectionEnum _turnDirection;
         private HoldLegLengthTypeEnum _lengthType;
         private double _legLength;
 
-        public PublishedHold(string wp, double inboundCourse, HoldTurnDirectionEnum turnDirection, HoldLegLengthTypeEnum legLengthType, double legLength)
+        public PublishedHold(Fix wp, double inboundCourse, HoldTurnDirectionEnum turnDirection, HoldLegLengthTypeEnum legLengthType, double legLength)
         {
             _wp = wp;
             _inboundCourse = inboundCourse;
@@ -37,19 +38,19 @@ namespace SaunaSim.Core.Data
             _legLength = legLength;
         }
 
-        public PublishedHold(string wp, double inboundCourse, HoldTurnDirectionEnum turnDirection) :
+        public PublishedHold(Fix wp, double inboundCourse, HoldTurnDirectionEnum turnDirection) :
             this(wp, inboundCourse, turnDirection, HoldLegLengthTypeEnum.DEFAULT, -1)
         { }
 
-        public PublishedHold(string wp, double inboundCourse, HoldLegLengthTypeEnum legLengthType, double legLength) :
+        public PublishedHold(Fix wp, double inboundCourse, HoldLegLengthTypeEnum legLengthType, double legLength) :
             this(wp, inboundCourse, HoldTurnDirectionEnum.RIGHT, legLengthType, legLength)
         { }
 
-        public PublishedHold(string wp, double inboundCourse) :
+        public PublishedHold(Fix wp, double inboundCourse) :
             this(wp, inboundCourse, HoldTurnDirectionEnum.RIGHT, HoldLegLengthTypeEnum.DEFAULT, -1)
         { }
 
-        public string Waypoint => _wp;
+        public Fix Waypoint => _wp;
 
         public double InboundCourse => _inboundCourse;
 

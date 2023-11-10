@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using NavData_Interface.Objects.Fix;
 using SaunaSim.Core.Data;
 using SaunaSim.Core.Simulator.Aircraft;
 using SaunaSim.Core.Simulator.Aircraft.FMS;
@@ -15,7 +16,7 @@ namespace SaunaSim.Core.Simulator.Commands
         public Action<string> Logger { get; set; }
 
         private int course;
-        private Waypoint wp;
+        private Fix wp;
 
         public void ExecuteCommand()
         {
@@ -28,7 +29,7 @@ namespace SaunaSim.Core.Simulator.Commands
             Logger = logger;
 
             // Find Waypoint
-            Waypoint wp = DataHandler.GetClosestWaypointByIdentifier(waypoint, Aircraft.Position.Latitude, Aircraft.Position.Longitude);
+            Fix wp = DataHandler.GetClosestWaypointByIdentifier(waypoint, Aircraft.Position.Latitude, Aircraft.Position.Longitude);
 
             if (wp == null)
             {

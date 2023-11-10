@@ -1,3 +1,4 @@
+using NavData_Interface.Objects.Fix;
 using SaunaSim.Core.Data;
 using System.Collections.Generic;
 using System.Text;
@@ -18,8 +19,8 @@ namespace SaunaSim.Api.ApiObjects.Aircraft
     {
         public bool Suspended { get; set; }
         public int CruiseAltitude { get; set; }
-        public Waypoint DepartureAirport { get; set; }
-        public Waypoint ArrivalAirport { get; set; }
+        public Fix DepartureAirport { get; set; }
+        public Fix ArrivalAirport { get; set; }
         public object ActiveLeg { get; set; }
         public List<object> RouteLegs { get; set; }
         public string AsString { get; set; }

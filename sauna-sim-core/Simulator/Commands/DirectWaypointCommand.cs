@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using NavData_Interface.Objects.Fix;
 using SaunaSim.Core.Data;
 using SaunaSim.Core.Simulator.Aircraft;
 using SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller;
@@ -15,7 +16,7 @@ namespace SaunaSim.Core.Simulator.Commands
         public SimAircraft Aircraft { get; set; }
         public Action<string> Logger { get; set; }
 
-        private Waypoint wp;
+        private Fix wp;
 
         public void ExecuteCommand()
         {

@@ -15,6 +15,7 @@ using SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller;
 using SaunaSim.Core.Simulator.Aircraft.FMS;
 using SaunaSim.Core.Simulator.Aircraft.FMS.Legs;
 using SaunaSim.Core.Simulator.Aircraft.Performance;
+using NavData_Interface.Objects.Fix;
 
 namespace SaunaSim.Api.Controllers
 {
@@ -45,7 +46,7 @@ namespace SaunaSim.Api.Controllers
                     request.Server, 
                     (ushort)request.Port, 
                     request.Protocol,
-                    ClientInfoLoader.GetClientInfo((string msg) => { _logger.LogWarning($"{request.Callsign}: {msg}"); }),
+                    PrivateInfoLoader.GetClientInfo((string msg) => { _logger.LogWarning($"{request.Callsign}: {msg}"); }),
                     PerfDataHandler.LookupForAircraft("A320"),
                     request.Position.Latitude, 
                     request.Position.Longitude, 
@@ -88,7 +89,7 @@ namespace SaunaSim.Api.Controllers
                 {
                     if (waypoint.Identifier.ToLower() == "hold" && lastPoint != null)
                     {
-                        PublishedHold pubHold = DataHandler.GetPublishedHold(lastPoint.Point.PointName);
+                        PublishedHold pubHold = DataHandler.GetPublishedHold(lastPoint.Point.PointName, lastPoint.Point.PointPosition.Lat, lastPoint.Point.PointPosition.Lon);
 
                         if (pubHold != null)
                         {
@@ -99,7 +100,7 @@ namespace SaunaSim.Api.Controllers
                         }
                     } else
                     {
-                        Waypoint nextWp = DataHandler.GetClosestWaypointByIdentifier(waypoint.Identifier, pilot.Position.Latitude, pilot.Position.Longitude);
+                        Fix nextWp = DataHandler.GetClosestWaypointByIdentifier(waypoint.Identifier, pilot.Position.Latitude, pilot.Position.Longitude);
 
                         if (nextWp != null)
                         {

@@ -19,6 +19,8 @@ using SaunaSim.Core.Simulator.Aircraft.Performance;
 using SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller;
 using SaunaSim.Core.Simulator.Aircraft.FMS;
 using SaunaSim.Core.Simulator.Aircraft.FMS.Legs;
+using NavData_Interface.Objects.Fix;
+using NavData_Interface.Objects;
 
 namespace SaunaSim.Api.Controllers
 {
@@ -61,78 +63,74 @@ namespace SaunaSim.Api.Controllers
             return Ok(new AppSettingsRequestResponse(AppSettingsManager.Settings));
         }
 
+        [HttpGet("navigraphApiCreds")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public ActionResult<NavigraphApiCreds> GetNavigraphApiCreds()
+        {
+            string error = "";
+            var navigraphCreds = PrivateInfoLoader.GetNavigraphCreds((string s) =>
+            {
+                error = s;
+            });
+
+            if (navigraphCreds == null)
+            {
+                return BadRequest(error);
+            }
+
+            return navigraphCreds;
+        }
+        	
+        [HttpGet("hasNavigraphDataLoaded")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        public ActionResult<NavigraphLoadedResponse> GetHasNavigraphDataLoaded()
+        {
+            return Ok(new NavigraphLoadedResponse() { Loaded = DataHandler.HasNavigraphDataLoaded(), Uuid = DataHandler.GetNavigraphFileUuid()});
+        }
+
+        [HttpGet("loadedSectorFiles")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        public ActionResult<List<string>> GetLoadedSectorFiles()
+        {
+            return Ok(DataHandler.GetSectorFilesLoaded());
+        }
+
         [HttpPost("loadSectorFile")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public ActionResult LoadSectorFile(LoadFileRequest request)
         {
-            // Read file
-            string filename = request.FileName;
             try
             {
-                string[] filelines = System.IO.File.ReadAllLines(filename);
+                DataHandler.LoadSectorFile(request.FileName);
+                return Ok();
+            } catch (System.IO.FileNotFoundException)
+            {
+                return BadRequest("The file could not be found.");
+            }
+            catch (Exception)
+            {
+                return BadRequest("The file is not a valid Sector file.");
+            }
+        }
 
-                string sectionName = "";
-
-                // Loop through sector file
-                foreach (string line in filelines)
-                {
-                    // Ignore comments
-                    if (line.Trim().StartsWith(";"))
-                    {
-                        continue;
-                    }
-
-                    if (line.StartsWith("["))
-                    {
-                        // Get section name
-                        sectionName = line.Replace("[", "").Replace("]", "").Trim();
-                    } else
-                    {
-                        NavaidType type = NavaidType.VOR;
-                        string[] items;
-                        switch (sectionName)
-                        {
-                            case "VOR":
-                                type = NavaidType.VOR;
-                                goto case "AIRPORT";
-                            case "NDB":
-                                type = NavaidType.NDB;
-                                goto case "AIRPORT";
-                            case "AIRPORT":
-                                type = NavaidType.AIRPORT;
-
-                                items = line.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-
-                                if (items.Length >= 4)
-                                {
-                                    decimal freq = 0;
-                                    try
-                                    {
-                                        freq = Convert.ToDecimal(items[1]);
-                                    } catch (Exception) { }
-
-                                    GeoUtil.ConvertVrcToDecimalDegs(items[2], items[3], out double lat, out double lon);
-                                    DataHandler.AddWaypoint(new WaypointNavaid(items[0], lat, lon, "", freq, type));
-                                }
-                                break;
-                            case "FIXES":
-                                items = line.Split(' ');
-
-                                if (items.Length >= 3)
-                                {
-                                    GeoUtil.ConvertVrcToDecimalDegs(items[1], items[2], out double lat, out double lon);
-                                    DataHandler.AddWaypoint(new Waypoint(items[0], lat, lon));
-                                }
-                                break;
-                        }
-                    }
-                }
+        [HttpPost("loadDFDNavData")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public ActionResult LoadDFDNavData(LoadDfdFileRequest request)
+        {
+            try
+            {
+                DataHandler.LoadNavigraphDataFile(request.FileName, request.Uuid);
+                return Ok();
+            } catch (System.IO.FileNotFoundException ex)
+            {
+                return BadRequest("The file could not be found.");
             } catch (Exception ex)
             {
-                return BadRequest(ex.Message);
+                return BadRequest("The file is not a vaid NavData file.");
             }
-            return Ok();
         }
 
         [HttpPost("loadEuroscopeScenario")]
@@ -147,6 +145,9 @@ namespace SaunaSim.Api.Controllers
                 List<SimAircraft> pilots = new List<SimAircraft>();
 
                 SimAircraft lastPilot = null;
+
+                double refLat = 190;
+                double refLon = 190;
 
                 foreach (string line in filelines)
                 {
@@ -188,10 +189,12 @@ namespace SaunaSim.Api.Controllers
                         EuroScopeLoader.ReadVatsimPosFlag(Convert.ToInt32(items[8]), out double hdg, out double bank, out double pitch, out bool onGround);
                         //SimAircraft(string callsign, string networkId, string password,        string fullname, string hostname, ushort port, bool vatsim,   ProtocolRevision protocol,      double lat, double lon, double alt, double hdg_mag, int delayMs = 0)
                         lastPilot = new SimAircraft(callsign, request.Cid, request.Password, "Simulator Pilot", request.Server, (ushort)request.Port, request.Protocol,
-                            ClientInfoLoader.GetClientInfo((string msg) => { _logger.LogWarning($"{callsign}: {msg}"); }),
+                            PrivateInfoLoader.GetClientInfo((string msg) => { _logger.LogWarning($"{callsign}: {msg}"); }),
                             PerfDataHandler.LookupForAircraft("A320"),
-                            lat, lon, Convert.ToDouble(items[6]), hdg) {
-                            LogInfo = (string msg) => {
+                            lat, lon, Convert.ToDouble(items[6]), hdg)
+                        {
+                            LogInfo = (string msg) =>
+                            {
                                 _logger.LogInformation($"{callsign}: {msg}");
                             },
                             LogWarn = (string msg) =>
@@ -254,7 +257,7 @@ namespace SaunaSim.Api.Controllers
                             {
                                 if (waypoints[i].ToLower() == "hold" && lastPoint != null)
                                 {
-                                    PublishedHold pubHold = DataHandler.GetPublishedHold(lastPoint.Point.PointName);
+                                    PublishedHold pubHold = DataHandler.GetPublishedHold(lastPoint.Point.PointName, lastPoint.Point.PointPosition.Lat, lastPoint.Point.PointPosition.Lon);
 
                                     if (pubHold != null)
                                     {
@@ -289,7 +292,7 @@ namespace SaunaSim.Api.Controllers
                                         }
                                     }
 
-                                    Waypoint nextWp = DataHandler.GetClosestWaypointByIdentifier(waypoints[i], lastPilot.Position.Latitude, lastPilot.Position.Longitude);
+                                    Fix nextWp = DataHandler.GetClosestWaypointByIdentifier(waypoints[i], lastPilot.Position.Latitude, lastPilot.Position.Longitude);
 
                                     if (nextWp != null)
                                     {
@@ -332,11 +335,18 @@ namespace SaunaSim.Api.Controllers
                     } else if (line.StartsWith("ILS"))
                     {
                         string[] items = line.Split(':');
-                        string wpId = items[0];
+                        string wpId = items[0].Replace("ILS", "");
 
                         try
                         {
                             GeoPoint threshold = new GeoPoint(Convert.ToDouble(items[1]), Convert.ToDouble(items[2]));
+
+                            if (refLat > 180 || refLon > 180)
+                            {
+                                refLat = threshold.Lat;
+                                refLon = threshold.Lon;
+                            }
+
                             double course = 0;
                             if (items.Length == 4)
                             {
@@ -347,7 +357,7 @@ namespace SaunaSim.Api.Controllers
                                 course = MagneticUtil.ConvertTrueToMagneticTile(GeoPoint.InitialBearing(threshold, otherThreshold), threshold);
                             }
 
-                            DataHandler.AddWaypoint(new Localizer(wpId, threshold.Lat, threshold.Lon, wpId, 0, course));
+                            DataHandler.AddLocalizer(new Localizer("", "", "_fake_airport", wpId, wpId, threshold, 0, course, 0, IlsCategory.CATI, 0));
                         } catch (Exception)
                         {
                             Console.WriteLine("Well that didn't work did it.");
@@ -361,8 +371,8 @@ namespace SaunaSim.Api.Controllers
                             string wpId = items[1];
                             double inboundCourse = Convert.ToDouble(items[2]);
                             HoldTurnDirectionEnum turnDirection = (HoldTurnDirectionEnum)Convert.ToInt32(items[3]);
-
-                            DataHandler.AddPublishedHold(new PublishedHold(wpId, inboundCourse, turnDirection));
+                            Fix fix = DataHandler.GetClosestWaypointByIdentifier(wpId, refLat, refLon);
+                            DataHandler.AddPublishedHold(new PublishedHold(fix, inboundCourse, turnDirection));
                         } catch (Exception)
                         {
                             Console.WriteLine("Well that didn't work did it.");

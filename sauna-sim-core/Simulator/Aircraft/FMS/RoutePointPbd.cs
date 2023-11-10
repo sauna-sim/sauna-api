@@ -1,5 +1,6 @@
 ﻿using AviationCalcUtilNet.GeoTools;
 using SaunaSim.Core.Data;
+using NavData_Interface.Objects.Fix;
 
 namespace SaunaSim.Core.Simulator.Aircraft.FMS
 {
@@ -10,7 +11,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
         private double _bearing;
         private double _distance;
 
-        public RoutePointPbd(Waypoint waypoint, double bearing, double distance) : this(waypoint.Location, bearing, distance, waypoint.Identifier) { }
+        public RoutePointPbd(Fix waypoint, double bearing, double distance) : this(waypoint.Location, bearing, distance, waypoint.Identifier) { }
 
         public RoutePointPbd(GeoPoint pos, double bearing, double distance, string name)
         {
