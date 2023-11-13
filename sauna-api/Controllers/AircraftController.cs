@@ -205,14 +205,39 @@ namespace SaunaSim.Api.Controllers
             return Ok(new AircraftResponse(client, true));
         }
 
-        [HttpPost("all/simState")]
+        [HttpPost("all/unpause")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public ActionResult<AircraftStateRequestResponse> SetAllSimState(AircraftStateRequestResponse request)
+        public ActionResult<AircraftStateRequestResponse> UnpauseAll()
         {
-            SimAircraftHandler.AllPaused = request.Paused;
-            SimAircraftHandler.SimRate = request.SimRate;
+            SimAircraftHandler.AllPaused = false;
 
             return Ok(new AircraftStateRequestResponse {
+                Paused = SimAircraftHandler.AllPaused,
+                SimRate = SimAircraftHandler.SimRate
+            });
+        }
+
+        [HttpPost("all/pause")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        public ActionResult<AircraftStateRequestResponse> PauseAll()
+        {
+            SimAircraftHandler.AllPaused = true;
+
+            return Ok(new AircraftStateRequestResponse
+            {
+                Paused = SimAircraftHandler.AllPaused,
+                SimRate = SimAircraftHandler.SimRate
+            });
+        }
+
+        [HttpPost("all/simrate")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        public ActionResult<AircraftStateRequestResponse> SetAllSimRate(AircraftStateRequestResponse request)
+        {
+            SimAircraftHandler.SimRate = request.SimRate;
+
+            return Ok(new AircraftStateRequestResponse
+            {
                 Paused = SimAircraftHandler.AllPaused,
                 SimRate = SimAircraftHandler.SimRate
             });
@@ -229,10 +254,10 @@ namespace SaunaSim.Api.Controllers
             });
         }
 
-        [HttpPost("byCallsign/{callsign}/simState")]
+        [HttpPost("byCallsign/{callsign}/unpause")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public ActionResult<AircraftStateRequestResponse> SetAircraftSimState(string callsign, AircraftStateRequestResponse request)
+        public ActionResult<AircraftStateRequestResponse> UnpauseAircraft(string callsign)
         {
             SimAircraft client = SimAircraftHandler.GetAircraftByCallsign(callsign);
 
@@ -241,7 +266,48 @@ namespace SaunaSim.Api.Controllers
                 return BadRequest("The aircraft was not found!");
             }
 
-            client.Paused = request.Paused;
+            client.Paused = false;
+
+            return Ok(new AircraftStateRequestResponse
+            {
+                Paused = client.Paused,
+                SimRate = client.SimRate / 10.0
+            });
+        }
+
+        [HttpPost("byCallsign/{callsign}/pause")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public ActionResult<AircraftStateRequestResponse> PauseAircraft(string callsign)
+        {
+            SimAircraft client = SimAircraftHandler.GetAircraftByCallsign(callsign);
+
+            if (client == null)
+            {
+                return BadRequest("The aircraft was not found!");
+            }
+
+            client.Paused = true;
+
+            return Ok(new AircraftStateRequestResponse
+            {
+                Paused = client.Paused,
+                SimRate = client.SimRate / 10.0
+            });
+        }
+
+        [HttpPost("byCallsign/{callsign}/simrate")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public ActionResult<AircraftStateRequestResponse> SetAircraftSimRate(string callsign, AircraftStateRequestResponse request)
+        {
+            SimAircraft client = SimAircraftHandler.GetAircraftByCallsign(callsign);
+
+            if (client == null)
+            {
+                return BadRequest("The aircraft was not found!");
+            }
+
             client.SimRate = (int)(request.SimRate * 10);
 
             return Ok(new AircraftStateRequestResponse
