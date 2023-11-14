@@ -21,12 +21,22 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
         private object _routeLegsLock;
         private bool _suspended;
 
+        // Fms Values
+        private double _xTk_m;
+        private double _aTk_m;
+        private double _requiredTrueCourse;
+        private double _turnRadius_m;
+
         public EventHandler<WaypointPassedEventArgs> WaypointPassed;
 
         public AircraftFms(SimAircraft parentAircraft)
         {
             _parentAircraft = parentAircraft;
             _routeLegsLock = new object();
+            _xTk_m = -1;
+            _aTk_m = -1;
+            _requiredTrueCourse = -1;
+            _turnRadius_m = -1;
 
             lock (_routeLegsLock)
             {
@@ -35,6 +45,14 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
 
             _suspended = false;
         }
+
+        public double AlongTrackDistance_m => _aTk_m;
+
+        public double CrossTrackDistance_m => _xTk_m;
+
+        public double RequiredTrueCourse => _requiredTrueCourse;
+
+        public double TurnRadius_m => _turnRadius_m;
 
         public bool Suspended
         {
@@ -127,8 +145,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
                 {
                     point = _activeLeg.EndPoint;
                     index = -1;
-                }
-                else
+                } else
                 {
                     foreach (IRouteLeg leg in _routeLegs)
                     {
@@ -137,8 +154,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
                             index = _routeLegs.IndexOf(leg);
                             point = leg.StartPoint;
                             break;
-                        }
-                        else if (leg.EndPoint != null && leg.EndPoint.Point.Equals(routePoint))
+                        } else if (leg.EndPoint != null && leg.EndPoint.Point.Equals(routePoint))
                         {
                             index = _routeLegs.IndexOf(leg) + 1;
                             point = leg.EndPoint;
@@ -176,8 +192,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
                 {
                     index = 0;
                     point = _activeLeg.EndPoint;
-                }
-                else
+                } else
                 {
                     foreach (IRouteLeg leg in _routeLegs)
                     {
@@ -232,10 +247,17 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
 
         public bool ShouldActivateLnav(int intervalMs)
         {
+            if (ActiveLeg != null)
+            {
+                return ActiveLeg.ShouldActivateLeg(_parentAircraft, intervalMs);
+            }
+
             IRouteLeg leg = GetFirstLeg();
 
             return leg?.ShouldActivateLeg(_parentAircraft, intervalMs) ?? false;
         }
+
+        public (double requiredTrueCourse, double crossTrackError, double alongTrackDistance, double turnRadius) CourseInterceptInfo => (_requiredTrueCourse, _xTk_m, _aTk_m, _turnRadius_m);
 
         public void OnPositionUpdate(int intervalMs)
         {
@@ -244,18 +266,40 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
             // Activate next leg if there's no active leg
             if (ActiveLeg == null)
             {
+                if (GetFirstLeg() == null)
+                {
+                    return;
+                }
+
                 ActivateNextLeg();
             }
 
+            // Check if we should start turning towards the next leg
+            IRouteLeg nextLeg = GetFirstLeg();
+
             // Only sequence if next leg exists and fms is not suspended
-            if (GetFirstLeg() != null && !Suspended)
+            if (nextLeg != null && !Suspended)
             {
-                if (ActiveLeg?.HasLegTerminated(_parentAircraft) ?? true)
+                if (ActiveLeg.HasLegTerminated(_parentAircraft))
                 {
                     // Activate next leg on termination
                     ActivateNextLeg();
+                } else if (ActiveLeg.EndPoint != null &&
+                           ActiveLeg.EndPoint.PointType == RoutePointTypeEnum.FLY_BY &&
+                           nextLeg.ShouldActivateLeg(_parentAircraft, intervalMs) &&
+                           nextLeg.InitialTrueCourse >= 0 &&
+                           Math.Abs(ActiveLeg.FinalTrueCourse - nextLeg.InitialTrueCourse) > 0.5)
+                {
+                    // Begin turn to next leg, but do not activate
+                    nextLeg.ProcessLeg(_parentAircraft, intervalMs);
+                    (_requiredTrueCourse, _xTk_m, _aTk_m, _turnRadius_m) = nextLeg.GetCourseInterceptInfo(_parentAircraft);
+                    return;
                 }
             }
+
+            // Calculate course values
+            ActiveLeg.ProcessLeg(_parentAircraft, intervalMs);
+            (_requiredTrueCourse, _xTk_m, _aTk_m, _turnRadius_m) = ActiveLeg.GetCourseInterceptInfo(_parentAircraft);
         }
     }
 }

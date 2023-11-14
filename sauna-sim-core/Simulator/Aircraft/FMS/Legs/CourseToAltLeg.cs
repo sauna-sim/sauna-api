@@ -51,24 +51,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
             return aircraft.Position.IndicatedAltitude <= _endAlt;
         }
 
-        public (double requiredTrueCourse, double crossTrackError, double turnRadius) UpdateForLnav(SimAircraft aircraft, int intervalMs)
-        {
-            // Check if we should start turning towards the next leg
-            IRouteLeg nextLeg = aircraft.Fms.GetFirstLeg();
-            
-            if (nextLeg != null && !aircraft.Fms.Suspended)
-            {
-                if (HasLegTerminated(aircraft))
-                {
-                    // Activate next leg on termination
-                    aircraft.Fms.ActivateNextLeg();
-                }
-            }
-            
-            return (GetCourseInterceptInfo(aircraft).requiredTrueCourse, 0, -1);
-        }
-
-        public (double requiredTrueCourse, double crossTrackError, double alongTrackDistance) GetCourseInterceptInfo(SimAircraft aircraft)
+        public (double requiredTrueCourse, double crossTrackError, double alongTrackDistance, double turnRadius) GetCourseInterceptInfo(SimAircraft aircraft)
         {
             if (_beginAlt < 0)
             {
@@ -82,7 +65,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
                 _beginAlt = aircraft.Position.IndicatedAltitude;
             }
 
-            return (_trueCourse, 0, 0);
+            return (_trueCourse, 0, 0, -1);
         }
 
         public bool ShouldActivateLeg(SimAircraft aircraft, int intervalMs)
@@ -94,6 +77,10 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
         public override string ToString()
         {
             return $"{_magneticCourse:000} =(CA)=> {_endAlt}";
+        }
+
+        public void ProcessLeg(SimAircraft aircraft, int intervalMs)
+        {
         }
 
         public List<(GeoPoint start, GeoPoint end)> UiLines => new List<(GeoPoint start, GeoPoint end)>();

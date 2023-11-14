@@ -287,6 +287,9 @@ namespace SaunaSim.Core.Simulator.Aircraft
                 // Calculate position
                 if (!_paused)
                 {
+                    // Update FMS
+                    _fms.OnPositionUpdate((int)(AppSettingsManager.PosCalcRate * (_simRate / 10.0)));
+
                     // Run Autopilot
                     _autopilot.OnPositionUpdate((int) (AppSettingsManager.PosCalcRate * (_simRate / 10.0)));
 

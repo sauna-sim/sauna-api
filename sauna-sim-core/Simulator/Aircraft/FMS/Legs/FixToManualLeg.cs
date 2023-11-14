@@ -44,26 +44,18 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
             return false;
         }
 
-        public (double requiredTrueCourse, double crossTrackError, double turnRadius) UpdateForLnav(SimAircraft aircraft, int intervalMs)
-        {
-            // Update CrossTrackError, etc
-            (double requiredTrueCourse, double crossTrackError, _) = GetCourseInterceptInfo(aircraft);
-
-            return (requiredTrueCourse, crossTrackError, -1);
-        }
-
-        public (double requiredTrueCourse, double crossTrackError, double alongTrackDistance) GetCourseInterceptInfo(SimAircraft aircraft)
+        public (double requiredTrueCourse, double crossTrackError, double alongTrackDistance, double turnRadius) GetCourseInterceptInfo(SimAircraft aircraft)
         {
             // Otherwise calculate cross track error for this leg
             double crossTrackError = GeoUtil.CalculateCrossTrackErrorM(aircraft.Position.PositionGeoPoint, _startPoint.Point.PointPosition, _trueCourse,
                 out double requiredTrueCourse, out double alongTrackDistance);
 
-            return (requiredTrueCourse, crossTrackError, alongTrackDistance);
+            return (requiredTrueCourse, crossTrackError, alongTrackDistance, -1);
         }
 
         public bool ShouldActivateLeg(SimAircraft aircraft, int intervalMs)
         {
-            (double requiredTrueCourse, double crossTrackError, _) = GetCourseInterceptInfo(aircraft);
+            (double requiredTrueCourse, double crossTrackError, _, _) = GetCourseInterceptInfo(aircraft);
 
             // If there's no error
             double trackDelta = GeoUtil.CalculateTurnAmount(requiredTrueCourse, aircraft.Position.Track_True);
@@ -83,6 +75,10 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
         public override string ToString()
         {
             return $"{_startPoint.Point.PointName}-{_magneticCourse:000} =(FM)=> MANUAL";
+        }
+
+        public void ProcessLeg(SimAircraft aircraft, int intervalMs)
+        {
         }
 
         public List<(GeoPoint start, GeoPoint end)> UiLines => new List<(GeoPoint start, GeoPoint end)>();

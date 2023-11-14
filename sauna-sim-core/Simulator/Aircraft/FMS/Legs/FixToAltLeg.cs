@@ -62,38 +62,18 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
             return aircraft.Position.IndicatedAltitude <= _endAlt;
         }
 
-        public (double requiredTrueCourse, double crossTrackError, double turnRadius) UpdateForLnav(SimAircraft aircraft, int intervalMs)
-        {
-            // Check if we should start turning towards the next leg
-            IRouteLeg nextLeg = aircraft.Fms.GetFirstLeg();
-
-            if (nextLeg != null && !aircraft.Fms.Suspended)
-            {
-                if (HasLegTerminated(aircraft))
-                {
-                    // Activate next leg on termination
-                    aircraft.Fms.ActivateNextLeg();
-                }
-            }
-
-            // Update CrossTrackError, etc
-            (double requiredTrueCourse, double crossTrackError, _) = GetCourseInterceptInfo(aircraft);
-
-            return (requiredTrueCourse, crossTrackError, -1);
-        }
-
-        public (double requiredTrueCourse, double crossTrackError, double alongTrackDistance) GetCourseInterceptInfo(SimAircraft aircraft)
+        public (double requiredTrueCourse, double crossTrackError, double alongTrackDistance, double turnRadius) GetCourseInterceptInfo(SimAircraft aircraft)
         {
             // Otherwise calculate cross track error for this leg
             double crossTrackError = GeoUtil.CalculateCrossTrackErrorM(aircraft.Position.PositionGeoPoint, _startPoint.Point.PointPosition, _trueCourse,
                 out double requiredTrueCourse, out double alongTrackDistance);
 
-            return (requiredTrueCourse, crossTrackError, alongTrackDistance);
+            return (requiredTrueCourse, crossTrackError, alongTrackDistance, -1);
         }
 
         public bool ShouldActivateLeg(SimAircraft aircraft, int intervalMs)
         {
-            (double requiredTrueCourse, double crossTrackError, _) = GetCourseInterceptInfo(aircraft);
+            (double requiredTrueCourse, double crossTrackError, _, _) = GetCourseInterceptInfo(aircraft);
 
             // If there's no error
             double trackDelta = GeoUtil.CalculateTurnAmount(requiredTrueCourse, aircraft.Position.Track_True);
@@ -108,6 +88,10 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
 
             double requestedTurnDelta = GeoUtil.CalculateTurnAmount(demandedTrack, aircraft.Position.Track_True);
             return (trackDelta > 0 && requestedTurnDelta > 0 || trackDelta < 0 && requestedTurnDelta < 0);
+        }
+
+        public void ProcessLeg(SimAircraft aircraft, int intervalMs)
+        {
         }
 
         public List<(GeoPoint start, GeoPoint end)> UiLines => new List<(GeoPoint start, GeoPoint end)>();

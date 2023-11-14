@@ -41,8 +41,11 @@ namespace SaunaSim.Api.ApiObjects.Aircraft
             RouteLegs = new List<object>();
             FmsLines = new List<FmsLine>();
 
+            StringBuilder sb = new StringBuilder();
             if (fms.ActiveLeg != null)
             {
+                sb.Append(fms.ActiveLeg.ToString());
+                sb.Append("; ");
                 foreach ((GeoPoint start, GeoPoint end) in fms.ActiveLeg.UiLines)
                 {
                     FmsLines.Add(new FmsLine()
@@ -55,7 +58,6 @@ namespace SaunaSim.Api.ApiObjects.Aircraft
                 }
             }
 
-            StringBuilder sb = new StringBuilder();
             foreach (var leg in fms.GetRouteLegs())
             {
                 sb.Append(leg.ToString());

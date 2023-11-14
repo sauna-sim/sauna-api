@@ -79,19 +79,18 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
         bool HasLegTerminated(SimAircraft aircraft);
 
         /// <summary>
-        /// Obtains course info for LNAV Autopilot guidance.
+        /// Processes the Leg
         /// </summary>
         /// <param name="aircraft">The current aircraft.</param>
         /// <param name="intervalMs">Time (ms) before next position update.</param>
-        /// <returns><c>(double, double, double)</c> Required True Course, Cross Track Error, Turn Radius (-1 if N/A)</returns>
-        (double requiredTrueCourse, double crossTrackError, double turnRadius) UpdateForLnav(SimAircraft aircraft, int intervalMs);
+        void ProcessLeg(SimAircraft aircraft, int intervalMs);
 
         /// <summary>
-        /// 
+        /// Obtains course info for LNAV Autopilot guidance.
         /// </summary>
-        /// <param name="aircraft"></param>
-        /// <returns></returns>
-        (double requiredTrueCourse, double crossTrackError, double alongTrackDistance) GetCourseInterceptInfo(SimAircraft aircraft);
+        /// <param name="aircraft">The current aircraft.</param>
+        /// <returns><c>(double, double, double, double)</c> Required True Course (m), Cross Track Error (m), Along Track Distance (m), Turn Radius (m) (-1 if N/A)</returns>
+        (double requiredTrueCourse, double crossTrackError, double alongTrackDistance, double turnRadius) GetCourseInterceptInfo(SimAircraft aircraft);
 
         /// <summary>
         /// Determines whether or not the current leg should be activated

@@ -251,7 +251,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
 
         public bool HasLegTerminated(SimAircraft aircraft)
         {
-            (_, _, double alongTrackDistance) = GetCourseInterceptInfo(aircraft);
+            (_, _, double alongTrackDistance, _) = GetCourseInterceptInfo(aircraft);
             return alongTrackDistance < 0;
         }
 
@@ -263,78 +263,48 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
             return turnAmount > 0;
         }
 
-        public (double requiredTrueCourse, double crossTrackError, double turnRadius) UpdateForLnav(SimAircraft aircraft, int intervalMs)
+        public void ProcessLeg(SimAircraft aircraft, int intervalMs)
         {
             switch (_legState)
             {
                 case RfState.TRACK_TO_RF:
-                    return HandleTrackToRF(aircraft, intervalMs);
+                    HandleTrackToRF(aircraft, intervalMs);
+                    break;
                 case RfState.IN_RF:
-                    return HandleRFTurn(aircraft, intervalMs);
+                    HandleRFTurn(aircraft, intervalMs);
+                    break;
                 case RfState.TRACK_FROM_RF:
-                    return HandleTrackFromRF(aircraft, intervalMs);
+                    break;
             }
-
-            // this should never be reached
-
-            return HandleRFTurn(aircraft, intervalMs);
         }
 
-        public (double requiredTrueCourse, double crossTrackError, double turnRadius) HandleRFTurn(SimAircraft aircraft, int intervalMs)
+        public void HandleRFTurn(SimAircraft aircraft, int intervalMs)
         {
-            double crossTrackError = GeoUtil.CalculateArcCourseInfo(aircraft.Position.PositionGeoPoint, _turnCircle.Center, _turnCircle.PointARadial, _turnCircle.PointBRadial, _turnCircle.RadiusM, isClockwise(), out double requiredTrueCourse, out double alongTrackDistanceM);
+            GeoUtil.CalculateArcCourseInfo(aircraft.Position.PositionGeoPoint, _turnCircle.Center, _turnCircle.PointARadial, _turnCircle.PointBRadial, _turnCircle.RadiusM, isClockwise(), out double requiredTrueCourse, out double alongTrackDistanceM);
 
             if (alongTrackDistanceM < 0 && _trackFromRFLeg != null)
             {
-                return StartTrackFromRF(aircraft, intervalMs);
+                _legState = RfState.TRACK_FROM_RF;
             }
-
-            return (requiredTrueCourse, crossTrackError, _turnCircle.RadiusM * (isClockwise() ? 1 : -1));
         }
 
-        public (double requiredTrueCourse, double crossTrackError, double turnRadius) StartTrackToRF(SimAircraft aircraft, int intervalMs)
-        {
-            _legState = RfState.TRACK_TO_RF;
-
-            return HandleTrackToRF(aircraft, intervalMs);
-        }
-
-        public (double requiredTrueCourse, double crossTrackError, double turnRadius) HandleTrackToRF(SimAircraft aircraft, int intervalMs)
+        public void HandleTrackToRF(SimAircraft aircraft, int intervalMs)
         {
             if (_trackToRFLeg.HasLegTerminated(aircraft))
             {
                 _legState = RfState.IN_RF;
-                return HandleRFTurn(aircraft, intervalMs);
-            } else
-            {
-                return _trackToRFLeg.UpdateForLnav(aircraft, intervalMs);
+                HandleRFTurn(aircraft, intervalMs);
             }
         }
 
-        public (double requiredTrueCourse, double crossTrackError, double turnRadius) StartTrackFromRF(SimAircraft aircraft, int intervalMs)
-        {
-            _legState = RfState.TRACK_FROM_RF;
-
-            if (_trackFromRFLeg == null)
-            {
-                return HandleRFTurn(aircraft, intervalMs);
-            }
-
-            return HandleTrackFromRF(aircraft, intervalMs);
-        }
-
-        public (double requiredTrueCourse, double crossTrackError, double turnRadius) HandleTrackFromRF(SimAircraft aircraft, int intervalMs)
-        {
-            return _trackFromRFLeg.UpdateForLnav(aircraft, intervalMs);
-        }
-
-        public (double requiredTrueCourse, double crossTrackError, double alongTrackDistance) GetCourseInterceptInfo(SimAircraft aircraft)
+        public (double requiredTrueCourse, double crossTrackError, double alongTrackDistance, double turnRadius) GetCourseInterceptInfo(SimAircraft aircraft)
         {
             // Depending on how far along the leg we are, we'll add the along track distances of the relevant internal legs.
 
             double alongTrackDistance = 0;
             double crossTrackError = 0;
             double requiredTrueCourse = 0;
+            double turnRadius = -1;
 
             switch (_legState)
             {
@@ -342,7 +312,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
 
                     double toRFAlongTrackDistance;
 
-                    (requiredTrueCourse, crossTrackError, toRFAlongTrackDistance) = _trackToRFLeg.GetCourseInterceptInfo(aircraft);
+                    (requiredTrueCourse, crossTrackError, toRFAlongTrackDistance, _) = _trackToRFLeg.GetCourseInterceptInfo(aircraft);
                     GeoUtil.CalculateArcCourseInfo(_turnCircle.TangentialPointA, _turnCircle.Center, InitialTrueCourse, FinalTrueCourse, _turnCircle.RadiusM, isClockwise(), out _, out double rfTurnLength);
 
                     double fromRFAlongTrackDistance = GeoPoint.DistanceM(_turnCircle.TangentialPointB, EndPoint.Point.PointPosition);
@@ -352,7 +322,8 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
                     break;
                 case RfState.IN_RF:
                     crossTrackError = GeoUtil.CalculateArcCourseInfo(aircraft.Position.PositionGeoPoint, _turnCircle.Center, _turnCircle.PointARadial, _turnCircle.PointBRadial, _turnCircle.RadiusM, isClockwise(), out requiredTrueCourse, out rfTurnLength);
-                    
+                    turnRadius = _turnCircle.RadiusM * (isClockwise() ? 1 : -1);
+
                     if (_trackFromRFLeg != null)
                     {
                         fromRFAlongTrackDistance = GeoPoint.DistanceM(_turnCircle.TangentialPointB, EndPoint.Point.PointPosition);
@@ -367,7 +338,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
                 case RfState.TRACK_FROM_RF:
                     if(_trackFromRFLeg != null)
                     {
-                        (requiredTrueCourse, crossTrackError, fromRFAlongTrackDistance) = _trackFromRFLeg.GetCourseInterceptInfo(aircraft);
+                        (requiredTrueCourse, crossTrackError, fromRFAlongTrackDistance, _) = _trackFromRFLeg.GetCourseInterceptInfo(aircraft);
                         alongTrackDistance = fromRFAlongTrackDistance;
                     } else
                     {
@@ -377,7 +348,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
                     break;
             }
 
-            return (requiredTrueCourse, crossTrackError, alongTrackDistance);
+            return (requiredTrueCourse, crossTrackError, alongTrackDistance, turnRadius);
         }
 
         public bool ShouldActivateLeg(SimAircraft aircraft, int intervalMs)

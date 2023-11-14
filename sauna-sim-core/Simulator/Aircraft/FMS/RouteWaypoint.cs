@@ -21,6 +21,12 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
             _pointPosition = new GeoPoint(pointPosition);
         }
 
+        internal RouteWaypoint(string name, GeoPoint pointPosition)
+        {
+            _waypointName = name;
+            _pointPosition = new GeoPoint(pointPosition);
+        }
+
         public GeoPoint PointPosition => _pointPosition;
 
         public string PointName => _waypointName;

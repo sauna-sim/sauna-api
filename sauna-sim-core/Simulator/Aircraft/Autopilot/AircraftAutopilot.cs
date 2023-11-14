@@ -206,42 +206,17 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot
 
         private void RollHandleLnav(int intervalMs)
         {
-            var position = _parentAircraft.Position;
             var fms = _parentAircraft.Fms;
 
             if (fms.ActiveLeg == null)
             {
-                IRouteLeg leg = fms.GetFirstLeg();
-
-                // If there is no leg, hold current track
-                if (leg == null)
-                {
-                    _selHdg = (int)position.Track_Mag;
-                    _curLatMode = LateralModeType.TRACK;
-                    RollHdgTrackHold(position.Track_Mag, _selHdg, intervalMs);
-                    return;
-                }
-
-                fms.ActivateNextLeg();
-            }
-
-            // Only sequence if next leg exists and fms is not suspended
-            if (fms.GetFirstLeg() != null && !fms.Suspended)
-            {
-                if (fms.ActiveLeg?.HasLegTerminated(_parentAircraft) ?? true)
-                {
-                    // Activate next leg on termination
-                    fms.ActivateNextLeg();
-                }
-            }
-
-            if (fms.ActiveLeg == null)
-            {
+                _selHdg = (int) _parentAircraft.Position.Track_Mag;
+                _curLatMode = LateralModeType.TRACK;
                 return;
             }
 
             // Get True Course and crossTrackError
-            (double requiredTrueCourse, double crossTrackError, double turnRadius) = fms.ActiveLeg.UpdateForLnav(_parentAircraft, intervalMs);
+            (double requiredTrueCourse, double crossTrackError, _, double turnRadius) = fms.CourseInterceptInfo;
             
             // Calculate Bank Angle & Rate
             _targetBank = AutopilotUtil.CalculateDemandedRollForNav(crossTrackError, _parentAircraft.Position.Track_True, requiredTrueCourse,
