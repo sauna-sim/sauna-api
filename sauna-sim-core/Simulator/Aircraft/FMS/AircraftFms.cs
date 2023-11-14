@@ -274,6 +274,9 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
                 ActivateNextLeg();
             }
 
+            // Process Leg
+            ActiveLeg.ProcessLeg(_parentAircraft, intervalMs);
+
             // Check if we should start turning towards the next leg
             IRouteLeg nextLeg = GetFirstLeg();
 
@@ -298,7 +301,6 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
             }
 
             // Calculate course values
-            ActiveLeg.ProcessLeg(_parentAircraft, intervalMs);
             (_requiredTrueCourse, _xTk_m, _aTk_m, _turnRadius_m) = ActiveLeg.GetCourseInterceptInfo(_parentAircraft);
         }
     }

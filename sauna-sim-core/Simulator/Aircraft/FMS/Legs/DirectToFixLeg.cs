@@ -42,19 +42,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
             // Check if track has been set
             if (_trueCourse < 0)
             {
-                _trueCourse = GeoUtil.CalculateDirectBearingAfterTurn(
-                    aircraft.Position.PositionGeoPoint,
-                    _endPoint.Point.PointPosition,
-                    GeoUtil.CalculateRadiusOfTurn(GeoUtil.CalculateMaxBankAngle(aircraft.Position.GroundSpeed, 25, 3), aircraft.Position.GroundSpeed),
-                    aircraft.Position.Track_True);
-
-                if (_trueCourse < 0)
-                {
-                    _trueCourse = GeoPoint.FinalBearing(aircraft.Position.PositionGeoPoint, _endPoint.Point.PointPosition);
-                }
-
-                // Set start point
-                _startPoint = new FmsPoint(new RouteWaypoint("*PPOS", aircraft.Position.PositionGeoPoint), RoutePointTypeEnum.FLY_OVER);
+                ProcessLeg(aircraft, 1000);
             }
             
             // Otherwise calculate cross track error for this leg
@@ -84,6 +72,23 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
 
         public void ProcessLeg(SimAircraft aircraft, int intervalMs)
         {
+            // Check if track has been set
+            if (_trueCourse < 0)
+            {
+                _trueCourse = GeoUtil.CalculateDirectBearingAfterTurn(
+                    aircraft.Position.PositionGeoPoint,
+                    _endPoint.Point.PointPosition,
+                    GeoUtil.CalculateRadiusOfTurn(GeoUtil.CalculateMaxBankAngle(aircraft.Position.GroundSpeed, 25, 3), aircraft.Position.GroundSpeed),
+                    aircraft.Position.Track_True);
+
+                if (_trueCourse < 0)
+                {
+                    _trueCourse = GeoPoint.FinalBearing(aircraft.Position.PositionGeoPoint, _endPoint.Point.PointPosition);
+                }
+
+                // Set start point
+                _startPoint = new FmsPoint(new RouteWaypoint("*PPOS", aircraft.Position.PositionGeoPoint), RoutePointTypeEnum.FLY_OVER);
+            }
         }
 
         public List<(GeoPoint start, GeoPoint end)> UiLines
