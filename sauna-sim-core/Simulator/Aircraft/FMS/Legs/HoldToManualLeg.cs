@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using AviationCalcUtilNet.GeoTools;
 using SaunaSim.Core.Data;
 using SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller;
+using SaunaSim.Core.Simulator.Aircraft.FMS.NavDisplay;
 
 namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
 {
@@ -68,6 +69,6 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
             return false;
         }
 
-        public List<(GeoPoint start, GeoPoint end)> UiLines => _instr.GetUiLines();
+        public List<NdLine> UiLines => _instr.GetUiLines();
     }
 }

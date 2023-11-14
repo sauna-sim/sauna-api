@@ -1,5 +1,6 @@
 ﻿using AviationCalcUtilNet.GeoTools;
 using SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller;
+using SaunaSim.Core.Simulator.Aircraft.FMS.NavDisplay;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -364,23 +365,21 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
                 $"Tb->E: ({_trackFromRFLeg})";
         }
 
-        public List<(GeoPoint start, GeoPoint end)> UiLines
+        public List<NdLine> UiLines
         {
             get
             {
-                var retList = new List<(GeoPoint start, GeoPoint end)>();
+                var retList = new List<NdLine>();
                 if (!StartPoint.Point.PointPosition.Equals(_turnCircle.TangentialPointA))
                 {
-                    retList.Add((StartPoint.Point.PointPosition, _turnCircle.TangentialPointA));
+                    retList.Add(new NdLine(StartPoint.Point.PointPosition, _turnCircle.TangentialPointA));
                 }
 
-                retList.Add((_turnCircle.TangentialPointA, _turnCircle.TangentialPointB));
+                retList.Add(new NdArc(_turnCircle.TangentialPointA, _turnCircle.TangentialPointB, _turnCircle.Center, _turnCircle.RadiusM, _turnCircle.PointARadial, _turnCircle.PointBRadial, isClockwise()));
                 if (!EndPoint.Point.PointPosition.Equals(_turnCircle.TangentialPointA))
                 {
-                    retList.Add((_turnCircle.TangentialPointB, EndPoint.Point.PointPosition));
+                    retList.Add(new NdLine(_turnCircle.TangentialPointB, EndPoint.Point.PointPosition));
                 }
-
-                //retList.Add((_turnCircle.TangentialPointA, _turnCircle.Center));
 
                 return retList;
             }

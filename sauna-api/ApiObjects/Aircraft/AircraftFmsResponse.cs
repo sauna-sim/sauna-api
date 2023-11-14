@@ -4,17 +4,10 @@ using System.Collections.Generic;
 using System.Text;
 using SaunaSim.Core.Simulator.Aircraft.FMS;
 using AviationCalcUtilNet.GeoTools;
+using SaunaSim.Core.Simulator.Aircraft.FMS.NavDisplay;
 
 namespace SaunaSim.Api.ApiObjects.Aircraft
 {
-    public class FmsLine
-    {
-        public double StartLat { get; set; }
-        public double StartLon { get; set; }
-        public double EndLat { get; set; }
-        public double EndLon { get; set; }
-    }
-
     public class AircraftFmsResponse
     {
         public bool Suspended { get; set; }
@@ -24,7 +17,7 @@ namespace SaunaSim.Api.ApiObjects.Aircraft
         public object ActiveLeg { get; set; }
         public List<object> RouteLegs { get; set; }
         public string AsString { get; set; }
-        public List<FmsLine> FmsLines { get; set; }
+        public List<object> FmsLines { get; set; }
 
         public AircraftFmsResponse()
         {
@@ -39,22 +32,16 @@ namespace SaunaSim.Api.ApiObjects.Aircraft
             ArrivalAirport = fms.ArrivalAirport;
             ActiveLeg = fms.ActiveLeg;
             RouteLegs = new List<object>();
-            FmsLines = new List<FmsLine>();
+            FmsLines = new List<object>();
 
             StringBuilder sb = new StringBuilder();
             if (fms.ActiveLeg != null)
             {
                 sb.Append(fms.ActiveLeg.ToString());
                 sb.Append("; ");
-                foreach ((GeoPoint start, GeoPoint end) in fms.ActiveLeg.UiLines)
+                foreach (NdLine line in fms.ActiveLeg.UiLines)
                 {
-                    FmsLines.Add(new FmsLine()
-                    {
-                        StartLat = start.Lat,
-                        StartLon = start.Lon,
-                        EndLat = end.Lat,
-                        EndLon = end.Lon
-                    });
+                    FmsLines.Add(line);
                 }
             }
 
@@ -62,15 +49,9 @@ namespace SaunaSim.Api.ApiObjects.Aircraft
             {
                 sb.Append(leg.ToString());
                 sb.Append("; ");
-                foreach ((GeoPoint start, GeoPoint end) in leg.UiLines)
+                foreach (NdLine line in leg.UiLines)
                 {
-                    FmsLines.Add(new FmsLine()
-                    {
-                        StartLat = start.Lat,
-                        StartLon = start.Lon,
-                        EndLat = end.Lat,
-                        EndLon = end.Lon
-                    });
+                    FmsLines.Add(line);
                 }
                 RouteLegs.Add(leg);
             }

@@ -7,6 +7,7 @@ using AviationCalcUtilNet.MathTools;
 using SaunaSim.Core.Data;
 using SaunaSim.Core.Simulator.Aircraft.FMS;
 using SaunaSim.Core.Simulator.Aircraft.FMS.Legs;
+using SaunaSim.Core.Simulator.Aircraft.FMS.NavDisplay;
 
 namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
 {
@@ -155,7 +156,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
         {
             double outR = GeoUtil.CalculateConstantRadiusTurn(inboundCourse, turnAmt, windDir, windSpd, tas);
             double inR = GeoUtil.CalculateConstantRadiusTurn(outboundCourse, turnAmt, windDir, windSpd, tas);
-            return Math.Max(outR, inR);
+            return Math.Max(outR, inR) * AutopilotUtil.RADIUS_BUFFER_MULT;
         }
 
         private void CalculateParallelEntry(SimAircraft aircraft)
@@ -433,9 +434,9 @@ out double requiredTrueCourse, out double alongTrackDistance);
             return (requiredTrueCourse, crossTrackError, alongTrackDistance, -1);
         }
 
-        public List<(GeoPoint start, GeoPoint end)> GetUiLines()
+        public List<NdLine> GetUiLines()
         {
-            var retList = new List<(GeoPoint start, GeoPoint end)>();
+            var retList = new List<NdLine>();
             if (_outboundTurnLeg != null)
             {
                 retList.AddRange(_outboundTurnLeg.UiLines);

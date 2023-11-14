@@ -19,6 +19,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
         public const double MIN_XTK_M = 3;
         public const double MAX_CRS_DEV = 0.1;
         public const double MAX_INTC_XTK_M = 1852.0;
+        public const double RADIUS_BUFFER_MULT = 1.1;
 
         // Pitch
         public const double PITCH_TIME = 0.5;

@@ -17,10 +17,12 @@
   </ItemGroup>
   <ItemGroup>
     <None Remove="JsonSchemas\" />
+    <None Remove="Simulator\Aircraft\FMS\NavDisplay\" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="JsonSchemas\" />
     <ProjectReference Include="..\NavData-Interface\NavData-Interface\NavData-Interface.csproj" />
+    <Folder Include="Simulator\Aircraft\FMS\NavDisplay\" />
   </ItemGroup>
   <ItemGroup>
     <None Remove="Data\NavData\" />
