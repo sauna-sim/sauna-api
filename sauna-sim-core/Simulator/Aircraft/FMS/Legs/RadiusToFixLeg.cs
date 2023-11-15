@@ -115,14 +115,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
 
                     double diameterCourse = GeoUtil.NormalizeHeading(InitialTrueCourse + 90);
                     GeoPoint tangentialPointA = StartPoint.Point.PointPosition;
-                    GeoPoint tangentialPointB = GeoUtil.FindIntersection(StartPoint.Point.PointPosition, EndPoint.Point.PointPosition, diameterCourse, FinalTrueCourse);
-
-                    if (GeoPoint.DistanceM(tangentialPointB, EndPoint.Point.PointPosition) > 500000){
-                        // the diameter was probably going the wrong way and since we don't have a way of using
-                        // this function with two unknowns let's try the other way
-                        diameterCourse = GeoUtil.NormalizeHeading(InitialTrueCourse - 90);
-                        tangentialPointB = GeoUtil.FindIntersection(StartPoint.Point.PointPosition, EndPoint.Point.PointPosition, diameterCourse, FinalTrueCourse);
-                    }
+                    GeoPoint tangentialPointB = GeoPoint.FindClosestIntersection(StartPoint.Point.PointPosition, diameterCourse, EndPoint.Point.PointPosition, FinalTrueCourse);
 
                     turnCircleRadiusM = GeoPoint.DistanceM(tangentialPointA, tangentialPointB) / 2;
 
@@ -138,16 +131,8 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
                     // we'll turn when we're abeam EndPoint
 
                     double diameterCourse = GeoUtil.NormalizeHeading(FinalTrueCourse + 90);
-                    GeoPoint tangentialPointA = GeoUtil.FindIntersection(EndPoint.Point.PointPosition, StartPoint.Point.PointPosition, diameterCourse, InitialTrueCourse);
+                    GeoPoint tangentialPointA = GeoPoint.FindClosestIntersection(EndPoint.Point.PointPosition, diameterCourse, StartPoint.Point.PointPosition, InitialTrueCourse);
                     GeoPoint tangentialPointB = EndPoint.Point.PointPosition;
-
-                    if (GeoPoint.DistanceM(tangentialPointA, StartPoint.Point.PointPosition) > 500000)
-                    {
-                        // the diameter was probably going the wrong way and since we don't have a way of using
-                        // this function with two unknows let's try the other way
-                        diameterCourse = GeoUtil.NormalizeHeading(FinalTrueCourse - 90);
-                        tangentialPointA = GeoUtil.FindIntersection(EndPoint.Point.PointPosition, StartPoint.Point.PointPosition, diameterCourse, InitialTrueCourse);
-                    }
 
                     turnCircleRadiusM = GeoPoint.DistanceM(tangentialPointB, tangentialPointA) / 2;
 
@@ -164,11 +149,17 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
                 // Calculate tangential circle to crossing legs:
 
                 // Calculate bisector of both legs
-                bisectorIntersection = GeoUtil.FindIntersection(StartPoint.Point.PointPosition, EndPoint.Point.PointPosition, InitialTrueCourse, FinalTrueCourse);
+                bisectorIntersection = GeoPoint.FindClosestIntersection(StartPoint.Point.PointPosition, InitialTrueCourse, EndPoint.Point.PointPosition, FinalTrueCourse);
 
                 // Calculate the courses again because great circle
                 double bisectorStartRadial = GeoPoint.InitialBearing(bisectorIntersection, StartPoint.Point.PointPosition);
                 double bisectorEndRadial = GeoPoint.InitialBearing(bisectorIntersection, EndPoint.Point.PointPosition);
+
+                // Handle cases where we turn > 180 degrees. In these cases the bisectorRadials are not reciprocals of the courses for either start or end
+                if (Math.Abs(bisectorStartRadial - InitialTrueCourse) < 2 && Math.Abs(bisectorEndRadial - FinalTrueCourse) < 2)
+                {
+                    bisectorEndRadial = GeoUtil.NormalizeHeading(bisectorEndRadial + 180);
+                }
 
                 double bisectorRadial = GeoUtil.NormalizeHeading(bisectorStartRadial + (GeoUtil.CalculateTurnAmount(bisectorStartRadial, bisectorEndRadial) / 2));
                 // The bisector is now defined by bisectorIntersection and bisectorCourse
@@ -198,21 +189,21 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
                         referenceTangentPoint = StartPoint.Point.PointPosition;
                         tangentPointA = StartPoint.Point.PointPosition;
 
-                        turnCircleCenter = GeoUtil.FindIntersection(bisectorIntersection, referenceTangentPoint, bisectorRadial, referenceTangentPointPerpendicularCourse);
+                        turnCircleCenter = GeoPoint.FindClosestIntersection(bisectorIntersection, bisectorRadial, referenceTangentPoint, referenceTangentPointPerpendicularCourse);
 
                         // Calculate the other tangent point
                         double tangentPointBPerpendicularCourse = GeoUtil.NormalizeHeading(FinalTrueCourse + 90);
-                        tangentPointB = GeoUtil.FindIntersection(EndPoint.Point.PointPosition, turnCircleCenter, GeoUtil.NormalizeHeading(FinalTrueCourse + 180), tangentPointBPerpendicularCourse);
+                        tangentPointB = GeoPoint.FindClosestIntersection(EndPoint.Point.PointPosition, GeoUtil.NormalizeHeading(FinalTrueCourse + 180), turnCircleCenter, tangentPointBPerpendicularCourse);
                     } else
                     {
                         referenceTangentPointPerpendicularCourse = GeoUtil.NormalizeHeading(FinalTrueCourse + 90); // perpendicular to EndPoint
                         referenceTangentPoint = EndPoint.Point.PointPosition;
                         tangentPointB = EndPoint.Point.PointPosition;
 
-                        turnCircleCenter = GeoUtil.FindIntersection(bisectorIntersection, referenceTangentPoint, bisectorRadial, referenceTangentPointPerpendicularCourse);
+                        turnCircleCenter = GeoPoint.FindClosestIntersection(bisectorIntersection, bisectorRadial, referenceTangentPoint, referenceTangentPointPerpendicularCourse);
                         // Calculate the other tangent point
                         double tangentPointAPerpendicularCourse = GeoUtil.NormalizeHeading(InitialTrueCourse + 90);
-                        tangentPointA = GeoUtil.FindIntersection(StartPoint.Point.PointPosition, turnCircleCenter, InitialTrueCourse, tangentPointAPerpendicularCourse);
+                        tangentPointA = GeoPoint.FindClosestIntersection(StartPoint.Point.PointPosition, InitialTrueCourse, turnCircleCenter, tangentPointAPerpendicularCourse);
                     }
                 }
                 else
@@ -224,10 +215,10 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
                         referenceTangentPoint = StartPoint.Point.PointPosition;
                         tangentPointA = StartPoint.Point.PointPosition;
 
-                        turnCircleCenter = GeoUtil.FindIntersection(bisectorIntersection, referenceTangentPoint, bisectorRadial, referenceTangentPointPerpendicularCourse);
+                        turnCircleCenter = GeoPoint.FindClosestIntersection(bisectorIntersection, bisectorRadial, referenceTangentPoint, referenceTangentPointPerpendicularCourse);
                         // Calculate the other tangent point
                         double tangentPointBPerpendicularCourse = GeoUtil.NormalizeHeading(FinalTrueCourse + 90);
-                        tangentPointB = GeoUtil.FindIntersection(EndPoint.Point.PointPosition, turnCircleCenter, GeoUtil.NormalizeHeading(FinalTrueCourse + 180), tangentPointBPerpendicularCourse);
+                        tangentPointB = GeoPoint.FindClosestIntersection(EndPoint.Point.PointPosition, GeoUtil.NormalizeHeading(FinalTrueCourse + 180), turnCircleCenter, tangentPointBPerpendicularCourse);
                     }
                     else
                     {
@@ -235,11 +226,11 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
                         referenceTangentPoint = EndPoint.Point.PointPosition;
                         tangentPointB = EndPoint.Point.PointPosition;
 
-                        turnCircleCenter = GeoUtil.FindIntersection(bisectorIntersection, referenceTangentPoint, bisectorRadial, referenceTangentPointPerpendicularCourse);
+                        turnCircleCenter = GeoPoint.FindClosestIntersection(bisectorIntersection, bisectorRadial, referenceTangentPoint, referenceTangentPointPerpendicularCourse);
 
                         // Calculate the other tangent point
                         double tangentPointAPerpendicularCourse = GeoUtil.NormalizeHeading(InitialTrueCourse + 90);
-                        tangentPointA = GeoUtil.FindIntersection(StartPoint.Point.PointPosition, turnCircleCenter, InitialTrueCourse, tangentPointAPerpendicularCourse);
+                        tangentPointA = GeoPoint.FindClosestIntersection(StartPoint.Point.PointPosition, InitialTrueCourse, turnCircleCenter, tangentPointAPerpendicularCourse);
                     }
                 }
 
