@@ -89,7 +89,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
         {
             get
             {
-                var retList = new List<(GeoPoint start, GeoPoint end)>();
+                var retList = new List<NdLine>();
                 retList.Add(new NdLine(StartPoint.Point.PointPosition, EndPoint.Point.PointPosition));
                 return retList;
             }
