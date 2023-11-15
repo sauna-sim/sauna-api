@@ -17,6 +17,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.NavDisplay
 			StartTrueBearing = startTrueBearing;
 			EndTrueBearing = endTrueBearing;
 			Clockwise = clockwise;
+			Center = new GeoPoint(center)
 		}
 	}
 }
