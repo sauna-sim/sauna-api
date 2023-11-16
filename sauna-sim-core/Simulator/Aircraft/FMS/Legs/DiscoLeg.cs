@@ -28,7 +28,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
         public (double requiredTrueCourse, double crossTrackError, double alongTrackDistance, double turnRadius) GetCourseInterceptInfo(SimAircraft aircraft)
         {
 
-            return (_initialTrueCourse, 0, 1000, -1);
+            return (_initialTrueCourse, 0, 1000, 0);
         }
 
         public bool HasLegTerminated(SimAircraft aircraft)

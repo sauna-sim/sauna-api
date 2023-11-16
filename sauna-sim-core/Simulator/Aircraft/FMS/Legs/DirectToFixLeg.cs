@@ -49,7 +49,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
             double crossTrackError = GeoUtil.CalculateCrossTrackErrorM(aircraft.Position.PositionGeoPoint, _endPoint.Point.PointPosition, _trueCourse,
                 out double requiredTrueCourse, out double alongTrackDistance);
 
-            return (requiredTrueCourse, crossTrackError, alongTrackDistance, -1);
+            return (requiredTrueCourse, crossTrackError, alongTrackDistance, 0);
         }
 
         public bool ShouldActivateLeg(SimAircraft aircraft, int intervalMs)
@@ -80,7 +80,9 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
                 }
 
                 // Set start point
-                _startPoint = new FmsPoint(new RouteWaypoint("*PPOS", aircraft.Position.PositionGeoPoint), RoutePointTypeEnum.FLY_OVER);
+                GeoPoint startPt = new GeoPoint(_endPoint.Point.PointPosition);
+                startPt.MoveByM(GeoUtil.NormalizeHeading(_trueCourse + 180), GeoPoint.FlatDistanceM(_endPoint.Point.PointPosition, aircraft.Position.PositionGeoPoint));
+                _startPoint = new FmsPoint(new RouteWaypoint("*DIRECT", startPt), RoutePointTypeEnum.FLY_OVER);
             }
         }
 

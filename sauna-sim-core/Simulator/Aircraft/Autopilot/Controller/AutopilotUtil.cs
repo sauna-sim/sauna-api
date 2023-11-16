@@ -354,13 +354,18 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
             double turnAmt = GeoUtil.CalculateTurnAmount(curTrueTrack, demandedTrack);
 
             // Figure out if the course is an arc and adjust the "zero" bank accordingly
-            if (courseTurnRadius <= 0)
+            if (Math.Abs(courseTurnRadius) < double.Epsilon)
             {
                 return (CalculateDemandedRollForTurn(turnAmt, curRoll, groundSpeed, intervalMs), demandedTrack);
             }
 
             // Calculate Roll Angle for desired turn radius
-            double zeroRoll = GeoUtil.CalculateBankAngle(courseTurnRadius, groundSpeed);
+            double zeroRoll = GeoUtil.CalculateBankAngle(MathUtil.ConvertMetersToNauticalMiles(Math.Abs(courseTurnRadius)), groundSpeed);
+
+            if (courseTurnRadius < 0)
+            {
+                zeroRoll *= -1;
+            }
 
             return (CalculateDemandedRollForTurn(turnAmt, curRoll, zeroRoll, groundSpeed, intervalMs), demandedTrack);
         }

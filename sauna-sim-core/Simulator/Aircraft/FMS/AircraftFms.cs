@@ -36,7 +36,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
             _xTk_m = -1;
             _aTk_m = -1;
             _requiredTrueCourse = -1;
-            _turnRadius_m = -1;
+            _turnRadius_m = 0;
 
             lock (_routeLegsLock)
             {
@@ -141,10 +141,14 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
                 int index = -1;
                 FmsPoint point = null;
 
-                if (_activeLeg != null && _activeLeg.EndPoint != null && _activeLeg.EndPoint.Point.Equals(routePoint))
+                if (_activeLeg != null && _activeLeg.StartPoint != null && _activeLeg.StartPoint.Point.Equals(routePoint))
+                {
+                    point = _activeLeg.StartPoint;
+                    _routeLegs.Insert(0, _activeLeg);
+                    index = 0;
+                } else if (_activeLeg != null && _activeLeg.EndPoint != null && _activeLeg.EndPoint.Point.Equals(routePoint))
                 {
                     point = _activeLeg.EndPoint;
-                    _routeLegs.Insert(0, _activeLeg);
                     index = 0;
                 } else
                 {

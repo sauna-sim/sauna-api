@@ -66,7 +66,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
                 _beginAlt = aircraft.Position.IndicatedAltitude;
             }
 
-            return (_trueCourse, 0, 0, -1);
+            return (_trueCourse, 0, 0, 0);
         }
 
         public bool ShouldActivateLeg(SimAircraft aircraft, int intervalMs)

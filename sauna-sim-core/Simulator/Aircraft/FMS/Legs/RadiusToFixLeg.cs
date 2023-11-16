@@ -296,7 +296,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
             double alongTrackDistance = 0;
             double crossTrackError = 0;
             double requiredTrueCourse = 0;
-            double turnRadius = -1;
+            double turnRadius = 0;
 
             switch (_legState)
             {

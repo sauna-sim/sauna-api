@@ -45,7 +45,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
             double crossTrackError = GeoUtil.CalculateCrossTrackErrorM(aircraft.Position.PositionGeoPoint, _endPoint.Point.PointPosition, _trueCourse,
                 out double requiredTrueCourse, out double alongTrackDistance);
 
-            return (requiredTrueCourse, crossTrackError, alongTrackDistance, -1);
+            return (requiredTrueCourse, crossTrackError, alongTrackDistance, 0);
         }
 
         public bool ShouldActivateLeg(SimAircraft aircraft, int intervalMs)
