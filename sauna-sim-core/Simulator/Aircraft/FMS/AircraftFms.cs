@@ -138,13 +138,14 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
         {
             lock (_routeLegsLock)
             {
-                int index = 0;
+                int index = -1;
                 FmsPoint point = null;
 
                 if (_activeLeg != null && _activeLeg.EndPoint != null && _activeLeg.EndPoint.Point.Equals(routePoint))
                 {
                     point = _activeLeg.EndPoint;
-                    index = -1;
+                    _routeLegs.Insert(0, _activeLeg);
+                    index = 0;
                 } else
                 {
                     foreach (IRouteLeg leg in _routeLegs)
