@@ -101,6 +101,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
                 }
 
                 aircraft.Paused = _allPaused;
+                aircraft.SimRate = _simRate;
                 _aircrafts.Add(aircraft);
             }
             return true;

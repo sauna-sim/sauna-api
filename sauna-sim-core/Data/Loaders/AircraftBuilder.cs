@@ -12,7 +12,7 @@ using SaunaSim.Core.Simulator.Aircraft.Performance;
 
 namespace SaunaSim.Core.Data.Loaders
 {
-	public class AircraftFactory
+	public class AircraftBuilder
 	{
 		public string Callsign { get; set; }
 		public string Cid { get; set; }
@@ -20,6 +20,7 @@ namespace SaunaSim.Core.Data.Loaders
 		public string FullName { get; set; } = "Simulator Pilot";
 		public string Server { get; set; }
 		public int Port { get; set; }
+		public int Squawk { get; set; } = 0;
 		public GeoPoint Position { get; set; } = new GeoPoint(0, 0, 10000);
 		public Action<string> LogInfo { get; set; }
         public Action<string> LogWarn { get; set; }
@@ -35,13 +36,13 @@ namespace SaunaSim.Core.Data.Loaders
 		public int RequestedAlt { get; set; } = -1;
 		public List<FactoryFmsWaypoint> FmsWaypoints { get; set; } = new List<FactoryFmsWaypoint>();
 
-		internal AircraftFactory() {
+		internal AircraftBuilder() {
 			LogInfo = (string msg) => { Console.WriteLine($"{Callsign}: [INFO] {msg}"); };
             LogWarn = (string msg) => { Console.WriteLine($"{Callsign}: [WARN] {msg}"); };
             LogError = (string msg) => { Console.WriteLine($"{Callsign}: [ERROR] {msg}"); };
         }
 
-		public AircraftFactory(string callsign, string cid, string password, string server, int port) : this()
+		public AircraftBuilder(string callsign, string cid, string password, string server, int port) : this()
 		{
 			Callsign = callsign;
 			Cid = cid;
@@ -50,7 +51,7 @@ namespace SaunaSim.Core.Data.Loaders
 			Password = password;
 		}
 
-		public SimAircraft Generate(ClientInfo clientInfo)
+		public SimAircraft Push(ClientInfo clientInfo)
 		{
 			SimAircraft aircraft = new SimAircraft(
 				Callsign,
@@ -159,6 +160,9 @@ namespace SaunaSim.Core.Data.Loaders
                 aircraft.Fms.ActivateDirectTo(legs[0].StartPoint.Point);
                 aircraft.Autopilot.AddArmedLateralMode(LateralModeType.LNAV);
             }
+
+            SimAircraftHandler.AddAircraft(aircraft);
+            aircraft.Start();
 
 			return aircraft;
         }

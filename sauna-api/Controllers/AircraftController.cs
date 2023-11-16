@@ -16,6 +16,7 @@ using SaunaSim.Core.Simulator.Aircraft.FMS;
 using SaunaSim.Core.Simulator.Aircraft.FMS.Legs;
 using SaunaSim.Core.Simulator.Aircraft.Performance;
 using NavData_Interface.Objects.Fix;
+using SaunaSim.Core.Data.Loaders;
 
 namespace SaunaSim.Api.Controllers
 {
@@ -38,107 +39,42 @@ namespace SaunaSim.Api.Controllers
         {
             try
             {
-                SimAircraft pilot = new SimAircraft(
-                    request.Callsign, 
+                AircraftBuilder builder = new AircraftBuilder(
+                    request.Callsign,
                     request.Cid,
-                    request.Password, 
-                    request.FullName, 
-                    request.Server, 
-                    (ushort)request.Port, 
-                    request.Protocol,
-                    PrivateInfoLoader.GetClientInfo((string msg) => { _logger.LogWarning($"{request.Callsign}: {msg}"); }),
-                    PerfDataHandler.LookupForAircraft("A320"),
-                    request.Position.Latitude, 
-                    request.Position.Longitude, 
-                    request.Position.IndicatedAltitude, 
-                    request.Position.MagneticHeading
-                    )
+                    request.Password,
+                    request.Server,
+                    request.Port)
                 {
-                    LogInfo = (string msg) => {
+                    Protocol = request.Protocol,
+                    Position = new AviationCalcUtilNet.GeoTools.GeoPoint(request.Position.Latitude,
+                    request.Position.Longitude,
+                    request.Position.IndicatedAltitude),
+                    HeadingMag = request.Position.MagneticHeading,
+                    LogInfo = (string msg) =>
+                    {
                         _logger.LogInformation($"{request.Callsign}: {msg}");
                     },
-                    LogWarn = (string msg) => {
+                    LogWarn = (string msg) =>
+                    {
                         _logger.LogWarning($"{request.Callsign}: {msg}");
                     },
-                    LogError = (string msg) => {
+                    LogError = (string msg) =>
+                    {
                         _logger.LogError($"{request.Callsign}: {msg}");
                     },
-
                     XpdrMode = request.TransponderMode,
                     Squawk = request.Squawk,
-                    Paused = request.Paused,
-                    //TODO: flight plan
+                    Speed = request.Position.IndicatedSpeed,
+                    IsSpeedMach = request.Position.IsMachNumber
                 };
 
-
-                if (request.Position.IsMachNumber)
+                if (request.FmsWaypointList != null)
                 {
-                    pilot.Position.MachNumber = request.Position.IndicatedSpeed;
-                } else
-                {
-                    pilot.Position.IndicatedAirSpeed = request.Position.IndicatedSpeed;
+                    builder.FmsWaypoints = request.FmsWaypointList;
                 }
 
-
-
-                List<IRouteLeg> legs = new List<IRouteLeg>();
-
-                FmsPoint lastPoint = null;
-
-                foreach (FmsWaypointRequest waypoint in request.FmsWaypointList)
-                {
-                    if (waypoint.Identifier.ToLower() == "hold" && lastPoint != null)
-                    {
-                        PublishedHold pubHold = DataHandler.GetPublishedHold(lastPoint.Point.PointName, lastPoint.Point.PointPosition.Lat, lastPoint.Point.PointPosition.Lon);
-
-                        if (pubHold != null)
-                        {
-                            lastPoint.PointType = RoutePointTypeEnum.FLY_OVER;
-                            HoldToManualLeg leg = new HoldToManualLeg(lastPoint, BearingTypeEnum.MAGNETIC, pubHold.InboundCourse, pubHold.TurnDirection, pubHold.LegLengthType, pubHold.LegLength);
-                            legs.Add(leg);
-                            lastPoint = leg.EndPoint;
-                        }
-                    } else
-                    {
-                        Fix nextWp = DataHandler.GetClosestWaypointByIdentifier(waypoint.Identifier, pilot.Position.Latitude, pilot.Position.Longitude);
-
-                        if (nextWp != null)
-                        {
-                            FmsPoint fmsPt = new FmsPoint(new RouteWaypoint(nextWp), RoutePointTypeEnum.FLY_BY)
-                            {
-                                UpperAltitudeConstraint = waypoint.UpperAltitudeConstraint,
-                                LowerAltitudeConstraint = waypoint.LowerAltitudeConstraint,
-                                SpeedConstraintType = waypoint.SpeedConstratintType,
-                                SpeedConstraint = waypoint.SpeedConstraint,
-
-                            };
-
-                            if (lastPoint == null)
-                            {
-                                lastPoint = fmsPt;
-                            }
-                            else
-                            {
-                                legs.Add(new TrackToFixLeg(lastPoint, fmsPt));
-                                lastPoint = fmsPt;
-                            }
-                        }
-                    }
-                }
-
-                foreach (IRouteLeg leg in legs)
-                {
-                    pilot.Fms.AddRouteLeg(leg);
-                }
-
-                if (legs.Count > 0)
-                {
-                    pilot.Fms.ActivateDirectTo(legs[0].StartPoint.Point);
-                    pilot.Autopilot.AddArmedLateralMode(LateralModeType.LNAV);
-                }
-
-                SimAircraftHandler.AddAircraft(pilot);
-                pilot.Start();
+                var pilot = builder.Push(PrivateInfoLoader.GetClientInfo((string msg) => { _logger.LogWarning($"{request.Callsign}: {msg}"); }));
 
                 return Ok(new AircraftResponse(pilot, true));
             } catch (Exception e)
