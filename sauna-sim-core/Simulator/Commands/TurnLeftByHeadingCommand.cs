@@ -19,6 +19,7 @@ namespace SaunaSim.Core.Simulator.Commands
 
         public void ExecuteCommand()
         {
+            Aircraft.Autopilot.CurrentLateralMode = LateralModeType.HDG;
             Aircraft.Autopilot.SelectedHeading = hdg;
             Aircraft.Autopilot.HdgKnobTurnDirection = McpKnobDirection.SHORTEST;
         }
