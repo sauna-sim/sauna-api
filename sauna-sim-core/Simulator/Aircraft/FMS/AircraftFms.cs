@@ -277,13 +277,21 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
             // Process Leg
             ActiveLeg.ProcessLeg(_parentAircraft, intervalMs);
 
+            bool hasLegTerminated = ActiveLeg.HasLegTerminated(_parentAircraft);
+
+            // Check if WaypointPassed should be triggered
+            if (hasLegTerminated && _aTk_m > 0 && ActiveLeg.EndPoint != null)
+            {
+                WaypointPassed?.Invoke(this, new WaypointPassedEventArgs(ActiveLeg.EndPoint.Point));
+            }
+
             // Check if we should start turning towards the next leg
             IRouteLeg nextLeg = GetFirstLeg();
 
             // Only sequence if next leg exists and fms is not suspended
             if (nextLeg != null && !Suspended)
             {
-                if (ActiveLeg.HasLegTerminated(_parentAircraft))
+                if (hasLegTerminated)
                 {
                     // Activate next leg on termination
                     ActivateNextLeg();
@@ -296,6 +304,16 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
                     // Begin turn to next leg, but do not activate
                     nextLeg.ProcessLeg(_parentAircraft, intervalMs);
                     (_requiredTrueCourse, _xTk_m, _aTk_m, _turnRadius_m) = nextLeg.GetCourseInterceptInfo(_parentAircraft);
+
+                    // If we've intercepted the new leg, just activate it
+                    if (Math.Abs(_xTk_m) < AutopilotUtil.MIN_XTK_M)
+                    {
+                        if (ActiveLeg.EndPoint != null)
+                        {
+                            WaypointPassed?.Invoke(this, new WaypointPassedEventArgs(ActiveLeg.EndPoint.Point));
+                        }
+                        ActivateNextLeg();
+                    }
                     return;
                 }
             }

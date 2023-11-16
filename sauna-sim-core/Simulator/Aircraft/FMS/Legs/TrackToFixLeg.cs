@@ -12,7 +12,6 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
         private FmsPoint _endPoint;
         private double _initialBearing;
         private double _finalBearing;
-        private double _prevAlongTrackDist;
 
         public TrackToFixLeg(FmsPoint startPoint, FmsPoint endPoint)
         {
@@ -46,13 +45,6 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
             // Otherwise calculate cross track error for this leg
             double crossTrackError = GeoUtil.CalculateCrossTrackErrorM(aircraft.Position.PositionGeoPoint, _endPoint.Point.PointPosition, _finalBearing,
                 out double requiredTrueCourse, out double alongTrackDistance);
-
-            if (alongTrackDistance <= AutopilotUtil.MIN_XTK_M && AutopilotUtil.MIN_XTK_M <= _prevAlongTrackDist)
-            {
-                aircraft.Fms.WaypointPassed?.Invoke(this, new WaypointPassedEventArgs(_endPoint.Point));
-            }
-
-            _prevAlongTrackDist = alongTrackDistance;
 
             return (requiredTrueCourse, crossTrackError, alongTrackDistance, -1);
         }

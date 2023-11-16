@@ -15,14 +15,11 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
 
         public ApFmsHoldController Instr => _instr;
 
-        private bool _exitArmed;
-
         public HoldToManualLeg(FmsPoint startPoint, BearingTypeEnum courseType, double inboundCourse, HoldTurnDirectionEnum turnDir, HoldLegLengthTypeEnum legLengthType, double legLength)
         {
             _startPoint = startPoint;
             _endPoint = new FmsPoint(startPoint.Point, RoutePointTypeEnum.FLY_OVER);
             _instr = new ApFmsHoldController(startPoint.Point, courseType, inboundCourse, turnDir, legLengthType, legLength);
-            _exitArmed = false;
         }
 
         public FmsPoint StartPoint => _startPoint;
@@ -32,6 +29,12 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
         public double InitialTrueCourse => _instr.TrueCourse;
 
         public double FinalTrueCourse => _instr.TrueCourse;
+
+        public bool ExitArmed
+        {
+            get => _instr.ExitArmed;
+            set => _instr.ExitArmed = value;
+        }
 
         public RouteLegTypeEnum LegType => RouteLegTypeEnum.HOLD_TO_MANUAL;
         public bool ShouldBeginTurn(AircraftPosition pos, AircraftFms fms, int posCalcIntvl)
@@ -46,9 +49,10 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
 
         public bool HasLegTerminated(SimAircraft aircraft)
         {
-            if (_exitArmed)
+            if (_instr.ExitArmed && _instr.HoldPhase == HoldPhaseEnum.INBOUND)
             {
-                return _instr.HoldPhase == HoldPhaseEnum.INBOUND && _instr.AlongTrack_M <= 0;
+                (_, _, double alongTrackM, _) = _instr.GetCourseInterceptInfo(aircraft);
+                return alongTrackM <= 0;
             }
             return false;
         }

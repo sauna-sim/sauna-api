@@ -66,6 +66,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
             _holdPhase = HoldPhaseEnum.ENTRY;
             _holdEntry = HoldEntryEnum.NONE;
             _routePoint = holdingPoint;
+            ExitArmed = false;
 
             if (courseType == BearingTypeEnum.TRUE)
             {
@@ -103,6 +104,8 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
 
         public double MagneticCourse => _magneticCourse;
         public double TrueCourse => _trueCourse;
+
+        public bool ExitArmed { get; set; }
 
         public void ProcessLeg(SimAircraft aircraft, int intervalMs)
         {
@@ -374,10 +377,13 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
         {
             if (_inboundLeg.HasLegTerminated(aircraft))
             {
-                // Recalculate Hold dimensions
-                CalculateHold(aircraft);
+                if (!ExitArmed)
+                {
+                    // Recalculate Hold dimensions
+                    CalculateHold(aircraft);
 
-                _holdPhase = HoldPhaseEnum.TURN_OUTBOUND;
+                    _holdPhase = HoldPhaseEnum.TURN_OUTBOUND;
+                }
             }
         }
 
