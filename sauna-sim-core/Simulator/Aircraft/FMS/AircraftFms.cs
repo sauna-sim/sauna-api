@@ -134,7 +134,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
             return null;
         }
 
-        public void ActivateDirectTo(IRoutePoint routePoint)
+        public void ActivateDirectTo(IRoutePoint routePoint, double course = -1)
         {
             lock (_routeLegsLock)
             {
@@ -170,6 +170,11 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
 
                 // Create direct leg
                 IRouteLeg dtoLeg = new DirectToFixLeg(point);
+
+                if (course >= 0)
+                {
+                    dtoLeg = new CourseToFixLeg(point, BearingTypeEnum.MAGNETIC, course);
+                }
 
                 _activeLeg = dtoLeg;
 
