@@ -22,6 +22,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
         HEADING_TO_INTC,
         HEADING_TO_DME,
         HEADING_TO_MANUAL,
+        DISCO
     }
 
     public enum BearingTypeEnum

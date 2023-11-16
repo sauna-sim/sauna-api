@@ -177,6 +177,9 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
                 {
                     // Remove everything before index
                     _routeLegs.RemoveRange(0, index);
+                } else
+                {
+                    _routeLegs.Insert(0, new DiscoLeg(dtoLeg.FinalTrueCourse));
                 }
             }
         }
