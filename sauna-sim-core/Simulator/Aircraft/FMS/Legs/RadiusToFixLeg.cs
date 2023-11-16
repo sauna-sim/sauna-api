@@ -372,6 +372,13 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
                     retList.Add(new NdLine(_turnCircle.TangentialPointB, EndPoint.Point.PointPosition));
                 }
 
+                // Debugging
+                /*if (_turnCircle.BisectorIntersection != null)
+                {
+                    retList.Add(new NdLine(_turnCircle.BisectorIntersection, StartPoint.Point.PointPosition));
+                    retList.Add(new NdLine(_turnCircle.BisectorIntersection, EndPoint.Point.PointPosition));
+                }*/
+
                 return retList;
             }
         }
