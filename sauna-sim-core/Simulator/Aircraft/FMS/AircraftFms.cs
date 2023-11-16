@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using AviationCalcUtilNet.GeoTools;
 using NavData_Interface.Objects.Fix;
 using SaunaSim.Core.Data;
 using SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller;
@@ -318,8 +319,12 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
                     nextLeg.ProcessLeg(_parentAircraft, intervalMs);
                     (_requiredTrueCourse, _xTk_m, _aTk_m, _turnRadius_m) = nextLeg.GetCourseInterceptInfo(_parentAircraft);
 
-                    // If we've intercepted the new leg, just activate it
-                    if (Math.Abs(_xTk_m) < AutopilotUtil.MIN_XTK_M)
+                    // If more than halfway through the turn, consider the leg complete.
+                    (double cur_requiredTrueCourse, _, _, _) = ActiveLeg.GetCourseInterceptInfo(_parentAircraft);
+                    double legTurnAmt = GeoUtil.CalculateTurnAmount(cur_requiredTrueCourse, _requiredTrueCourse);
+                    double amtTurned = GeoUtil.CalculateTurnAmount(cur_requiredTrueCourse, _parentAircraft.Position.Track_True);
+
+                    if ((legTurnAmt > 0 && amtTurned > legTurnAmt / 2) || (legTurnAmt < 0 && amtTurned < legTurnAmt / 2))
                     {
                         if (ActiveLeg.EndPoint != null)
                         {
