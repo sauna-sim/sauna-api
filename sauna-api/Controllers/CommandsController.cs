@@ -9,6 +9,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using SaunaSim.Core.Simulator.Aircraft;
+using FsdConnectorNet;
+using System.Runtime.CompilerServices;
 
 namespace SaunaSim.Api.Controllers
 {
@@ -22,6 +24,27 @@ namespace SaunaSim.Api.Controllers
         public CommandsController(ILogger<DataController> logger)
         {
             _logger = logger;
+        }
+
+        [HttpPost("send/textCommand")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public ActionResult SendTextCommand(TextCommandRequest request)
+        {
+            SimAircraft client = SimAircraftHandler.GetAircraftByCallsign(request.Callsign);
+
+            if (client == null)
+            {
+                return BadRequest("The aircraft was not found!");
+            }
+
+            SimAircraft aircraft = client;
+
+            CommandHandler.HandleCommand(request.Command, aircraft, request.Args, (string msg) =>
+            {
+                _logger.LogInformation(msg);
+            });
+            return Ok();
         }
 
         [HttpPost("send/altitude")]
