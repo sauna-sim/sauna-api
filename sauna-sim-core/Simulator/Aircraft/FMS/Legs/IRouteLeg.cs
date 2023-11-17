@@ -67,6 +67,11 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
         double FinalTrueCourse { get; }
 
         /// <summary>
+        /// Gets the total leg length. 0 for none.
+        /// </summary>
+        double LegLength { get; }
+
+        /// <summary>
         /// Route Leg Type
         /// </summary>
         RouteLegTypeEnum LegType { get; }
@@ -91,7 +96,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
         /// Obtains course info for LNAV Autopilot guidance.
         /// </summary>
         /// <param name="aircraft">The current aircraft.</param>
-        /// <returns><c>(double, double, double, double)</c> Required True Course (m), Cross Track Error (m), Along Track Distance (m), Turn Radius (m) (-1 if N/A)</returns>
+        /// <returns><c>(double, double, double, double)</c> Required True Course (m), Cross Track Error (m), Along Track Distance (m), Turn Radius (m) (0 if N/A, -ive for left, +ive for right)</returns>
         (double requiredTrueCourse, double crossTrackError, double alongTrackDistance, double turnRadius) GetCourseInterceptInfo(SimAircraft aircraft);
 
         /// <summary>

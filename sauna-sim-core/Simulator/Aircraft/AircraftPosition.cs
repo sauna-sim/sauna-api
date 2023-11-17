@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using SaunaSim.Core.Data;
 using FsdConnectorNet;
+using SaunaSim.Core.Simulator.Aircraft.Performance;
 
 namespace SaunaSim.Core.Simulator.Aircraft
 {
@@ -23,6 +24,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
         private double _altSetting_hPa = AtmosUtil.ISA_STD_PRES_hPa;
         private double _sfcPress_hPa = AtmosUtil.ISA_STD_PRES_hPa;
         private double _ias;
+        private double _fwdAccel;
         private double _tas;
         private double _gs;
         private double _mach;
@@ -241,6 +243,8 @@ namespace SaunaSim.Core.Simulator.Aircraft
             set => _verticalSpeed = value;
         }
 
+        public double FlightPathAngle => PerfDataHandler.ConvertVsToFpa(_verticalSpeed, _gs);
+
         public double Velocity_X_MPerS => MathUtil.ConvertKtsToMpers(GroundSpeed) * Math.Sin(MathUtil.ConvertDegreesToRadians(Track_True));
         public double Velocity_Y_MPerS => MathUtil.ConvertFeetToMeters(VerticalSpeed) / 60;
         public double Velocity_Z_MPerS => MathUtil.ConvertKtsToMpers(GroundSpeed) * Math.Cos(MathUtil.ConvertDegreesToRadians(Track_True));
@@ -249,6 +253,13 @@ namespace SaunaSim.Core.Simulator.Aircraft
         public double Heading_Velocity_RadPerS => MathUtil.ConvertDegreesToRadians(_yawRate);
         public double Bank_Velocity_RadPerS => MathUtil.ConvertDegreesToRadians(_bankRate);
         public double Pitch_Velocity_RadPerS => MathUtil.ConvertDegreesToRadians(_pitchRate);
+
+        // Acceleration
+        public double Forward_Acceleration
+        {
+            get => _fwdAccel;
+            set => _fwdAccel = value;
+        }
 
         // Atmospheric Data        
         public double AltimeterSetting_hPa

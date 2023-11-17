@@ -204,6 +204,26 @@ namespace SaunaSim.Core.Simulator.Aircraft.Performance
             return MathUtil.ConvertMetersToFeet(60 * mpers);
         }
 
+        public static double ConvertVsToFpa(double vs, double gs)
+        {
+            if (gs < double.Epsilon)
+            {
+                return 0;
+            }
+
+            return MathUtil.ConvertRadiansToDegrees(Math.Atan2(ConvertFpmToMpers(vs), MathUtil.ConvertKtsToMpers(gs)));
+        }
+
+        public static double ConvertFpaToVs(double fpa, double gs)
+        {
+            if (gs < double.Epsilon)
+            {
+                return 0;
+            }
+
+            return ConvertMpersToFpm(Math.Tan(MathUtil.ConvertDegreesToRadians(fpa)) * MathUtil.ConvertKtsToMpers(gs));
+        }
+
         public static (double, double) CreateLineEquation(double x1, double y1, double x2, double y2)
         {
             double m = (y2 - y1) / (x2 - x1);

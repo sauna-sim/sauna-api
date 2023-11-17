@@ -18,6 +18,9 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
 
         private double _initialTrueCourse;
         private double _finalTrueCourse;
+        private double _legLength;
+
+        public double LegLength => 0;
 
         public double InitialTrueCourse => _initialTrueCourse;
 
@@ -112,6 +115,13 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
             {
                 _trackFromRFLeg = new TrackToFixLeg(new FmsPoint(new RouteWaypoint(_turnCircle.TangentialPointB), RoutePointTypeEnum.FLY_OVER), EndPoint);
             }
+
+            double toRFAlongTrackDistance = GeoPoint.DistanceM(StartPoint.Point.PointPosition, _turnCircle.TangentialPointA);
+            GeoUtil.CalculateArcCourseInfo(_turnCircle.TangentialPointA, _turnCircle.Center, InitialTrueCourse, FinalTrueCourse, _turnCircle.RadiusM, isClockwise(), out _, out double rfTurnLength);
+
+            double fromRFAlongTrackDistance = GeoPoint.DistanceM(_turnCircle.TangentialPointB, EndPoint.Point.PointPosition);
+
+            _legLength = toRFAlongTrackDistance + rfTurnLength + fromRFAlongTrackDistance;
         }
 
         public void CalculateTurnCircle()
@@ -320,7 +330,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
             double alongTrackDistance = 0;
             double crossTrackError = 0;
             double requiredTrueCourse = 0;
-            double turnRadius = -1;
+            double turnRadius = 0;
 
             switch (_legState)
             {

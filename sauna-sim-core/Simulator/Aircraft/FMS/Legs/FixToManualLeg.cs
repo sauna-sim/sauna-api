@@ -37,6 +37,8 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
 
         public double FinalTrueCourse => -1;
 
+        public double LegLength => 0;
+
         public RouteLegTypeEnum LegType => RouteLegTypeEnum.FIX_TO_MANUAL;
 
         public bool HasLegTerminated(SimAircraft aircraft)
@@ -51,7 +53,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
             double crossTrackError = GeoUtil.CalculateCrossTrackErrorM(aircraft.Position.PositionGeoPoint, _startPoint.Point.PointPosition, _trueCourse,
                 out double requiredTrueCourse, out double alongTrackDistance);
 
-            return (requiredTrueCourse, crossTrackError, alongTrackDistance, -1);
+            return (requiredTrueCourse, crossTrackError, alongTrackDistance, 0);
         }
 
         public bool ShouldActivateLeg(SimAircraft aircraft, int intervalMs)

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using AviationCalcUtilNet.GeoTools;
 using NavData_Interface.Objects.Fix;
 using SaunaSim.Core.Data;
 using SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller;
@@ -36,7 +37,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
             _xTk_m = -1;
             _aTk_m = -1;
             _requiredTrueCourse = -1;
-            _turnRadius_m = -1;
+            _turnRadius_m = 0;
 
             lock (_routeLegsLock)
             {
@@ -141,10 +142,14 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
                 int index = -1;
                 FmsPoint point = null;
 
-                if (_activeLeg != null && _activeLeg.EndPoint != null && _activeLeg.EndPoint.Point.Equals(routePoint))
+                if (_activeLeg != null && _activeLeg.StartPoint != null && _activeLeg.StartPoint.Point.Equals(routePoint))
+                {
+                    point = _activeLeg.StartPoint;
+                    _routeLegs.Insert(0, _activeLeg);
+                    index = 0;
+                } else if (_activeLeg != null && _activeLeg.EndPoint != null && _activeLeg.EndPoint.Point.Equals(routePoint))
                 {
                     point = _activeLeg.EndPoint;
-                    _routeLegs.Insert(0, _activeLeg);
                     index = 0;
                 } else
                 {
@@ -170,7 +175,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
                 }
 
                 // Create direct leg
-                IRouteLeg dtoLeg = new DirectToFixLeg(point);
+                IRouteLeg dtoLeg = new DirectToFixLeg(point, _parentAircraft.Position.PositionGeoPoint, _parentAircraft.Position.Track_True, _parentAircraft.Position.GroundSpeed);
 
                 if (course >= 0)
                 {
@@ -268,6 +273,53 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
 
         public (double requiredTrueCourse, double crossTrackError, double alongTrackDistance, double turnRadius) CourseInterceptInfo => (_requiredTrueCourse, _xTk_m, _aTk_m, _turnRadius_m);
 
+        private bool ShouldStartTurnToNextLeg(int intervalMs)
+        {
+            if (ActiveLeg == null || ActiveLeg.HasLegTerminated(_parentAircraft))
+            {
+                return true;
+            }
+
+            // If this and next leg connect, and a turn is involved
+            IRouteLeg nextLeg = GetFirstLeg();
+
+            return nextLeg != null &&
+                ActiveLeg.EndPoint != null &&
+                ActiveLeg.EndPoint.PointType == RoutePointTypeEnum.FLY_BY &&
+                nextLeg.StartPoint != null &&
+                ActiveLeg.EndPoint.Point.Equals(nextLeg.StartPoint.Point) &&
+                ActiveLeg.FinalTrueCourse >= 0 && nextLeg.InitialTrueCourse >= 0 &&
+                Math.Abs(GeoUtil.CalculateTurnAmount(ActiveLeg.FinalTrueCourse, nextLeg.InitialTrueCourse)) > 0.5 &&
+                nextLeg.ShouldActivateLeg(_parentAircraft, intervalMs) && !Suspended;
+        }
+
+        private bool ShouldSequenceNextLeg(int intervalMs)
+        {
+            if (ActiveLeg == null || ActiveLeg.HasLegTerminated(_parentAircraft))
+            {
+                return true;
+            }
+
+            // If this and next leg connect, and a turn is involved
+            IRouteLeg nextLeg = GetFirstLeg();
+
+            if (ShouldStartTurnToNextLeg(intervalMs))
+            {
+                double startBearing = ActiveLeg.FinalTrueCourse;
+                double endBearing = nextLeg.InitialTrueCourse;
+                double turnAmt = GeoUtil.CalculateTurnAmount(startBearing, endBearing);
+
+                // Find half turn and see if we've crossed abeam the point
+                double bisectorRadial = GeoUtil.NormalizeHeading(startBearing + (turnAmt / 2));
+
+                GeoUtil.CalculateCrossTrackErrorM(_parentAircraft.Position.PositionGeoPoint, ActiveLeg.EndPoint.Point.PointPosition, bisectorRadial, out _, out double bisectorAtk);
+
+                return bisectorAtk <= 0;
+            }
+
+            return false;
+        }
+
         public void OnPositionUpdate(int intervalMs)
         {
             var position = _parentAircraft.Position;
@@ -286,12 +338,17 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
             // Process Leg
             ActiveLeg.ProcessLeg(_parentAircraft, intervalMs);
 
-            bool hasLegTerminated = ActiveLeg.HasLegTerminated(_parentAircraft);
+            // Check if leg has terminated
+            bool hasLegTerminated = ShouldSequenceNextLeg(intervalMs);
 
-            // Check if WaypointPassed should be triggered
-            if (hasLegTerminated && _aTk_m > 0 && ActiveLeg.EndPoint != null)
+            // Trigger Waypoint Passed if it has
+            if (_aTk_m > 0 && ActiveLeg.EndPoint != null && ActiveLeg.FinalTrueCourse >= 0)
             {
-                WaypointPassed?.Invoke(this, new WaypointPassedEventArgs(ActiveLeg.EndPoint.Point));
+                GeoUtil.CalculateCrossTrackErrorM(_parentAircraft.Position.PositionGeoPoint, ActiveLeg.EndPoint.Point.PointPosition, ActiveLeg.FinalTrueCourse, out _, out double act_atk_m);
+                if (act_atk_m <= 0 || hasLegTerminated)
+                {
+                    WaypointPassed?.Invoke(this, new WaypointPassedEventArgs(ActiveLeg.EndPoint.Point));
+                }
             }
 
             // Check if we should start turning towards the next leg
@@ -304,25 +361,11 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
                 {
                     // Activate next leg on termination
                     ActivateNextLeg();
-                } else if (ActiveLeg.EndPoint != null &&
-                           ActiveLeg.EndPoint.PointType == RoutePointTypeEnum.FLY_BY &&
-                           nextLeg.ShouldActivateLeg(_parentAircraft, intervalMs) &&
-                           nextLeg.InitialTrueCourse >= 0 &&
-                           Math.Abs(ActiveLeg.FinalTrueCourse - nextLeg.InitialTrueCourse) > 0.5)
+                } else if (ShouldStartTurnToNextLeg(intervalMs))
                 {
                     // Begin turn to next leg, but do not activate
                     nextLeg.ProcessLeg(_parentAircraft, intervalMs);
                     (_requiredTrueCourse, _xTk_m, _aTk_m, _turnRadius_m) = nextLeg.GetCourseInterceptInfo(_parentAircraft);
-
-                    // If we've intercepted the new leg, just activate it
-                    if (Math.Abs(_xTk_m) < AutopilotUtil.MIN_XTK_M)
-                    {
-                        if (ActiveLeg.EndPoint != null)
-                        {
-                            WaypointPassed?.Invoke(this, new WaypointPassedEventArgs(ActiveLeg.EndPoint.Point));
-                        }
-                        ActivateNextLeg();
-                    }
                     return;
                 }
             }

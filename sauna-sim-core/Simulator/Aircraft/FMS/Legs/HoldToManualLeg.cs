@@ -30,6 +30,8 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
 
         public double FinalTrueCourse => _instr.TrueCourse;
 
+        public double LegLength => 0;
+
         public bool ExitArmed
         {
             get => _instr.ExitArmed;

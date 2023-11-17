@@ -437,7 +437,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
             double crossTrackError = GeoUtil.CalculateCrossTrackErrorM(aircraft.Position.PositionGeoPoint, _routePoint.PointPosition, _trueCourse,
 out double requiredTrueCourse, out double alongTrackDistance);
 
-            return (requiredTrueCourse, crossTrackError, alongTrackDistance, -1);
+            return (requiredTrueCourse, crossTrackError, alongTrackDistance, 0);
         }
 
         public List<NdLine> GetUiLines()

@@ -11,20 +11,42 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
         private FmsPoint _endPoint;
         private FmsPoint _startPoint;
         private double _trueCourse;
+        private double _initTrueCourse;
+        private double _legLength;
 
-        public DirectToFixLeg(FmsPoint point)
+        public DirectToFixLeg(FmsPoint point, GeoPoint ppos, double curTrueTrack, double gs)
         {
             _endPoint = point;
             _trueCourse = -1;
+            _trueCourse = GeoUtil.CalculateDirectBearingAfterTurn(
+                    ppos,
+                    _endPoint.Point.PointPosition,
+                    GeoUtil.CalculateRadiusOfTurn(GeoUtil.CalculateMaxBankAngle(gs, 25, 3), gs),
+                    curTrueTrack);
+
+            if (_trueCourse < 0)
+            {
+                _trueCourse = GeoPoint.FinalBearing(ppos, _endPoint.Point.PointPosition);
+            }
+
+            // Set start point
+            GeoPoint startPt = new GeoPoint(_endPoint.Point.PointPosition);
+            startPt.MoveByM(GeoUtil.NormalizeHeading(_trueCourse + 180), GeoPoint.FlatDistanceM(_endPoint.Point.PointPosition, ppos));
+            _startPoint = new FmsPoint(new RouteWaypoint("*DIRECT", startPt), RoutePointTypeEnum.FLY_OVER);
+
+            _initTrueCourse = GeoPoint.InitialBearing(_startPoint.Point.PointPosition, _endPoint.Point.PointPosition);
+            _legLength = GeoPoint.DistanceM(_startPoint.Point.PointPosition, _endPoint.Point.PointPosition);
         }
 
         public FmsPoint StartPoint => _startPoint;
 
         public FmsPoint EndPoint => _endPoint;
 
-        public double InitialTrueCourse => -1;
+        public double InitialTrueCourse => _initTrueCourse;
 
         public double FinalTrueCourse => _trueCourse;
+
+        public double LegLength => _legLength;
 
         public RouteLegTypeEnum LegType => RouteLegTypeEnum.DIRECT_TO_FIX;
         
@@ -49,7 +71,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
             double crossTrackError = GeoUtil.CalculateCrossTrackErrorM(aircraft.Position.PositionGeoPoint, _endPoint.Point.PointPosition, _trueCourse,
                 out double requiredTrueCourse, out double alongTrackDistance);
 
-            return (requiredTrueCourse, crossTrackError, alongTrackDistance, -1);
+            return (requiredTrueCourse, crossTrackError, alongTrackDistance, 0);
         }
 
         public bool ShouldActivateLeg(SimAircraft aircraft, int intervalMs)
@@ -65,23 +87,6 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
 
         public void ProcessLeg(SimAircraft aircraft, int intervalMs)
         {
-            // Check if track has been set
-            if (_trueCourse < 0)
-            {
-                _trueCourse = GeoUtil.CalculateDirectBearingAfterTurn(
-                    aircraft.Position.PositionGeoPoint,
-                    _endPoint.Point.PointPosition,
-                    GeoUtil.CalculateRadiusOfTurn(GeoUtil.CalculateMaxBankAngle(aircraft.Position.GroundSpeed, 25, 3), aircraft.Position.GroundSpeed),
-                    aircraft.Position.Track_True);
-
-                if (_trueCourse < 0)
-                {
-                    _trueCourse = GeoPoint.FinalBearing(aircraft.Position.PositionGeoPoint, _endPoint.Point.PointPosition);
-                }
-
-                // Set start point
-                _startPoint = new FmsPoint(new RouteWaypoint("*PPOS", aircraft.Position.PositionGeoPoint), RoutePointTypeEnum.FLY_OVER);
-            }
         }
 
 

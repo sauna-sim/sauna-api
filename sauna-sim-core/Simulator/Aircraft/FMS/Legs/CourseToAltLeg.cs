@@ -36,6 +36,8 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
 
         public double FinalTrueCourse => _trueCourse;
 
+        public double LegLength => 0;
+
         public RouteLegTypeEnum LegType => RouteLegTypeEnum.COURSE_TO_ALT;
 
         public bool HasLegTerminated(SimAircraft aircraft)
@@ -66,7 +68,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
                 _beginAlt = aircraft.Position.IndicatedAltitude;
             }
 
-            return (_trueCourse, 0, 0, -1);
+            return (_trueCourse, 0, 0, 0);
         }
 
         public bool ShouldActivateLeg(SimAircraft aircraft, int intervalMs)

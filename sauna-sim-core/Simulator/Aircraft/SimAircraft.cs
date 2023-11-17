@@ -36,8 +36,6 @@ namespace SaunaSim.Core.Simulator.Aircraft
     {
         private Thread _posUpdThread;
         private PauseableTimer _delayTimer;
-        private bool _paused;
-        private FlightPlan? _flightPlan;
         private bool disposedValue;
         private bool _shouldUpdatePosition = false;
         private ClientInfo _clientInfo;
@@ -52,6 +50,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
         public ConnectionStatusType ConnectionStatus { get; private set; } = ConnectionStatusType.WAITING;
 
         // Simulator Data
+        private bool _paused;
         public bool Paused
         {
             get => _paused;
@@ -101,22 +100,17 @@ namespace SaunaSim.Core.Simulator.Aircraft
         // Aircraft Info
         private AircraftPosition _position;
         public AircraftPosition Position => _position;
-        
+
         private AircraftAutopilot _autopilot;
         public AircraftAutopilot Autopilot => _autopilot;
-        
+
         private AircraftFms _fms;
         public AircraftFms Fms => _fms;
 
-        public int Config { get; set; }
+        private AircraftData _data;
+        public AircraftData Data => _data;
 
-        public double ThrustLeverPos { get; set; }
-
-        public double SpeedBrakePos { get; set; }
-
-        public PerfData PerformanceData {get; set;}
-
-        public double Mass_kg { get; set; }
+        public PerfData PerformanceData { get; set; }
 
         public TransponderModeType XpdrMode { get; set; }
 
@@ -126,12 +120,11 @@ namespace SaunaSim.Core.Simulator.Aircraft
 
         public int DelayRemainingMs => _delayTimer?.TimeRemainingMs() ?? DelayMs;
 
-        public AircraftConfig AircraftConfig { get; set; }
-
         public string AircraftType { get; private set; }
 
         public string AirlineCode { get; private set; }
 
+        private FlightPlan? _flightPlan;
         public FlightPlan? FlightPlan
         {
             get => _flightPlan;
@@ -143,7 +136,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
                     Connection.SendFlightPlan(value);
                 }
             }
-        }        
+        }
 
         public FlightPhaseType FlightPhase { get; set; }
 
@@ -153,14 +146,12 @@ namespace SaunaSim.Core.Simulator.Aircraft
         public Action<string> LogWarn { get; set; }
 
         public Action<string> LogError { get; set; }
-        
+
 
         // Assigned values
         //public AircraftControl Control { get; private set; }
-        public int Assigned_IAS { get; set; } = -1;
-        public ConstraintType Assigned_IAS_Type { get; set; } = ConstraintType.FREE;
-
-        public double ThrustLeverVel { get; set; }
+        //public int Assigned_IAS { get; set; } = -1;
+        //public ConstraintType Assigned_IAS_Type { get; set; } = ConstraintType.FREE;
 
 
         public SimAircraft(string callsign, string networkId, string password, string fullname, string hostname, ushort port, ProtocolRevision protocol, ClientInfo clientInfo,
@@ -182,8 +173,16 @@ namespace SaunaSim.Core.Simulator.Aircraft
                 IndicatedAirSpeed = 250.0,
                 Heading_Mag = hdg_mag
             };
-            ThrustLeverPos = 0;
-            SpeedBrakePos = 0;
+            _data = new AircraftData()
+            {
+                ThrustLeverPos = 0,
+                SpeedBrakePos = 0,
+                AircraftConfig = new AircraftConfig(true, false, false, true, true, false, false, 0, false, false, new AircraftEngine(true, false), new AircraftEngine(true, false)),
+
+                // TODO: Change This To Actually Calculate Mass
+                Mass_kg = (perfData.MTOW_kg + perfData.OEW_kg) / 2
+            };
+
             _autopilot = new AircraftAutopilot(this)
             {
                 SelectedAltitude = Convert.ToInt32(alt),
@@ -193,16 +192,14 @@ namespace SaunaSim.Core.Simulator.Aircraft
                 CurrentThrustMode = ThrustModeType.SPEED,
                 CurrentVerticalMode = VerticalModeType.FLCH
             };
+
             _fms = new AircraftFms(this);
             PerformanceData = perfData;
             // Control = new AircraftControl(new HeadingHoldInstruction(Convert.ToInt32(hdg_mag)), new AltitudeHoldInstruction(Convert.ToInt32(alt)));
             DelayMs = delayMs;
-            AircraftConfig = new AircraftConfig(true, false, false, true, true, false, false, 0, false, false, new AircraftEngine(true, false), new AircraftEngine(true, false));
-            AircraftType = "A320";
-            AirlineCode = "JBU";
 
-            // TODO: Change This To Actually Calculate Mass
-            Mass_kg = (perfData.MTOW_kg + perfData.OEW_kg) / 2;
+            AircraftType = "A320"; // TODO: Change This
+            AirlineCode = "JBU"; // TODO: Change This
         }
 
         public void Start()
@@ -256,7 +253,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
             _delayTimer?.Stop();
 
             // Connect to FSD Server
-            Connection.Connect(_clientInfo, LoginInfo, GetFsdPilotPosition(), AircraftConfig, new PlaneInfo(AircraftType, AirlineCode));
+            Connection.Connect(_clientInfo, LoginInfo, GetFsdPilotPosition(), _data.AircraftConfig, new PlaneInfo(AircraftType, AirlineCode));
             ConnectionStatus = ConnectionStatusType.CONNECTING;
         }
 
@@ -291,16 +288,16 @@ namespace SaunaSim.Core.Simulator.Aircraft
                     _fms.OnPositionUpdate((int)(AppSettingsManager.PosCalcRate * (_simRate / 10.0)));
 
                     // Run Autopilot
-                    _autopilot.OnPositionUpdate((int) (AppSettingsManager.PosCalcRate * (_simRate / 10.0)));
+                    _autopilot.OnPositionUpdate((int)(AppSettingsManager.PosCalcRate * (_simRate / 10.0)));
 
                     // TODO: Update Mass
-                    
+
                     // Move Aircraft
-                    MoveAircraft((int) (AppSettingsManager.PosCalcRate * (_simRate / 10.0)));
-                    
+                    MoveAircraft((int)(AppSettingsManager.PosCalcRate * (_simRate / 10.0)));
+
                     // Update Grib Data
                     Position.UpdateGribPoint();
-                    
+
                     // Update FSD
                     Connection.UpdatePosition(GetFsdPilotPosition());
                 }
@@ -312,26 +309,29 @@ namespace SaunaSim.Core.Simulator.Aircraft
         private void MoveAircraft(int intervalMs)
         {
             double t = intervalMs / 1000.0;
-            
+
             // Calculate Pitch, Bank, and Thrust Lever Position
             Position.Pitch += PerfDataHandler.CalculateDisplacement(Position.PitchRate, 0, t);
             Position.Bank += PerfDataHandler.CalculateDisplacement(Position.BankRate, 0, t);
-            ThrustLeverPos += PerfDataHandler.CalculateDisplacement(ThrustLeverVel, 0, t);
-            
+            Data.ThrustLeverPos += PerfDataHandler.CalculateDisplacement(Data.ThrustLeverVel, 0, t);
+
             // Calculate Performance Values
-            (double accelFwd, double vs) = PerfDataHandler.CalculatePerformance(PerformanceData, Position.Pitch, ThrustLeverPos / 100.0, Position.IndicatedAirSpeed,
-                Position.DensityAltitude, Mass_kg, SpeedBrakePos, Config);
-            
+            (double accelFwd, double vs) = PerfDataHandler.CalculatePerformance(PerformanceData, Position.Pitch, Data.ThrustLeverPos / 100.0, Position.IndicatedAirSpeed,
+                Position.DensityAltitude, Data.Mass_kg, Data.SpeedBrakePos, Data.Config);
+
             // Calculate New Velocities
             double curGs = Position.GroundSpeed;
             Position.IndicatedAirSpeed = MathUtil.ConvertMpersToKts(PerfDataHandler.CalculateFinalVelocity(
                 MathUtil.ConvertKtsToMpers(Position.IndicatedAirSpeed), MathUtil.ConvertKtsToMpers(accelFwd), t));
             Position.VerticalSpeed = vs;
-            
+
+            // Calculate Accelerations
+            Position.Forward_Acceleration = accelFwd;
+
             // Calculate Displacement
             double displacement = 0.5 * (MathUtil.ConvertKtsToMpers(Position.GroundSpeed + curGs)) * t;
             double distanceTravelledNMi = MathUtil.ConvertMetersToNauticalMiles(displacement);
-            
+
             // Calculate Position
             if (Math.Abs(Position.Bank) < double.Epsilon)
             {
@@ -344,19 +344,19 @@ namespace SaunaSim.Core.Simulator.Aircraft
             {
                 // Calculate radius of turn
                 double radiusOfTurn = GeoUtil.CalculateRadiusOfTurn(Math.Abs(Position.Bank), Position.GroundSpeed);
-                
+
                 // Calculate degrees to turn
                 double degreesToTurn = GeoUtil.CalculateDegreesTurned(distanceTravelledNMi, radiusOfTurn);
-                
+
                 // Figure out turn direction
                 bool isRightTurn = Position.Bank > 0;
-                
+
                 // Calculate end heading
                 double endHeading = GeoUtil.CalculateEndHeading(Position.Heading_Mag, degreesToTurn, isRightTurn);
-                
+
                 // Calculate chord line data
                 Tuple<double, double> chordLine = GeoUtil.CalculateChordHeadingAndDistance(Position.Heading_Mag, degreesToTurn, radiusOfTurn, isRightTurn);
-                
+
                 // Calculate new position
                 Position.Heading_Mag = chordLine.Item1;
                 GeoPoint point = new GeoPoint(Position.PositionGeoPoint);
@@ -365,7 +365,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
                 Position.Longitude = point.Lon;
                 Position.Heading_Mag = endHeading;
             }
-            
+
             // Calculate Altitude
             Position.IndicatedAltitude += Position.VerticalSpeed * t / 60;
         }
