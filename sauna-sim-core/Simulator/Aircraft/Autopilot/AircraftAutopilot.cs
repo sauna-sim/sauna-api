@@ -166,6 +166,19 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot
                         _parentAircraft.Data.SpeedBrakePos, _parentAircraft.Data.Config);
                     _parentAircraft.Position.PitchRate = AutopilotUtil.CalculatePitchRate(_targetPitch, _parentAircraft.Position.Pitch, intervalMs);
                 }
+            } else if (_curVertMode == VerticalModeType.FPA)
+            {
+                if (PitchShouldAsel(intervalMs))
+                {
+                    // Set thrust mode to speed
+                    _curThrustMode = ThrustModeType.SPEED;
+
+                    // Calculate pitch and pitch rate
+                    _targetPitch = PerfDataHandler.GetRequiredPitchForVs(_parentAircraft.PerformanceData, PerfDataHandler.ConvertFpaToVs(_selFpa, _parentAircraft.Position.GroundSpeed),
+                        _parentAircraft.Position.IndicatedAirSpeed, _parentAircraft.Position.DensityAltitude, _parentAircraft.Data.Mass_kg,
+                        _parentAircraft.Data.SpeedBrakePos, _parentAircraft.Data.Config);
+                    _parentAircraft.Position.PitchRate = AutopilotUtil.CalculatePitchRate(_targetPitch, _parentAircraft.Position.Pitch, intervalMs);
+                }
             }
         }
 

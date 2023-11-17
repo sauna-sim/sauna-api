@@ -325,6 +325,9 @@ namespace SaunaSim.Core.Simulator.Aircraft
                 MathUtil.ConvertKtsToMpers(Position.IndicatedAirSpeed), MathUtil.ConvertKtsToMpers(accelFwd), t));
             Position.VerticalSpeed = vs;
 
+            // Calculate Accelerations
+            Position.Forward_Acceleration = accelFwd;
+
             // Calculate Displacement
             double displacement = 0.5 * (MathUtil.ConvertKtsToMpers(Position.GroundSpeed + curGs)) * t;
             double distanceTravelledNMi = MathUtil.ConvertMetersToNauticalMiles(displacement);
