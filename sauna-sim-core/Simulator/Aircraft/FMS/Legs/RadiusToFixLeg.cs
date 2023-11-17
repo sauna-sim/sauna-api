@@ -60,6 +60,25 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
             public GeoPoint BisectorIntersection { get; set; }
         }
 
+        public class InvalidTurnCircleException : Exception
+        {
+            TurnCircle Circle { get; }
+            GeoPoint StartPoint { get; }
+            GeoPoint EndPoint { get; }
+
+            double InitialTrueCourse { get; }
+            double FinalTrueCourse { get; }
+
+            public InvalidTurnCircleException(TurnCircle c, GeoPoint startPoint, GeoPoint endPoint, double initialTrueCourse, double finalTrueCourse) : base("The turnCircle doesn't seem to be valid")
+            {
+                Circle = c;
+                StartPoint = startPoint;
+                EndPoint = endPoint;
+                InitialTrueCourse = initialTrueCourse;
+                FinalTrueCourse = finalTrueCourse;
+            }
+        }
+
         private enum RfState
         {
             TRACK_TO_RF,
@@ -238,6 +257,11 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
 
                 _turnCircle = new TurnCircle(turnCircleCenter, tangentPointA, tangentPointB, turnCircleRadius);
                 _turnCircle.BisectorIntersection = bisectorIntersection;
+
+                if (turnCircleRadius > 50000)
+                {
+                    throw new InvalidTurnCircleException(_turnCircle, StartPoint.Point.PointPosition, EndPoint.Point.PointPosition, InitialTrueCourse, FinalTrueCourse);
+                }
             }
         }
 
