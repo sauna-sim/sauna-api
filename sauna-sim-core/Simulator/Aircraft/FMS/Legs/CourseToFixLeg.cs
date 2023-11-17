@@ -75,6 +75,8 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
 
         public double FinalTrueCourse => _trueCourse;
 
+        public double LegLength => 0;
+
         public override string ToString()
         {
             return $"{_magneticCourse:000.0} =(CF)=> {_endPoint}";

@@ -21,14 +21,15 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
 
         public double FinalTrueCourse => _initialTrueCourse;
 
+        public double LegLength => 0;
+
         public RouteLegTypeEnum LegType => RouteLegTypeEnum.DISCO;
 
         public List<NdLine> UiLines => new List<NdLine>();
 
         public (double requiredTrueCourse, double crossTrackError, double alongTrackDistance, double turnRadius) GetCourseInterceptInfo(SimAircraft aircraft)
         {
-
-            return (_initialTrueCourse, 0, 1000, 0);
+            return (_initialTrueCourse, 0, 0, 0);
         }
 
         public bool HasLegTerminated(SimAircraft aircraft)

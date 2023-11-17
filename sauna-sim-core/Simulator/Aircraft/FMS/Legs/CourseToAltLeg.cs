@@ -36,6 +36,8 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
 
         public double FinalTrueCourse => _trueCourse;
 
+        public double LegLength => 0;
+
         public RouteLegTypeEnum LegType => RouteLegTypeEnum.COURSE_TO_ALT;
 
         public bool HasLegTerminated(SimAircraft aircraft)

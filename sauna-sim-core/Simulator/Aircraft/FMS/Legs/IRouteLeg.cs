@@ -67,6 +67,11 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
         double FinalTrueCourse { get; }
 
         /// <summary>
+        /// Gets the total leg length. 0 for none.
+        /// </summary>
+        double LegLength { get; }
+
+        /// <summary>
         /// Route Leg Type
         /// </summary>
         RouteLegTypeEnum LegType { get; }

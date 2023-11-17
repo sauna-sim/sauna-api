@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using AviationCalcUtilNet.GeoTools;
+using AviationCalcUtilNet.MathTools;
 using SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller;
 using SaunaSim.Core.Simulator.Aircraft.FMS.NavDisplay;
 
@@ -12,6 +13,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
         private FmsPoint _endPoint;
         private double _initialBearing;
         private double _finalBearing;
+        private double _legLength;
 
         public TrackToFixLeg(FmsPoint startPoint, FmsPoint endPoint)
         {
@@ -19,6 +21,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
             _endPoint = endPoint;
             _initialBearing = GeoPoint.InitialBearing(_startPoint.Point.PointPosition, _endPoint.Point.PointPosition);
             _finalBearing = GeoPoint.FinalBearing(_startPoint.Point.PointPosition, _endPoint.Point.PointPosition);
+            _legLength = GeoPoint.DistanceM(_startPoint.Point.PointPosition, _endPoint.Point.PointPosition);
         }
 
         public RouteLegTypeEnum LegType => RouteLegTypeEnum.TRACK_TO_FIX;
@@ -30,6 +33,8 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
         public FmsPoint EndPoint => _endPoint;
 
         public FmsPoint StartPoint => _startPoint;
+
+        public double LegLength => _legLength;
 
         public bool HasLegTerminated(SimAircraft aircraft)
         {
@@ -61,11 +66,9 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
             }
 
             // Find cross track error to start turn (distance from intersection)
-            double demandedTrack = AutopilotUtil.CalculateDemandedTrackOnCurrentTrack(crossTrackError, aircraft.Position.Track_True, requiredTrueCourse, aircraft.Position.Bank,
-                aircraft.Position.GroundSpeed, intervalMs).demandedTrack;
+            double turnLeadDist = GeoUtil.CalculateTurnLeadDistance(aircraft.Position.PositionGeoPoint, _startPoint.Point.PointPosition, aircraft.Position.Track_True, aircraft.Position.TrueAirSpeed, _initialBearing, aircraft.Position.WindDirection, aircraft.Position.WindSpeed, out _, out _);
 
-            double requestedTurnDelta = GeoUtil.CalculateTurnAmount(demandedTrack, aircraft.Position.Track_True);
-            return (trackDelta > 0 && requestedTurnDelta > 0 || trackDelta < 0 && requestedTurnDelta < 0);
+            return (Math.Abs(crossTrackError) < MathUtil.ConvertNauticalMilesToMeters(turnLeadDist));
         }
 
         public override string ToString()
