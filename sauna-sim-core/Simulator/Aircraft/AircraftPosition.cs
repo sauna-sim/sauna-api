@@ -23,6 +23,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
         private double _altSetting_hPa = AtmosUtil.ISA_STD_PRES_hPa;
         private double _sfcPress_hPa = AtmosUtil.ISA_STD_PRES_hPa;
         private double _ias;
+        private double _fwdAccel;
         private double _tas;
         private double _gs;
         private double _mach;
@@ -249,6 +250,9 @@ namespace SaunaSim.Core.Simulator.Aircraft
         public double Heading_Velocity_RadPerS => MathUtil.ConvertDegreesToRadians(_yawRate);
         public double Bank_Velocity_RadPerS => MathUtil.ConvertDegreesToRadians(_bankRate);
         public double Pitch_Velocity_RadPerS => MathUtil.ConvertDegreesToRadians(_pitchRate);
+
+        // Acceleration
+        public double Forward_Acceleration => _fwdAccel;
 
         // Atmospheric Data        
         public double AltimeterSetting_hPa
