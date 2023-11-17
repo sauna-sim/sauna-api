@@ -173,7 +173,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Performance
 
         public static double CalculateAcceleration(double Vi, double Vf, double t)
         {
-            return Vf - Vi / t;
+            return (Vf - Vi) / t;
         }
 
         public static double CalculateDisplacement(double Vi, double a, double t)
@@ -234,20 +234,28 @@ namespace SaunaSim.Core.Simulator.Aircraft.Performance
 
         public static (double, double) FindLinesIntersection(double m1, double b1, double m2, double b2)
         {
-            if (double.IsNaN(m1) && double.IsNaN(m2))
+            bool noM1 = double.IsInfinity(m1) || double.IsNaN(m1) || double.IsNaN(b1);
+            bool noM2 = double.IsInfinity(m2) || double.IsNaN(m2) || double.IsNaN(b2);
+            if (noM1 && noM2)
             {
                 return (0, 0);
             }
 
-            if (double.IsNaN(m1))
+            if (noM1)
             {
                 return (0, b2);
             }
 
-            if (double.IsNaN(m2))
+            if (noM2)
             {
                 return (0, b1);
             }
+
+            if (m2 - m1 == 0)
+            {
+                return (0, 0);
+            }
+
             double x = (b1 - b2) / (m2 - m1);
             double y = m1 * x + b1;
             return (x, y);

@@ -17,6 +17,7 @@ namespace SaunaSim.Api
             CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
             CultureInfo.DefaultThreadCurrentUICulture = CultureInfo.InvariantCulture;
             CreateHostBuilder(args).Build().Run();
+            Console.WriteLine("Shutting Down from Main()");
         }
 
         public static IHostBuilder CreateHostBuilder(string[] args) =>
