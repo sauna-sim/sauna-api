@@ -342,11 +342,14 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
             bool hasLegTerminated = ShouldSequenceNextLeg(intervalMs);
 
             // Trigger Waypoint Passed if it has
-            if (hasLegTerminated && _aTk_m > 0 && ActiveLeg.EndPoint != null)
+            if (_aTk_m > 0 && ActiveLeg.EndPoint != null && ActiveLeg.FinalTrueCourse >= 0)
             {
-                WaypointPassed?.Invoke(this, new WaypointPassedEventArgs(ActiveLeg.EndPoint.Point));
+                GeoUtil.CalculateCrossTrackErrorM(_parentAircraft.Position.PositionGeoPoint, ActiveLeg.EndPoint.Point.PointPosition, ActiveLeg.FinalTrueCourse, out _, out double act_atk_m);
+                if (act_atk_m <= 0 || hasLegTerminated)
+                {
+                    WaypointPassed?.Invoke(this, new WaypointPassedEventArgs(ActiveLeg.EndPoint.Point));
+                }
             }
-
 
             // Check if we should start turning towards the next leg
             IRouteLeg nextLeg = GetFirstLeg();
