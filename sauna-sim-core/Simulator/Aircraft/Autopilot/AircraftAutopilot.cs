@@ -170,6 +170,10 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot
             {
                 if (PitchShouldAsel(intervalMs))
                 {
+                    _curVertMode = VerticalModeType.ASEL;
+                    PitchHandleAsel(intervalMs);
+                } else
+                {
                     // Set thrust mode to speed
                     _curThrustMode = ThrustModeType.SPEED;
 
