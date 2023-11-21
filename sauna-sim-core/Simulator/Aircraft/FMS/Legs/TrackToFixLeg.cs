@@ -66,9 +66,17 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
             }
 
             // Find cross track error to start turn (distance from intersection)
-            double turnLeadDist = GeoUtil.CalculateTurnLeadDistance(aircraft.Position.PositionGeoPoint, _startPoint.Point.PointPosition, aircraft.Position.Track_True, aircraft.Position.TrueAirSpeed, _initialBearing, aircraft.Position.WindDirection, aircraft.Position.WindSpeed, out _, out _);
+            //double demandedTrack = AutopilotUtil.CalculateDemandedTrackOnCurrentTrack(crossTrackError, aircraft.Position.Track_True, requiredTrueCourse, aircraft.Position.Bank,
+            //aircraft.Position.GroundSpeed, intervalMs).demandedTrack;
 
-            return (Math.Abs(crossTrackError) < MathUtil.ConvertNauticalMilesToMeters(turnLeadDist));
+            double turnLeadDist = GeoUtil.CalculateTurnLeadDistance(aircraft.Position.PositionGeoPoint, _startPoint.Point.PointPosition, aircraft.Position.Track_True, aircraft.Position.TrueAirSpeed, _initialBearing, aircraft.Position.WindDirection, aircraft.Position.WindSpeed, out _, out GeoPoint intersection);
+
+            turnLeadDist *= 1.2;
+
+            return (GeoPoint.FlatDistanceM(aircraft.Position.PositionGeoPoint, intersection) < MathUtil.ConvertNauticalMilesToMeters(turnLeadDist));
+            //double requestedTurnDelta = GeoUtil.CalculateTurnAmount(demandedTrack, aircraft.Position.Track_True);
+            //return (trackDelta > 0 && requestedTurnDelta > 0 || trackDelta < 0 && requestedTurnDelta < 0);
+
         }
 
         public override string ToString()

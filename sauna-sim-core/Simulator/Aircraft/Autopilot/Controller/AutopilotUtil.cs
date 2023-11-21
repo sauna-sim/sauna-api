@@ -13,7 +13,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
         public const double ROLL_LIMIT = 25.0;
         public const double HDG_MAX_RATE = 3.0;
         public const double ROLL_TIME_BUFFER = 0.1;
-        
+
         // LNAV
         public const double MAX_INTC_ANGLE = 45;
         public const double MIN_XTK_M = 3;
@@ -105,34 +105,55 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
             return CalculateRate(demandedPitchAngle, measuredPitchAngle, PITCH_TIME, PITCH_RATE_MAX, intervalMs);
         }
 
+        /// <summary>
+        /// Calculates a demanded input to reach a desired target.
+        /// </summary>
+        /// <param name="deltaToTarget">How far the target is.</param>
+        /// <param name="curInput">Current input</param>
+        /// <param name="maxInputLimit">Maximum Input</param>
+        /// <param name="minInputLimit">Minimum Input</param>
+        /// <param name="inputRateFunction">Function that returns the rate to get from one input to another</param>
+        /// <param name="targetRateFunction">Function that returns the target rate for an input.</param>
+        /// <param name="zeroTargetRateInput">Input that results in zero target rate.</param>
+        /// <param name="inputTimeBuffer">Time contingency</param>
+        /// <returns></returns>
         public static (double demandedInput, double timeToTarget) CalculateDemandedInput(double deltaToTarget, double curInput, double maxInputLimit, double minInputLimit,
             Func<double, double, double> inputRateFunction, Func<double, double> targetRateFunction, double zeroTargetRateInput, double inputTimeBuffer)
         {
+            // Create a piecewise function with the following:
+            // Get from current to max input
+            // Remain at max input until it's time to return to zero input
+            // Get from max input to zero input.
+
             // Make sure zero target rate is within bounds
             if (zeroTargetRateInput < minInputLimit)
             {
                 zeroTargetRateInput = minInputLimit;
-            } else if (zeroTargetRateInput > maxInputLimit)
+            }
+            else if (zeroTargetRateInput > maxInputLimit)
             {
                 zeroTargetRateInput = maxInputLimit;
             }
 
-            // If we're on target
-            if (Math.Abs(deltaToTarget) <= double.Epsilon)
+            // Make sure cur input is within bounds
+            if (curInput < minInputLimit)
             {
-                return (zeroTargetRateInput, 0);
+                curInput = minInputLimit;
+            } else if (curInput > maxInputLimit)
+            {
+                curInput = maxInputLimit;
             }
 
             // Figure out time to get to 0 from max input and to get to max input from current input
             double maxInput = deltaToTarget < 0 ? minInputLimit : maxInputLimit;
-            
+
             double curInputTargetRate = targetRateFunction(curInput);
             double maxInputTargetRate = targetRateFunction(maxInput);
             double inputOutTargetDelta = 0;
             double inputInTargetDelta = 0;
             double maxInputIn_t = 0;
             double maxInputOut_t = 0;
-            
+
             // Calculate time and target delta to get from maximum input to zero rate input if there is a difference
             if (Math.Abs(zeroTargetRateInput - maxInput) > double.Epsilon)
             {
@@ -140,9 +161,8 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
                 maxInputOut_t = Math.Abs(Math.Abs(maxInput - zeroTargetRateInput) / maxInputOutRate) * (1 + inputTimeBuffer);
                 double inputOutTarget_a = PerfDataHandler.CalculateAcceleration(maxInputTargetRate, 0, maxInputOut_t);
                 inputOutTargetDelta = PerfDataHandler.CalculateDisplacement(maxInputTargetRate, inputOutTarget_a, maxInputOut_t);
-                
             }
-            
+
             // Calculate time and target delta to get from current input to maximum input if there is a difference
             if (Math.Abs(curInput - maxInput) > double.Epsilon)
             {
@@ -150,24 +170,43 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
                 maxInputIn_t = Math.Abs(Math.Abs(curInput - maxInput) / maxInputInRate) * (1 + inputTimeBuffer);
                 double inputInTarget_a = PerfDataHandler.CalculateAcceleration(curInputTargetRate, maxInputTargetRate, maxInputIn_t);
                 inputInTargetDelta = PerfDataHandler.CalculateDisplacement(curInputTargetRate, inputInTarget_a, maxInputIn_t);
-                
             }
-            
+
             // Return max if we're going in the wrong direction.
             if (inputInTargetDelta > 0 && deltaToTarget < 0 || inputInTargetDelta < 0 && deltaToTarget > 0)
             {
-                double remainingDelta = deltaToTarget > 0 ? 
-                    deltaToTarget - inputInTargetDelta - inputOutTargetDelta : 
+                double remainingDelta = deltaToTarget > 0 ?
+                    deltaToTarget - inputInTargetDelta - inputOutTargetDelta :
                     deltaToTarget + inputInTargetDelta + inputOutTargetDelta;
                 double remainingTime = Math.Abs(maxInputTargetRate) > double.Epsilon ? Math.Abs(remainingDelta) / Math.Abs(maxInputTargetRate) : 0;
                 double totalTime = maxInputIn_t + maxInputOut_t + remainingTime;
                 return (maxInput, totalTime);
             }
 
-            // Find midpoint of the two
+            // Create Equations
             (double m1, double b1) = PerfDataHandler.CreateLineEquation(0, curInput, inputInTargetDelta, maxInput);
             (double m2, double b2) = PerfDataHandler.CreateLineEquation(deltaToTarget - inputOutTargetDelta, maxInput, deltaToTarget, zeroTargetRateInput);
+            (double m3, double b3) = (0, maxInput);
+            Console.WriteLine($"f(x) = {m1}x+{b1}");
+            Console.WriteLine($"g(x) = {m2}x+{b2}");
+            Console.WriteLine($"h(x) = {m3}x+{b3}");
+            Console.WriteLine($"x = {deltaToTarget}");
+
+            (double inputOutIntersectionX, double inputOutIntersectionY) = PerfDataHandler.FindLinesIntersection(m2, b2, m3, b3);
             (double midPointTargetDelta, double midPointInput) = PerfDataHandler.FindLinesIntersection(m1, b1, m2, b2);
+
+            // If midpoint is above max input
+            if ((midPointInput >= 0 && midPointInput > maxInput) || ((midPointInput <= 0 && midPointInput < maxInput)))
+            {
+                midPointTargetDelta = inputOutIntersectionX;
+                midPointInput = inputOutIntersectionY;
+            }
+
+            // If we're on target
+            if (Math.Abs(deltaToTarget) <= double.Epsilon)
+            {
+                return (zeroTargetRateInput, 0);
+            }
 
             // Figure out the desired input value
             if (midPointTargetDelta <= 0 && deltaToTarget > 0 || midPointTargetDelta >= 0 && deltaToTarget < 0)
@@ -179,14 +218,14 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
 
             if (Math.Abs(midPointInput) >= Math.Abs(maxInput))
             {
-                double remainingDelta = deltaToTarget > 0 ? 
-                    deltaToTarget - inputInTargetDelta - inputOutTargetDelta : 
+                double remainingDelta = deltaToTarget > 0 ?
+                    deltaToTarget - inputInTargetDelta - inputOutTargetDelta :
                     deltaToTarget + inputInTargetDelta + inputOutTargetDelta;
                 double remainingTime = Math.Abs(maxInputTargetRate) > double.Epsilon ? Math.Abs(remainingDelta) / Math.Abs(maxInputTargetRate) : 0;
                 double totalTime = maxInputIn_t + maxInputOut_t + remainingTime;
                 return (maxInput, totalTime);
             }
-            
+
             double mpRollInRate = inputRateFunction(midPointInput, curInput);
             double mpRollOutRate = inputRateFunction(zeroTargetRateInput, midPointInput);
             double mpRollIn_t = Math.Abs(Math.Abs(midPointInput - curInput) / mpRollInRate) * (1 + inputTimeBuffer);
@@ -313,7 +352,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
             {
                 minTrack = maxTrack + trackDelta;
             }
-            
+
             double demandedTrack = CalculateDemandedInput(
                 -courseDeviation,
                 courseTrueTrack + trackDelta,
@@ -328,6 +367,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
             demandedTrack = GeoUtil.NormalizeHeading(demandedTrack);
 
             double turnAmt = GeoUtil.CalculateTurnAmount(curTrueTrack, demandedTrack);
+
             return (CalculateDemandedRollForTurn(turnAmt, curRoll, groundSpeed, intervalMs), demandedTrack);
         }
 
@@ -335,21 +375,34 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
         {
             double maxTrack = courseTrueTrack + MAX_INTC_ANGLE;
             double minTrack = courseTrueTrack - MAX_INTC_ANGLE;
+            double maxAbsTrack = courseTrueTrack + 90;
+            double minAbsTrack = courseTrueTrack - 90;
 
             double trackDelta = GeoUtil.CalculateTurnAmount(courseTrueTrack, curTrueTrack);
+            double adjCurTrack = courseTrueTrack + trackDelta;
 
             double demandedTrack = CalculateDemandedInput(
-                -courseDeviation,
-                courseTrueTrack + trackDelta,
-                maxTrack,
-                minTrack,
-                (double demanded, double measured) => CalculateRateForNavTurn(measured, demanded, curRoll, groundSpeed, intervalMs),
-                (double track) => CalculateCrossTrackRateForTrack(track, courseTrueTrack, groundSpeed),
-                courseTrueTrack,
-                ROLL_TIME_BUFFER
-            ).demandedInput;
+                    -courseDeviation,
+                    trackDelta,
+                    MAX_INTC_ANGLE,
+                    -MAX_INTC_ANGLE,
+                    (double demanded, double measured) => CalculateRateForNavTurn(measured, demanded, curRoll, groundSpeed, intervalMs),
+                    (double track) => CalculateCrossTrackRateForTrack(track, 0, groundSpeed),
+                    0,
+                    0
+                ).demandedInput;
 
-            demandedTrack = GeoUtil.NormalizeHeading(demandedTrack);
+            // Restrict demanded track to intercept angles
+            if (demandedTrack > MAX_INTC_ANGLE)
+            {
+                demandedTrack = MAX_INTC_ANGLE;
+            }
+            else if (demandedTrack < -MAX_INTC_ANGLE)
+            {
+                demandedTrack = -MAX_INTC_ANGLE;
+            }
+
+            demandedTrack = GeoUtil.NormalizeHeading(courseTrueTrack + demandedTrack);
 
             double turnAmt = GeoUtil.CalculateTurnAmount(curTrueTrack, demandedTrack);
 

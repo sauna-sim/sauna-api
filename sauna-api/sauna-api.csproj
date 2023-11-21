@@ -12,6 +12,7 @@
     <FileVersion>0.9.0</FileVersion>
     <NeutralLanguage>en-US</NeutralLanguage>
     <Version>0.9.0</Version>
+    <EnableUnmanagedDebugging>true</EnableUnmanagedDebugging>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(RunConfiguration)' == 'sauna-api' " />

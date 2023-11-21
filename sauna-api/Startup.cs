@@ -38,6 +38,7 @@ namespace SaunaSim.Api
 
         private void OnShutdown()
         {
+            Console.WriteLine("Shutting Down");
             SimAircraftHandler.DeleteAllAircraft();
         }
 
