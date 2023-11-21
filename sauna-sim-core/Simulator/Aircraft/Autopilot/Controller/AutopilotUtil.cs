@@ -105,9 +105,26 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
             return CalculateRate(demandedPitchAngle, measuredPitchAngle, PITCH_TIME, PITCH_RATE_MAX, intervalMs);
         }
 
+        /// <summary>
+        /// Calculates a demanded input to reach a desired target.
+        /// </summary>
+        /// <param name="deltaToTarget">How far the target is.</param>
+        /// <param name="curInput">Current input</param>
+        /// <param name="maxInputLimit">Maximum Input</param>
+        /// <param name="minInputLimit">Minimum Input</param>
+        /// <param name="inputRateFunction">Function that returns the rate to get from one input to another</param>
+        /// <param name="targetRateFunction">Function that returns the target rate for an input.</param>
+        /// <param name="zeroTargetRateInput">Input that results in zero target rate.</param>
+        /// <param name="inputTimeBuffer">Time contingency</param>
+        /// <returns></returns>
         public static (double demandedInput, double timeToTarget) CalculateDemandedInput(double deltaToTarget, double curInput, double maxInputLimit, double minInputLimit,
             Func<double, double, double> inputRateFunction, Func<double, double> targetRateFunction, double zeroTargetRateInput, double inputTimeBuffer)
         {
+            // Create a piecewise function with the following:
+            // Get from current to max input
+            // Remain at max input until it's time to return to zero input
+            // Get from max input to zero input.
+
             // Make sure zero target rate is within bounds
             if (zeroTargetRateInput < minInputLimit)
             {
@@ -125,12 +142,6 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
             } else if (curInput > maxInputLimit)
             {
                 curInput = maxInputLimit;
-            }
-
-            // If we're on target
-            if (Math.Abs(deltaToTarget) <= double.Epsilon)
-            {
-                return (zeroTargetRateInput, 0);
             }
 
             // Figure out time to get to 0 from max input and to get to max input from current input
@@ -176,6 +187,10 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
             (double m1, double b1) = PerfDataHandler.CreateLineEquation(0, curInput, inputInTargetDelta, maxInput);
             (double m2, double b2) = PerfDataHandler.CreateLineEquation(deltaToTarget - inputOutTargetDelta, maxInput, deltaToTarget, zeroTargetRateInput);
             (double m3, double b3) = (0, maxInput);
+            Console.WriteLine($"f(x) = {m1}x+{b1}");
+            Console.WriteLine($"g(x) = {m2}x+{b2}");
+            Console.WriteLine($"h(x) = {m3}x+{b3}");
+            Console.WriteLine($"x = {deltaToTarget}");
 
             (double inputOutIntersectionX, double inputOutIntersectionY) = PerfDataHandler.FindLinesIntersection(m2, b2, m3, b3);
             (double midPointTargetDelta, double midPointInput) = PerfDataHandler.FindLinesIntersection(m1, b1, m2, b2);
@@ -185,6 +200,12 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
             {
                 midPointTargetDelta = inputOutIntersectionX;
                 midPointInput = inputOutIntersectionY;
+            }
+
+            // If we're on target
+            if (Math.Abs(deltaToTarget) <= double.Epsilon)
+            {
+                return (zeroTargetRateInput, 0);
             }
 
             // Figure out the desired input value
@@ -363,12 +384,12 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
             double demandedTrack = CalculateDemandedInput(
                     -courseDeviation,
                     trackDelta,
-                    90,
-                    -90,
+                    MAX_INTC_ANGLE,
+                    -MAX_INTC_ANGLE,
                     (double demanded, double measured) => CalculateRateForNavTurn(measured, demanded, curRoll, groundSpeed, intervalMs),
                     (double track) => CalculateCrossTrackRateForTrack(track, 0, groundSpeed),
                     0,
-                    ROLL_TIME_BUFFER
+                    0
                 ).demandedInput;
 
             // Restrict demanded track to intercept angles
