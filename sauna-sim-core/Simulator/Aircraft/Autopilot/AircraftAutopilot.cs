@@ -183,6 +183,9 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot
                         _parentAircraft.Data.SpeedBrakePos, _parentAircraft.Data.Config);
                     _parentAircraft.Position.PitchRate = AutopilotUtil.CalculatePitchRate(_targetPitch, _parentAircraft.Position.Pitch, intervalMs);
                 }
+            } else if (_curVertMode == VerticalModeType.APCH)
+            {
+                
             }
         }
 

@@ -7,8 +7,11 @@ using NavData_Interface.Objects;
 using NavData_Interface.Objects.Fix;
 using SaunaSim.Core.Data;
 using SaunaSim.Core.Simulator.Aircraft;
+using SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller;
 using SaunaSim.Core.Simulator.Aircraft.Control.Instructions.Lateral;
 using SaunaSim.Core.Simulator.Aircraft.Control.Instructions.Vertical;
+using SaunaSim.Core.Simulator.Aircraft.FMS;
+using SaunaSim.Core.Simulator.Aircraft.FMS.Legs;
 
 namespace SaunaSim.Core.Simulator.Commands
 {
@@ -21,23 +24,26 @@ namespace SaunaSim.Core.Simulator.Commands
 
         public void ExecuteCommand()
         {
+            // Create localizer (just a CourseToFixLeg) and glidepath (setting the angleConstraint on the leg)
+            CourseToFixLeg locLeg = new CourseToFixLeg(new FmsPoint(new RouteWaypoint(_loc.Loc_location), RoutePointTypeEnum.FLY_OVER), BearingTypeEnum.MAGNETIC, _loc.Loc_bearing);
+            locLeg.EndPoint.AngleConstraint = 3.0;
 
-            /*if ((Aircraft.Control.CurrentLateralInstruction is IlsApproachInstruction instr1) && instr1.Type == LateralControlMode.APPROACH)
-            {
-                instr1.AircraftLanded += OnLanded;
-            }
-            else if ((Aircraft.Control.ArmedLateralInstruction is IlsApproachInstruction instr2) && instr2.Type == LateralControlMode.APPROACH)
-            {
-                instr2.AircraftLanded += OnLanded;
-            }
-            else
-            {
-                IlsApproachInstruction instr = new IlsApproachInstruction(_loc);
-                instr.AircraftLanded += OnLanded;
+            Aircraft.Fms.AddRouteLeg(locLeg);
 
-                Aircraft.Control.ArmedLateralInstruction = instr;
+            // Activate leg now, skipping all previous legs
+
+            Aircraft.Fms.ActivateNextLeg();
+
+            foreach (IRouteLeg leg in Aircraft.Fms.GetRouteLegs())
+            {
+                if (leg.Equals(locLeg))
+                {
+                    break;
+                }
             }
-            Aircraft.Control.AddArmedVerticalInstruction(new GlidePathInstruction(_loc.Location, 3));*/
+
+            Aircraft.Autopilot.SelectedFpa = locLeg.EndPoint.AngleConstraint;
+            Aircraft.Autopilot.CurrentVerticalMode = VerticalModeType.APCH;
         }
 
         public void OnLanded(object sender, EventArgs e)

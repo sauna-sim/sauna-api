@@ -25,6 +25,8 @@
 
         public int UpperAltitudeConstraint { get; set; }
 
+        public double AngleConstraint { get; set; } = -1; 
+
         public ConstraintType SpeedConstraintType { get; set; } = ConstraintType.FREE;
 
         public double SpeedConstraint { get; set; }
