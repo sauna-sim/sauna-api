@@ -7,6 +7,7 @@ using SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller;
 using SaunaSim.Core.Simulator.Aircraft.FMS;
 using SaunaSim.Core.Simulator.Aircraft.FMS.Legs;
 using SaunaSim.Core.Simulator.Aircraft.Performance;
+using System.Net;
 
 namespace SaunaSim.Core.Simulator.Aircraft.Autopilot
 {
@@ -185,7 +186,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot
                 }
             } else if (_curVertMode == VerticalModeType.APCH)
             {
-                
+                _target
             }
         }
 
@@ -243,6 +244,36 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot
                 turnRadius, _parentAircraft.Position.Bank, _parentAircraft.Position.GroundSpeed, intervalMs).demandedRoll;
             
             _parentAircraft.Position.BankRate = AutopilotUtil.CalculateRollRate(_targetBank, _parentAircraft.Position.Bank, intervalMs);
+        }
+
+        private (double requiredFpa, double pitchTrackError) GetPitchInterceptInfoForCurrentLeg()
+        {
+            double requiredFpa = _parentAircraft.Fms.ActiveLeg.EndPoint.AngleConstraint;
+
+            if (requiredFpa == -1)
+            {
+                return (-1, 0);
+            }
+            else
+            {
+                // Assume straight leg. Calculate pitchTrackError from the altitude that
+                // VNAV wants to be at for the EndPoint, extrapolate for current position
+                // with trigonometry and compare to our current altitude.
+                (_, _, double alongTrackDistance, _) = _parentAircraft.Fms.CourseInterceptInfo;
+
+                // Calculate how much altitude we still need to climb/descend from here to the EndPoint
+                double altitudeRemaining = Math.Tan(requiredFpa) * alongTrackDistance;
+
+                IRouteLeg currentLeg = _parentAircraft.Fms.ActiveLeg;
+
+                // This is the altitude we should be at right now
+                double expectedAltitude = currentLeg.EndPoint.Point.PointPosition.Alt + altitudeRemaining;
+
+                // The difference between our indicated altitude and expected is the pitchTrackError
+                double pitchTrackError = expectedAltitude - _parentAircraft.Position.IndicatedAltitude;
+
+                return (requiredFpa, pitchTrackError);
+            }
         }
 
         private void RollHdgTrackHold(double currentBearing, double targetBearing, int intervalMs)
