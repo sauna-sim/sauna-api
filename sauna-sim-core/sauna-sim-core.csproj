@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <AssemblyVersion>0.9.0</AssemblyVersion>
@@ -12,7 +12,7 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-    <PackageReference Include="PShivaraman.AviationCalcUtilNet" Version="1.1.3" />
+    <PackageReference Include="PShivaraman.AviationCalcUtilNet" Version="1.2.0" />
     <PackageReference Include="CaspianMerlin.FsdConnectorNet" Version="0.2.2" />
   </ItemGroup>
   <ItemGroup>
