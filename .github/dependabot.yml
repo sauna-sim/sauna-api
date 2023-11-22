@@ -19,3 +19,6 @@ updates:
     directory: "/sauna-tests/" # Location of package manifests
     schedule:
       interval: "weekly"
+    ignore:
+      - dependency-name: "Microsoft.AspNetCore.*"
+        versions: ["7.x", "8.x"]
