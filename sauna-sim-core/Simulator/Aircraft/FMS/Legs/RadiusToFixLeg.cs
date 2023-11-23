@@ -20,7 +20,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
         private double _finalTrueCourse;
         private double _legLength;
 
-        public double LegLength => 0;
+        public double LegLength => _legLength;
 
         public double InitialTrueCourse => _initialTrueCourse;
 
@@ -30,7 +30,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
 
         private TurnCircle _turnCircle;
 
-        public TurnCircle TurnCircley => _turnCircle;
+        public TurnCircle ArcInfo => _turnCircle;
 
         private TrackToFixLeg _trackToRFLeg;
         private TrackToFixLeg _trackFromRFLeg;
@@ -273,6 +273,22 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
                     throw new InvalidTurnCircleException(_turnCircle, StartPoint.Point.PointPosition, EndPoint.Point.PointPosition, InitialTrueCourse, FinalTrueCourse);
                 }
             }
+
+            // Calculate leg length
+            _legLength = 0;
+            if (_trackToRFLeg != null)
+            {
+                _legLength += _trackFromRFLeg.LegLength;
+            }
+            if (_turnCircle != null)
+            {
+                GeoUtil.CalculateArcCourseInfo(_turnCircle.TangentialPointA, _turnCircle.Center, _turnCircle.PointARadial, _turnCircle.PointBRadial, _turnCircle.RadiusM, isClockwise(), out _, out double rfArcLength);
+                _legLength += rfArcLength;
+            }
+            if (_trackFromRFLeg != null)
+            {
+                _legLength += _trackFromRFLeg.LegLength;
+            }
         }
 
         public bool HasLegTerminated(SimAircraft aircraft)
@@ -382,6 +398,10 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
             return GeoUtil.CalculateCrossTrackErrorM(aircraft.Position.PositionGeoPoint, StartPoint.Point.PointPosition, InitialTrueCourse, out _, out _) < 0;
         }
 
+        public void InitializeLeg(SimAircraft aircraft)
+        {
+        }
+
         public override string ToString()
         {
             return $"({StartPoint}) (RF) => ({EndPoint}) TurnCircle: {_turnCircle}\n" +
@@ -401,7 +421,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
                 }
 
                 retList.Add(new NdArc(_turnCircle.TangentialPointA, _turnCircle.TangentialPointB, _turnCircle.Center, _turnCircle.RadiusM, _turnCircle.PointARadial, _turnCircle.PointBRadial, isClockwise()));
-                if (!EndPoint.Point.PointPosition.Equals(_turnCircle.TangentialPointA))
+                if (!EndPoint.Point.PointPosition.Equals(_turnCircle.TangentialPointB))
                 {
                     retList.Add(new NdLine(_turnCircle.TangentialPointB, EndPoint.Point.PointPosition));
                 }

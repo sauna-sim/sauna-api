@@ -21,7 +21,7 @@ namespace SaunaSim.Core.Simulator.Commands
         public Action<string> Logger { get; set; }
 
         private Localizer _loc;
-        
+
         public void ExecuteCommand()
         {
             // Create localizer (just a CourseToFixLeg) and glidepath (setting the angleConstraint on the leg)
@@ -34,8 +34,10 @@ namespace SaunaSim.Core.Simulator.Commands
             Aircraft.Fms.AddRouteLeg(locLeg);
 
             // Activate leg now, skipping all previous legs
-
-            Aircraft.Fms.ActivateNextLeg();
+            while (!Aircraft.Fms.ActiveLeg.Equals(locLeg) && Aircraft.Fms.GetRouteLegs().Count > 0)
+            {
+                Aircraft.Fms.ActivateNextLeg();
+            }
 
             foreach (IRouteLeg leg in Aircraft.Fms.GetRouteLegs())
             {
@@ -60,7 +62,7 @@ namespace SaunaSim.Core.Simulator.Commands
             Aircraft = aircraft;
             Logger = logger;
             // Find Waypoint
-            Localizer wp = DataHandler.GetLocalizer("_fake_airport", runway);
+            Localizer wp = DataHandler.GetLocalizer(DataHandler.FAKE_AIRPORT_NAME, runway);
 
             if (wp == null)
             {
@@ -90,7 +92,7 @@ namespace SaunaSim.Core.Simulator.Commands
             args.RemoveAt(0);
 
             // Find Waypoint
-            Localizer wp = DataHandler.GetLocalizer("_fake_airport", rwyStr);
+            Localizer wp = DataHandler.GetLocalizer(DataHandler.FAKE_AIRPORT_NAME, rwyStr);
             
             if (wp == null)
             {

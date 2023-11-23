@@ -285,7 +285,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
             _inboundLeg = new TrackToFixLeg(isPoint, iePoint);
         }
 
-        private void CalculateHold(SimAircraft aircraft)
+        internal void CalculateHold(SimAircraft aircraft)
         {
             // Find Courses and leg lengths
             double turnAmt = GetTurnAmount();

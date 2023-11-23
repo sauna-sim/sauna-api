@@ -314,6 +314,8 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
             ).demandedInput;
         }
 
+        public static double CalculateDemandedPitchForVnavPath(double altDelta, double curPitch, double pitchFor)
+
         private static double CalculateCrossTrackRateForTrack(double curTrueTrack, double courseTrueTrack, double groundSpeed)
         {
             return MathUtil.ConvertKtsToMpers(groundSpeed) * Math.Sin(MathUtil.ConvertDegreesToRadians(curTrueTrack - courseTrueTrack));

@@ -79,6 +79,13 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
         List<NdLine> UiLines { get; }
 
         /// <summary>
+        /// Allows a leg to be initialized before being activated.
+        /// This is useful for predicting how a leg will look based on aircraft data before the leg is actually flown.
+        /// </summary>
+        /// <param name="aircraft">The current aircraft.</param>
+        void InitializeLeg(SimAircraft aircraft);
+
+        /// <summary>
         /// Determines whether the current leg has terminated and if control should be passed to next instruction
         /// </summary>
         /// <param name="aircraft">The current aircraft.</param>

@@ -46,6 +46,10 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
             return false;
         }
 
+        public void InitializeLeg(SimAircraft aircraft)
+        {
+        }
+
         public override string ToString()
         {
             return "===(DISCO)===";
