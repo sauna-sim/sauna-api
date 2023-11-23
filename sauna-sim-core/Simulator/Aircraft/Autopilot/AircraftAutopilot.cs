@@ -20,9 +20,6 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot
         private double _targetBank;
         private double _targetPitch;
 
-        // used for APCH lateral mode, should probably be moved elsewhere
-        public CourseToFixLeg LocalizerSignal { get; set; }
-
         // Modes
         private LateralModeType _curLatMode;
         private readonly List<LateralModeType> _armedLatModes;
@@ -228,8 +225,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot
             {
                 foreach (var mode in _armedLatModes)
                 {
-                    if (mode == LateralModeType.LNAV && _parentAircraft.Fms.ShouldActivateLnav(intervalMs) ||
-                        mode == LateralModeType.APCH && LocalizerSignal.ShouldActivateLeg(_parentAircraft, intervalMs))
+                    if (mode == LateralModeType.LNAV && _parentAircraft.Fms.ShouldActivateLnav(intervalMs))
                     {
                         RemoveArmedLateralMode(mode);
                         _curLatMode = mode;
@@ -254,15 +250,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot
             else if (_curLatMode == LateralModeType.LNAV)
             {
                 RollHandleLnav(intervalMs);
-            } else if (_curLatMode == LateralModeType.APCH)
-            {
-                RollHandleApch(intervalMs);
             }
-        }
-
-        private void RollHandleApch(int intervalMs)
-        {
-
         }
 
         private void RollHandleLnav(int intervalMs)
