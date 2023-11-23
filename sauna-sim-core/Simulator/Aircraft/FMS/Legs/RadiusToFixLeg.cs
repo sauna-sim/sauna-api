@@ -382,6 +382,10 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
             return GeoUtil.CalculateCrossTrackErrorM(aircraft.Position.PositionGeoPoint, StartPoint.Point.PointPosition, InitialTrueCourse, out _, out _) < 0;
         }
 
+        public void InitializeLeg(SimAircraft aircraft)
+        {
+        }
+
         public override string ToString()
         {
             return $"({StartPoint}) (RF) => ({EndPoint}) TurnCircle: {_turnCircle}\n" +

@@ -75,6 +75,11 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
             return false;
         }
 
+        public void InitializeLeg(SimAircraft aircraft)
+        {
+            _instr.CalculateHold(aircraft);
+        }
+
         public List<NdLine> UiLines => _instr.GetUiLines();
     }
 }

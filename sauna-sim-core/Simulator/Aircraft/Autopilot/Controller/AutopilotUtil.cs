@@ -315,6 +315,9 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
         }
 
         public static double CalculateDemandedPitchForVnavPath(double altDelta, double curPitch, double pitchFor)
+        {
+            throw new NotImplementedException();
+        }
 
         private static double CalculateCrossTrackRateForTrack(double curTrueTrack, double courseTrueTrack, double groundSpeed)
         {

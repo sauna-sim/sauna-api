@@ -21,6 +21,8 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
         private List<IRouteLeg> _routeLegs;
         private object _routeLegsLock;
         private bool _suspended;
+        private static double MIN_GS_DIFF = 10;
+        private double _lastGs;
 
         // Fms Values
         private double _xTk_m;
@@ -372,6 +374,22 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
 
             // Calculate course values
             (_requiredTrueCourse, _xTk_m, _aTk_m, _turnRadius_m) = ActiveLeg.GetCourseInterceptInfo(_parentAircraft);
+
+            // Check if we need to recalculate remaining legs
+            if (Math.Abs(_lastGs - position.GroundSpeed) > MIN_GS_DIFF)
+            {
+                lock (_routeLegsLock)
+                {
+                    if (_routeLegs != null)
+                    {
+                        foreach (var leg in _routeLegs)
+                        {
+                            leg.InitializeLeg(_parentAircraft);
+                        }
+                    }
+                }
+                _lastGs = position.GroundSpeed;
+            }
         }
     }
 }

@@ -79,6 +79,13 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
         List<NdLine> UiLines { get; }
 
         /// <summary>
+        /// Allows a leg to be initialized before being activated.
+        /// This is useful for predicting how a leg will look based on aircraft data before the leg is actually flown.
+        /// </summary>
+        /// <param name="aircraft">The current aircraft.</param>
+        void InitializeLeg(SimAircraft aircraft);
+
+        /// <summary>
         /// Determines whether the current leg has terminated and if control should be passed to next instruction
         /// </summary>
         /// <param name="aircraft">The current aircraft.</param>
@@ -98,13 +105,6 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
         /// <param name="aircraft">The current aircraft.</param>
         /// <returns><c>(double, double, double, double)</c> Required True Course (m), Cross Track Error (m), Along Track Distance (m), Turn Radius (m) (0 if N/A, -ive for left, +ive for right)</returns>
         (double requiredTrueCourse, double crossTrackError, double alongTrackDistance, double turnRadius) GetCourseInterceptInfo(SimAircraft aircraft);
-
-        /// <summary>
-        /// Obtains pitch info for VNAV Autopilot guidance.
-        /// </summary>
-        /// <param name="aircraft">The current aircraft</param>
-        /// <returns><c>(double, double)</c> Required Fpa (º) (0 if on or below track), Pitch Track Error (ft)</returns>
-        (double requiredFpa, double pitchTrackError) GetPitchInterceptInfo(SimAircraft aircraft);
 
         /// <summary>
         /// Determines whether or not the current leg should be activated

@@ -186,7 +186,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot
                 }
             } else if (_curVertMode == VerticalModeType.APCH)
             {
-                _target
+                
             }
         }
 
