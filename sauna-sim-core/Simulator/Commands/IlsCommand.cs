@@ -21,7 +21,7 @@ namespace SaunaSim.Core.Simulator.Commands
         public Action<string> Logger { get; set; }
 
         private Localizer _loc;
-
+        
         public void ExecuteCommand()
         {
             // Create localizer (just a CourseToFixLeg) and glidepath (setting the angleConstraint on the leg)
