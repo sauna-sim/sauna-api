@@ -63,8 +63,15 @@ namespace SaunaSim.Api.Controllers
             }
 
             SimAircraft aircraft = client;
+            var remaining_args = CommandHandler.HandleCommand(request.Command, aircraft, request.Args, LogCommandInfo);
+            while (remaining_args.Count > 0)
+            {
+                // Get command name
+                string command = remaining_args[0].ToLower();
+                remaining_args.RemoveAt(0);
 
-            CommandHandler.HandleCommand(request.Command, aircraft, request.Args, LogCommandInfo);
+                remaining_args = CommandHandler.HandleCommand(command, aircraft, remaining_args, LogCommandInfo);
+            }
             return Ok();
         }
 
