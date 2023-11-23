@@ -20,7 +20,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
         private double _finalTrueCourse;
         private double _legLength;
 
-        public double LegLength => 0;
+        public double LegLength => _legLength;
 
         public double InitialTrueCourse => _initialTrueCourse;
 
@@ -272,6 +272,22 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
                 {
                     throw new InvalidTurnCircleException(_turnCircle, StartPoint.Point.PointPosition, EndPoint.Point.PointPosition, InitialTrueCourse, FinalTrueCourse);
                 }
+            }
+
+            // Calculate leg length
+            _legLength = 0;
+            if (_trackToRFLeg != null)
+            {
+                _legLength += _trackFromRFLeg.LegLength;
+            }
+            if (_turnCircle != null)
+            {
+                GeoUtil.CalculateArcCourseInfo(_turnCircle.TangentialPointA, _turnCircle.Center, _turnCircle.PointARadial, _turnCircle.PointBRadial, _turnCircle.RadiusM, isClockwise(), out _, out double rfArcLength);
+                _legLength += rfArcLength;
+            }
+            if (_trackFromRFLeg != null)
+            {
+                _legLength += _trackFromRFLeg.LegLength;
             }
         }
 
