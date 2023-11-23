@@ -46,6 +46,7 @@ namespace SaunaSim.Api.Controllers
                     request.Server,
                     request.Port)
                 {
+                    FullName = request.FullName,
                     Protocol = request.Protocol,
                     Position = new AviationCalcUtilNet.GeoTools.GeoPoint(request.Position.Latitude,
                     request.Position.Longitude,
