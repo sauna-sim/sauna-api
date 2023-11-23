@@ -405,7 +405,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
                 }
 
                 retList.Add(new NdArc(_turnCircle.TangentialPointA, _turnCircle.TangentialPointB, _turnCircle.Center, _turnCircle.RadiusM, _turnCircle.PointARadial, _turnCircle.PointBRadial, isClockwise()));
-                if (!EndPoint.Point.PointPosition.Equals(_turnCircle.TangentialPointA))
+                if (!EndPoint.Point.PointPosition.Equals(_turnCircle.TangentialPointB))
                 {
                     retList.Add(new NdLine(_turnCircle.TangentialPointB, EndPoint.Point.PointPosition));
                 }
