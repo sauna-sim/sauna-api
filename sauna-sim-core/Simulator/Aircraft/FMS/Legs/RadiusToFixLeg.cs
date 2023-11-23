@@ -30,7 +30,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
 
         private TurnCircle _turnCircle;
 
-        public TurnCircle TurnCircley => _turnCircle;
+        public TurnCircle ArcInfo => _turnCircle;
 
         private TrackToFixLeg _trackToRFLeg;
         private TrackToFixLeg _trackFromRFLeg;

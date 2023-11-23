@@ -22,6 +22,7 @@ using SaunaSim.Core.Simulator.Aircraft.FMS.Legs;
 using NavData_Interface.Objects.Fix;
 using NavData_Interface.Objects;
 using System.Runtime.CompilerServices;
+using System.Configuration;
 
 namespace SaunaSim.Api.Controllers
 {
@@ -179,6 +180,18 @@ namespace SaunaSim.Api.Controllers
                         double lat = 0;
                         double lon = 0;
 
+                        // XPDR code
+                        int squawk = 0;
+                        try
+                        {
+                             squawk = Convert.ToInt32(items[2]);
+                        } catch (Exception e){
+                            if (e is not OverflowException && e is not FormatException)
+                            {
+                                throw;
+                            }
+                        }
+
                         try
                         {
                             (lat, lon) = CoordinateUtil.ParseCoordinate(items[4], items[5]);
@@ -207,6 +220,7 @@ namespace SaunaSim.Api.Controllers
                                 _logger.LogError($"{callsign}: {msg}");
                             },
                             XpdrMode = xpdrMode,
+                            Squawk = squawk
                         };
 
                         // Add to temp list
@@ -319,7 +333,18 @@ namespace SaunaSim.Api.Controllers
                                 course = MagneticUtil.ConvertTrueToMagneticTile(GeoPoint.InitialBearing(threshold, otherThreshold), threshold);
                             }
 
-                            DataHandler.AddLocalizer(new Localizer("", "", "_fake_airport", wpId, wpId, threshold, 0, course, 0, IlsCategory.CATI, 0));
+                            int elev = 0;
+                            Airport airport = DataHandler.GetAirportByIdentifier(DataHandler.FAKE_AIRPORT_NAME);
+
+                            if (airport != null)
+                            {
+                                elev = airport.Elevation;
+                            }
+
+                            Glideslope gs = new Glideslope(threshold, 3.0, elev);
+                            Localizer loc = new Localizer("", "", DataHandler.FAKE_AIRPORT_NAME, wpId, wpId, threshold, 0, course, 0, IlsCategory.CATI, gs, 0);
+
+                            DataHandler.AddLocalizer(loc);
                         } catch (Exception)
                         {
                             Console.WriteLine("Well that didn't work did it.");
@@ -337,7 +362,20 @@ namespace SaunaSim.Api.Controllers
                             DataHandler.AddPublishedHold(new PublishedHold(fix, inboundCourse, turnDirection));
                         } catch (Exception)
                         {
-                            Console.WriteLine("Well that didn't work did it.");
+                            Console.WriteLine("Error Loading Hold.");
+                        }
+                    } else if (line.StartsWith("AIRPORT_ALT"))
+                    {
+                        string[] items = line.Split(':');
+
+                        try
+                        {
+                            double airportElev = Convert.ToDouble(items[1]);
+                            Airport airport = new Airport(DataHandler.FAKE_AIRPORT_NAME, new GeoPoint(0, 0, 0), "", "", "", DataHandler.FAKE_AIRPORT_NAME, true, RunwaySurfaceCode.Hard, (int)airportElev, 18000, 180, 250, 10000, "");
+                            DataHandler.AddAirport(airport);
+                        } catch (Exception)
+                        {
+                            Console.WriteLine("Error loading airport elevation");
                         }
                     }
                 }

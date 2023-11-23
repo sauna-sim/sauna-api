@@ -173,6 +173,9 @@ namespace SaunaSim.Core.Simulator.Aircraft
                 IndicatedAirSpeed = 250.0,
                 Heading_Mag = hdg_mag
             };
+
+            FlightPhase = FlightPhaseType.ENROUTE;
+
             _data = new AircraftData()
             {
                 ThrustLeverPos = 0,
@@ -206,6 +209,9 @@ namespace SaunaSim.Core.Simulator.Aircraft
         {
             // Set initial assignments
             Position.UpdateGribPoint();
+
+            // Determine flight phase
+            // Lookup dep airport
 
             // Connect if no delay, otherwise start timer
             if (DelayMs <= 0)
