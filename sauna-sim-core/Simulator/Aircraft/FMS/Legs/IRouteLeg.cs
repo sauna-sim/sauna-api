@@ -100,13 +100,6 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
         (double requiredTrueCourse, double crossTrackError, double alongTrackDistance, double turnRadius) GetCourseInterceptInfo(SimAircraft aircraft);
 
         /// <summary>
-        /// Obtains pitch info for VNAV Autopilot guidance.
-        /// </summary>
-        /// <param name="aircraft">The current aircraft</param>
-        /// <returns><c>(double, double)</c> Required Fpa (º) (0 if on or below track), Pitch Track Error (ft)</returns>
-        (double requiredFpa, double pitchTrackError) GetPitchInterceptInfo(SimAircraft aircraft);
-
-        /// <summary>
         /// Determines whether or not the current leg should be activated
         /// </summary>
         /// <param name="aircraft">The current aircraft.</param>

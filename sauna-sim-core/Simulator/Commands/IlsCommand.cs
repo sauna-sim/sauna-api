@@ -21,12 +21,15 @@ namespace SaunaSim.Core.Simulator.Commands
         public Action<string> Logger { get; set; }
 
         private Localizer _loc;
-
+        
         public void ExecuteCommand()
         {
             // Create localizer (just a CourseToFixLeg) and glidepath (setting the angleConstraint on the leg)
             CourseToFixLeg locLeg = new CourseToFixLeg(new FmsPoint(new RouteWaypoint(_loc.Loc_location), RoutePointTypeEnum.FLY_OVER), BearingTypeEnum.MAGNETIC, _loc.Loc_bearing);
             locLeg.EndPoint.AngleConstraint = 3.0;
+
+            // TODO: This should be threshold elevation
+            locLeg.EndPoint.Point.PointPosition.Alt = 0;
 
             Aircraft.Fms.AddRouteLeg(locLeg);
 
@@ -40,10 +43,11 @@ namespace SaunaSim.Core.Simulator.Commands
                 {
                     break;
                 }
+                Aircraft.Fms.ActivateNextLeg();
             }
 
-            Aircraft.Autopilot.SelectedFpa = locLeg.EndPoint.AngleConstraint;
-            Aircraft.Autopilot.CurrentVerticalMode = VerticalModeType.APCH;
+            Aircraft.Autopilot.AddArmedLateralMode(LateralModeType.LNAV);
+            Aircraft.Autopilot.AddArmedVerticalMode(VerticalModeType.APCH);
         }
 
         public void OnLanded(object sender, EventArgs e)

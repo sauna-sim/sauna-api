@@ -187,10 +187,10 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
             (double m1, double b1) = PerfDataHandler.CreateLineEquation(0, curInput, inputInTargetDelta, maxInput);
             (double m2, double b2) = PerfDataHandler.CreateLineEquation(deltaToTarget - inputOutTargetDelta, maxInput, deltaToTarget, zeroTargetRateInput);
             (double m3, double b3) = (0, maxInput);
-            Console.WriteLine($"f(x) = {m1}x+{b1}");
+            /*Console.WriteLine($"f(x) = {m1}x+{b1}");
             Console.WriteLine($"g(x) = {m2}x+{b2}");
             Console.WriteLine($"h(x) = {m3}x+{b3}");
-            Console.WriteLine($"x = {deltaToTarget}");
+            Console.WriteLine($"x = {deltaToTarget}");*/
 
             (double inputOutIntersectionX, double inputOutIntersectionY) = PerfDataHandler.FindLinesIntersection(m2, b2, m3, b3);
             (double midPointTargetDelta, double midPointInput) = PerfDataHandler.FindLinesIntersection(m1, b1, m2, b2);
@@ -313,8 +313,6 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
                 PITCH_TIME_BUFFER
             ).demandedInput;
         }
-
-        public static double CalculateDemandedPitchForVnavPath(double altDelta, double curPitch, double pitchFor)
 
         private static double CalculateCrossTrackRateForTrack(double curTrueTrack, double courseTrueTrack, double groundSpeed)
         {

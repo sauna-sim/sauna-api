@@ -20,6 +20,9 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot
         private double _targetBank;
         private double _targetPitch;
 
+        // used for APCH lateral mode, should probably be moved elsewhere
+        public CourseToFixLeg LocalizerSignal { get; set; }
+
         // Modes
         private LateralModeType _curLatMode;
         private readonly List<LateralModeType> _armedLatModes;
@@ -112,6 +115,20 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot
 
         private void RunPitchController(int intervalMs)
         {
+            // Check armed vertical modes
+            lock (_armedVertModesLock)
+            {
+                foreach (var mode in _armedVertModes)
+                {
+                    if (mode == VerticalModeType.APCH && CurrentLateralMode == LateralModeType.APCH)
+                    {
+                        RemoveArmedVerticalMode(mode);
+                        _curVertMode = mode;
+                        break;
+                    }
+                }
+            }
+
             if (_curVertMode == VerticalModeType.ALT)
             {
                 // Check if we're off altitude by more than 200ft
@@ -186,7 +203,21 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot
                 }
             } else if (_curVertMode == VerticalModeType.APCH)
             {
-                _target
+                _curThrustMode = ThrustModeType.SPEED;
+
+                (double requiredFpa, double pitchTrackError) = GetPitchInterceptInfoForCurrentLeg();
+
+                _targetPitch = PerfDataHandler.GetRequiredPitchForVs(
+                    _parentAircraft.PerformanceData,
+                    PerfDataHandler.ConvertFpaToVs(-requiredFpa, _parentAircraft.Position.GroundSpeed),
+                    _parentAircraft.Position.IndicatedAirSpeed,
+                    _parentAircraft.Position.DensityAltitude,
+                    _parentAircraft.Data.Mass_kg,
+                    _parentAircraft.Data.SpeedBrakePos,
+                    _parentAircraft.Data.Config
+                    );
+
+                _parentAircraft.Position.PitchRate = AutopilotUtil.CalculatePitchRate(_targetPitch, _parentAircraft.Position.Pitch, intervalMs);
             }
         }
 
@@ -197,10 +228,11 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot
             {
                 foreach (var mode in _armedLatModes)
                 {
-                    if (mode == LateralModeType.LNAV && _parentAircraft.Fms.ShouldActivateLnav(intervalMs))
+                    if (mode == LateralModeType.LNAV && _parentAircraft.Fms.ShouldActivateLnav(intervalMs) ||
+                        mode == LateralModeType.APCH && LocalizerSignal.ShouldActivateLeg(_parentAircraft, intervalMs))
                     {
                         RemoveArmedLateralMode(mode);
-                        _curLatMode = LateralModeType.LNAV;
+                        _curLatMode = mode;
                         break;
                     }
                 }
@@ -222,7 +254,15 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot
             else if (_curLatMode == LateralModeType.LNAV)
             {
                 RollHandleLnav(intervalMs);
+            } else if (_curLatMode == LateralModeType.APCH)
+            {
+                RollHandleApch(intervalMs);
             }
+        }
+
+        private void RollHandleApch(int intervalMs)
+        {
+
         }
 
         private void RollHandleLnav(int intervalMs)
@@ -252,7 +292,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot
 
             if (requiredFpa == -1)
             {
-                return (-1, 0);
+                return (0, 0);
             }
             else
             {
@@ -262,15 +302,25 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot
                 (_, _, double alongTrackDistance, _) = _parentAircraft.Fms.CourseInterceptInfo;
 
                 // Calculate how much altitude we still need to climb/descend from here to the EndPoint
-                double altitudeRemaining = Math.Tan(requiredFpa) * alongTrackDistance;
+                double altitudeRemainingM = Math.Tan(AviationCalcUtilNet.MathTools.MathUtil.ConvertDegreesToRadians(requiredFpa)) * alongTrackDistance;
+
+                double altitudeRemainingFt = MathUtil.ConvertMetersToFeet(altitudeRemainingM);
 
                 IRouteLeg currentLeg = _parentAircraft.Fms.ActiveLeg;
 
                 // This is the altitude we should be at right now
-                double expectedAltitude = currentLeg.EndPoint.Point.PointPosition.Alt + altitudeRemaining;
+                double expectedAltitude = currentLeg.EndPoint.Point.PointPosition.Alt + altitudeRemainingFt;
 
                 // The difference between our indicated altitude and expected is the pitchTrackError
-                double pitchTrackError = expectedAltitude - _parentAircraft.Position.IndicatedAltitude;
+                double pitchTrackError = _parentAircraft.Position.IndicatedAltitude - expectedAltitude;
+
+                Console.Write($"expectedAltitude: {expectedAltitude}  pitchTrackError: {pitchTrackError}             \r");
+
+                if (pitchTrackError < 0)
+                {
+                    // We are below the GS, so for now we'll pretend that the path is flat
+                    return (0, 0);
+                }
 
                 return (requiredFpa, pitchTrackError);
             }
