@@ -45,7 +45,7 @@ namespace SaunaSim.Core.Simulator.Commands
                 Aircraft.Fms.ActivateNextLeg();
             }
 
-            Aircraft.Autopilot.AddArmedLateralMode(LateralModeType.LNAV);
+            Aircraft.Autopilot.AddArmedLateralMode(LateralModeType.APCH);
         }
 
         public bool HandleCommand(SimAircraft aircraft, Action<string> logger, string runway)

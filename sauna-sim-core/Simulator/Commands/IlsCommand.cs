@@ -21,6 +21,7 @@ namespace SaunaSim.Core.Simulator.Commands
         public Action<string> Logger { get; set; }
 
         private Localizer _loc;
+        private IRoutePoint _locRoutePoint;
         
         public void ExecuteCommand()
         {
@@ -30,8 +31,8 @@ namespace SaunaSim.Core.Simulator.Commands
             }
 
             // Add the LOC leg
-            IRoutePoint locRoutePoint = new RouteWaypoint("LOC" + _loc.Runway_identifier, _loc.Loc_location);
-            FmsPoint locFmsPoint = new FmsPoint(locRoutePoint, RoutePointTypeEnum.FLY_OVER)
+            _locRoutePoint = new RouteWaypoint("LOC" + _loc.Runway_identifier, _loc.Loc_location);
+            FmsPoint locFmsPoint = new FmsPoint(_locRoutePoint, RoutePointTypeEnum.FLY_OVER)
             {
                 LowerAltitudeConstraint = _loc.Glideslope.Gs_elevation,
                 UpperAltitudeConstraint = _loc.Glideslope.Gs_elevation,
@@ -56,13 +57,19 @@ namespace SaunaSim.Core.Simulator.Commands
                 Aircraft.Fms.ActivateNextLeg();
             }
 
-            Aircraft.Autopilot.AddArmedLateralMode(LateralModeType.LNAV);
+            Aircraft.Autopilot.AddArmedLateralMode(LateralModeType.APCH);
             Aircraft.Autopilot.AddArmedVerticalMode(VerticalModeType.APCH);
+
+            // Add event handler
+            Aircraft.Fms.WaypointPassed += OnLanded;
         }
 
-        public void OnLanded(object sender, EventArgs e)
+        public void OnLanded(object sender, WaypointPassedEventArgs e)
         {
-            Aircraft.Dispose();
+            if (e.RoutePoint.Equals(_locRoutePoint))
+            {
+                Aircraft.Dispose();
+            }
         }
 
         public bool HandleCommand(SimAircraft aircraft, Action<string> logger, string runway)

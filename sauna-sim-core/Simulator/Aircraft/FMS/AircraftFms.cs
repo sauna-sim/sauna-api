@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using AviationCalcUtilNet.GeoTools;
+using AviationCalcUtilNet.MathTools;
 using NavData_Interface.Objects.Fix;
 using SaunaSim.Core.Data;
 using SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller;
@@ -29,6 +30,8 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
         private double _aTk_m;
         private double _requiredTrueCourse;
         private double _turnRadius_m;
+        private double _vTk_m;
+        private double _requiredFpa;
 
         public EventHandler<WaypointPassedEventArgs> WaypointPassed;
 
@@ -39,6 +42,8 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
             _xTk_m = -1;
             _aTk_m = -1;
             _requiredTrueCourse = -1;
+            _vTk_m = -1;
+            _requiredFpa = 0;
             _turnRadius_m = 0;
 
             lock (_routeLegsLock)
@@ -56,6 +61,10 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
         public double RequiredTrueCourse => _requiredTrueCourse;
 
         public double TurnRadius_m => _turnRadius_m;
+
+        public double VerticalTrackDistance_m => _vTk_m;
+
+        public double RequiredFpa => _requiredFpa;
 
         public bool Suspended
         {
@@ -375,21 +384,61 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
             // Calculate course values
             (_requiredTrueCourse, _xTk_m, _aTk_m, _turnRadius_m) = ActiveLeg.GetCourseInterceptInfo(_parentAircraft);
 
-            // Check if we need to recalculate remaining legs
+            // Check if we need to recalculate remaining legs and VNAV crossing altitudes
             if (Math.Abs(_lastGs - position.GroundSpeed) > MIN_GS_DIFF)
             {
                 lock (_routeLegsLock)
-                {
+                {                    
                     if (_routeLegs != null)
                     {
-                        foreach (var leg in _routeLegs)
+                        // Go through route legs in reverse
+                        for (int i = _routeLegs.Count - 1; i  >= 0; i--)
                         {
+                            var leg = _routeLegs[i];
+
+                            // Update leg dimensions
                             leg.InitializeLeg(_parentAircraft);
+
+                            // Update VNAV info
+                            if (leg.EndPoint != null)
+                            {
+                                // TODO: Change this to actually calculate VNAV paths
+                                leg.EndPoint.VnavTargetAltitude = _activeLeg.EndPoint.LowerAltitudeConstraint;
+                            }
                         }
+                    }
+                    if (_activeLeg.EndPoint != null)
+                    {
+                        // TODO: Change this to actually calculate VNAV paths
+                        _activeLeg.EndPoint.VnavTargetAltitude = _activeLeg.EndPoint.LowerAltitudeConstraint;
                     }
                 }
                 _lastGs = position.GroundSpeed;
             }
+
+            // Calculate VNAV values
+            (_requiredFpa, _vTk_m) = GetPitchInterceptInfoForCurrentLeg();
+        }
+
+        private (double requiredFpa, double vTk_m) GetPitchInterceptInfoForCurrentLeg()
+        {
+            if (_activeLeg.EndPoint == null || _activeLeg.EndPoint.VnavTargetAltitude < 0 || _activeLeg.EndPoint.AngleConstraint < 0)
+            {
+                return (0, 0);
+            }
+
+            // TODO: Change this to actually figure out the angle
+            double requiredFpa = _activeLeg.EndPoint.AngleConstraint;
+
+            // Calculate how much altitude we still need to climb/descend from here to the EndPoint
+            double deltaAlt_m = Math.Tan(MathUtil.ConvertDegreesToRadians(requiredFpa)) * _aTk_m;
+
+            // Add to Vnav target alt
+            double altTarget_m = deltaAlt_m + MathUtil.ConvertFeetToMeters(_activeLeg.EndPoint.VnavTargetAltitude);
+
+            double vTk_m = MathUtil.ConvertFeetToMeters(_parentAircraft.Position.TrueAltitude) - altTarget_m;
+
+            return (requiredFpa, vTk_m);
         }
     }
 }

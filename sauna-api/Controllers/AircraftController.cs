@@ -17,6 +17,7 @@ using SaunaSim.Core.Simulator.Aircraft.FMS.Legs;
 using SaunaSim.Core.Simulator.Aircraft.Performance;
 using NavData_Interface.Objects.Fix;
 using SaunaSim.Core.Data.Loaders;
+using SaunaSim.Core.Simulator.Aircraft.Autopilot;
 
 namespace SaunaSim.Api.Controllers
 {
@@ -35,7 +36,7 @@ namespace SaunaSim.Api.Controllers
         [HttpPost("create")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public ActionResult<AircraftResponse> CreateAircraft(CreateAircraftRequest request) // reuses code from DataController.LoadEuroScopeScenario. Both should use the same function.
+        public ActionResult<AircraftResponse> CreateAircraft(CreateAircraftRequest request)
         {
             try
             {
@@ -298,5 +299,107 @@ namespace SaunaSim.Api.Controllers
             return Ok();
         }
 
+        [HttpPost("mcp/byCallsign/{callsign}/setSpeedMode/{speedMode}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public ActionResult<AircraftAutopilot> McpSetSpeedMode(string callsign, McpSpeedSelectorType speedMode)
+        {
+            SimAircraft client = SimAircraftHandler.GetAircraftByCallsign(callsign);
+
+            if (client == null)
+            {
+                return BadRequest("The aircraft was not found!");
+            }
+
+            client.Autopilot.SelectedSpeedMode = speedMode;
+
+            return Ok(client.Autopilot);
+        }
+
+        [HttpPost("mcp/byCallsign/{callsign}/setSpeedUnits/{speedUnits}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public ActionResult<AircraftAutopilot> McpSetSpeedUnits(string callsign, McpSpeedUnitsType speedUnits)
+        {
+            SimAircraft client = SimAircraftHandler.GetAircraftByCallsign(callsign);
+
+            if (client == null)
+            {
+                return BadRequest("The aircraft was not found!");
+            }
+
+            client.Autopilot.SelectedSpeedUnits = speedUnits;
+
+            return Ok(client.Autopilot);
+        }
+
+        [HttpPost("mcp/byCallsign/{callsign}/setSelSpeed/{selSpeed}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public ActionResult<AircraftAutopilot> McpSetSpeedBug(string callsign, int selSpeed)
+        {
+            SimAircraft client = SimAircraftHandler.GetAircraftByCallsign(callsign);
+
+            if (client == null)
+            {
+                return BadRequest("The aircraft was not found!");
+            }
+
+            client.Autopilot.SelectedSpeed = selSpeed;
+
+            return Ok(client.Autopilot);
+        }
+
+        [HttpPost("mcp/byCallsign/{callsign}/setSelHdg/{selHdg}/{turnDir}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public ActionResult<AircraftAutopilot> McpSetHdgBug(string callsign, int selHdg, McpKnobDirection turnDir)
+        {
+            SimAircraft client = SimAircraftHandler.GetAircraftByCallsign(callsign);
+
+            if (client == null)
+            {
+                return BadRequest("The aircraft was not found!");
+            }
+
+            client.Autopilot.SelectedHeading = selHdg;
+            client.Autopilot.HdgKnobTurnDirection = turnDir;
+
+            return Ok(client.Autopilot);
+        }
+
+        [HttpPost("mcp/byCallsign/{callsign}/setSelAlt/{selAlt}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public ActionResult<AircraftAutopilot> McpSetAltBug(string callsign, int selAlt)
+        {
+            SimAircraft client = SimAircraftHandler.GetAircraftByCallsign(callsign);
+
+            if (client == null)
+            {
+                return BadRequest("The aircraft was not found!");
+            }
+
+            client.Autopilot.SelectedAltitude = selAlt;
+
+            return Ok(client.Autopilot);
+        }
+
+        [HttpPost("mcp/byCallsign/{callsign}/setSelFpa/{selFpa}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public ActionResult<AircraftAutopilot> McpSetFpaBug(string callsign, int selFpa)
+        {
+            SimAircraft client = SimAircraftHandler.GetAircraftByCallsign(callsign);
+
+            if (client == null)
+            {
+                return BadRequest("The aircraft was not found!");
+            }
+
+            client.Autopilot.SelectedFpa = selFpa;
+
+            return Ok(client.Autopilot);
+        }
     }
 }
