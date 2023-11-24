@@ -10,11 +10,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.1.0" />
-    <PackageReference Include="NUnit" Version="3.13.3" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
+    <PackageReference Include="NUnit" Version="3.14.0" />
     <PackageReference Include="NUnit3TestAdapter" Version="4.2.1" />
-    <PackageReference Include="NUnit.Analyzers" Version="3.3.0" />
-    <PackageReference Include="coverlet.collector" Version="3.1.2" />
+    <PackageReference Include="NUnit.Analyzers" Version="3.9.0" />
+    <PackageReference Include="coverlet.collector" Version="6.0.0" />
     <PackageReference Include="PShivaraman.AviationCalcUtilNet" Version="1.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.TestHost" Version="6.0.23" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="6.0.23" />
