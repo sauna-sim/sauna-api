@@ -24,6 +24,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
         private bool _suspended;
         private static double MIN_GS_DIFF = 10;
         private double _lastGs;
+        private bool _wpEvtTriggered = false;
 
         // Fms Values
         private double _xTk_m;
@@ -118,6 +119,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
                 if (_routeLegs.Count > 0)
                 {
                     _activeLeg = _routeLegs[0];
+                    _wpEvtTriggered = false;
                     _routeLegs.RemoveAt(0);
                 }
             }
@@ -194,6 +196,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
                 }
 
                 _activeLeg = dtoLeg;
+                _wpEvtTriggered = false;
 
                 if (index >= 0)
                 {
@@ -358,7 +361,11 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
                 GeoUtil.CalculateCrossTrackErrorM(_parentAircraft.Position.PositionGeoPoint, ActiveLeg.EndPoint.Point.PointPosition, ActiveLeg.FinalTrueCourse, out _, out double act_atk_m);
                 if (act_atk_m <= 0 || hasLegTerminated)
                 {
-                    WaypointPassed?.Invoke(this, new WaypointPassedEventArgs(ActiveLeg.EndPoint.Point));
+                    if (!_wpEvtTriggered)
+                    {
+                        WaypointPassed?.Invoke(this, new WaypointPassedEventArgs(ActiveLeg.EndPoint.Point));
+                        _wpEvtTriggered = true;
+                    }                    
                 }
             }
 
