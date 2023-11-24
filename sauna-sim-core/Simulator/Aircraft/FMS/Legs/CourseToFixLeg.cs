@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using AviationCalcUtilNet.GeoTools;
 using AviationCalcUtilNet.GeoTools.MagneticTools;
+using AviationCalcUtilNet.MathTools;
 using SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller;
 using SaunaSim.Core.Simulator.Aircraft.FMS.NavDisplay;
 
@@ -58,13 +59,18 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
             {
                 return false;
             }
-            
-            // Find cross track error to start turn (distance from intersection)
-            double demandedTrack = AutopilotUtil.CalculateDemandedTrackOnCurrentTrack(crossTrackError, aircraft.Position.Track_True, requiredTrueCourse, aircraft.Position.Bank,
-                aircraft.Position.GroundSpeed, intervalMs).demandedTrack;
 
-            double requestedTurnDelta = GeoUtil.CalculateTurnAmount(demandedTrack, aircraft.Position.Track_True);
-            return (trackDelta > 0 && requestedTurnDelta > 0 || trackDelta < 0 && requestedTurnDelta < 0);
+            // Find cross track error to start turn (distance from intersection)
+            //double demandedTrack = AutopilotUtil.CalculateDemandedTrackOnCurrentTrack(crossTrackError, aircraft.Position.Track_True, requiredTrueCourse, aircraft.Position.Bank,
+            //aircraft.Position.GroundSpeed, intervalMs).demandedTrack;
+
+            double turnLeadDist = GeoUtil.CalculateTurnLeadDistance(aircraft.Position.PositionGeoPoint, _endPoint.Point.PointPosition, aircraft.Position.Track_True, aircraft.Position.TrueAirSpeed, _trueCourse, aircraft.Position.WindDirection, aircraft.Position.WindSpeed, out _, out GeoPoint intersection);
+
+            turnLeadDist *= 1.2;
+
+            return (GeoPoint.FlatDistanceM(aircraft.Position.PositionGeoPoint, intersection) < MathUtil.ConvertNauticalMilesToMeters(turnLeadDist));
+            //double requestedTurnDelta = GeoUtil.CalculateTurnAmount(demandedTrack, aircraft.Position.Track_True);
+            //return (trackDelta > 0 && requestedTurnDelta > 0 || trackDelta < 0 && requestedTurnDelta < 0);
         }
 
         public FmsPoint StartPoint => null;
