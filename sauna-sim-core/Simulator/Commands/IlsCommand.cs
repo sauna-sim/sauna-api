@@ -7,9 +7,11 @@ using NavData_Interface.Objects;
 using NavData_Interface.Objects.Fix;
 using SaunaSim.Core.Data;
 using SaunaSim.Core.Simulator.Aircraft;
-using SaunaSim.Core.Simulator.Aircraft.Control.FMS;
+using SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller;
 using SaunaSim.Core.Simulator.Aircraft.Control.Instructions.Lateral;
 using SaunaSim.Core.Simulator.Aircraft.Control.Instructions.Vertical;
+using SaunaSim.Core.Simulator.Aircraft.FMS;
+using SaunaSim.Core.Simulator.Aircraft.FMS.Legs;
 
 namespace SaunaSim.Core.Simulator.Commands
 {
@@ -19,31 +21,55 @@ namespace SaunaSim.Core.Simulator.Commands
         public Action<string> Logger { get; set; }
 
         private Localizer _loc;
-
+        private IRoutePoint _locRoutePoint;
+        
         public void ExecuteCommand()
         {
+            if (Aircraft.Autopilot.CurrentLateralMode == LateralModeType.LNAV)
+            {
+                Aircraft.Autopilot.SelectedHeading = (int)Aircraft.Position.Heading_Mag;
+            }
 
-            if ((Aircraft.Control.CurrentLateralInstruction is IlsApproachInstruction instr1) && instr1.Type == LateralControlMode.APPROACH)
+            // Add the LOC leg
+            _locRoutePoint = new RouteWaypoint("LOC" + _loc.Runway_identifier, _loc.Loc_location);
+            FmsPoint locFmsPoint = new FmsPoint(_locRoutePoint, RoutePointTypeEnum.FLY_OVER)
             {
-                instr1.AircraftLanded += OnLanded;
-            }
-            else if ((Aircraft.Control.ArmedLateralInstruction is IlsApproachInstruction instr2) && instr2.Type == LateralControlMode.APPROACH)
-            {
-                instr2.AircraftLanded += OnLanded;
-            }
-            else
-            {
-                IlsApproachInstruction instr = new IlsApproachInstruction(_loc);
-                instr.AircraftLanded += OnLanded;
+                LowerAltitudeConstraint = _loc.Glideslope.Gs_elevation,
+                UpperAltitudeConstraint = _loc.Glideslope.Gs_elevation,
+                AngleConstraint = _loc.Glideslope.Gs_angle
+            };
+            CourseToFixLeg locLeg = new CourseToFixLeg(locFmsPoint, BearingTypeEnum.MAGNETIC, _loc.Loc_bearing);
 
-                Aircraft.Control.ArmedLateralInstruction = instr;
+            Aircraft.Fms.AddRouteLeg(locLeg);
+
+            // Activate leg now, skipping all previous legs
+            while (!Aircraft.Fms.ActiveLeg.Equals(locLeg) && Aircraft.Fms.GetRouteLegs().Count > 0)
+            {
+                Aircraft.Fms.ActivateNextLeg();
             }
-            Aircraft.Control.AddArmedVerticalInstruction(new GlidePathInstruction(_loc.Loc_location, 3));
+
+            foreach (IRouteLeg leg in Aircraft.Fms.GetRouteLegs())
+            {
+                if (leg.Equals(locLeg))
+                {
+                    break;
+                }
+                Aircraft.Fms.ActivateNextLeg();
+            }
+
+            Aircraft.Autopilot.AddArmedLateralMode(LateralModeType.APCH);
+            Aircraft.Autopilot.AddArmedVerticalMode(VerticalModeType.APCH);
+
+            // Add event handler
+            Aircraft.Fms.WaypointPassed += OnLanded;
         }
 
-        public void OnLanded(object sender, EventArgs e)
+        public void OnLanded(object sender, WaypointPassedEventArgs e)
         {
-            Aircraft.Dispose();
+            if (e.RoutePoint.Equals(_locRoutePoint))
+            {
+                SimAircraftHandler.RemoveAircraftByCallsign(Aircraft.Callsign);
+            }
         }
 
         public bool HandleCommand(SimAircraft aircraft, Action<string> logger, string runway)
@@ -51,7 +77,7 @@ namespace SaunaSim.Core.Simulator.Commands
             Aircraft = aircraft;
             Logger = logger;
             // Find Waypoint
-            Localizer wp = DataHandler.GetLocalizer("_fake_airport", runway);
+            Localizer wp = DataHandler.GetLocalizer(DataHandler.FAKE_AIRPORT_NAME, runway);
 
             if (wp == null)
             {
@@ -81,7 +107,7 @@ namespace SaunaSim.Core.Simulator.Commands
             args.RemoveAt(0);
 
             // Find Waypoint
-            Localizer wp = DataHandler.GetLocalizer("_fake_airport", rwyStr);
+            Localizer wp = DataHandler.GetLocalizer(DataHandler.FAKE_AIRPORT_NAME, rwyStr);
             
             if (wp == null)
             {

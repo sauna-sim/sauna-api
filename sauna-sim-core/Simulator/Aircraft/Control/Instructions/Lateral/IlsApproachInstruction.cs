@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using NavData_Interface.Objects;
 using NavData_Interface.Objects.Fix;
 using SaunaSim.Core.Data;
-using SaunaSim.Core.Simulator.Aircraft.Control.FMS;
+using SaunaSim.Core.Simulator.Aircraft.FMS;
 
 namespace SaunaSim.Core.Simulator.Aircraft.Control.Instructions.Lateral
 {

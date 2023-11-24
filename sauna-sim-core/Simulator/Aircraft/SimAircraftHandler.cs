@@ -18,13 +18,12 @@ namespace SaunaSim.Core.Simulator.Aircraft
             }
         }
 
-        public static List<SimAircraft> Aircraft {
-            get {
-                lock (_aircraftsLock)
-                {
-                    return _aircrafts;
-                }
-            } 
+        public static void PerformOnAircraft(Action<List<SimAircraft>> action)
+        {
+            lock (_aircraftsLock)
+            {
+                action(_aircrafts);
+            }
         }
 
         public static double SimRate
@@ -68,18 +67,21 @@ namespace SaunaSim.Core.Simulator.Aircraft
 
         public static void RemoveAircraftByCallsign(string callsign)
         {
+            SimAircraft foundAcft = null;
             lock (_aircraftsLock)
             {
                 foreach (SimAircraft aircraft in _aircrafts)
                 {
                     if (aircraft.Callsign.Equals(callsign))
                     {
-                        aircraft.Dispose();
+                        foundAcft = aircraft;
                         _aircrafts.Remove(aircraft);
                         break;
                     }
                 }
             }
+
+            foundAcft?.Dispose();
         }
 
         public static bool AddAircraft(SimAircraft aircraft)
@@ -102,6 +104,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
                 }
 
                 aircraft.Paused = _allPaused;
+                aircraft.SimRate = _simRate;
                 _aircrafts.Add(aircraft);
             }
             return true;

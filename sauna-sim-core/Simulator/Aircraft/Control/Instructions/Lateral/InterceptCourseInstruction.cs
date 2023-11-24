@@ -7,8 +7,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using SaunaSim.Core.Simulator.Aircraft.Control;
-using SaunaSim.Core.Simulator.Aircraft.Control.FMS;
-using SaunaSim.Core.Simulator.Aircraft.Control.FMS.Legs;
+using SaunaSim.Core.Simulator.Aircraft.FMS;
+using SaunaSim.Core.Simulator.Aircraft.FMS.Legs;
 
 namespace SaunaSim.Core.Simulator.Aircraft
 {
@@ -91,7 +91,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
 
             leadInDistance = Math.Max(MathUtil.ConvertMetersToNauticalMiles(MIN_XTK_M), leadInDistance);
 
-            GeoPoint aircraftPoint = new GeoPoint(position.Latitude, position.Longitude, position.AbsoluteAltitude);
+            GeoPoint aircraftPoint = new GeoPoint(position.Latitude, position.Longitude, position.TrueAltitude);
             aircraftPoint.MoveByNMi(position.Track_True, GeoUtil.CalculateDistanceTravelledNMi(position.GroundSpeed, posCalcInterval));
 
             double dist = GeoPoint.FlatDistanceNMi(aircraftPoint, intersection);
@@ -134,7 +134,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
             }
 
             // Check cross track error
-            GeoPoint aircraftPoint = new GeoPoint(pos.Latitude, pos.Longitude, pos.AbsoluteAltitude);
+            GeoPoint aircraftPoint = new GeoPoint(pos.Latitude, pos.Longitude, pos.TrueAltitude);
             double aTrackM;
             xTk = GeoUtil.CalculateCrossTrackErrorM(aircraftPoint, AssignedWaypoint.PointPosition, _trueCourse, out requiredTrueCourse, out aTrackM);
 

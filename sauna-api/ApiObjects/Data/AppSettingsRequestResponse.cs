@@ -19,10 +19,18 @@ namespace SaunaSim.Api.ApiObjects.Data
         public AppSettings ToAppSettings()
         {
             var split = CommandFrequency.Split('.');
+            ushort mHz = Convert.ToUInt16(split[0]);
+            ushort kHz = Convert.ToUInt16(split[1]);
+            if (kHz < 10)
+            {
+                kHz *= 100;
+            } else if (kHz < 100)
+            {
+                kHz *= 10;
+            }
 
             return new AppSettings {
-                
-                CommandFrequency = (Convert.ToUInt16(split[0]), Convert.ToUInt16(split[1])),
+                CommandFrequency = (mHz, kHz),
                 PosCalcRate = this.PosCalcRate,
             };
         }

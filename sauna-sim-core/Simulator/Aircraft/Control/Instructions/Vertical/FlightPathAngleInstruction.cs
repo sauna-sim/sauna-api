@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using SaunaSim.Core.Simulator.Aircraft.Control.FMS;
+using SaunaSim.Core.Simulator.Aircraft.FMS;
 
 namespace SaunaSim.Core.Simulator.Aircraft.Control.Instructions.Vertical
 {
@@ -32,7 +32,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Control.Instructions.Vertical
             double deltaAltFt = MathUtil.ConvertMetersToFeet(MathUtil.ConvertNauticalMilesToMeters(deltaAltNMi));
 
             // Update altitude
-            position.AbsoluteAltitude += deltaAltFt;
+            position.TrueAltitude += deltaAltFt;
 
             // Update V/S
             position.VerticalSpeed = deltaAltFt * 60000 / posCalcInterval;

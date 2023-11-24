@@ -2,8 +2,6 @@
 using SaunaSim.Core;
 using SaunaSim.Core.Data;
 using SaunaSim.Core.Simulator.Aircraft;
-using SaunaSim.Core.Simulator.Aircraft.Control.FMS;
-using SaunaSim.Core.Simulator.Aircraft.Control.FMS.Legs;
 using SaunaSim.Core.Simulator.Commands;
 using AviationCalcUtilNet.GeoTools;
 using AviationCalcUtilNet.GeoTools.MagneticTools;
@@ -17,8 +15,14 @@ using System.Threading.Tasks;
 using FsdConnectorNet;
 using SaunaSim.Core.Data.Loaders;
 using SaunaSim.Api.Utilities;
+using SaunaSim.Core.Simulator.Aircraft.Performance;
+using SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller;
+using SaunaSim.Core.Simulator.Aircraft.FMS;
+using SaunaSim.Core.Simulator.Aircraft.FMS.Legs;
 using NavData_Interface.Objects.Fix;
 using NavData_Interface.Objects;
+using System.Runtime.CompilerServices;
+using System.Configuration;
 
 namespace SaunaSim.Api.Controllers
 {
@@ -140,9 +144,9 @@ namespace SaunaSim.Api.Controllers
             {
                 string[] filelines = System.IO.File.ReadAllLines(request.FileName);
 
-                List<SimAircraft> pilots = new List<SimAircraft>();
+                List<AircraftBuilder> pilots = new List<AircraftBuilder>();
 
-                SimAircraft lastPilot = null;
+                AircraftBuilder lastPilot = null;
 
                 double refLat = 190;
                 double refLon = 190;
@@ -176,6 +180,18 @@ namespace SaunaSim.Api.Controllers
                         double lat = 0;
                         double lon = 0;
 
+                        // XPDR code
+                        int squawk = 0;
+                        try
+                        {
+                             squawk = Convert.ToInt32(items[2]);
+                        } catch (Exception e){
+                            if (e is not OverflowException && e is not FormatException)
+                            {
+                                throw;
+                            }
+                        }
+
                         try
                         {
                             (lat, lon) = CoordinateUtil.ParseCoordinate(items[4], items[5]);
@@ -186,10 +202,11 @@ namespace SaunaSim.Api.Controllers
 
                         EuroScopeLoader.ReadVatsimPosFlag(Convert.ToInt32(items[8]), out double hdg, out double bank, out double pitch, out bool onGround);
                         //SimAircraft(string callsign, string networkId, string password,        string fullname, string hostname, ushort port, bool vatsim,   ProtocolRevision protocol,      double lat, double lon, double alt, double hdg_mag, int delayMs = 0)
-                        lastPilot = new SimAircraft(callsign, request.Cid, request.Password, "Simulator Pilot", request.Server, (ushort)request.Port, request.Protocol,
-                            PrivateInfoLoader.GetClientInfo((string msg) => { _logger.LogWarning($"{callsign}: {msg}"); }),
-                            lat, lon, Convert.ToDouble(items[6]), hdg)
+                        lastPilot = new AircraftBuilder(callsign, request.Cid, request.Password, request.Server, request.Port)
                         {
+                            Protocol = request.Protocol,
+                                Position = new GeoPoint(lat, lon, Convert.ToDouble(items[6])),
+                                HeadingMag = hdg,
                             LogInfo = (string msg) =>
                             {
                                 _logger.LogInformation($"{callsign}: {msg}");
@@ -203,8 +220,8 @@ namespace SaunaSim.Api.Controllers
                                 _logger.LogError($"{callsign}: {msg}");
                             },
                             XpdrMode = xpdrMode,
+                            Squawk = squawk
                         };
-                        lastPilot.Position.IndicatedAirSpeed = 250.0;
 
                         // Add to temp list
                         pilots.Add(lastPilot);
@@ -212,21 +229,10 @@ namespace SaunaSim.Api.Controllers
                     {
                         if (lastPilot != null)
                         {
-                            FlightPlan flightPlan;
-                            try
-                            {
-                                flightPlan = FlightPlan.ParseFromEsScenarioFile(line);
-                            } catch (FlightPlanException e)
-                            {
-                                Console.WriteLine("Error parsing flight plan");
-                                Console.WriteLine(e.Message);
-                                continue;
-                            }
-                            lastPilot.FlightPlan = flightPlan;
+                            lastPilot.EsFlightPlanStr = line;
                         }
                     } else if (line.StartsWith("REQALT"))
                     {
-
                         string[] items = line.Split(':');
 
                         if (lastPilot != null && items.Length >= 3)
@@ -234,13 +240,7 @@ namespace SaunaSim.Api.Controllers
                             try
                             {
                                 int reqAlt = Convert.ToInt32(items[2]);
-                                reqAlt /= 100;
-
-                                List<string> args = new List<string>
-                                {
-                                    $"FL{reqAlt}"
-                                };
-                                CommandHandler.HandleCommand("dm", lastPilot, args, (string msg) => _logger.LogInformation(msg));
+                                lastPilot.RequestedAlt = reqAlt;
                             } catch (Exception) { }
                         }
                     } else if (line.StartsWith("$ROUTE"))
@@ -251,25 +251,16 @@ namespace SaunaSim.Api.Controllers
                         {
                             string[] waypoints = items[1].Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
 
-                            List<IRouteLeg> legs = new List<IRouteLeg>();
-                            FmsPoint lastPoint = null;
-
+                            AircraftBuilder.FactoryFmsWaypoint lastPoint = null;
 
                             for (int i = 0; i < waypoints.Length; i++)
                             {
                                 if (waypoints[i].ToLower() == "hold" && lastPoint != null)
                                 {
-                                    PublishedHold pubHold = DataHandler.GetPublishedHold(lastPoint.Point.PointName, lastPoint.Point.PointPosition.Lat, lastPoint.Point.PointPosition.Lon);
-
-                                    if (pubHold != null)
-                                    {
-                                        lastPoint.PointType = RoutePointTypeEnum.FLY_OVER;
-                                        HoldToManualLeg leg = new HoldToManualLeg(lastPoint, BearingTypeEnum.MAGNETIC, pubHold.InboundCourse, pubHold.TurnDirection, pubHold.LegLengthType, pubHold.LegLength);
-                                        legs.Add(leg);
-                                        lastPoint = leg.EndPoint;
-                                    }
+                                    lastPoint.ShouldHold = true;
                                 } else
                                 {
+                                    int altRestr = -1;
                                     if (waypoints[i].Contains("/"))
                                     {
                                         var splitWp = waypoints[i].Split("/");
@@ -278,8 +269,7 @@ namespace SaunaSim.Api.Controllers
                                         {
                                             try
                                             {
-                                                int altitudeRestriction = int.Parse(splitWp[2]);
-                                                // TODO: add the altitude restriction to the FMS
+                                                altRestr = int.Parse(splitWp[2]);
 
                                                 waypoints[i] = splitWp[0];
 
@@ -294,33 +284,16 @@ namespace SaunaSim.Api.Controllers
                                         }
                                     }
 
-                                    Fix nextWp = DataHandler.GetClosestWaypointByIdentifier(waypoints[i], lastPilot.Position.Latitude, lastPilot.Position.Longitude);
+                                    lastPoint = new AircraftBuilder.FactoryFmsWaypoint(waypoints[i]);
 
-                                    if (nextWp != null)
+                                    if (altRestr >= 0)
                                     {
-                                        FmsPoint fmsPt = new FmsPoint(new RouteWaypoint(nextWp), RoutePointTypeEnum.FLY_BY);
-                                        if (lastPoint == null)
-                                        {
-                                            lastPoint = fmsPt;
-                                        } else
-                                        {
-                                            legs.Add(new TrackToFixLeg(lastPoint, fmsPt));
-                                            lastPoint = fmsPt;
-                                        }
+                                        lastPoint.LowerAltitudeConstraint = altRestr;
+                                        lastPoint.UpperAltitudeConstraint = altRestr;
                                     }
+
+                                    lastPilot.FmsWaypoints.Add(lastPoint);
                                 }
-                            }
-
-                            foreach (IRouteLeg leg in legs)
-                            {
-                                lastPilot.Control.FMS.AddRouteLeg(leg);
-                            }
-
-                            if (legs.Count > 0)
-                            {
-                                lastPilot.Control.FMS.ActivateDirectTo(legs[0].StartPoint.Point);
-                                LnavRouteInstruction instr = new LnavRouteInstruction();
-                                lastPilot.Control.CurrentLateralInstruction = instr;
                             }
                         }
                     } else if (line.StartsWith("START"))
@@ -360,7 +333,18 @@ namespace SaunaSim.Api.Controllers
                                 course = MagneticUtil.ConvertTrueToMagneticTile(GeoPoint.InitialBearing(threshold, otherThreshold), threshold);
                             }
 
-                            DataHandler.AddLocalizer(new Localizer("", "", "_fake_airport", wpId, wpId, threshold, 0, course, 0, IlsCategory.CATI, 0));
+                            int elev = 0;
+                            Airport airport = DataHandler.GetAirportByIdentifier(DataHandler.FAKE_AIRPORT_NAME);
+
+                            if (airport != null)
+                            {
+                                elev = airport.Elevation;
+                            }
+
+                            Glideslope gs = new Glideslope(threshold, 3.0, elev);
+                            Localizer loc = new Localizer("", "", DataHandler.FAKE_AIRPORT_NAME, wpId, wpId, threshold, 0, course, 0, IlsCategory.CATI, gs, 0);
+
+                            DataHandler.AddLocalizer(loc);
                         } catch (Exception)
                         {
                             Console.WriteLine("Well that didn't work did it.");
@@ -375,18 +359,33 @@ namespace SaunaSim.Api.Controllers
                             double inboundCourse = Convert.ToDouble(items[2]);
                             HoldTurnDirectionEnum turnDirection = (HoldTurnDirectionEnum)Convert.ToInt32(items[3]);
                             Fix fix = DataHandler.GetClosestWaypointByIdentifier(wpId, refLat, refLon);
-                            DataHandler.AddPublishedHold(new PublishedHold(fix, inboundCourse, turnDirection));
+                            if (fix != null)
+                            {
+                                DataHandler.AddPublishedHold(new PublishedHold(fix, inboundCourse, turnDirection));
+                            }
                         } catch (Exception)
                         {
-                            Console.WriteLine("Well that didn't work did it.");
+                            Console.WriteLine("Error Loading Hold.");
+                        }
+                    } else if (line.StartsWith("AIRPORT_ALT"))
+                    {
+                        string[] items = line.Split(':');
+
+                        try
+                        {
+                            double airportElev = Convert.ToDouble(items[1]);
+                            Airport airport = new Airport(DataHandler.FAKE_AIRPORT_NAME, new GeoPoint(0, 0, 0), "", "", "", DataHandler.FAKE_AIRPORT_NAME, true, RunwaySurfaceCode.Hard, (int)airportElev, 18000, 180, 250, 10000, "");
+                            DataHandler.AddAirport(airport);
+                        } catch (Exception)
+                        {
+                            Console.WriteLine("Error loading airport elevation");
                         }
                     }
                 }
 
-                foreach (SimAircraft pilot in pilots)
+                foreach (AircraftBuilder pilot in pilots)
                 {
-                    SimAircraftHandler.AddAircraft(pilot);
-                    pilot.Start();
+                    pilot.Push(PrivateInfoLoader.GetClientInfo((string msg) => { _logger.LogWarning($"{pilot.Callsign}: {msg}"); }));
                 }
             } catch (Exception ex)
             {

@@ -1,11 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using SaunaSim.Core.Data;
+using AviationCalcUtilNet.GeoTools;
+using SaunaSim.Core.Simulator.Aircraft.FMS.NavDisplay;
 
-namespace SaunaSim.Core.Simulator.Aircraft.Control.FMS.Legs
+namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
 {
     public enum RouteLegTypeEnum
     {
@@ -24,6 +22,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Control.FMS.Legs
         HEADING_TO_INTC,
         HEADING_TO_DME,
         HEADING_TO_MANUAL,
+        DISCO
     }
 
     public enum BearingTypeEnum
@@ -68,48 +67,51 @@ namespace SaunaSim.Core.Simulator.Aircraft.Control.FMS.Legs
         double FinalTrueCourse { get; }
 
         /// <summary>
-        /// Route leg's current lateral instruction
+        /// Gets the total leg length. 0 for none.
         /// </summary>
-        ILateralControlInstruction Instruction { get; }
+        double LegLength { get; }
 
         /// <summary>
         /// Route Leg Type
         /// </summary>
         RouteLegTypeEnum LegType { get; }
 
+        List<NdLine> UiLines { get; }
+
         /// <summary>
-        /// Determines whether or not the current leg should be activated
+        /// Allows a leg to be initialized before being activated.
+        /// This is useful for predicting how a leg will look based on aircraft data before the leg is actually flown.
         /// </summary>
-        /// <param name="pos"><c>AircraftPosition</c> The aircraft's current position</param>
-        /// <param name="fms"><c>AircraftFms</c> The aircraft's FMS</param>
-        /// <param name="posCalcIntvl"><c>int</c> Time (ms) before next position update.</param>
-        /// <returns><c>bool</c> Whether or not turn should be initiated to this leg.</returns>
-        bool ShouldBeginTurn(AircraftPosition pos, AircraftFms fms, int posCalcIntvl);
+        /// <param name="aircraft">The current aircraft.</param>
+        void InitializeLeg(SimAircraft aircraft);
 
         /// <summary>
         /// Determines whether the current leg has terminated and if control should be passed to next instruction
         /// </summary>
-        /// <param name="pos"><c>AircraftPosition</c> The aircraft's current position</param>
-        /// <param name="fms"><c>AircraftFms</c> The aircraft's FMS</param>
+        /// <param name="aircraft">The current aircraft.</param>
         /// <returns><c>bool</c> Whether or not the leg has terminated.</returns>
-        bool HasLegTerminated(AircraftPosition pos, ref AircraftFms fms);
+        bool HasLegTerminated(SimAircraft aircraft);
 
         /// <summary>
-        /// Updates aircraft's lateral position for the next position update.
-        /// Used for LNAV.
+        /// Processes the Leg
         /// </summary>
-        /// <param name="pos"><c>AircraftPosition</c> The aircraft's position</param>
-        /// <param name="fms"><c>AircraftFms</c> The aircraft's FMS</param>
-        /// <param name="posCalcIntvl"><c>int</c> Time (ms) before next position update.</param>
-        void UpdateLateralPosition(ref AircraftPosition pos, ref AircraftFms fms, int posCalcIntvl);
+        /// <param name="aircraft">The current aircraft.</param>
+        /// <param name="intervalMs">Time (ms) before next position update.</param>
+        void ProcessLeg(SimAircraft aircraft, int intervalMs);
 
         /// <summary>
-        /// Updates aircraft's vertical position for the next position update.
-        /// Used for VNAV.
+        /// Obtains course info for LNAV Autopilot guidance.
         /// </summary>
-        /// <param name="pos"><c>AircraftPosition</c> The aircraft's position</param>
-        /// <param name="fms"><c>AircraftFms</c> The aircraft's FMS</param>
-        /// <param name="posCalcIntvl"><c>int</c> Time (ms) before next position update.</param>
-        void UpdateVerticalPosition(ref AircraftPosition pos, ref AircraftFms fms, int posCalcIntvl);
+        /// <param name="aircraft">The current aircraft.</param>
+        /// <returns><c>(double, double, double, double)</c> Required True Course (m), Cross Track Error (m), Along Track Distance (m), Turn Radius (m) (0 if N/A, -ive for left, +ive for right)</returns>
+        (double requiredTrueCourse, double crossTrackError, double alongTrackDistance, double turnRadius) GetCourseInterceptInfo(SimAircraft aircraft);
+
+        /// <summary>
+        /// Determines whether or not the current leg should be activated
+        /// </summary>
+        /// <param name="aircraft">The current aircraft.</param>
+        /// <param name="intervalMs">Time (ms) before next position update.</param>
+        /// <returns><c>bool</c> Whether or not turn should be initiated to this leg.</returns>
+        bool ShouldActivateLeg(SimAircraft aircraft, int intervalMs);
     }
 }

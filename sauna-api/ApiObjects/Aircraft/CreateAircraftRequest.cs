@@ -1,5 +1,6 @@
 using FsdConnectorNet;
 using SaunaSim.Core;
+using SaunaSim.Core.Data.Loaders;
 using System.Collections.Generic;
 
 namespace SaunaSim.Api.ApiObjects.Aircraft
@@ -17,7 +18,7 @@ namespace SaunaSim.Api.ApiObjects.Aircraft
         public string Callsign { get; set; }
         public string FlightPlan { get; set; }
 
-        public List<FmsWaypointRequest> FmsWaypointList { get; set; }
+        public List<AircraftBuilder.FactoryFmsWaypoint> FmsWaypointList { get; set; }
 
         public TransponderModeType TransponderMode { get; set; }
         public int Squawk { get; set; }

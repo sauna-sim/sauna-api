@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using SaunaSim.Core.Simulator.Aircraft.Control.FMS;
+using SaunaSim.Core.Simulator.Aircraft.FMS;
 
 namespace SaunaSim.Core.Simulator.Aircraft.Control.Instructions.Vertical
 {
@@ -43,7 +43,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Control.Instructions.Vertical
 
         public bool ShouldActivateInstruction(AircraftPosition position, AircraftFms fms, int posCalcInterval)
         {
-            double curAlt = position.AbsoluteAltitude;
+            double curAlt = position.TrueAltitude;
             double verticalSpeed = position.VerticalSpeed;
             double nextGpAlt = GetAltAtNextPosition(position, posCalcInterval);
 
@@ -57,7 +57,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Control.Instructions.Vertical
         public void UpdatePosition(ref AircraftPosition position, ref AircraftFms fms, int posCalcInterval)
         {
             // Calculate glideslope altitude
-            position.AbsoluteAltitude = GetAltAtPosition(position.PositionGeoPoint);
+            position.TrueAltitude = GetAltAtPosition(position.PositionGeoPoint);
         }
 
         public override string ToString()

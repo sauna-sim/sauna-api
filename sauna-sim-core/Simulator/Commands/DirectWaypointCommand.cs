@@ -6,7 +6,8 @@ using System.Threading.Tasks;
 using NavData_Interface.Objects.Fix;
 using SaunaSim.Core.Data;
 using SaunaSim.Core.Simulator.Aircraft;
-using SaunaSim.Core.Simulator.Aircraft.Control.FMS;
+using SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller;
+using SaunaSim.Core.Simulator.Aircraft.FMS;
 
 namespace SaunaSim.Core.Simulator.Commands
 {
@@ -21,10 +22,9 @@ namespace SaunaSim.Core.Simulator.Commands
         {
             RouteWaypoint rwp = new RouteWaypoint(wp);
 
-            Aircraft.Control.FMS.ActivateDirectTo(rwp);
-
-            LnavRouteInstruction instr = new LnavRouteInstruction();
-            Aircraft.Control.CurrentLateralInstruction = instr;
+            Aircraft.Fms.ActivateDirectTo(rwp);
+            
+            Aircraft.Autopilot.AddArmedLateralMode(LateralModeType.LNAV);
         }
 
         public bool HandleCommand(SimAircraft aircraft, Action<string> logger, string waypoint)

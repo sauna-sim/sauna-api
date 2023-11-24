@@ -1,4 +1,3 @@
-using AviationCalcUtilNet.GeoTools.MagneticTools;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
@@ -12,6 +11,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
+using AviationCalcUtilNet.GeoTools.MagneticTools;
 
 
 namespace SaunaSim.Api
@@ -38,6 +38,7 @@ namespace SaunaSim.Api
 
         private void OnShutdown()
         {
+            Console.WriteLine("Shutting Down");
             SimAircraftHandler.DeleteAllAircraft();
         }
 

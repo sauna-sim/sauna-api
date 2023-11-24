@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using SaunaSim.Core.Simulator.Aircraft.Autopilot;
 
 namespace SaunaSim.Core.Simulator.Commands
 {
@@ -20,8 +21,9 @@ namespace SaunaSim.Core.Simulator.Commands
         public void ExecuteCommand()
         {
             // Add speed assignment to aircraft
-            Aircraft.Assigned_IAS = Ias;
-            Aircraft.Assigned_IAS_Type = Type;
+            Aircraft.Autopilot.SelectedSpeed = Ias;
+            Aircraft.Autopilot.SelectedSpeedMode = McpSpeedSelectorType.MANUAL;
+            Aircraft.Autopilot.SelectedSpeedUnits = McpSpeedUnitsType.KNOTS;
         }
 
         public bool HandleCommand(SimAircraft aircraft, Action<string> logger, ConstraintType constraintType, int speed)

@@ -1,11 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using SaunaSim.Core.Data;
-
-namespace SaunaSim.Core.Simulator.Aircraft.Control.FMS
+﻿namespace SaunaSim.Core.Simulator.Aircraft.FMS
 {
     public enum RoutePointTypeEnum
     {
@@ -31,6 +24,10 @@ namespace SaunaSim.Core.Simulator.Aircraft.Control.FMS
         public int LowerAltitudeConstraint { get; set; }
 
         public int UpperAltitudeConstraint { get; set; }
+
+        public double AngleConstraint { get; set; } = -1;
+
+        public double VnavTargetAltitude { get; internal set; } = -1;
 
         public ConstraintType SpeedConstraintType { get; set; } = ConstraintType.FREE;
 

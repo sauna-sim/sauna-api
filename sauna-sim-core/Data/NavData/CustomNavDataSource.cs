@@ -12,12 +12,14 @@ namespace SaunaSim.Core.Data.NavData
         private List<Fix> _fixes;
         private List<Localizer> _locs;
         private List<PublishedHold> _pubHolds;
+        private List<Airport> _airports;
 
 		public CustomNavDataSource()
 		{
             _fixes = new List<Fix>();
             _locs = new List<Localizer>();
             _pubHolds = new List<PublishedHold>();
+            _airports = new List<Airport>();
 		}
 
         public void AddFix(Fix fix)
@@ -35,13 +37,27 @@ namespace SaunaSim.Core.Data.NavData
             _pubHolds.Add(hold);
         }
 
+        public void AddAirport(Airport airport)
+        {
+            _airports.Add(airport);
+        }
+
+
+        public Airport GetAirportByIdentifier(string identifier)
+        {
+            foreach (Airport airport in _airports)
+            {
+                if (airport.Identifier.ToUpper() == identifier.ToUpper()) return airport;
+            }
+            return null;
+        }
         public override List<Fix> GetFixesByIdentifier(string identifier)
         {
             List<Fix> retFixes = new List<Fix>();
 
             foreach (Fix fix in _fixes)
             {
-                if (fix.Identifier == identifier)
+                if (fix.Identifier.ToUpper() == identifier.ToUpper())
                 {
                     retFixes.Add(fix);
                 }
@@ -53,7 +69,7 @@ namespace SaunaSim.Core.Data.NavData
         {
             foreach (Localizer loc in _locs)
             {
-                if (loc.Airport_identifier == airportIdentifier && loc.Runway_identifier == runwayIdentifier)
+                if (loc.Airport_identifier.ToUpper() == airportIdentifier.ToUpper() && loc.Runway_identifier.ToUpper() == runwayIdentifier.ToUpper())
                 {
                     return loc;
                 }
@@ -65,7 +81,7 @@ namespace SaunaSim.Core.Data.NavData
         {
             foreach (PublishedHold hold in _pubHolds)
             {
-                if (hold.Waypoint.Identifier == fix.Identifier && GeoPoint.DistanceM(hold.Waypoint.Location, fix.Location) < 1000)
+                if (hold.Waypoint.Identifier.ToUpper() == fix.Identifier.ToUpper() && GeoPoint.DistanceM(hold.Waypoint.Location, fix.Location) < 1000)
                 {
                     return hold;
                 }

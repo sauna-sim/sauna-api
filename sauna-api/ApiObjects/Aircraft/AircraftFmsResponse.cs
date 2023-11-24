@@ -1,9 +1,10 @@
 using NavData_Interface.Objects.Fix;
 using SaunaSim.Core.Data;
-using SaunaSim.Core.Simulator.Aircraft.Control.FMS;
-using SaunaSim.Core.Simulator.Aircraft.Control.FMS.Legs;
 using System.Collections.Generic;
 using System.Text;
+using SaunaSim.Core.Simulator.Aircraft.FMS;
+using AviationCalcUtilNet.GeoTools;
+using SaunaSim.Core.Simulator.Aircraft.FMS.NavDisplay;
 
 namespace SaunaSim.Api.ApiObjects.Aircraft
 {
@@ -16,6 +17,15 @@ namespace SaunaSim.Api.ApiObjects.Aircraft
         public object ActiveLeg { get; set; }
         public List<object> RouteLegs { get; set; }
         public string AsString { get; set; }
+        public List<object> FmsLines { get; set; }
+
+        public double AlongTrackDistance_m { get; set; }
+
+        public double CrossTrackDistance_m { get; set; }
+
+        public double RequiredTrueCourse { get; set; }
+
+        public double TurnRadius_m { get; set; }
 
         public AircraftFmsResponse()
         {
@@ -30,11 +40,31 @@ namespace SaunaSim.Api.ApiObjects.Aircraft
             ArrivalAirport = fms.ArrivalAirport;
             ActiveLeg = fms.ActiveLeg;
             RouteLegs = new List<object>();
+            FmsLines = new List<object>();
+            AlongTrackDistance_m = fms.AlongTrackDistance_m;
+            CrossTrackDistance_m = fms.CrossTrackDistance_m;
+            RequiredTrueCourse = fms.RequiredTrueCourse;
+            TurnRadius_m = fms.TurnRadius_m;
+
             StringBuilder sb = new StringBuilder();
+            if (fms.ActiveLeg != null)
+            {
+                sb.Append(fms.ActiveLeg.ToString());
+                sb.Append("; ");
+                foreach (NdLine line in fms.ActiveLeg.UiLines)
+                {
+                    FmsLines.Add(line);
+                }
+            }
+
             foreach (var leg in fms.GetRouteLegs())
             {
                 sb.Append(leg.ToString());
                 sb.Append("; ");
+                foreach (NdLine line in leg.UiLines)
+                {
+                    FmsLines.Add(line);
+                }
                 RouteLegs.Add(leg);
             }
             AsString = sb.ToString();

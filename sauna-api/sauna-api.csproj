@@ -8,16 +8,18 @@
     <OutputType>Exe</OutputType>
     <StartupObject>SaunaSim.Api.Program</StartupObject>
     <AssemblyName>SaunaApi</AssemblyName>
-    <AssemblyVersion>0.9.0</AssemblyVersion>
-    <FileVersion>0.9.0</FileVersion>
+    <AssemblyVersion>0.10.0</AssemblyVersion>
+    <FileVersion>0.10.0</FileVersion>
     <NeutralLanguage>en-US</NeutralLanguage>
-    <Version>0.9.0</Version>
+    <Version>0.10.0</Version>
+    <EnableUnmanagedDebugging>true</EnableUnmanagedDebugging>
+    <ServerGarbageCollection>false</ServerGarbageCollection>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(RunConfiguration)' == 'sauna-api' " />
   <ItemGroup>
     <PackageReference Include="PShivaraman.AviationCalcUtilNet" Version="1.2.0" />
-    <PackageReference Include="CaspianMerlin.FsdConnectorNet" Version="0.2.2" />
+    <PackageReference Include="CaspianMerlin.FsdConnectorNet" Version="0.2.7" />
   </ItemGroup>
 
   <ItemGroup>
@@ -28,7 +30,8 @@
     <None Update="magnetic\WMM.COF">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Update="perf-data-files\A320.csv">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
-
-
 </Project>

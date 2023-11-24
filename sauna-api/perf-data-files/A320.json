@@ -1,0 +1,587 @@
+﻿{
+  "type_code": "A320",
+  "engines": 2,
+  "weights": {
+    "mtow_kg": 78000,
+    "mlw_kg": 66000,
+    "mzfw_kg": 62500,
+    "oew_kg": 42600,
+    "mfuel_kg": 23963
+  },
+  "perf_init": {
+    "climb_kias": 270,
+    "climb_mach": 0.73,
+    "cruise_kias": 290,
+    "cruise_mach": 0.78,
+    "descent_kias": 290,
+    "descent_mach": 0.78
+  },
+  "configs": [
+    {
+      "gear_down": false,
+      "max_kias": 350,
+      "min_kias": 180,
+      "norm_kias": 250,
+      "vs_penalty": 0,
+      "pitch_change": 0
+    },
+    {
+      "gear_down": false,
+      "max_kias": 230,
+      "min_kias": 160,
+      "norm_kias": 210,
+      "vs_penalty": 0,
+      "pitch_change": 0
+    },
+    {
+      "gear_down": false,
+      "max_kias": 215,
+      "min_kias": 150,
+      "norm_kias": 180,
+      "vs_penalty": -400,
+      "pitch_change": -4
+    },
+    {
+      "gear_down": true,
+      "max_kias": 200,
+      "min_kias": 140,
+      "norm_kias": 160,
+      "vs_penalty": -800,
+      "pitch_change": -9.5
+    },
+    {
+      "gear_down": true,
+      "max_kias": 180,
+      "min_kias": 110,
+      "norm_kias": 140,
+      "vs_penalty": -1000,
+      "pitch_change": -15
+    }
+  ],
+  "perf_data": {
+    "data_point_mass_kg": 59000,
+    "data_point_delta_mass_kg": 74400,
+    "delta_mass_vs_penalty": -900,
+    "speed_brake_vs_penalty": -800,
+    "data_points": [
+      {
+        "altitude": 1000,
+        "data": [
+          {
+            "kias": 170,
+            "vs_climb": 4800,
+            "vs_descent": -1200,
+            "pitch_climb": 18,
+            "pitch_descent": 6,
+            "accel_level_max_thrust": 3.3,
+            "accel_level_idle_thrust": -0.9,
+            "n1_climb": 93,
+            "n1_descent": 22.8
+          },
+          {
+            "kias": 200,
+            "vs_climb": 3300,
+            "vs_descent": -1100,
+            "pitch_climb": 14.5,
+            "pitch_descent": 2.5,
+            "accel_level_max_thrust": 3.3,
+            "accel_level_idle_thrust": -0.9,
+            "n1_climb": 82.5,
+            "n1_descent": 22.6
+          },
+          {
+            "kias": 230,
+            "vs_climb": 3300,
+            "vs_descent": -1200,
+            "pitch_climb": 12.5,
+            "pitch_descent": 0.5,
+            "accel_level_max_thrust": 3.3,
+            "accel_level_idle_thrust": -0.9,
+            "n1_climb": 83.7,
+            "n1_descent": 22.6
+          },
+          {
+            "kias": 260,
+            "vs_climb": 4400,
+            "vs_descent": -1400,
+            "pitch_climb": 10,
+            "pitch_descent": -0.3,
+            "accel_level_max_thrust": 3,
+            "accel_level_idle_thrust": -1,
+            "n1_climb": 84.1,
+            "n1_descent": 22.5
+          },
+          {
+            "kias": 290,
+            "vs_climb": 4000,
+            "vs_descent": -1900,
+            "pitch_climb": 10,
+            "pitch_descent": -2,
+            "accel_level_max_thrust": 2.8,
+            "accel_level_idle_thrust": -1.1,
+            "n1_climb": 83.6,
+            "n1_descent": 23.4
+          },
+          {
+            "kias": 170,
+            "vs_climb": 3300,
+            "vs_descent": -1100,
+            "pitch_climb": 17.5,
+            "pitch_descent": 7,
+            "accel_level_max_thrust": 2.5,
+            "accel_level_idle_thrust": -0.7,
+            "n1_climb": 83,
+            "n1_descent": 22.8
+          },
+          {
+            "kias": 200,
+            "vs_climb": 3300,
+            "vs_descent": -1200,
+            "pitch_climb": 13.5,
+            "pitch_descent": 2.5,
+            "accel_level_max_thrust": 2.2,
+            "accel_level_idle_thrust": -0.7,
+            "n1_climb": 84,
+            "n1_descent": 22.8
+          },
+          {
+            "kias": 230,
+            "vs_climb": 3300,
+            "vs_descent": -1200,
+            "pitch_climb": 12,
+            "pitch_descent": 1,
+            "accel_level_max_thrust": 2.2,
+            "accel_level_idle_thrust": -0.7,
+            "n1_climb": 84.4,
+            "n1_descent": 22.8
+          },
+          {
+            "kias": 260,
+            "vs_climb": 4000,
+            "vs_descent": -1600,
+            "pitch_climb": 10,
+            "pitch_descent": -0.3,
+            "accel_level_max_thrust": 2.2,
+            "accel_level_idle_thrust": -0.9,
+            "n1_climb": 84.5,
+            "n1_descent": 23.5
+          },
+          {
+            "kias": 290,
+            "vs_climb": 3800,
+            "vs_descent": -1900,
+            "pitch_climb": 7.5,
+            "pitch_descent": -2,
+            "accel_level_max_thrust": 2.2,
+            "accel_level_idle_thrust": -1,
+            "n1_climb": 84,
+            "n1_descent": 23.4
+          }
+        ]
+      },
+      {
+        "altitude": 5000,
+        "data": [
+          {
+            "kias": 170,
+            "vs_climb": 3300,
+            "vs_descent": -1100,
+            "pitch_climb": 17.5,
+            "pitch_descent": 7,
+            "accel_level_max_thrust": 2.5,
+            "accel_level_idle_thrust": -0.7,
+            "n1_climb": 83,
+            "n1_descent": 22.8
+          },
+          {
+            "kias": 200,
+            "vs_climb": 3300,
+            "vs_descent": -1200,
+            "pitch_climb": 13.5,
+            "pitch_descent": 2.5,
+            "accel_level_max_thrust": 2.2,
+            "accel_level_idle_thrust": -0.7,
+            "n1_climb": 84,
+            "n1_descent": 22.8
+          },
+          {
+            "kias": 230,
+            "vs_climb": 3300,
+            "vs_descent": -1200,
+            "pitch_climb": 12,
+            "pitch_descent": 1,
+            "accel_level_max_thrust": 2.2,
+            "accel_level_idle_thrust": -0.7,
+            "n1_climb": 84.4,
+            "n1_descent": 22.8
+          },
+          {
+            "kias": 260,
+            "vs_climb": 4000,
+            "vs_descent": -1600,
+            "pitch_climb": 10,
+            "pitch_descent": -0.3,
+            "accel_level_max_thrust": 2.2,
+            "accel_level_idle_thrust": -0.9,
+            "n1_climb": 84.5,
+            "n1_descent": 23.5
+          },
+          {
+            "kias": 290,
+            "vs_climb": 3800,
+            "vs_descent": -1900,
+            "pitch_climb": 7.5,
+            "pitch_descent": -2,
+            "accel_level_max_thrust": 2.2,
+            "accel_level_idle_thrust": -1,
+            "n1_climb": 84,
+            "n1_descent": 23.4
+          }
+        ]
+      },
+      {
+        "altitude": 10000,
+        "data": [
+          {
+            "kias": 170,
+            "vs_climb": 2300,
+            "vs_descent": -1200,
+            "pitch_climb": 16,
+            "pitch_descent": 7,
+            "accel_level_max_thrust": 2,
+            "accel_level_idle_thrust": -0.7,
+            "n1_climb": 83.6,
+            "n1_descent": 23
+          },
+          {
+            "kias": 200,
+            "vs_climb": 3000,
+            "vs_descent": -1100,
+            "pitch_climb": 12.5,
+            "pitch_descent": 2.5,
+            "accel_level_max_thrust": 2,
+            "accel_level_idle_thrust": -0.7,
+            "n1_climb": 84.8,
+            "n1_descent": 24.1
+          },
+          {
+            "kias": 230,
+            "vs_climb": 3200,
+            "vs_descent": -1100,
+            "pitch_climb": 10.5,
+            "pitch_descent": 2,
+            "accel_level_max_thrust": 2,
+            "accel_level_idle_thrust": -0.8,
+            "n1_climb": 85.3,
+            "n1_descent": 24.7
+          },
+          {
+            "kias": 260,
+            "vs_climb": 3200,
+            "vs_descent": -1500,
+            "pitch_climb": 7.8,
+            "pitch_descent": -0.2,
+            "accel_level_max_thrust": 2,
+            "accel_level_idle_thrust": -0.9,
+            "n1_climb": 84.7,
+            "n1_descent": 25.4
+          },
+          {
+            "kias": 290,
+            "vs_climb": 3000,
+            "vs_descent": -2100,
+            "pitch_climb": 6,
+            "pitch_descent": -2,
+            "accel_level_max_thrust": 1.8,
+            "accel_level_idle_thrust": -1,
+            "n1_climb": 84.5,
+            "n1_descent": 26
+          }
+        ]
+      },
+      {
+        "altitude": 15000,
+        "data": [
+          {
+            "kias": 170,
+            "vs_climb": 2100,
+            "vs_descent": -1200,
+            "pitch_climb": 15,
+            "pitch_descent": 7,
+            "accel_level_max_thrust": 1.2,
+            "accel_level_idle_thrust": -0.5,
+            "n1_climb": 84.6,
+            "n1_descent": 23
+          },
+          {
+            "kias": 200,
+            "vs_climb": 2700,
+            "vs_descent": -1100,
+            "pitch_climb": 11,
+            "pitch_descent": 2.8,
+            "accel_level_max_thrust": 1.2,
+            "accel_level_idle_thrust": -0.5,
+            "n1_climb": 85.7,
+            "n1_descent": 27.1
+          },
+          {
+            "kias": 230,
+            "vs_climb": 2700,
+            "vs_descent": -1300,
+            "pitch_climb": 9,
+            "pitch_descent": 2,
+            "accel_level_max_thrust": 1.2,
+            "accel_level_idle_thrust": -0.5,
+            "n1_climb": 85.3,
+            "n1_descent": 27.4
+          },
+          {
+            "kias": 260,
+            "vs_climb": 2600,
+            "vs_descent": -1600,
+            "pitch_climb": 7,
+            "pitch_descent": -0.5,
+            "accel_level_max_thrust": 1.2,
+            "accel_level_idle_thrust": -0.7,
+            "n1_climb": 85,
+            "n1_descent": 27.9
+          },
+          {
+            "kias": 290,
+            "vs_climb": 2500,
+            "vs_descent": -2200,
+            "pitch_climb": 5.5,
+            "pitch_descent": -2,
+            "accel_level_max_thrust": 1.1,
+            "accel_level_idle_thrust": -0.7,
+            "n1_climb": 84.7,
+            "n1_descent": 28.7
+          }
+        ]
+      },
+      {
+        "altitude": 20000,
+        "data": [
+          {
+            "kias": 200,
+            "vs_climb": 2200,
+            "vs_descent": -1200,
+            "pitch_climb": 10,
+            "pitch_descent": 3,
+            "accel_level_max_thrust": 1,
+            "accel_level_idle_thrust": -0.5,
+            "n1_climb": 86.1,
+            "n1_descent": 30.1
+          },
+          {
+            "kias": 230,
+            "vs_climb": 2100,
+            "vs_descent": -1300,
+            "pitch_climb": 7.5,
+            "pitch_descent": 1,
+            "accel_level_max_thrust": 1,
+            "accel_level_idle_thrust": -0.6,
+            "n1_climb": 85.4,
+            "n1_descent": 30.8
+          },
+          {
+            "kias": 260,
+            "vs_climb": 2200,
+            "vs_descent": -1700,
+            "pitch_climb": 6,
+            "pitch_descent": -0.5,
+            "accel_level_max_thrust": 1,
+            "accel_level_idle_thrust": -0.9,
+            "n1_climb": 85.4,
+            "n1_descent": 30.1
+          },
+          {
+            "kias": 290,
+            "vs_climb": 2100,
+            "vs_descent": -2200,
+            "pitch_climb": 4.5,
+            "pitch_descent": -2,
+            "accel_level_max_thrust": 1,
+            "accel_level_idle_thrust": -1,
+            "n1_climb": 84.9,
+            "n1_descent": 31.1
+          }
+        ]
+      },
+      {
+        "altitude": 25000,
+        "data": [
+          {
+            "kias": 200,
+            "vs_climb": 1700,
+            "vs_descent": -1200,
+            "pitch_climb": 8,
+            "pitch_descent": 3,
+            "accel_level_max_thrust": 0.7,
+            "accel_level_idle_thrust": -0.5,
+            "n1_climb": 85.7,
+            "n1_descent": 34.4
+          },
+          {
+            "kias": 230,
+            "vs_climb": 1800,
+            "vs_descent": -1500,
+            "pitch_climb": 7,
+            "pitch_descent": 1,
+            "accel_level_max_thrust": 0.7,
+            "accel_level_idle_thrust": -0.5,
+            "n1_climb": 85.5,
+            "n1_descent": 34
+          },
+          {
+            "kias": 260,
+            "vs_climb": 1700,
+            "vs_descent": -1800,
+            "pitch_climb": 5,
+            "pitch_descent": 0,
+            "accel_level_max_thrust": 0.7,
+            "accel_level_idle_thrust": -0.7,
+            "n1_climb": 85.4,
+            "n1_descent": 33.3
+          },
+          {
+            "kias": 290,
+            "vs_climb": 1500,
+            "vs_descent": -2300,
+            "pitch_climb": 3,
+            "pitch_descent": -2,
+            "accel_level_max_thrust": 0.5,
+            "accel_level_idle_thrust": -0.9,
+            "n1_climb": 85.2,
+            "n1_descent": 33.8
+          }
+        ]
+      },
+      {
+        "altitude": 30000,
+        "data": [
+          {
+            "kias": 200,
+            "vs_climb": 1100,
+            "vs_descent": -1300,
+            "pitch_climb": 7.5,
+            "pitch_descent": 3,
+            "accel_level_max_thrust": 0.4,
+            "accel_level_idle_thrust": -0.5,
+            "n1_climb": 85.7,
+            "n1_descent": 38.2
+          },
+          {
+            "kias": 230,
+            "vs_climb": 1300,
+            "vs_descent": -1600,
+            "pitch_climb": 5.5,
+            "pitch_descent": 1,
+            "accel_level_max_thrust": 0.4,
+            "accel_level_idle_thrust": -0.7,
+            "n1_climb": 86.1,
+            "n1_descent": 37.6
+          },
+          {
+            "kias": 260,
+            "vs_climb": 1300,
+            "vs_descent": -2000,
+            "pitch_climb": 4,
+            "pitch_descent": -0.3,
+            "accel_level_max_thrust": 0.3,
+            "accel_level_idle_thrust": -0.9,
+            "n1_climb": 86,
+            "n1_descent": 36.8
+          },
+          {
+            "kias": 290,
+            "vs_climb": 1200,
+            "vs_descent": -2400,
+            "pitch_climb": 2.5,
+            "pitch_descent": -2.5,
+            "accel_level_max_thrust": 0.2,
+            "accel_level_idle_thrust": -1,
+            "n1_climb": 85.5,
+            "n1_descent": 37.4
+          }
+        ]
+      },
+      {
+        "altitude": 35000,
+        "data": [
+          {
+            "kias": 200,
+            "vs_climb": 700,
+            "vs_descent": -1500,
+            "pitch_climb": 7,
+            "pitch_descent": 2.7,
+            "accel_level_max_thrust": 0.1,
+            "accel_level_idle_thrust": -0.6,
+            "n1_climb": 85.7,
+            "n1_descent": 41.1
+          },
+          {
+            "kias": 230,
+            "vs_climb": 700,
+            "vs_descent": -1700,
+            "pitch_climb": 5,
+            "pitch_descent": 1,
+            "accel_level_max_thrust": 0.2,
+            "accel_level_idle_thrust": -0.6,
+            "n1_climb": 85.9,
+            "n1_descent": 41.5
+          },
+          {
+            "kias": 260,
+            "vs_climb": 900,
+            "vs_descent": -2000,
+            "pitch_climb": 3,
+            "pitch_descent": -0.5,
+            "accel_level_max_thrust": 0.2,
+            "accel_level_idle_thrust": -0.7,
+            "n1_climb": 85.9,
+            "n1_descent": 41
+          },
+          {
+            "kias": 278,
+            "vs_climb": 800,
+            "vs_descent": -3000,
+            "pitch_climb": 2.5,
+            "pitch_descent": -2.5,
+            "accel_level_max_thrust": -0.1,
+            "accel_level_idle_thrust": -0.9,
+            "n1_climb": 85.8,
+            "n1_descent": 41.5
+          }
+        ]
+      },
+      {
+        "altitude": 40000,
+        "data": [
+          {
+            "kias": 230,
+            "vs_climb": 400,
+            "vs_descent": -1700,
+            "pitch_climb": 3,
+            "pitch_descent": 1,
+            "accel_level_max_thrust": 0.05,
+            "accel_level_idle_thrust": -0.5,
+            "n1_climb": 85.8,
+            "n1_descent": 45.2
+          },
+          {
+            "kias": 250,
+            "vs_climb": 200,
+            "vs_descent": -1800,
+            "pitch_climb": 2.5,
+            "pitch_descent": -0.5,
+            "accel_level_max_thrust": -0.05,
+            "accel_level_idle_thrust": -0.7,
+            "n1_climb": 85.7,
+            "n1_descent": 45.2
+          }
+        ]
+      }
+    ]
+  }
+}

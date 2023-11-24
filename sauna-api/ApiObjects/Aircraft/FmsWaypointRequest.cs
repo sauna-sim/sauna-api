@@ -1,13 +1,13 @@
 
 using SaunaSim.Core;
 using SaunaSim.Core.Simulator.Aircraft;
-using SaunaSim.Core.Simulator.Aircraft.Control.FMS;
+using SaunaSim.Core.Simulator.Aircraft.FMS;
 
 namespace SaunaSim.Api.ApiObjects.Aircraft
 {
     public class FmsWaypointRequest
     {
-        public RoutePointTypeEnum PointType { get; set; }
+        public RoutePointTypeEnum PointType { get; set; } = RoutePointTypeEnum.FLY_BY;
         public string Identifier { get; set; }
         public int UpperAltitudeConstraint { get; set; }
         public int LowerAltitudeConstraint { get; set; }

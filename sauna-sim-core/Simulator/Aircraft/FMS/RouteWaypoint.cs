@@ -1,35 +1,35 @@
 ﻿using AviationCalcUtilNet.GeoTools;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using SaunaSim.Core.Data;
 using NavData_Interface.Objects.Fix;
 
-namespace SaunaSim.Core.Simulator.Aircraft.Control.FMS
+namespace SaunaSim.Core.Simulator.Aircraft.FMS
 {
-    public class RoutePointPbd : IRoutePoint
+    public class RouteWaypoint : IRoutePoint
     {
         private string _waypointName;
         private GeoPoint _pointPosition;
-        private double _bearing;
-        private double _distance;
 
-        public RoutePointPbd(Fix waypoint, double bearing, double distance) : this(waypoint.Location, bearing, distance, waypoint.Identifier) { }
+        public RouteWaypoint(Fix wp)
+        {
+            _waypointName = wp.Identifier;
+            _pointPosition = new GeoPoint(wp.Location);
+        }
 
-        public RoutePointPbd(GeoPoint pos, double bearing, double distance, string name)
+        internal RouteWaypoint(GeoPoint pointPosition)
+        {
+            _waypointName = "";
+            _pointPosition = new GeoPoint(pointPosition);
+        }
+
+        internal RouteWaypoint(string name, GeoPoint pointPosition)
         {
             _waypointName = name;
-            _bearing = GeoUtil.NormalizeHeading(bearing);
-            _distance = distance;
-            _pointPosition = new GeoPoint(pos);
-            _pointPosition.MoveByNMi(_bearing, _distance);
+            _pointPosition = new GeoPoint(pointPosition);
         }
 
         public GeoPoint PointPosition => _pointPosition;
 
-        public string PointName => $"{_waypointName}{_bearing:000}{_distance:000}";
+        public string PointName => _waypointName;
 
         // override object.Equals
         public override bool Equals(object obj)
@@ -51,7 +51,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Control.FMS
 
         public override string ToString()
         {
-            return PointName;
+            return _waypointName;
         }
     }
 }

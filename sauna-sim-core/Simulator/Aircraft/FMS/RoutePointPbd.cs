@@ -1,28 +1,30 @@
 ﻿using AviationCalcUtilNet.GeoTools;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using SaunaSim.Core.Data;
 using NavData_Interface.Objects.Fix;
 
-namespace SaunaSim.Core.Simulator.Aircraft.Control.FMS
+namespace SaunaSim.Core.Simulator.Aircraft.FMS
 {
-    public class RouteWaypoint : IRoutePoint
+    public class RoutePointPbd : IRoutePoint
     {
         private string _waypointName;
         private GeoPoint _pointPosition;
+        private double _bearing;
+        private double _distance;
 
-        public RouteWaypoint(Fix wp)
+        public RoutePointPbd(Fix waypoint, double bearing, double distance) : this(waypoint.Location, bearing, distance, waypoint.Identifier) { }
+
+        public RoutePointPbd(GeoPoint pos, double bearing, double distance, string name)
         {
-            _waypointName = wp.Identifier;
-            _pointPosition = new GeoPoint(wp.Location);
+            _waypointName = name;
+            _bearing = GeoUtil.NormalizeHeading(bearing);
+            _distance = distance;
+            _pointPosition = new GeoPoint(pos);
+            _pointPosition.MoveByNMi(_bearing, _distance);
         }
 
         public GeoPoint PointPosition => _pointPosition;
 
-        public string PointName => _waypointName;
+        public string PointName => $"{_waypointName}{_bearing:000}{_distance:000}";
 
         // override object.Equals
         public override bool Equals(object obj)
@@ -44,7 +46,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Control.FMS
 
         public override string ToString()
         {
-            return _waypointName;
+            return PointName;
         }
     }
 }

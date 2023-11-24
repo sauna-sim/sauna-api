@@ -25,6 +25,8 @@ namespace SaunaSim.Core.Data
         private static NavDataInterface _customDataInterface = new NavDataInterface(new CustomNavDataSource());
         private static object _customDataLock = new object();
 
+        public static readonly string FAKE_AIRPORT_NAME = "_FAKE_AIRPORT";
+
         public static bool HasNavigraphDataLoaded()
         {
             lock (_navigraphInterfaceLock)
@@ -85,6 +87,17 @@ namespace SaunaSim.Core.Data
             }
         }
 
+        public static void AddAirport(Airport airport)
+        {
+            lock (_customDataLock)
+            {
+                if (_customDataInterface.Data_source is CustomNavDataSource customSource)
+                {
+                    customSource.AddAirport(airport);
+                }
+            }
+        }
+
         public static void AddPublishedHold(PublishedHold hold)
         {
             lock (_customDataLock)
@@ -122,11 +135,63 @@ namespace SaunaSim.Core.Data
             }
         }
 
-        public static Localizer GetLocalizer(string airportIdent, string rwyIdent)
+        public static Airport GetAirportByIdentifier(string airportIdent)
         {
+            if (HasNavigraphDataLoaded())
+            {
+                lock (_navigraphInterfaceLock)
+                {
+                    if (_navigraphInterface.Data_source is DFDSource dfdSource)
+                    {
+                        Airport airport = dfdSource.GetAirportByIdentifier(airportIdent.ToUpper());
+                        if (airport != null)
+                        {
+                            return airport;
+                        }
+                    }
+                }
+            }
+
             lock (_customDataLock)
             {
-                return _customDataInterface.Data_source.GetLocalizerFromAirportRunway(airportIdent, rwyIdent);
+                if (_customDataInterface.Data_source is CustomNavDataSource customSource)
+                {
+                    return customSource.GetAirportByIdentifier(airportIdent.ToUpper());
+                }
+            }
+
+            return null;
+        }
+
+        public static Localizer GetLocalizer(string airportIdent, string rwyIdent)
+        {
+            if (HasNavigraphDataLoaded())
+            {
+                lock (_navigraphInterfaceLock)
+                {
+                    Localizer navigraphFix = _navigraphInterface.Data_source.GetLocalizerFromAirportRunway(airportIdent.ToUpper(), rwyIdent.ToUpper());
+                    if (navigraphFix != null)
+                    {
+                        return navigraphFix;
+                    }
+                }
+            }
+
+            lock (_sctFileInterfacesLock)
+            {
+                foreach (NavDataInterface navdataInterface in _sctFileInterfaces)
+                {
+                    Localizer sctFix = navdataInterface.Data_source.GetLocalizerFromAirportRunway(airportIdent.ToUpper(), rwyIdent.ToUpper());
+                    if (sctFix != null)
+                    {
+                        return sctFix;
+                    }
+                }
+            }
+
+            lock (_customDataLock)
+            {
+                return _customDataInterface.Data_source.GetLocalizerFromAirportRunway(airportIdent.ToUpper(), rwyIdent.ToUpper());
             }
         }
 
@@ -139,7 +204,7 @@ namespace SaunaSim.Core.Data
             {
                 lock (_navigraphInterfaceLock)
                 {
-                    Fix navigraphFix = _navigraphInterface.GetClosestFixByIdentifier(new GeoPoint(lat, lon), wpId);
+                    Fix navigraphFix = _navigraphInterface.GetClosestFixByIdentifier(new GeoPoint(lat, lon), wpId.ToUpper());
                     if (navigraphFix != null)
                     {
                         closestFix = navigraphFix;
@@ -152,7 +217,7 @@ namespace SaunaSim.Core.Data
             {
                 foreach (NavDataInterface navdataInterface in _sctFileInterfaces)
                 {
-                    Fix sctFix = navdataInterface.GetClosestFixByIdentifier(new GeoPoint(lat, lon), wpId);
+                    Fix sctFix = navdataInterface.GetClosestFixByIdentifier(new GeoPoint(lat, lon), wpId.ToUpper());
                     if (sctFix != null)
                     {
                         double distance = GeoPoint.DistanceM(new GeoPoint(lat, lon), sctFix.Location);
@@ -168,7 +233,7 @@ namespace SaunaSim.Core.Data
 
             lock (_customDataLock)
             {
-                Fix customFix = _customDataInterface.GetClosestFixByIdentifier(new GeoPoint(lat, lon), wpId);
+                Fix customFix = _customDataInterface.GetClosestFixByIdentifier(new GeoPoint(lat, lon), wpId.ToUpper());
                 if (customFix != null)
                 {
                     double distance = GeoPoint.DistanceM(new GeoPoint(lat, lon), customFix.Location);
