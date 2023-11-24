@@ -368,16 +368,11 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
             return (CalculateDemandedRollForTurn(turnAmt, curRoll, groundSpeed, intervalMs), demandedTrack);
         }
 
-        public static (double demandedPitch, double demandedFpa) CalculateDemandedPitchForVnav(double vTk_m, double curFpa, double reqFpa, PerfData perfData, double ias_kts, double dens_alt_ft, double mass_kg, int config, double gs_kts, int intervalMs)
+        public static (double demandedPitch, double demandedFpa) CalculateDemandedPitchForVnav(double vTk_m, double curFpa, double reqFpa, PerfData perfData, double ias_kts, double dens_alt_ft, double mass_kg, double spdBrakePos, int config, double gs_kts, int intervalMs)
         {
             // Get max and min Fpa
             double maxFpa = 0;
-
-            double minPitch = PerfDataHandler.GetRequiredPitchForThrust(perfData, 0, 0, ias_kts, dens_alt_ft, mass_kg, 0, config);
-            double minVs = PerfDataHandler.CalculatePerformance(perfData, minPitch, 0, ias_kts, dens_alt_ft, mass_kg, 0, config).vs;
-            double minFpa = PerfDataHandler.ConvertVsToFpa(minVs, gs_kts);
-
-            minFpa = reqFpa - 1;
+            double minFpa = reqFpa - 1;
 
             // Find demanded FPA
             double targetFpa = CalculateDemandedInput(
@@ -387,9 +382,9 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
                 minFpa,
                 (double startFpa, double endFpa) =>
                 {
-                    double startPitch = PerfDataHandler.GetRequiredPitchForVs(perfData, PerfDataHandler.ConvertFpaToVs(startFpa, gs_kts), ias_kts, dens_alt_ft, mass_kg, 0, config);
+                    double startPitch = PerfDataHandler.GetRequiredPitchForVs(perfData, PerfDataHandler.ConvertFpaToVs(startFpa, gs_kts), ias_kts, dens_alt_ft, mass_kg, spdBrakePos, config);
 
-                    double endPitch = PerfDataHandler.GetRequiredPitchForVs(perfData, PerfDataHandler.ConvertFpaToVs(endFpa, gs_kts), ias_kts, dens_alt_ft, mass_kg, 0, config);
+                    double endPitch = PerfDataHandler.GetRequiredPitchForVs(perfData, PerfDataHandler.ConvertFpaToVs(endFpa, gs_kts), ias_kts, dens_alt_ft, mass_kg, spdBrakePos, config);
 
                     double pitchRate = CalculatePitchRate(endPitch, startPitch, intervalMs);
 

@@ -452,7 +452,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot
             (double reqFpa, double vTk_m) = (fms.RequiredFpa, fms.VerticalTrackDistance_m);
 
             // Calculate target FPA
-            double targetFpa = AutopilotUtil.CalculateDemandedPitchForVnav(vTk_m, _parentAircraft.Position.FlightPathAngle, -reqFpa, _parentAircraft.PerformanceData, _parentAircraft.Position.IndicatedAirSpeed, _parentAircraft.Position.DensityAltitude, _parentAircraft.Data.Mass_kg, _parentAircraft.Data.Config, _parentAircraft.Position.GroundSpeed, intervalMs).demandedFpa;
+            double targetFpa = AutopilotUtil.CalculateDemandedPitchForVnav(vTk_m, _parentAircraft.Position.FlightPathAngle, -reqFpa, _parentAircraft.PerformanceData, _parentAircraft.Position.IndicatedAirSpeed, _parentAircraft.Position.DensityAltitude, _parentAircraft.Data.Mass_kg, _parentAircraft.Data.SpeedBrakePos, _parentAircraft.Data.Config, _parentAircraft.Position.GroundSpeed, intervalMs).demandedFpa;
 
             if (-reqFpa < 0)
             {
@@ -476,7 +476,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot
             (double reqFpa, double vTk_m) = (fms.RequiredFpa, fms.VerticalTrackDistance_m);
 
             // Calculate pitch and pitch rate
-            _targetPitch = AutopilotUtil.CalculateDemandedPitchForVnav(vTk_m, _parentAircraft.Position.FlightPathAngle, -reqFpa, _parentAircraft.PerformanceData, _parentAircraft.Position.IndicatedAirSpeed, _parentAircraft.Position.DensityAltitude, _parentAircraft.Data.Mass_kg, _parentAircraft.Data.Config, _parentAircraft.Position.GroundSpeed, intervalMs).demandedPitch;
+            _targetPitch = AutopilotUtil.CalculateDemandedPitchForVnav(vTk_m, _parentAircraft.Position.FlightPathAngle, -reqFpa, _parentAircraft.PerformanceData, _parentAircraft.Position.IndicatedAirSpeed, _parentAircraft.Position.DensityAltitude, _parentAircraft.Data.Mass_kg, _parentAircraft.Data.SpeedBrakePos, _parentAircraft.Data.Config, _parentAircraft.Position.GroundSpeed, intervalMs).demandedPitch;
             _parentAircraft.Position.PitchRate = AutopilotUtil.CalculatePitchRate(_targetPitch, _parentAircraft.Position.Pitch, intervalMs);
         }
 
