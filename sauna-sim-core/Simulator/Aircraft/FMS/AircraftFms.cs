@@ -109,6 +109,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
             lock (_routeLegsLock)
             {
                 _routeLegs.Add(routeLeg);
+                RecalculateVnavPath();
             }
         }
 
@@ -121,6 +122,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
                     _activeLeg = _routeLegs[0];
                     _wpEvtTriggered = false;
                     _routeLegs.RemoveAt(0);
+                    RecalculateVnavPath();
                 }
             }
 
@@ -206,6 +208,8 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
                 {
                     _routeLegs.Insert(0, new DiscoLeg(dtoLeg.FinalTrueCourse));
                 }
+
+                RecalculateVnavPath();
             }
         }
 
@@ -243,6 +247,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
 
                     // Add leg
                     _routeLegs.Insert(index, holdLeg);
+                    RecalculateVnavPath();
                     return true;
                 }
             }
@@ -269,6 +274,8 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
                 if (_routeLegs.Count >= 1)
                 {
                     _routeLegs.RemoveAt(0);
+
+                    RecalculateVnavPath();
                 }
             }
         }
@@ -394,37 +401,42 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
             // Check if we need to recalculate remaining legs and VNAV crossing altitudes
             if (Math.Abs(_lastGs - position.GroundSpeed) > MIN_GS_DIFF)
             {
-                lock (_routeLegsLock)
-                {                    
-                    if (_routeLegs != null)
-                    {
-                        // Go through route legs in reverse
-                        for (int i = _routeLegs.Count - 1; i  >= 0; i--)
-                        {
-                            var leg = _routeLegs[i];
-
-                            // Update leg dimensions
-                            leg.InitializeLeg(_parentAircraft);
-
-                            // Update VNAV info
-                            if (leg.EndPoint != null)
-                            {
-                                // TODO: Change this to actually calculate VNAV paths
-                                leg.EndPoint.VnavTargetAltitude = _activeLeg.EndPoint.LowerAltitudeConstraint;
-                            }
-                        }
-                    }
-                    if (_activeLeg.EndPoint != null)
-                    {
-                        // TODO: Change this to actually calculate VNAV paths
-                        _activeLeg.EndPoint.VnavTargetAltitude = _activeLeg.EndPoint.LowerAltitudeConstraint;
-                    }
-                }
+                RecalculateVnavPath();
                 _lastGs = position.GroundSpeed;
             }
 
             // Calculate VNAV values
             (_requiredFpa, _vTk_m) = GetPitchInterceptInfoForCurrentLeg();
+        }
+
+        private void RecalculateVnavPath()
+        {
+            lock (_routeLegsLock)
+            {
+                if (_routeLegs != null)
+                {
+                    // Go through route legs in reverse
+                    for (int i = _routeLegs.Count - 1; i >= 0; i--)
+                    {
+                        var leg = _routeLegs[i];
+
+                        // Update leg dimensions
+                        leg.InitializeLeg(_parentAircraft);
+
+                        // Update VNAV info
+                        if (leg.EndPoint != null)
+                        {
+                            // TODO: Change this to actually calculate VNAV paths
+                            leg.EndPoint.VnavTargetAltitude = leg.EndPoint.LowerAltitudeConstraint;
+                        }
+                    }
+                }
+                if (_activeLeg != null && _activeLeg.EndPoint != null)
+                {
+                    // TODO: Change this to actually calculate VNAV paths
+                    _activeLeg.EndPoint.VnavTargetAltitude = _activeLeg.EndPoint.LowerAltitudeConstraint;
+                }
+            }
         }
 
         private (double requiredFpa, double vTk_m) GetPitchInterceptInfoForCurrentLeg()

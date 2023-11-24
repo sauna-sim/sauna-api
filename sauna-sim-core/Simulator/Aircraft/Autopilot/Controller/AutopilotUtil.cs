@@ -60,8 +60,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
             if (rateMax > 0 && requiredRate < -rateMax)
             {
                 requiredRate = -rateMax;
-            }
-            else if (rateMax > 0 && requiredRate > rateMax)
+            } else if (rateMax > 0 && requiredRate > rateMax)
             {
                 requiredRate = rateMax;
             }
@@ -129,8 +128,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
             if (zeroTargetRateInput < minInputLimit)
             {
                 zeroTargetRateInput = minInputLimit;
-            }
-            else if (zeroTargetRateInput > maxInputLimit)
+            } else if (zeroTargetRateInput > maxInputLimit)
             {
                 zeroTargetRateInput = maxInputLimit;
             }
@@ -347,8 +345,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
             if (trackDelta > 0)
             {
                 maxTrack = minTrack + trackDelta;
-            }
-            else
+            } else
             {
                 minTrack = maxTrack + trackDelta;
             }
@@ -369,6 +366,55 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
             double turnAmt = GeoUtil.CalculateTurnAmount(curTrueTrack, demandedTrack);
 
             return (CalculateDemandedRollForTurn(turnAmt, curRoll, groundSpeed, intervalMs), demandedTrack);
+        }
+
+        public static (double demandedPitch, double demandedFpa) CalculateDemandedPitchForVnav(double vTk_m, double curFpa, double reqFpa, PerfData perfData, double ias_kts, double dens_alt_ft, double mass_kg, int config, double gs_kts, int intervalMs)
+        {
+            // Get max and min Fpa
+            double maxFpa = 0;
+
+            double minPitch = PerfDataHandler.GetRequiredPitchForThrust(perfData, 0, 0, ias_kts, dens_alt_ft, mass_kg, 0, config);
+            double minVs = PerfDataHandler.CalculatePerformance(perfData, minPitch, 0, ias_kts, dens_alt_ft, mass_kg, 0, config).vs;
+            double minFpa = PerfDataHandler.ConvertVsToFpa(minVs, gs_kts);
+
+            minFpa = reqFpa - 1;
+
+            // Find demanded FPA
+            double targetFpa = CalculateDemandedInput(
+                -vTk_m,
+                curFpa,
+                maxFpa,
+                minFpa,
+                (double startFpa, double endFpa) =>
+                {
+                    double startPitch = PerfDataHandler.GetRequiredPitchForVs(perfData, PerfDataHandler.ConvertFpaToVs(startFpa, gs_kts), ias_kts, dens_alt_ft, mass_kg, 0, config);
+
+                    double endPitch = PerfDataHandler.GetRequiredPitchForVs(perfData, PerfDataHandler.ConvertFpaToVs(endFpa, gs_kts), ias_kts, dens_alt_ft, mass_kg, 0, config);
+
+                    double pitchRate = CalculatePitchRate(endPitch, startPitch, intervalMs);
+
+                    if (endPitch - startPitch == 0)
+                    {
+                        return 0;
+                    }
+
+                    return (endFpa - startFpa) * pitchRate / (endPitch - startPitch);
+                },
+                (double fpa) =>
+                {
+                    double vs = PerfDataHandler.ConvertFpaToVs(fpa, gs_kts);
+
+                    vs /= 60;
+
+                    return MathUtil.ConvertFeetToMeters(vs);
+                },
+                reqFpa,
+                PITCH_TIME_BUFFER).demandedInput;
+
+            double demandedPitch = PerfDataHandler.GetRequiredPitchForVs(perfData, PerfDataHandler.ConvertFpaToVs(targetFpa, gs_kts),
+                ias_kts, dens_alt_ft, mass_kg, 0, config);
+
+            return (demandedPitch, targetFpa);
         }
 
         public static (double demandedRoll, double demandedTrack) CalculateDemandedRollForNav(double courseDeviation, double curTrueTrack, double courseTrueTrack, double courseTurnRadius, double curRoll, double groundSpeed, int intervalMs)
@@ -396,8 +442,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
             if (demandedTrack > MAX_INTC_ANGLE)
             {
                 demandedTrack = MAX_INTC_ANGLE;
-            }
-            else if (demandedTrack < -MAX_INTC_ANGLE)
+            } else if (demandedTrack < -MAX_INTC_ANGLE)
             {
                 demandedTrack = -MAX_INTC_ANGLE;
             }

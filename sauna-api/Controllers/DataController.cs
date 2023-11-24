@@ -359,7 +359,10 @@ namespace SaunaSim.Api.Controllers
                             double inboundCourse = Convert.ToDouble(items[2]);
                             HoldTurnDirectionEnum turnDirection = (HoldTurnDirectionEnum)Convert.ToInt32(items[3]);
                             Fix fix = DataHandler.GetClosestWaypointByIdentifier(wpId, refLat, refLon);
-                            DataHandler.AddPublishedHold(new PublishedHold(fix, inboundCourse, turnDirection));
+                            if (fix != null)
+                            {
+                                DataHandler.AddPublishedHold(new PublishedHold(fix, inboundCourse, turnDirection));
+                            }
                         } catch (Exception)
                         {
                             Console.WriteLine("Error Loading Hold.");

@@ -389,9 +389,12 @@ namespace SaunaSim.Core.Simulator.Aircraft
             {
                 if (disposing)
                 {
-                    Connection.Dispose();
+                    // Stop updating position
                     _shouldUpdatePosition = false;
                     _posUpdThread?.Join();
+
+                    // Stop delay timer
+                    Connection.Dispose();
                     _delayTimer?.Stop();
                     _delayTimer?.Dispose();
                 }

@@ -67,18 +67,21 @@ namespace SaunaSim.Core.Simulator.Aircraft
 
         public static void RemoveAircraftByCallsign(string callsign)
         {
+            SimAircraft foundAcft = null;
             lock (_aircraftsLock)
             {
                 foreach (SimAircraft aircraft in _aircrafts)
                 {
                     if (aircraft.Callsign.Equals(callsign))
                     {
-                        aircraft.Dispose();
+                        foundAcft = aircraft;
                         _aircrafts.Remove(aircraft);
                         break;
                     }
                 }
             }
+
+            foundAcft?.Dispose();
         }
 
         public static bool AddAircraft(SimAircraft aircraft)

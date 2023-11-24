@@ -68,7 +68,7 @@ namespace SaunaSim.Core.Simulator.Commands
         {
             if (e.RoutePoint.Equals(_locRoutePoint))
             {
-                Aircraft.Dispose();
+                SimAircraftHandler.RemoveAircraftByCallsign(Aircraft.Callsign);
             }
         }
 

@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -65,18 +66,34 @@ namespace SaunaSim.Core.Simulator.Commands
             // Get Command
             switch (cmdNameNormalized)
             {
+                case "pauseall":
+                case "pall":
+                    SimAircraftHandler.AllPaused = true;
+                    logger("All Aircraft Paused");
+                    break;
+                case "unpauseall":
+                case "upall":
+                    SimAircraftHandler.AllPaused = false;
+                    logger("All Aircraft Unpaused");
+                    break;
                 case "pause":
                 case "p":
+                    logger($"{aircraft.Callsign} paused");
                     aircraft.Paused = true;
                     break;
                 case "unpause":
                 case "up":
+                    logger($"{aircraft.Callsign} unpaused");
                     aircraft.Paused = false;
                     break;
                 case "remove":
                 case "delete":
                 case "del":
-                    SimAircraftHandler.RemoveAircraftByCallsign(aircraft.Callsign);
+                    logger($"Removing {aircraft.Callsign}");
+                    Task.Run(() =>
+                    {
+                        SimAircraftHandler.RemoveAircraftByCallsign(aircraft.Callsign);
+                    });
                     break;
                 case "fh":
                     cmd = new FlyHeadingCommand();
@@ -136,6 +153,39 @@ namespace SaunaSim.Core.Simulator.Commands
                 case "des":
                 case "descend":
                     cmd = new AltitudeCommand();
+                    break;
+
+                // Temp commands
+                case "spdbrk":
+                    try
+                    {
+                        double spdBrake = Convert.ToDouble(args[0]);
+                        aircraft.Data.SpeedBrakePos = spdBrake;
+                        args.RemoveAt(0);
+                        logger($"{aircraft.Callsign} Speed Brake set to {aircraft.Data.SpeedBrakePos:0.00}");
+                    } catch (Exception)
+                    {
+                        logger($"ERROR: Speed Brake Pos Invalid");
+                    }
+                    break;
+                case "config":
+                    try
+                    {
+                        int config = Convert.ToInt32(args[0]);
+                        if (config < 0)
+                        {
+                            config = 0;
+                        } else if (config >= aircraft.PerformanceData.ConfigList.Count)
+                        {
+                            config = aircraft.PerformanceData.ConfigList.Count - 1;
+                        }
+                        aircraft.Data.Config = config;
+                        args.RemoveAt(0);
+                        logger($"{aircraft.Callsign} Config set to {aircraft.Data.Config}");
+                    } catch (Exception)
+                    {
+                        logger($"ERROR: Config Invalid");
+                    }
                     break;
                 default:
                     logger($"ERROR: Command {commandName} not valid!");
