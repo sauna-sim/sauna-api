@@ -34,6 +34,13 @@ namespace SaunaSim.Api
                     options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
                     options.JsonSerializerOptions.NumberHandling = JsonNumberHandling.AllowNamedFloatingPointLiterals;
                 });
+
+            services.AddCors(o => o.AddPolicy("_myAllowSpecificOrigins", builder =>
+            {
+                builder.WithOrigins("*")
+                       .AllowAnyMethod()
+                       .AllowAnyHeader();
+            }));
         }
 
         private void OnShutdown()
@@ -65,6 +72,8 @@ namespace SaunaSim.Api
             }
 
             app.UseRouting();
+
+            app.UseCors("_myAllowSpecificOrigins");
 
             app.UseAuthorization();
 
