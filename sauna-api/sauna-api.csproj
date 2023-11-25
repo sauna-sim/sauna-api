@@ -8,15 +8,26 @@
     <OutputType>Exe</OutputType>
     <StartupObject>SaunaSim.Api.Program</StartupObject>
     <AssemblyName>SaunaApi</AssemblyName>
-    <AssemblyVersion>0.10.0</AssemblyVersion>
-    <FileVersion>0.10.0</FileVersion>
     <NeutralLanguage>en-US</NeutralLanguage>
     <Version>0.10.0</Version>
+	<AssemblyVersion>$(Version)</AssemblyVersion>
+    <FileVersion>$(Version)</FileVersion>
     <EnableUnmanagedDebugging>true</EnableUnmanagedDebugging>
     <ServerGarbageCollection>false</ServerGarbageCollection>
+    <RepositoryType>git</RepositoryType>
+    <RepositoryUrl>https://github.com/Sauna-ATC-Training-Simulator/sauna-api</RepositoryUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageProjectUrl>https://github.com/Sauna-ATC-Training-Simulator/sauna-api</PackageProjectUrl>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(RunConfiguration)' == 'sauna-api' " />
+
+  <ItemGroup>
+    <None Include="..\README.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+  </ItemGroup>
   <ItemGroup>
     <PackageReference Include="PShivaraman.AviationCalcUtilNet" Version="1.2.0" />
     <PackageReference Include="CaspianMerlin.FsdConnectorNet" Version="0.2.7" />

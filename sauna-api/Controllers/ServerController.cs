@@ -2,7 +2,10 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using SaunaSim.Api.ApiObjects.Server;
 using SaunaSim.Core.Simulator.Aircraft;
+using System.Diagnostics;
+using System.Reflection;
 
 namespace SaunaSim.Api.Controllers
 {
@@ -17,6 +20,18 @@ namespace SaunaSim.Api.Controllers
         {
             _appLifetime = appLifetime;
             _logger = logger;
+        }
+
+        [HttpGet("info")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        public ActionResult<ApiServerInfoResponse> GetServerInfo()
+        {
+            var version = FileVersionInfo.GetVersionInfo(Assembly.GetExecutingAssembly().Location);
+            return Ok(new ApiServerInfoResponse()
+            {
+                ServerId = "sauna-api",
+                Version = new ApiServerInfoResponse.VersionInfo((uint) version.ProductMajorPart, (uint) version.ProductMinorPart, (uint) version.ProductBuildPart)
+            });
         }
         
 

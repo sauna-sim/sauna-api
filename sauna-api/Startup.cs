@@ -30,17 +30,13 @@ namespace SaunaSim.Api
         {
             services.AddControllers()
                 // Add JSON Serialization Options
-                .AddJsonOptions(options => {
+                .AddJsonOptions(options =>
+                {
                     options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
                     options.JsonSerializerOptions.NumberHandling = JsonNumberHandling.AllowNamedFloatingPointLiterals;
                 });
 
-            services.AddCors(o => o.AddPolicy("_myAllowSpecificOrigins", builder =>
-            {
-                builder.WithOrigins("*")
-                       .AllowAnyMethod()
-                       .AllowAnyHeader();
-            }));
+            services.AddCors();
         }
 
         private void OnShutdown()
@@ -57,8 +53,7 @@ namespace SaunaSim.Api
             {
                 MagneticUtil.LoadData();
                 logger.LogInformation("Magnetic File Loaded");
-            }
-            catch (Exception)
+            } catch (Exception)
             {
                 logger.LogError("There was an error loading the WMM.COF file. Ensure that WMM.COF is placed in the 'magnetic' folder.");
             }
@@ -73,11 +68,15 @@ namespace SaunaSim.Api
 
             app.UseRouting();
 
-            app.UseCors("_myAllowSpecificOrigins");
+            app.UseCors(x => x
+            .AllowAnyMethod()
+            .AllowAnyHeader()
+            .AllowAnyOrigin());
 
             app.UseAuthorization();
 
-            app.UseEndpoints(endpoints => {
+            app.UseEndpoints(endpoints =>
+            {
                 endpoints.MapControllers();
             });
         }
