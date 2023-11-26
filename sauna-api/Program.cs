@@ -6,6 +6,8 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Net.NetworkInformation;
+using System.Net;
 using System.Threading.Tasks;
 
 namespace SaunaSim.Api
@@ -24,11 +26,30 @@ namespace SaunaSim.Api
             Host.CreateDefaultBuilder(args)
                 .ConfigureWebHostDefaults(webBuilder => {
                     webBuilder.UseStartup<Startup>();
-                    if (CheckForUserDefinedPort(args, out ushort port))
+
+                    // Determine port to use
+                    ushort port = 5000;
+                    if (CheckForUserDefinedPort(args, out ushort customPort))
                     {
-                        webBuilder.UseUrls($"http://localhost:{port}");
+                        port = customPort;
                     }
+                    
+                    if (!CheckPortAvailability(port))
+                    {
+                        throw new InvalidOperationException($"Could not start Sauna API: Port {port} was occupied!");
+                    }
+                    webBuilder.UseUrls($"http://localhost:{port}");
                 });
+
+        private static bool CheckPortAvailability(int port)
+        {
+            IPGlobalProperties ipGlobalProperties = IPGlobalProperties.GetIPGlobalProperties();
+            IPEndPoint[] tcpConnInfoArray = ipGlobalProperties.GetActiveTcpListeners();
+
+            IEnumerable<int> allActivePorts = tcpConnInfoArray.Select(endpoint => endpoint.Port).ToList();
+
+            return !allActivePorts.Contains(port);
+        }
 
 
         static bool CheckForUserDefinedPort(string[] args, out ushort port)
@@ -37,8 +58,7 @@ namespace SaunaSim.Api
             {
                 if (args[i].ToLower() == "-p")
                 {
-                    ushort p;
-                    if (UInt16.TryParse(args[i + 1], out p))
+                    if (ushort.TryParse(args[i + 1], out ushort p))
                     {
                         port = p;
                         return true;
