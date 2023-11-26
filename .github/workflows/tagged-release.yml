@@ -28,8 +28,8 @@ jobs:
             arch: x86
 #          - os: macos-latest
 #            arch: arm
-          - os: ubuntu-latest
-            arch: arm64
+#          - os: ubuntu-latest
+#            arch: arm64
     uses: ./.github/workflows/dotnet-build-reusable.yml
     with:
       arch: ${{ matrix.arch }}

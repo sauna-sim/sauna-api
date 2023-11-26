@@ -126,10 +126,10 @@ namespace SaunaSim.Api.Controllers
             {
                 DataHandler.LoadNavigraphDataFile(request.FileName, request.Uuid);
                 return Ok();
-            } catch (System.IO.FileNotFoundException ex)
+            } catch (System.IO.FileNotFoundException)
             {
                 return BadRequest("The file could not be found.");
-            } catch (Exception ex)
+            } catch (Exception)
             {
                 return BadRequest("The file is not a vaid NavData file.");
             }
@@ -195,7 +195,7 @@ namespace SaunaSim.Api.Controllers
                         try
                         {
                             (lat, lon) = CoordinateUtil.ParseCoordinate(items[4], items[5]);
-                        } catch (FormatException e)
+                        } catch (FormatException)
                         {
                             Console.WriteLine($"ERROR loading aircraft {callsign}: Could not parse coordinates");
                         }
@@ -273,7 +273,7 @@ namespace SaunaSim.Api.Controllers
 
                                                 waypoints[i] = splitWp[0];
 
-                                            } catch (Exception e)
+                                            } catch (Exception)
                                             {
                                                 Console.Error.WriteLine($"Invalid altitude restriction {splitWp[1]}");
                                                 continue;

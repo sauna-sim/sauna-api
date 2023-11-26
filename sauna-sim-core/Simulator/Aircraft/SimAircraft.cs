@@ -361,6 +361,9 @@ namespace SaunaSim.Core.Simulator.Aircraft
                 point.MoveByNMi(Position.Track_True, distanceTravelledNMi);
                 Position.Latitude = point.Lat;
                 Position.Longitude = point.Lon;
+
+                // Calculate Yaw Rate
+                Position.YawRate = 0;
             }
             else
             {
@@ -386,6 +389,9 @@ namespace SaunaSim.Core.Simulator.Aircraft
                 Position.Latitude = point.Lat;
                 Position.Longitude = point.Lon;
                 Position.Heading_Mag = endHeading;
+
+                // Calculate Yaw Rate
+                Position.YawRate = (degreesToTurn / t);
             }
 
             // Calculate Altitude
