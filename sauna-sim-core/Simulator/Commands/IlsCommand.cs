@@ -43,7 +43,7 @@ namespace SaunaSim.Core.Simulator.Commands
             Aircraft.Fms.AddRouteLeg(locLeg);
 
             // Activate leg now, skipping all previous legs
-            while (!Aircraft.Fms.ActiveLeg.Equals(locLeg) && Aircraft.Fms.GetRouteLegs().Count > 0)
+            while ((Aircraft.Fms.ActiveLeg == null || !Aircraft.Fms.ActiveLeg.Equals(locLeg)) && Aircraft.Fms.GetRouteLegs().Count > 0)
             {
                 Aircraft.Fms.ActivateNextLeg();
             }
