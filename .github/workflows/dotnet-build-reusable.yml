@@ -1,0 +1,51 @@
+on:
+  workflow_call:
+    inputs:
+      arch:
+        description: 'Architecture to build for'
+        required: true
+        type: string
+      os:
+        description: 'OS for the GitHub Actions Runner'
+        default: 'ubuntu-latest'
+        required: false
+        type: string
+      short-os:
+        description: 'Short form for OS'
+        required: false
+        default: 'linux'
+        type: string
+
+jobs:
+  build:
+    runs-on: ${{ inputs.os }}
+    steps:
+      - name: Checkout Project
+        uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: 6.x.x
+      - name: Setup NuGet
+        uses: nuget/setup-nuget@v1
+        with:
+          nuget-version: 'latest'
+      - name: Build
+        shell: pwsh
+        run: |
+          cd ${{ github.workspace }}/sauna-api
+          dotnet build --verbosity normal -c Release -r ${{ inputs.short-os }}-${{ inputs.arch }} -p:PlatformTarget=${{ inputs.arch }} -o ${{ github.workspace }}/bin --self-contained
+      - name: Tar Output
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory '${{ github.workspace }}/bins'
+          cd ${{ github.workspace }}/bin
+          tar -cvzf ${{ github.workspace }}/bins/SaunaApi-${{ inputs.short-os }}-${{ inputs.arch }}.tar.gz *
+      - name: Archive Binaries
+        uses: actions/upload-artifact@v3
+        with:
+          name: SaunaApi-bins
+          path: |
+            ${{ github.workspace }}/bins/*
