@@ -15,7 +15,7 @@ namespace SaunaSim.Api.ApiObjects.Aircraft
         public string Callsign { get; set; }
         public int DelayMs { get; set; }
         public AircraftStateRequestResponse SimState { get; set; }
-        public FlightPlan? FlightPlan { get; set; }
+        public FlightPlan FlightPlan { get; set; }
         public TransponderModeType XpdrMode { get; set; }
         public int Squawk { get; set; }
         public AircraftPosition Position { get; set; }
@@ -41,7 +41,7 @@ namespace SaunaSim.Api.ApiObjects.Aircraft
                 Paused = pilot.Paused,
                 SimRate = pilot.SimRate / 10.0
             };
-            FlightPlan = pilot.FlightPlan;
+            FlightPlan = pilot.FlightPlan.GetValueOrDefault();
             XpdrMode = pilot.XpdrMode;
             Squawk = pilot.Squawk;
             Position = pilot.Position;

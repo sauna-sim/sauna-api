@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using AviationCalcUtilNet.GeoTools;
 using AviationCalcUtilNet.MathTools;
+using FsdConnectorNet;
 using NavData_Interface.Objects.Fix;
 using SaunaSim.Core.Data;
 using SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller;
@@ -15,8 +16,6 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
     public class AircraftFms
     {
         private SimAircraft _parentAircraft;
-        private Fix _depApt;
-        private Fix _arrApt;
         private int _cruiseAlt;
         private IRouteLeg _activeLeg;
         private List<IRouteLeg> _routeLegs;
@@ -79,16 +78,59 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
             set => _cruiseAlt = value;
         }
 
+        private string _depIcao;
+        private Fix _depArpt;
         public Fix DepartureAirport
         {
-            get => _depApt;
-            set => _depApt = value;
+            get
+            {
+                string curDepIcao = _parentAircraft.FlightPlan?.origin.ToUpper();
+                if (curDepIcao != _depIcao)
+                {
+                    _depArpt = DataHandler.GetAirportByIdentifier(curDepIcao);
+                    _depIcao = curDepIcao;
+                }
+                return _depArpt;
+            }
+            set
+            {
+                _depArpt = value;
+                _depIcao = value.Identifier.ToString().ToUpper();
+                if (_parentAircraft.FlightPlan.HasValue)
+                {
+                    FlightPlan fp = _parentAircraft.FlightPlan.Value;
+                    fp.origin = _depIcao;
+                    _parentAircraft.FlightPlan = fp;
+                }
+            }
+
         }
 
+        private string _arrIcao;
+        private Fix _arrArpt;
         public Fix ArrivalAirport
         {
-            get => _arrApt;
-            set => _arrApt = value;
+            get
+            {
+                string curArrIcao = _parentAircraft.FlightPlan?.destination.ToUpper();
+                if (curArrIcao != _arrIcao)
+                {
+                    _arrArpt = DataHandler.GetAirportByIdentifier(curArrIcao);
+                    _arrIcao = curArrIcao;
+                }
+                return _arrArpt;
+            }
+            set
+            {
+                _arrArpt = value;
+                _arrIcao = value.Identifier.ToString().ToUpper();
+                if (_parentAircraft.FlightPlan.HasValue)
+                {
+                    FlightPlan fp = _parentAircraft.FlightPlan.Value;
+                    fp.destination = _arrIcao;
+                    _parentAircraft.FlightPlan = fp;
+                }
+            }
         }
 
         public IRouteLeg ActiveLeg
@@ -372,7 +414,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
                     {
                         WaypointPassed?.Invoke(this, new WaypointPassedEventArgs(ActiveLeg.EndPoint.Point));
                         _wpEvtTriggered = true;
-                    }                    
+                    }
                 }
             }
 

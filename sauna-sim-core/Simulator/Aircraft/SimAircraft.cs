@@ -127,13 +127,15 @@ namespace SaunaSim.Core.Simulator.Aircraft
         private FlightPlan? _flightPlan;
         public FlightPlan? FlightPlan
         {
-            get => _flightPlan;
+            get => Connection.CurrentFlightPlan;
             set
             {
-                _flightPlan = value;
                 if (ConnectionStatus == ConnectionStatusType.CONNECTED)
                 {
                     Connection.SendFlightPlan(value);
+                } else
+                {
+                    _flightPlan = value;
                 }
             }
         }
@@ -147,13 +149,6 @@ namespace SaunaSim.Core.Simulator.Aircraft
 
         public Action<string> LogError { get; set; }
 
-
-        // Assigned values
-        //public AircraftControl Control { get; private set; }
-        //public int Assigned_IAS { get; set; } = -1;
-        //public ConstraintType Assigned_IAS_Type { get; set; } = ConstraintType.FREE;
-
-
         public SimAircraft(string callsign, string networkId, string password, string fullname, string hostname, ushort port, ProtocolRevision protocol, ClientInfo clientInfo,
             PerfData perfData, double lat, double lon, double alt, double hdg_mag, int delayMs = 0)
         {
@@ -163,6 +158,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
             Connection.Connected += OnConnectionEstablished;
             Connection.Disconnected += OnConnectionTerminated;
             Connection.FrequencyMessageReceived += OnFrequencyMessageReceived;
+            Connection.PrivateMessageReceived += OnPrivateMessageReceived;
 
             _simRate = 10;
             _paused = true;
@@ -253,6 +249,26 @@ namespace SaunaSim.Core.Simulator.Aircraft
             }
         }
 
+        private void OnPrivateMessageReceived(object sender, PrivateMessageEventArgs e)
+        {
+            // Split message into args
+            List<string> split = e.Message.Replace($"{Callsign}, ", "").Split(' ').ToList();
+
+            // Loop through command list
+            while (split.Count > 0)
+            {
+                // Get command name
+                string command = split[0].ToLower();
+                split.RemoveAt(0);
+
+                split = CommandHandler.HandleCommand(command, this, split, (string msg) =>
+                {
+                    string returnMsg = msg.Replace($"{Callsign} ", "");
+                    Connection.SendFrequencyMessage(AppSettingsManager.CommandFrequency, returnMsg);
+                });
+            }
+        }
+
         private void OnTimerElapsed(object sender, ElapsedEventArgs e)
         {
             DelayMs = -1;
@@ -273,7 +289,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
             _posUpdThread.Start();
 
             // Send Flight Plan
-            Connection.SendFlightPlan(FlightPlan);
+            Connection.SendFlightPlan(_flightPlan);
         }
 
         private void OnConnectionTerminated(object sender, EventArgs e)
