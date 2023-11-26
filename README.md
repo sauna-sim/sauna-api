@@ -1,13 +1,10 @@
-# Sauna ATC Training Simulator
+# Sauna API
 
 ## About
 This is a project that will allow for simulated ATC sessions (sweatbox sessions). It can be used on the VATSIM sweatbox server or on private FSD servers. By allowing airport and aircraft scenario configurations, it will allow ARTCCs and FIRs to better train their controllers for situations that they may encounter on the VATSIM network.
 
 The idea was to create a realistic sweatbox simulator that could account for performance data, atmospheric conditions, routes and procedures, etc. The program should be able to handle ANY command that would be given over the network and the aircraft should respond in a realistic manner.
 
-It will contain two parts: The API (this project) and a UI.
-
-### Sauna API
 This project is the API that contains the simulator itself. This is a stateful API and has several endpoints to manage the current scenario. Third party applications can bundle the API and provide their own interface to manage a sweatbox scenario.
 
 The API is written in C# and runs on ASP.NET Core. The application is cross-platform.
@@ -15,14 +12,14 @@ The API is written in C# and runs on ASP.NET Core. The application is cross-plat
 The solution contains 2 projects. `sauna-api` handles the actual API requests and `sauna-sim-core` contains the core simulation code.
 
 ### [Sauna UI](https://github.com/Sauna-ATC-Training-Simulator/sauna-ui)
-The Sauna UI project will provide a user-friendly interface for the API. The UI is currently written in React on Javascript ECMA6. It uses the electron framework to provide a desktop UI.
+The Sauna UI project will provide a user-friendly interface for the API.
 
 ## Dependencies
 The project depends on the following frameworks and packages:
 - **.NET 6.0 & ASP .NET Core 6.0**
-- **[Aviation Calc Util NET 1.1.2](https://github.com/997R8V10/aviation-calc-util-net)**
-- **[FSD Connector NET 0.2.2](https://github.com/caspianmerlin/FsdConnectorNet)**
-- **[Newtonsoft JSON 13.0.2](https://github.com/JamesNK/Newtonsoft.Json)**
+- **[Aviation Calc Util NET](https://github.com/997R8V10/aviation-calc-util-net)**
+- **[FSD Connector NET](https://github.com/caspianmerlin/FsdConnectorNet)**
+- **[Newtonsoft JSON](https://github.com/JamesNK/Newtonsoft.Json)**
 
 ## Building
 The API is a .NET 6.0 project. Simply build the sauna-api solution for your desired platform. All dependencies are pulled by NuGet automatically.
