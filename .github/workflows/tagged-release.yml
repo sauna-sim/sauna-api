@@ -31,6 +31,7 @@ jobs:
 #          - os: ubuntu-latest
 #            arch: arm64
     uses: ./.github/workflows/dotnet-build-reusable.yml
+    secrets: inherit # Pass all secrets
     with:
       arch: ${{ matrix.arch }}
       os: ${{ matrix.os }}
