@@ -9,7 +9,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
     {
         // Roll
         public const double ROLL_TIME = 0.5;
-        public const double ROLL_RATE_MAX = 10.0;
+        public const double ROLL_RATE_MAX = 5.0;
         public const double ROLL_LIMIT = 25.0;
         public const double HDG_MAX_RATE = 3.0;
         public const double ROLL_TIME_BUFFER = 0.1;
@@ -26,11 +26,13 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
         public const double PITCH_LIMIT_MAX = 30.0;
         public const double PITCH_LIMIT_MIN = -15.0;
         public const double PITCH_TIME_BUFFER = 0.1;
-        public const double PITCH_RATE_MAX = 5.0;
+        public const double PITCH_RATE_NORM_MAX = 1.0;
+        public const double PITCH_RATE_TOLDG_MAX = 3.0;
 
         // Thrust
         public const double THRUST_TIME = 0.5;
-        public const double THRUST_RATE_MAX = 30.0;
+        public const double THRUST_RATE_NORM_MAX = 5.0;
+        public const double THRUST_RATE_TOLDG_MAX = 30.0;
         public const double THRUST_TIME_BUFFER = 0.1;
 
         /// <summary>
@@ -77,7 +79,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
         /// <returns>Thrust Movement Rate (%/s)</returns>
         public static double CalculateThrustRate(double demandedThrust, double measuredThrust, int intervalMs)
         {
-            return CalculateRate(demandedThrust, measuredThrust, THRUST_TIME, THRUST_RATE_MAX, intervalMs);
+            return CalculateRate(demandedThrust, measuredThrust, THRUST_TIME, THRUST_RATE_NORM_MAX, intervalMs);
         }
 
         /// <summary>
@@ -101,7 +103,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
         /// <returns>Pitch Rate (degrees/sec)</returns>
         public static double CalculatePitchRate(double demandedPitchAngle, double measuredPitchAngle, int intervalMs)
         {
-            return CalculateRate(demandedPitchAngle, measuredPitchAngle, PITCH_TIME, PITCH_RATE_MAX, intervalMs);
+            return CalculateRate(demandedPitchAngle, measuredPitchAngle, PITCH_TIME, PITCH_RATE_NORM_MAX, intervalMs);
         }
 
         /// <summary>
@@ -194,7 +196,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
             (double midPointTargetDelta, double midPointInput) = PerfDataHandler.FindLinesIntersection(m1, b1, m2, b2);
 
             // If midpoint is above max input
-            if ((midPointInput >= 0 && midPointInput > maxInput) || ((midPointInput <= 0 && midPointInput < maxInput)))
+            if ((deltaToTarget >= 0 && midPointInput > maxInput) || ((deltaToTarget <= 0 && midPointInput < maxInput)))
             {
                 midPointTargetDelta = inputOutIntersectionX;
                 midPointInput = inputOutIntersectionY;
@@ -286,13 +288,14 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
         public static double CalculateDemandedPitchForSpeed(double speedDelta, double curPitch, double pitchForZeroAccel, double maxPitch, double minPitch, Func<double, double> pitchToSpeedAccelFunction,
             int intervalMs)
         {
+            double inputToTargetRateFunc(double pitch) => -pitchToSpeedAccelFunction(pitch);
             return CalculateDemandedInput(
-                -speedDelta,
+                speedDelta,
                 curPitch,
-                minPitch,
                 maxPitch,
+                minPitch,
                 (demandedPitch, measuredPitch) => CalculatePitchRate(demandedPitch, measuredPitch, intervalMs),
-                pitchToSpeedAccelFunction,
+                inputToTargetRateFunc,
                 pitchForZeroAccel,
                 PITCH_TIME_BUFFER
             ).demandedInput;

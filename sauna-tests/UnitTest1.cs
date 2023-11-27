@@ -23,6 +23,6 @@ public class Tests
 
         var response = await client.GetStringAsync("/api/data/settings");
        
-        Assert.IsNotEmpty(response);
+        Assert.That(response, Is.Not.Empty);
     }
 }
