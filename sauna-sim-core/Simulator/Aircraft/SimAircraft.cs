@@ -20,7 +20,7 @@ using SaunaSim.Core.Simulator.Aircraft.Autopilot;
 using SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller;
 using SaunaSim.Core.Simulator.Aircraft.FMS;
 using SaunaSim.Core.Simulator.Aircraft.Performance;
-
+using System.Diagnostics;
 
 namespace SaunaSim.Core.Simulator.Aircraft
 {
@@ -303,6 +303,10 @@ namespace SaunaSim.Core.Simulator.Aircraft
         {
             while (_shouldUpdatePosition)
             {
+                // Check calculation step time
+                Stopwatch stopwatch = new Stopwatch();
+                stopwatch.Start();
+
                 // Calculate position
                 if (!_paused)
                 {
@@ -324,7 +328,15 @@ namespace SaunaSim.Core.Simulator.Aircraft
                     Connection.UpdatePosition(GetFsdPilotPosition());
                 }
 
-                Thread.Sleep(AppSettingsManager.PosCalcRate);
+                // Remove calculation time from position calculation rate
+                stopwatch.Stop();
+                int sleepTime = AppSettingsManager.PosCalcRate - (int) stopwatch.ElapsedMilliseconds;
+
+                // Sleep the thread
+                if (sleepTime > 0)
+                {
+                    Thread.Sleep(sleepTime);
+                }
             }
         }
 
