@@ -16,7 +16,7 @@ on:
         default: 'linux'
         type: string
 
-jobs:
+jobs:      
   build:
     runs-on: ${{ inputs.os }}
     steps:
@@ -24,6 +24,12 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: 'recursive'
+      - name: Checkout Sauna Vatsim Private Project
+        uses: actions/checkout@v4
+        with:
+          repository: 'Sauna-ATC-Training-Simulator/sauna-vatsim-private'
+          token: ${{ secrets.SAUNA_PAT }}
+          path: 'sauna-vatsim-private'
       - name: Setup .NET
         uses: actions/setup-dotnet@v3
         with:
@@ -37,6 +43,11 @@ jobs:
         run: |
           cd ${{ github.workspace }}/sauna-api
           dotnet build --verbosity normal -c Release -r ${{ inputs.short-os }}-${{ inputs.arch }} -p:PlatformTarget=${{ inputs.arch }} -o ${{ github.workspace }}/bin --self-contained
+      - name: Build Sauna Vatsim Private
+        shell: pwsh
+        run: |
+          cd ${{ github.workspace }}/sauna-vatsim-private/sauna-vatsim-private
+          dotnet build --verbosity normal -c Release -o ${{ github.worspace }}/bin
       - name: Tar Output
         shell: pwsh
         run: |
