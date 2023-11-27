@@ -47,7 +47,7 @@ jobs:
         shell: pwsh
         run: |
           cd ${{ github.workspace }}/sauna-vatsim-private/sauna-vatsim-private
-          dotnet build --verbosity normal -c Release -o ${{ github.worspace }}/bin
+          dotnet build sauna-vatsim-private.csproj --verbosity normal -c Release -o ${{ github.workspace }}/bin
       - name: Tar Output
         shell: pwsh
         run: |
