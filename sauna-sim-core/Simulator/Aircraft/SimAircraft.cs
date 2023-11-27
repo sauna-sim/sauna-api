@@ -39,6 +39,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
         private bool disposedValue;
         private bool _shouldUpdatePosition = false;
         private ClientInfo _clientInfo;
+        private Stopwatch _lagTimer;
 
         // Connection Info
         public LoginInfo LoginInfo { get; private set; }
@@ -154,6 +155,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
         {
             LoginInfo = new LoginInfo(networkId, password, callsign, fullname, PilotRatingType.Student, hostname, protocol, AppSettingsManager.CommandFrequency, port);
             _clientInfo = clientInfo;
+            _lagTimer = new Stopwatch();
             Connection = new Connection();
             Connection.Connected += OnConnectionEstablished;
             Connection.Disconnected += OnConnectionTerminated;
@@ -264,7 +266,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
                 split = CommandHandler.HandleCommand(command, this, split, (string msg) =>
                 {
                     string returnMsg = msg.Replace($"{Callsign} ", "");
-                    Connection.SendFrequencyMessage(AppSettingsManager.CommandFrequency, returnMsg);
+                    Connection.SendPrivateMessage(e.From, returnMsg);
                 });
             }
         }
@@ -304,8 +306,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
             while (_shouldUpdatePosition)
             {
                 // Check calculation step time
-                Stopwatch stopwatch = new Stopwatch();
-                stopwatch.Start();
+                _lagTimer.Restart();
 
                 // Calculate position
                 if (!_paused)
@@ -329,8 +330,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
                 }
 
                 // Remove calculation time from position calculation rate
-                stopwatch.Stop();
-                int sleepTime = AppSettingsManager.PosCalcRate - (int) stopwatch.ElapsedMilliseconds;
+                int sleepTime = AppSettingsManager.PosCalcRate - (int) _lagTimer.ElapsedMilliseconds;
 
                 // Sleep the thread
                 if (sleepTime > 0)
