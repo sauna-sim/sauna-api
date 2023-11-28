@@ -18,6 +18,7 @@ using SaunaSim.Core.Simulator.Aircraft.Performance;
 using NavData_Interface.Objects.Fix;
 using SaunaSim.Core.Data.Loaders;
 using SaunaSim.Core.Simulator.Aircraft.Autopilot;
+using System.Threading;
 
 namespace SaunaSim.Api.Controllers
 {
@@ -149,7 +150,8 @@ namespace SaunaSim.Api.Controllers
         {
             SimAircraftHandler.AllPaused = false;
 
-            return Ok(new AircraftStateRequestResponse {
+            return Ok(new AircraftStateRequestResponse
+            {
                 Paused = SimAircraftHandler.AllPaused,
                 SimRate = SimAircraftHandler.SimRate
             });

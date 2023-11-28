@@ -13,7 +13,6 @@ using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using AviationCalcUtilNet.GeoTools.MagneticTools;
 
-
 namespace SaunaSim.Api
 {
     public class Startup
@@ -37,6 +36,10 @@ namespace SaunaSim.Api
                 });
 
             services.AddCors();
+
+            // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+            services.AddEndpointsApiExplorer();
+            services.AddSwaggerGen();
         }
 
         private void OnShutdown()
@@ -68,12 +71,25 @@ namespace SaunaSim.Api
 
             app.UseRouting();
 
+            // CORS
             app.UseCors(x => x
             .AllowAnyMethod()
             .AllowAnyHeader()
             .AllowAnyOrigin());
 
             app.UseAuthorization();
+
+            // Swagger
+            app.UseSwagger();
+            app.UseSwaggerUI();
+
+            // Web Sockets
+            var webSocketOptions = new WebSocketOptions
+            {
+                KeepAliveInterval = TimeSpan.FromSeconds(30)
+            };
+
+            app.UseWebSockets(webSocketOptions);
 
             app.UseEndpoints(endpoints =>
             {
