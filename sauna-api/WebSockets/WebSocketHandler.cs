@@ -24,6 +24,12 @@ namespace SaunaSim.Api.WebSockets
         private static bool _acftTaskShouldRun = false;
         private static Task _acftSendTask;
 
+        static WebSocketHandler()
+        {
+            // Register event handler
+            SimAircraftHandler.SimStateChanged += OnSimStateChange;
+        }
+
         private static async Task AddClient(ClientStream client)
         {
             await _clientsLock.WaitAsync();
@@ -56,6 +62,18 @@ namespace SaunaSim.Api.WebSockets
         public static async Task SendCommandMsg(string msg)
         {
             await SendForAll(SocketResponseDataType.COMMAND_MSG, msg);
+        }
+
+        public static void OnSimStateChange(object sender, SimStateChangedEventArgs e)
+        {
+            Task.Run(async () =>
+            {
+                await SendForAll(SocketResponseDataType.SIM_STATE_UPDATE, new AircraftStateRequestResponse()
+                {
+                    Paused = e.AllPaused,
+                    SimRate = e.SimRate
+                });
+            });
         }
 
         private static async Task SendForAll(SocketResponseDataType type, object data)

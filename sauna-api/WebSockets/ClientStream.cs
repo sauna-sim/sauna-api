@@ -75,6 +75,16 @@ namespace SaunaSim.Api.WebSockets
                 ServerId = "sauna-api",
                 Version = new ApiServerInfoResponse.VersionInfo((uint)version.ProductMajorPart, (uint)version.ProductMinorPart, (uint)version.ProductBuildPart)
             });
+
+            // Send initial sim state
+            await SendObject(SocketResponseDataType.SIM_STATE_UPDATE, new AircraftStateRequestResponse()
+            {
+                Paused = SimAircraftHandler.AllPaused,
+                SimRate = SimAircraftHandler.SimRate
+            });
+
+            // Send initial position calcluation rate
+            await SendObject(SocketResponseDataType.POS_CALC_RATE_UPDATE, AppSettingsManager.PosCalcRate);
         }
 
         public void StopSend()

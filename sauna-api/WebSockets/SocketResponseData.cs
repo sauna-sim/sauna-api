@@ -6,7 +6,8 @@ namespace SaunaSim.Api.WebSockets
         AIRCRAFT_UPDATE,
         POS_CALC_RATE_UPDATE,
         COMMAND_MSG,
-        SERVER_MSG
+        SERVER_MSG,
+        SIM_STATE_UPDATE
     }
     public class SocketResponseData
     {

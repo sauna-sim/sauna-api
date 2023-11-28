@@ -1,9 +1,21 @@
 ﻿using SaunaSim.Core.Simulator.Aircraft.FMS.Legs;
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 
 namespace SaunaSim.Core.Simulator.Aircraft
 {
+    public class SimStateChangedEventArgs : EventArgs
+    {
+        public bool AllPaused { get; set; }
+        public double SimRate { get; set; }
+
+        public SimStateChangedEventArgs(bool allPaused, double simRate)
+        {
+            AllPaused = allPaused;
+            SimRate = simRate;
+        }
+    }
 
     public static class SimAircraftHandler
     {
@@ -11,6 +23,8 @@ namespace SaunaSim.Core.Simulator.Aircraft
         private static object _aircraftsLock = new object();
         private static bool _allPaused = true;
         private static int _simRate = 10;
+
+        public static event EventHandler<SimStateChangedEventArgs> SimStateChanged;
 
         static SimAircraftHandler()
         {
@@ -50,6 +64,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
                         aircraft.SimRate = _simRate;
                     }
                 }
+                SimStateChanged.Invoke(null, new SimStateChangedEventArgs(AllPaused, value));
             }
         }
 
@@ -64,6 +79,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
                         aircraft.Paused = _allPaused;
                     }
                 }
+                SimStateChanged.Invoke(null, new SimStateChangedEventArgs(value, SimRate));
             }
         }
 
