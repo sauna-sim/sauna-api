@@ -2,6 +2,7 @@ using SaunaSim.Api.ApiObjects.Aircraft;
 using SaunaSim.Api.WebSockets.ResponseData;
 using SaunaSim.Api.WebSockets.ResponseData.Aircraft;
 using SaunaSim.Core.Simulator.Aircraft;
+using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -13,7 +14,7 @@ namespace SaunaSim.Api.WebSockets
         private string _callsign;
         private SemaphoreSlim _clientsLock;
         private List<ClientStream> _clients;
-        
+
         public AircraftWebSocketHandler(string callsign)
         {
             _callsign = callsign;
@@ -23,7 +24,7 @@ namespace SaunaSim.Api.WebSockets
             // Register event handlers
             var aircraft = SimAircraftHandler.GetAircraftByCallsign(callsign);
 
-            if (aircraft != null )
+            if (aircraft != null)
             {
                 aircraft.PositionUpdated += Aircraft_PositionUpdated;
                 aircraft.ConnectionStatusChanged += Aircraft_ConnectionStatusChanged;
@@ -59,6 +60,13 @@ namespace SaunaSim.Api.WebSockets
             _clients.Add(client);
             _clientsLock.Release();
             client.StartSend();
+
+            // Send first position
+            var pilot = SimAircraftHandler.GetAircraftByCallsign(_callsign);
+            if (pilot != null)
+            {
+                await client.QueueMessage(new SocketAircraftUpdateData(new AircraftEventPosition(pilot.Callsign, DateTime.UtcNow, new AircraftResponse(pilot, true))));
+            }
         }
 
         public async Task RemoveClient(ClientStream client)

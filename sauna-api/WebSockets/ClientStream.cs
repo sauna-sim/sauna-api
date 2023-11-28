@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.SignalR;
 using SaunaSim.Api.ApiObjects.Aircraft;
 using SaunaSim.Api.ApiObjects.Server;
 using SaunaSim.Api.WebSockets.ResponseData;
+using SaunaSim.Api.WebSockets.ResponseData.Aircraft;
 using SaunaSim.Core.Data;
 using SaunaSim.Core.Simulator.Aircraft;
 using System;
@@ -26,6 +27,9 @@ namespace SaunaSim.Api.WebSockets
         private Queue<ISocketResponseData> _responseQueue;
         private SemaphoreSlim _responseQueueLock;
         private Task _sendWorker;
+        private int _posRepCount = 0;
+
+        public int PosRepIgnore { get; set; } = 0;
 
         public bool ShouldClose { get => _cancellationRequested; set => _cancellationRequested = value; }
 
@@ -73,6 +77,21 @@ namespace SaunaSim.Api.WebSockets
 
         private async Task SendObject(ISocketResponseData data)
         {
+            // Ignore PosReps
+            if (PosRepIgnore > 0 && data is SocketAircraftUpdateData acftData && acftData.Data is AircraftEventPosition)
+            {
+                if (_posRepCount >= PosRepIgnore)
+                {
+                    _posRepCount = 0;
+                }
+                if (_posRepCount != 0)
+                {
+                    _posRepCount++;
+                    return;
+                }
+                _posRepCount++;
+            }
+
             // Convert to JSON String
             string jsonString = string.Empty;
 

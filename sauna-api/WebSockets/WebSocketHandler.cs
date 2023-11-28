@@ -17,6 +17,7 @@ using SaunaSim.Core.Simulator.Aircraft;
 using SaunaSim.Api.WebSockets.ResponseData;
 using SaunaSim.Api.WebSockets.ResponseData.Aircraft;
 using System.Runtime.CompilerServices;
+using SaunaSim.Api.WebSockets.RequestData;
 
 namespace SaunaSim.Api.WebSockets
 {
@@ -258,6 +259,24 @@ namespace SaunaSim.Api.WebSockets
                 while (!receiveResult.CloseStatus.HasValue && !stream.ShouldClose)
                 {
                     var message = Encoding.UTF8.GetString(buffer, 0, receiveResult.Count);
+
+                    // Check message
+                    var options = new JsonSerializerOptions();
+                    options.Converters.Add(new JsonStringEnumConverter());
+                    options.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+                    options.NumberHandling = JsonNumberHandling.AllowNamedFloatingPointLiterals;
+
+                    try
+                    {
+                        ISocketRequest request = (ISocketRequest) JsonSerializer.Deserialize(message, typeof(ISocketRequest), options);
+
+                        if (request is SocketAircraftPosRateReq req)
+                        {
+                            ((JsonElement)req.Data).TryGetInt32(out int posrepignore);
+                            stream.PosRepIgnore = posrepignore;
+                        }
+
+                    } catch (Exception) { }
 
                     receiveResult = await ws.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
                 }
