@@ -19,6 +19,7 @@ using NavData_Interface.Objects.Fix;
 using SaunaSim.Core.Data.Loaders;
 using SaunaSim.Core.Simulator.Aircraft.Autopilot;
 using System.Threading;
+using SaunaSim.Api.WebSockets;
 
 namespace SaunaSim.Api.Controllers
 {
@@ -127,6 +128,30 @@ namespace SaunaSim.Api.Controllers
             }
 
             return Ok(new AircraftResponse(client, true));
+        }
+
+        [HttpGet("websocketByCallsign/{callsign}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task WebSocketForCallsign(string callsign)
+        {
+            if (SimAircraftHandler.GetAircraftByCallsign(callsign) == null)
+            {
+                HttpContext.Response.StatusCode = StatusCodes.Status400BadRequest;
+            } else if (HttpContext.WebSockets.IsWebSocketRequest)
+            {
+                try
+                {
+                    using var webSocket = await HttpContext.WebSockets.AcceptWebSocketAsync();
+                    await WebSocketHandler.HandleAircraftSocket(callsign, webSocket);
+                } catch (Exception e)
+                {
+                    _logger.LogWarning($"Websocket connection failed: {e.Message}");
+                }
+            } else
+            {
+                HttpContext.Response.StatusCode = StatusCodes.Status400BadRequest;
+            }
         }
 
         [HttpGet("getByPartialCallsign/{callsign}")]

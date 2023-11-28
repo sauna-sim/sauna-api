@@ -23,11 +23,35 @@ namespace SaunaSim.Api.WebSockets
     {
         private WebSocket _ws;
         private bool _cancellationRequested;
+        private Queue<ISocketResponseData> _responseQueue;
+        private SemaphoreSlim _responseQueueLock;
+        private Task _sendWorker;
+
+        public bool ShouldClose { get => _cancellationRequested; set => _cancellationRequested = value; }
 
         public ClientStream(WebSocket ws)
         {
             _ws = ws;
             _cancellationRequested = false;
+            _responseQueue = new Queue<ISocketResponseData>();
+            _responseQueueLock = new SemaphoreSlim(1);
+        }
+
+        private async Task ResponseWorker()
+        {
+            while (!_cancellationRequested && _ws.State == WebSocketState.Open)
+            {
+                await _responseQueueLock.WaitAsync();
+                bool found = _responseQueue.TryDequeue(out var msg);
+                _responseQueueLock.Release();
+                if (found)
+                {
+                    await SendObject(msg);
+                } else
+                {
+                    await Task.Delay(AppSettingsManager.PosCalcRate);
+                }
+            }
         }
 
         private async Task SendString(string msg)
@@ -40,7 +64,14 @@ namespace SaunaSim.Api.WebSockets
             }
         }
 
-        public async Task SendObject(ISocketResponseData data)
+        public async Task QueueMessage(ISocketResponseData data)
+        {
+            await _responseQueueLock.WaitAsync();
+            _responseQueue.Enqueue(data);
+            _responseQueueLock.Release();
+        }
+
+        private async Task SendObject(ISocketResponseData data)
         {
             // Convert to JSON String
             string jsonString = string.Empty;
@@ -61,32 +92,16 @@ namespace SaunaSim.Api.WebSockets
             await SendString(jsonString);
         }
 
-        public async Task StartSend()
+        public void StartSend()
         {
             _cancellationRequested = false;
-
-            // Send server info
-            var version = FileVersionInfo.GetVersionInfo(Assembly.GetExecutingAssembly().Location);
-            await SendObject(new SocketServerInfoData(new ApiServerInfoResponse()
-            {
-                ServerId = "sauna-api",
-                Version = new ApiServerInfoResponse.VersionInfo((uint)version.ProductMajorPart, (uint)version.ProductMinorPart, (uint)version.ProductBuildPart)
-            }));
-
-            // Send initial sim state
-            await SendObject(new SocketSimStateData(new AircraftStateRequestResponse()
-            {
-                Paused = SimAircraftHandler.AllPaused,
-                SimRate = SimAircraftHandler.SimRate
-            }));
-
-            // Send initial position calcluation rate
-            await SendObject(new SocketPosCalcUpdateData(AppSettingsManager.PosCalcRate));
+            _sendWorker = Task.Run(ResponseWorker);
         }
 
         public void StopSend()
         {
             _cancellationRequested = true;
+            _sendWorker.Wait();
         }
     }
 }

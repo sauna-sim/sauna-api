@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using SaunaSim.Api.ApiObjects.Server;
 using SaunaSim.Api.WebSockets;
 using SaunaSim.Core.Simulator.Aircraft;
+using System;
 using System.Diagnostics;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -41,8 +42,14 @@ namespace SaunaSim.Api.Controllers
         {
             if (HttpContext.WebSockets.IsWebSocketRequest)
             {
-                using var webSocket = await HttpContext.WebSockets.AcceptWebSocketAsync();
-                await WebSocketHandler.HandleSocket(webSocket);
+                try
+                {
+                    using var webSocket = await HttpContext.WebSockets.AcceptWebSocketAsync();
+                    await WebSocketHandler.HandleGeneralSocket(webSocket);
+                } catch (Exception e)
+                {
+                    _logger.LogWarning($"Websocket connection failed: {e.Message}");
+                }
             } else
             {
                 HttpContext.Response.StatusCode = StatusCodes.Status400BadRequest;
