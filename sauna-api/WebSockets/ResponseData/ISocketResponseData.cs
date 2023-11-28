@@ -1,4 +1,4 @@
-namespace SaunaSim.Api.WebSockets
+namespace SaunaSim.Api.WebSockets.ResponseData
 {
     public enum SocketResponseDataType
     {
@@ -9,9 +9,10 @@ namespace SaunaSim.Api.WebSockets
         SERVER_MSG,
         SIM_STATE_UPDATE
     }
-    public class SocketResponseData
+
+    public interface ISocketResponseData
     {
-        public SocketResponseDataType Type { get; set; }
-        public object Data { get; set; }
+        public SocketResponseDataType Type { get; }
+        public object Data { get; }
     }
 }

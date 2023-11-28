@@ -14,6 +14,7 @@ using System.Collections.Generic;
 using SaunaSim.Api.ApiObjects.Aircraft;
 using SaunaSim.Core.Data;
 using SaunaSim.Core.Simulator.Aircraft;
+using SaunaSim.Api.WebSockets.ResponseData;
 
 namespace SaunaSim.Api.WebSockets
 {
@@ -61,28 +62,28 @@ namespace SaunaSim.Api.WebSockets
 
         public static async Task SendCommandMsg(string msg)
         {
-            await SendForAll(SocketResponseDataType.COMMAND_MSG, msg);
+            await SendForAll(new SocketCommandMsgData(msg));
         }
 
         public static void OnSimStateChange(object sender, SimStateChangedEventArgs e)
         {
             Task.Run(async () =>
             {
-                await SendForAll(SocketResponseDataType.SIM_STATE_UPDATE, new AircraftStateRequestResponse()
+                await SendForAll(new SocketSimStateData(new AircraftStateRequestResponse()
                 {
                     Paused = e.AllPaused,
                     SimRate = e.SimRate
-                });
+                }));
             });
         }
 
-        private static async Task SendForAll(SocketResponseDataType type, object data)
+        private static async Task SendForAll(ISocketResponseData data)
         {
             await _clientsLock.WaitAsync();
             var tasks = new List<Task>();
             foreach (var client in _clients)
             {
-                tasks.Add(client.SendObject(type, data));
+                tasks.Add(client.SendObject(data));
             }
             _clientsLock.Release();
 
@@ -104,7 +105,7 @@ namespace SaunaSim.Api.WebSockets
                 }));
 
                 // Send to all clients
-                await SendForAll(SocketResponseDataType.AIRCRAFT_UPDATE, pilots);
+                await SendForAll(new SocketAircraftUpdateData(pilots));
 
                 // Wait
                 await Task.Delay(AppSettingsManager.PosCalcRate);

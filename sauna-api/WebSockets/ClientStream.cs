@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.SignalR;
 using SaunaSim.Api.ApiObjects.Aircraft;
 using SaunaSim.Api.ApiObjects.Server;
+using SaunaSim.Api.WebSockets.ResponseData;
 using SaunaSim.Core.Data;
 using SaunaSim.Core.Simulator.Aircraft;
 using System;
@@ -39,7 +40,7 @@ namespace SaunaSim.Api.WebSockets
             }
         }
 
-        public async Task SendObject(SocketResponseDataType type, object data)
+        public async Task SendObject(ISocketResponseData data)
         {
             // Convert to JSON String
             string jsonString = string.Empty;
@@ -50,11 +51,7 @@ namespace SaunaSim.Api.WebSockets
                 options.Converters.Add(new JsonStringEnumConverter());
                 options.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
                 options.NumberHandling = JsonNumberHandling.AllowNamedFloatingPointLiterals;
-                await JsonSerializer.SerializeAsync(stream, new SocketResponseData()
-                {
-                    Data = data,
-                    Type = type
-                }, options);
+                await JsonSerializer.SerializeAsync(stream, data, options);
                 stream.Position = 0;
                 using var reader = new StreamReader(stream);
                 jsonString = await reader.ReadToEndAsync();
@@ -70,21 +67,21 @@ namespace SaunaSim.Api.WebSockets
 
             // Send server info
             var version = FileVersionInfo.GetVersionInfo(Assembly.GetExecutingAssembly().Location);
-            await SendObject(SocketResponseDataType.SERVER_INFO, new ApiServerInfoResponse()
+            await SendObject(new SocketServerInfoData(new ApiServerInfoResponse()
             {
                 ServerId = "sauna-api",
                 Version = new ApiServerInfoResponse.VersionInfo((uint)version.ProductMajorPart, (uint)version.ProductMinorPart, (uint)version.ProductBuildPart)
-            });
+            }));
 
             // Send initial sim state
-            await SendObject(SocketResponseDataType.SIM_STATE_UPDATE, new AircraftStateRequestResponse()
+            await SendObject(new SocketSimStateData(new AircraftStateRequestResponse()
             {
                 Paused = SimAircraftHandler.AllPaused,
                 SimRate = SimAircraftHandler.SimRate
-            });
+            }));
 
             // Send initial position calcluation rate
-            await SendObject(SocketResponseDataType.POS_CALC_RATE_UPDATE, AppSettingsManager.PosCalcRate);
+            await SendObject(new SocketPosCalcUpdateData(AppSettingsManager.PosCalcRate));
         }
 
         public void StopSend()
