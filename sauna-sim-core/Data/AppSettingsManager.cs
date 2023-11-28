@@ -7,14 +7,15 @@ namespace SaunaSim.Core.Data
     public class AppSettings
     {
         public (ushort, ushort) CommandFrequency { get; set; } = (199, 998);
-        public int PosCalcRate { get; set; } = 1000;
+
+        public int PosCalcRate => AppSettingsManager.PosCalcRate;
     }
     public static class AppSettingsManager
     {
-        private static AppSettings _settings = new AppSettings();
+        private static int _posCalcRate = 25;
 
-        public static AppSettings Settings { get => _settings; set => _settings = value; }
-        public static (ushort, ushort) CommandFrequency { get => _settings.CommandFrequency; set => _settings.CommandFrequency = value; }
-        public static int PosCalcRate { get => _settings.PosCalcRate; set => _settings.PosCalcRate = value; }
+        public static AppSettings Settings { get; set; } = new AppSettings();
+        public static (ushort, ushort) CommandFrequency { get => Settings.CommandFrequency; set => Settings.CommandFrequency = value; }
+        public static int PosCalcRate => _posCalcRate;
     }
 }

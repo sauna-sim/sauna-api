@@ -1,8 +1,10 @@
-﻿using System;
+﻿using SaunaSim.Core.Simulator.Aircraft.FMS.Legs;
+using System;
 using System.Collections.Generic;
 
 namespace SaunaSim.Core.Simulator.Aircraft
 {
+
     public static class SimAircraftHandler
     {
         private static List<SimAircraft> _aircrafts;

@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.SignalR;
 using SaunaSim.Api.ApiObjects.Aircraft;
+using SaunaSim.Core.Data;
 using SaunaSim.Core.Simulator.Aircraft;
 using System;
 using System.Collections.Generic;
@@ -18,7 +19,6 @@ namespace SaunaSim.Api.WebSockets
     {
         private WebSocket _ws;
         private bool _cancellationRequested;
-        private int _sendIntervalMs;
         private Task _sendTask;
 
         public AircraftClientStream(WebSocket ws)
@@ -27,9 +27,8 @@ namespace SaunaSim.Api.WebSockets
             _cancellationRequested = false;
         }
 
-        public void StartSend(int intervalMs)
+        public void StartSend()
         {
-            _sendIntervalMs = intervalMs;
             _cancellationRequested = false;
             _sendTask = Task.Run(SendWorker);
         }
@@ -42,7 +41,7 @@ namespace SaunaSim.Api.WebSockets
 
         private async Task SendWorker()
         {
-            while (!_cancellationRequested)
+            while (!_cancellationRequested && _ws.State == WebSocketState.Open)
             {
                 List<AircraftResponse> pilots = new();
                 SimAircraftHandler.PerformOnAircraft((list =>
@@ -65,7 +64,7 @@ namespace SaunaSim.Api.WebSockets
                     await JsonSerializer.SerializeAsync(stream, new SocketResponseData()
                     {
                         Data = pilots,
-                        Type = SocketResponseDataType.AIRCRAFT
+                        Type = SocketResponseDataType.AIRCRAFT_UPDATE
                     }, options);
                     stream.Position = 0;
                     using var reader = new StreamReader(stream);
@@ -76,7 +75,7 @@ namespace SaunaSim.Api.WebSockets
                 await WebSocketHandler.SendString(_ws, jsonString);
 
                 // Wait
-                await Task.Delay(_sendIntervalMs);
+                await Task.Delay(AppSettingsManager.PosCalcRate);
             }
         }
     }

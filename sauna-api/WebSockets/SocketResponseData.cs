@@ -2,9 +2,10 @@ namespace SaunaSim.Api.WebSockets
 {
     public enum SocketResponseDataType
     {
-        AIRCRAFT,
-        MSG_AIRCRAFT,
-        MSG_SERVER
+        AIRCRAFT_UPDATE,
+        POS_CALC_RATE_UPDATE,
+        AIRCRAFT_MSG,
+        SERVER_MSG
     }
     public class SocketResponseData
     {

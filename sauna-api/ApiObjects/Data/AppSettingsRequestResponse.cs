@@ -30,8 +30,7 @@ namespace SaunaSim.Api.ApiObjects.Data
             }
 
             return new AppSettings {
-                CommandFrequency = (mHz, kHz),
-                PosCalcRate = this.PosCalcRate,
+                CommandFrequency = (mHz, kHz)
             };
         }
     }
