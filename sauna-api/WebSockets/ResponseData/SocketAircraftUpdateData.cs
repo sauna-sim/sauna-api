@@ -1,4 +1,5 @@
 using SaunaSim.Api.ApiObjects.Aircraft;
+using SaunaSim.Api.WebSockets.ResponseData.Aircraft;
 using System.Collections.Generic;
 
 namespace SaunaSim.Api.WebSockets.ResponseData
@@ -9,7 +10,7 @@ namespace SaunaSim.Api.WebSockets.ResponseData
 
         public object Data { get; private set; }
 
-        public SocketAircraftUpdateData(List<AircraftResponse> data)
+        public SocketAircraftUpdateData(ISocketAircraftEvent data)
         {
             Data = data;
         }

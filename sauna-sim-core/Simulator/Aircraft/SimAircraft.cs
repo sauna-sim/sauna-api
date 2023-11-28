@@ -32,6 +32,44 @@ namespace SaunaSim.Core.Simulator.Aircraft
         MORE = 1
     }
 
+    public class AircraftPositionUpdateEventArgs : EventArgs
+    {
+        public DateTime TimeStamp { get; set; }
+        public SimAircraft Aircraft { get; set; }
+
+        public AircraftPositionUpdateEventArgs(DateTime timeStamp, SimAircraft aircraft)
+        {
+            TimeStamp = timeStamp;
+            Aircraft = aircraft;
+        }
+    }
+
+    public class AircraftConnectionStatusChangedEventArgs : EventArgs
+    {
+        public string Callsign { get; set; }
+        public ConnectionStatusType ConnectionStatus { get; set; }
+
+        public AircraftConnectionStatusChangedEventArgs(string callsign, ConnectionStatusType connectionStatus)
+        {
+            Callsign = callsign;
+            ConnectionStatus = connectionStatus;
+        }
+    }
+
+    public class AircraftSimStateChangedEventArgs : EventArgs
+    {
+        public string Callsign { get; set; }
+        public bool Paused { get; set; }
+        public double SimRate { get; set; }
+
+        public AircraftSimStateChangedEventArgs(string callsign, bool paused, double simRate)
+        {
+            Callsign = callsign;
+            Paused = paused;
+            SimRate = simRate;
+        }
+    }
+
     public class SimAircraft : IDisposable
     {
         private Thread _posUpdThread;
@@ -41,6 +79,11 @@ namespace SaunaSim.Core.Simulator.Aircraft
         private ClientInfo _clientInfo;
         private Stopwatch _lagTimer;
 
+        // Events
+        public event EventHandler<AircraftPositionUpdateEventArgs> PositionUpdated;
+        public event EventHandler<AircraftConnectionStatusChangedEventArgs> ConnectionStatusChanged;
+        public event EventHandler<AircraftSimStateChangedEventArgs> SimStateChanged;
+
         // Connection Info
         public LoginInfo LoginInfo { get; private set; }
 
@@ -48,7 +91,15 @@ namespace SaunaSim.Core.Simulator.Aircraft
 
         public Connection Connection { get; private set; }
 
-        public ConnectionStatusType ConnectionStatus { get; private set; } = ConnectionStatusType.WAITING;
+        private ConnectionStatusType _connectionStatus = ConnectionStatusType.WAITING;
+        public ConnectionStatusType ConnectionStatus {
+            get => _connectionStatus;
+            private set
+            {
+                _connectionStatus = value;
+                Task.Run(() => ConnectionStatusChanged?.Invoke(this, new AircraftConnectionStatusChangedEventArgs(Callsign, _connectionStatus)));
+            }
+        }
 
         // Simulator Data
         private bool _paused;
@@ -69,6 +120,8 @@ namespace SaunaSim.Core.Simulator.Aircraft
                         _delayTimer.Pause();
                     }
                 }
+
+                Task.Run(() => SimStateChanged?.Invoke(this, new AircraftSimStateChangedEventArgs(Callsign, _paused, SimRate / 10.0)));
             }
         }
 
@@ -95,6 +148,8 @@ namespace SaunaSim.Core.Simulator.Aircraft
                 {
                     _delayTimer.RatePercent = _simRate * 10;
                 }
+
+                Task.Run(() => SimStateChanged?.Invoke(this, new AircraftSimStateChangedEventArgs(Callsign, _paused, SimRate / 10.0)));
             }
         }
 
@@ -327,6 +382,8 @@ namespace SaunaSim.Core.Simulator.Aircraft
 
                     // Update FSD
                     Connection.UpdatePosition(GetFsdPilotPosition());
+
+                    Task.Run(() => PositionUpdated.Invoke(this, new AircraftPositionUpdateEventArgs(DateTime.UtcNow, this)));
                 }
 
                 // Remove calculation time from position calculation rate

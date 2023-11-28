@@ -15,6 +15,7 @@ using SaunaSim.Api.ApiObjects.Aircraft;
 using SaunaSim.Core.Data;
 using SaunaSim.Core.Simulator.Aircraft;
 using SaunaSim.Api.WebSockets.ResponseData;
+using SaunaSim.Api.WebSockets.ResponseData.Aircraft;
 
 namespace SaunaSim.Api.WebSockets
 {
@@ -22,13 +23,39 @@ namespace SaunaSim.Api.WebSockets
     {
         private static List<ClientStream> _clients = new();
         private static SemaphoreSlim _clientsLock = new(1);
-        private static bool _acftTaskShouldRun = false;
-        private static Task _acftSendTask;
 
-        static WebSocketHandler()
+        private static void SimAircraftHandler_AircraftSimStateChanged(object sender, AircraftSimStateChangedEventArgs e)
         {
-            // Register event handler
-            SimAircraftHandler.SimStateChanged += OnSimStateChange;
+            var data = new AircraftEventSimState(e.Callsign, new AircraftStateRequestResponse()
+            {
+                Paused = e.Paused,
+                SimRate = e.SimRate
+            });
+            SendForAll(new SocketAircraftUpdateData(data)).RunSynchronously();
+        }
+
+        private static void SimAircraftHandler_AircraftConnectionStatusChanged(object sender, AircraftConnectionStatusChangedEventArgs e)
+        {
+            var data = new AircraftEventFsd(e.Callsign, e.ConnectionStatus);
+            SendForAll(new SocketAircraftUpdateData(data)).RunSynchronously();
+        }
+
+        private static void SimAircraftHandler_AircraftPositionChanged(object sender, AircraftPositionUpdateEventArgs e)
+        {
+            var data = new AircraftEventPosition(e.Aircraft.Callsign, e.TimeStamp, new AircraftResponse(e.Aircraft, true));
+            SendForAll(new SocketAircraftUpdateData(data)).RunSynchronously();
+        }
+
+        private static void SimAircraftHandler_AircraftDeleted(object sender, AircraftDeletedEventArgs e)
+        {
+            var data = new AircraftEventDeleted(e.Callsign);
+            SendForAll(new SocketAircraftUpdateData(data)).RunSynchronously();
+        }
+
+        private static void SimAircraftHandler_AircraftCreated(object sender, AircraftPositionUpdateEventArgs e)
+        {
+            var data = new AircraftEventCreated(e.Aircraft.Callsign, new AircraftResponse(e.Aircraft, true));
+            SendForAll(new SocketAircraftUpdateData(data)).RunSynchronously();
         }
 
         private static async Task AddClient(ClientStream client)
@@ -37,11 +64,13 @@ namespace SaunaSim.Api.WebSockets
             _clients.Add(client);
             await client.StartSend();
 
-            if (!_acftTaskShouldRun)
-            {
-                _acftTaskShouldRun = true;
-                _acftSendTask = Task.Run(AircraftSendWorker);
-            }
+            // Register event handler
+            SimAircraftHandler.GlobalSimStateChanged += OnSimStateChange;
+            SimAircraftHandler.AircraftCreated += SimAircraftHandler_AircraftCreated;
+            SimAircraftHandler.AircraftDeleted += SimAircraftHandler_AircraftDeleted;
+            SimAircraftHandler.AircraftPositionChanged += SimAircraftHandler_AircraftPositionChanged;
+            SimAircraftHandler.AircraftConnectionStatusChanged += SimAircraftHandler_AircraftConnectionStatusChanged;
+            SimAircraftHandler.AircraftSimStateChanged += SimAircraftHandler_AircraftSimStateChanged;
 
             _clientsLock.Release();
         }
@@ -54,8 +83,13 @@ namespace SaunaSim.Api.WebSockets
 
             if (_clients.Count == 0)
             {
-                _acftTaskShouldRun = false;
-                await _acftSendTask.WaitAsync(Timeout.InfiniteTimeSpan);
+                // Deregister event handler
+                SimAircraftHandler.GlobalSimStateChanged -= OnSimStateChange;
+                SimAircraftHandler.AircraftCreated -= SimAircraftHandler_AircraftCreated;
+                SimAircraftHandler.AircraftDeleted -= SimAircraftHandler_AircraftDeleted;
+                SimAircraftHandler.AircraftPositionChanged -= SimAircraftHandler_AircraftPositionChanged;
+                SimAircraftHandler.AircraftConnectionStatusChanged -= SimAircraftHandler_AircraftConnectionStatusChanged;
+                SimAircraftHandler.AircraftSimStateChanged -= SimAircraftHandler_AircraftSimStateChanged;
             }
             _clientsLock.Release();
         }
@@ -88,28 +122,6 @@ namespace SaunaSim.Api.WebSockets
             _clientsLock.Release();
 
             await Task.WhenAll(tasks);
-        }
-
-        private static async Task AircraftSendWorker()
-        {
-            while (_acftTaskShouldRun)
-            {
-                // Create aircraft list
-                List<AircraftResponse> pilots = new();
-                SimAircraftHandler.PerformOnAircraft((list =>
-                {
-                    foreach (var pilot in list)
-                    {
-                        pilots.Add(new AircraftResponse(pilot, true));
-                    }
-                }));
-
-                // Send to all clients
-                await SendForAll(new SocketAircraftUpdateData(pilots));
-
-                // Wait
-                await Task.Delay(AppSettingsManager.PosCalcRate);
-            }
         }
 
         public static async Task HandleSocket(WebSocket ws)

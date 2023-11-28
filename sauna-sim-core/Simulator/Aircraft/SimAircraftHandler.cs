@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
 
 namespace SaunaSim.Core.Simulator.Aircraft
 {
@@ -17,6 +18,16 @@ namespace SaunaSim.Core.Simulator.Aircraft
         }
     }
 
+    public class AircraftDeletedEventArgs : EventArgs
+    {
+        public string Callsign { get; set; }
+
+        public AircraftDeletedEventArgs(string callsign)
+        {
+            Callsign = callsign;
+        }
+    }
+
     public static class SimAircraftHandler
     {
         private static List<SimAircraft> _aircrafts;
@@ -24,7 +35,13 @@ namespace SaunaSim.Core.Simulator.Aircraft
         private static bool _allPaused = true;
         private static int _simRate = 10;
 
-        public static event EventHandler<SimStateChangedEventArgs> SimStateChanged;
+        public static event EventHandler<SimStateChangedEventArgs> GlobalSimStateChanged;
+        public static event EventHandler<AircraftPositionUpdateEventArgs> AircraftCreated;
+        public static event EventHandler<AircraftDeletedEventArgs> AircraftDeleted;
+        public static event EventHandler<AircraftPositionUpdateEventArgs> AircraftPositionChanged;
+        public static event EventHandler<AircraftConnectionStatusChangedEventArgs> AircraftConnectionStatusChanged;
+        public static event EventHandler<AircraftSimStateChangedEventArgs> AircraftSimStateChanged;
+
 
         static SimAircraftHandler()
         {
@@ -64,7 +81,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
                         aircraft.SimRate = _simRate;
                     }
                 }
-                SimStateChanged.Invoke(null, new SimStateChangedEventArgs(AllPaused, value));
+                Task.Run(() => GlobalSimStateChanged?.Invoke(null, new SimStateChangedEventArgs(AllPaused, value)));
             }
         }
 
@@ -79,7 +96,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
                         aircraft.Paused = _allPaused;
                     }
                 }
-                SimStateChanged.Invoke(null, new SimStateChangedEventArgs(value, SimRate));
+                Task.Run(() => GlobalSimStateChanged?.Invoke(null, new SimStateChangedEventArgs(value, SimRate)));
             }
         }
 
@@ -94,6 +111,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
                     {
                         foundAcft = aircraft;
                         _aircrafts.Remove(aircraft);
+                        Task.Run(() => AircraftDeleted?.Invoke(null, new AircraftDeletedEventArgs(foundAcft.Callsign)));
                         break;
                     }
                 }
@@ -113,6 +131,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
                     SimAircraft c = _aircrafts[i];
                     if (c.ConnectionStatus == ConnectionStatusType.DISCONNECTED || (c.Callsign.Equals(aircraft.Callsign) && c.ConnectionStatus == ConnectionStatusType.WAITING))
                     {
+                        Task.Run(() => AircraftDeleted?.Invoke(null, new AircraftDeletedEventArgs(_aircrafts[i].Callsign)));
                         _aircrafts[i].Dispose();
                         _aircrafts.RemoveAt(i);
                     } else if (c.Callsign.Equals(aircraft.Callsign))
@@ -123,9 +142,28 @@ namespace SaunaSim.Core.Simulator.Aircraft
 
                 aircraft.Paused = _allPaused;
                 aircraft.SimRate = _simRate;
+                aircraft.ConnectionStatusChanged += Aircraft_ConnectionStatusChanged;
+                aircraft.PositionUpdated += Aircraft_PositionUpdated;
+                aircraft.SimStateChanged += Aircraft_SimStateChanged;
                 _aircrafts.Add(aircraft);
+                Task.Run(() => AircraftCreated?.Invoke(null, new AircraftPositionUpdateEventArgs(DateTime.UtcNow, aircraft)));
             }
             return true;
+        }
+
+        private static void Aircraft_SimStateChanged(object sender, AircraftSimStateChangedEventArgs e)
+        {
+            Task.Run(() => AircraftSimStateChanged?.Invoke(sender, e));
+        }
+
+        private static void Aircraft_PositionUpdated(object sender, AircraftPositionUpdateEventArgs e)
+        {
+            Task.Run(() => AircraftPositionChanged?.Invoke(sender, e));
+        }
+
+        private static void Aircraft_ConnectionStatusChanged(object sender, AircraftConnectionStatusChangedEventArgs e)
+        {
+            Task.Run(() => AircraftConnectionStatusChanged?.Invoke(sender, e));
         }
 
         public static SimAircraft GetAircraftWhichContainsCallsign(string callsignMatch)
@@ -166,6 +204,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
             {
                 foreach (SimAircraft aircraft in _aircrafts)
                 {
+                    Task.Run(() => AircraftDeleted?.Invoke(null, new AircraftDeletedEventArgs(aircraft.Callsign)));
                     aircraft.Dispose();
                 }
                 _aircrafts.Clear();
