@@ -11,6 +11,8 @@ using System.Threading.Tasks;
 using SaunaSim.Core.Simulator.Aircraft;
 using FsdConnectorNet;
 using System.Runtime.CompilerServices;
+using System.Threading;
+using SaunaSim.Api.WebSockets;
 
 namespace SaunaSim.Api.Controllers
 {
@@ -19,7 +21,7 @@ namespace SaunaSim.Api.Controllers
     public class CommandsController : ControllerBase
     {
         private static List<string> _commandsBuffer = new List<string>();
-        private static object _commandsBufferLock = new object();
+        private static SemaphoreSlim _commandsBufferLock = new SemaphoreSlim(1);
 
         private readonly ILogger<DataController> _logger;
 
@@ -30,10 +32,11 @@ namespace SaunaSim.Api.Controllers
 
         private static void LogCommandInfo(string msg)
         {
-            lock (_commandsBufferLock)
-            {
-                _commandsBuffer.Add(msg);
-            }
+            _commandsBufferLock.Wait();
+            _commandsBuffer.Add(msg);
+            _commandsBufferLock.Release();
+
+            WebSocketHandler.SendCommandMsg(msg).ConfigureAwait(false);
         }
 
         [HttpGet("commandBuffer")]
@@ -41,11 +44,10 @@ namespace SaunaSim.Api.Controllers
         {
             List<string> log;
 
-            lock (_commandsBufferLock)
-            {
-                log = _commandsBuffer;
-                _commandsBuffer = new List<string>();
-            }
+            _commandsBufferLock.Wait();
+            log = _commandsBuffer;
+            _commandsBuffer = new List<string>();
+            _commandsBufferLock.Release();
 
             return log;
         }
@@ -90,7 +92,8 @@ namespace SaunaSim.Api.Controllers
             SimAircraft aircraft = client;
 
             double altimSetting = -1;
-            if (request.Pressure > 0) {
+            if (request.Pressure > 0)
+            {
                 altimSetting = request.Pressure;
             }
 
