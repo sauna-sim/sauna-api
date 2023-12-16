@@ -1,7 +1,10 @@
-﻿using SaunaSim.Core.Simulator.Aircraft.FMS.Legs;
+﻿using AviationCalcUtilNet.Atmos.Grib;
+using AviationCalcUtilNet.Magnetic;
+using SaunaSim.Core.Simulator.Aircraft.FMS.Legs;
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace SaunaSim.Core.Simulator.Aircraft
@@ -28,38 +31,55 @@ namespace SaunaSim.Core.Simulator.Aircraft
         }
     }
 
-    public static class SimAircraftHandler
+    public class SimAircraftHandler : IDisposable
     {
-        private static List<SimAircraft> _aircrafts;
-        private static object _aircraftsLock = new object();
-        private static bool _allPaused = true;
-        private static int _simRate = 10;
+        private List<SimAircraft> _aircrafts;
+        private Mutex _aircraftsLock;
+        private bool _allPaused;
+        private int _simRate;
+        private bool disposedValue;
+        private Action<string, int> _logger;
 
-        public static event EventHandler<SimStateChangedEventArgs> GlobalSimStateChanged;
-        public static event EventHandler<AircraftPositionUpdateEventArgs> AircraftCreated;
-        public static event EventHandler<AircraftDeletedEventArgs> AircraftDeleted;
-        public static event EventHandler<AircraftPositionUpdateEventArgs> AircraftPositionChanged;
-        public static event EventHandler<AircraftConnectionStatusChangedEventArgs> AircraftConnectionStatusChanged;
-        public static event EventHandler<AircraftSimStateChangedEventArgs> AircraftSimStateChanged;
+        public event EventHandler<SimStateChangedEventArgs> GlobalSimStateChanged;
+        public event EventHandler<AircraftPositionUpdateEventArgs> AircraftCreated;
+        public event EventHandler<AircraftDeletedEventArgs> AircraftDeleted;
+        public event EventHandler<AircraftPositionUpdateEventArgs> AircraftPositionChanged;
+        public event EventHandler<AircraftConnectionStatusChangedEventArgs> AircraftConnectionStatusChanged;
+        public event EventHandler<AircraftSimStateChangedEventArgs> AircraftSimStateChanged;
 
 
-        static SimAircraftHandler()
+        public SimAircraftHandler(string magCofFile, string gribTilePath, Action<string, int> logger)
         {
-            lock (_aircraftsLock)
+            _logger = logger;
+            _allPaused = true;
+            _simRate = 10;
+            _aircraftsLock = new Mutex();
+            _aircraftsLock.WaitOne();
+            _aircrafts = new List<SimAircraft>();
+            _aircraftsLock.ReleaseMutex();
+            try
             {
-                _aircrafts = new List<SimAircraft>();
+                var model = MagneticModel.FromFile(magCofFile);
+                _logger("Magnetic File Loaded", 0);
+                MagTileManager = new MagneticTileManager(ref model);
+            } catch (Exception e)
+            {
+                _logger("There was an error loading the WMM.COF file. Magnetic correction will NOT be applied.", 1);
+                Console.WriteLine(e.Message);
+                MagTileManager = new MagneticTileManager();
             }
+            GribTileManager = new GribTileManager(gribTilePath);
         }
 
-        public static void PerformOnAircraft(Action<List<SimAircraft>> action)
-        {
-            lock (_aircraftsLock)
-            {
-                action(_aircrafts);
-            }
-        }
+        public MagneticTileManager MagTileManager { get; private set; }
 
-        public static double SimRate
+        public GribTileManager GribTileManager { get; private set; }
+
+        public Mutex SimAircraftListLock => _aircraftsLock;
+
+        public List<SimAircraft> SimAircraftList => _aircrafts;
+
+        public double SimRate
         {
             get => _simRate / 10.0;
             set
@@ -74,37 +94,36 @@ namespace SaunaSim.Core.Simulator.Aircraft
                 {
                     _simRate = (int)(value * 10);
                 }
-                lock (_aircraftsLock)
+                _aircraftsLock.WaitOne();
+                foreach (SimAircraft aircraft in _aircrafts)
                 {
-                    foreach (SimAircraft aircraft in _aircrafts)
-                    {
-                        aircraft.SimRate = _simRate;
-                    }
+                    aircraft.SimRate = _simRate;
                 }
+                _aircraftsLock.ReleaseMutex();
                 Task.Run(() => GlobalSimStateChanged?.Invoke(null, new SimStateChangedEventArgs(AllPaused, value)));
             }
         }
 
-        public static bool AllPaused {
+        public bool AllPaused {
             get => _allPaused;
             set {
                 _allPaused = value;
-                lock (_aircraftsLock)
-                {
+                _aircraftsLock.WaitOne();
+
                     foreach (SimAircraft aircraft in _aircrafts)
                     {
                         aircraft.Paused = _allPaused;
                     }
-                }
+                _aircraftsLock.ReleaseMutex();
                 Task.Run(() => GlobalSimStateChanged?.Invoke(null, new SimStateChangedEventArgs(value, SimRate)));
             }
         }
 
-        public static void RemoveAircraftByCallsign(string callsign)
+        public void RemoveAircraftByCallsign(string callsign)
         {
             SimAircraft foundAcft = null;
-            lock (_aircraftsLock)
-            {
+            _aircraftsLock.WaitOne();
+
                 foreach (SimAircraft aircraft in _aircrafts)
                 {
                     if (aircraft.Callsign.Equals(callsign))
@@ -115,16 +134,15 @@ namespace SaunaSim.Core.Simulator.Aircraft
                         break;
                     }
                 }
-            }
+            _aircraftsLock.ReleaseMutex();
 
             foundAcft?.Dispose();
         }
 
-        public static bool AddAircraft(SimAircraft aircraft)
+        public bool AddAircraft(SimAircraft aircraft)
         {
-            lock (_aircraftsLock)
-            {
-                List<int> deletionList = new List<int>();
+            _aircraftsLock.WaitOne();
+            List<int> deletionList = new List<int>();
 
                 for (int i = _aircrafts.Count - 1; i >= 0; i--)
                 {
@@ -147,29 +165,28 @@ namespace SaunaSim.Core.Simulator.Aircraft
                 aircraft.SimStateChanged += Aircraft_SimStateChanged;
                 _aircrafts.Add(aircraft);
                 Task.Run(() => AircraftCreated?.Invoke(null, new AircraftPositionUpdateEventArgs(DateTime.UtcNow, aircraft)));
-            }
+            _aircraftsLock.ReleaseMutex();
             return true;
         }
 
-        private static void Aircraft_SimStateChanged(object sender, AircraftSimStateChangedEventArgs e)
+        private void Aircraft_SimStateChanged(object sender, AircraftSimStateChangedEventArgs e)
         {
             Task.Run(() => AircraftSimStateChanged?.Invoke(sender, e));
         }
 
-        private static void Aircraft_PositionUpdated(object sender, AircraftPositionUpdateEventArgs e)
+        private void Aircraft_PositionUpdated(object sender, AircraftPositionUpdateEventArgs e)
         {
             Task.Run(() => AircraftPositionChanged?.Invoke(sender, e));
         }
 
-        private static void Aircraft_ConnectionStatusChanged(object sender, AircraftConnectionStatusChangedEventArgs e)
+        private void Aircraft_ConnectionStatusChanged(object sender, AircraftConnectionStatusChangedEventArgs e)
         {
             Task.Run(() => AircraftConnectionStatusChanged?.Invoke(sender, e));
         }
 
-        public static SimAircraft GetAircraftWhichContainsCallsign(string callsignMatch)
+        public SimAircraft GetAircraftWhichContainsCallsign(string callsignMatch)
         {
-            lock (_aircraftsLock)
-            {
+            _aircraftsLock.WaitOne();
                 foreach (SimAircraft aircraft in _aircrafts)
                 {
                     if (aircraft.Callsign.ToLower().Contains(callsignMatch.ToLower()))
@@ -177,38 +194,66 @@ namespace SaunaSim.Core.Simulator.Aircraft
                         return aircraft;
                     }
                 }
-            }
+            _aircraftsLock.ReleaseMutex();
 
             return null;
         }
 
-        public static SimAircraft GetAircraftByCallsign(string callsign)
+        public SimAircraft GetAircraftByCallsign(string callsign)
         {
-            lock (_aircraftsLock)
-            {
-                foreach (SimAircraft aircraft in _aircrafts)
+            _aircraftsLock.WaitOne();
+            foreach (SimAircraft aircraft in _aircrafts)
                 {
                     if (aircraft.Callsign.ToLower().Equals(callsign.ToLower()))
                     {
                         return aircraft;
                     }
                 }
-            }
+            _aircraftsLock.ReleaseMutex();
 
             return null;
         }
 
-        public static void DeleteAllAircraft()
+        public void DeleteAllAircraft()
         {
-            lock (_aircraftsLock)
-            {
+            _aircraftsLock.WaitOne();
                 foreach (SimAircraft aircraft in _aircrafts)
                 {
                     Task.Run(() => AircraftDeleted?.Invoke(null, new AircraftDeletedEventArgs(aircraft.Callsign)));
                     aircraft.Dispose();
                 }
                 _aircrafts.Clear();
+            _aircraftsLock.ReleaseMutex();
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposedValue)
+            {
+                if (disposing)
+                {
+                    DeleteAllAircraft();
+                }
+
+                _aircraftsLock.WaitOne();
+                _aircrafts = null;
+                _aircraftsLock.ReleaseMutex();
+                _aircraftsLock.Dispose();
+                disposedValue = true;
             }
+        }
+
+        ~SimAircraftHandler()
+        {
+            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+            Dispose(disposing: false);
+        }
+
+        public void Dispose()
+        {
+            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
         }
     }
 }

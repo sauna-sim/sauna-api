@@ -27,13 +27,16 @@
   <PropertyGroup Condition=" '$(RunConfiguration)' == 'sauna-api' " />
 
   <ItemGroup>
+    <None Remove="Services\" />
+  </ItemGroup>
+  <ItemGroup>
     <None Include="..\README.md">
       <Pack>True</Pack>
       <PackagePath>\</PackagePath>
     </None>
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="PShivaraman.AviationCalcUtilNet" Version="1.2.0" />
+    <PackageReference Include="PShivaraman.AviationCalcUtilNet" Version="2.6.0" />
     <PackageReference Include="CaspianMerlin.FsdConnectorNet" Version="0.2.24" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
   </ItemGroup>
@@ -49,5 +52,8 @@
     <None Update="perf-data-files\A320.csv">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Services\" />
   </ItemGroup>
 </Project>

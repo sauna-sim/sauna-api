@@ -1,7 +1,4 @@
 ﻿using System;
-using AviationCalcUtilNet.GeoTools;
-using AviationCalcUtilNet.GeoTools.GribTools;
-using AviationCalcUtilNet.MathTools;
 using System.Collections.Generic;
 using SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller;
 using SaunaSim.Core.Simulator.Aircraft.FMS;

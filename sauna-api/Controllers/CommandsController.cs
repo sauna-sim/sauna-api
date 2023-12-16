@@ -13,6 +13,7 @@ using FsdConnectorNet;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using SaunaSim.Api.WebSockets;
+using SaunaSim.Api.Services;
 
 namespace SaunaSim.Api.Controllers
 {
@@ -23,11 +24,13 @@ namespace SaunaSim.Api.Controllers
         private static List<string> _commandsBuffer = new List<string>();
         private static SemaphoreSlim _commandsBufferLock = new SemaphoreSlim(1);
 
+        private readonly ISimAircraftService _aircraftService;
         private readonly ILogger<DataController> _logger;
 
-        public CommandsController(ILogger<DataController> logger)
+        public CommandsController(ILogger<DataController> logger, ISimAircraftService aircraftService)
         {
             _logger = logger;
+            _aircraftService = aircraftService;
         }
 
         private static void LogCommandInfo(string msg)
@@ -57,7 +60,7 @@ namespace SaunaSim.Api.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public ActionResult SendTextCommand(TextCommandRequest request)
         {
-            SimAircraft client = SimAircraftHandler.GetAircraftByCallsign(request.Callsign);
+            SimAircraft client = _aircraftService.Handler.GetAircraftByCallsign(request.Callsign);
 
             if (client == null)
             {
@@ -82,7 +85,7 @@ namespace SaunaSim.Api.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public ActionResult SendAltitudeCommand(AltitudeCommandRequest request)
         {
-            SimAircraft client = SimAircraftHandler.GetAircraftByCallsign(request.Callsign);
+            SimAircraft client = _aircraftService.Handler.GetAircraftByCallsign(request.Callsign);
 
             if (client == null)
             {
@@ -112,7 +115,7 @@ namespace SaunaSim.Api.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public ActionResult SendDepartOnHeadingCommand(DepartOnHeadingCommandRequest request)
         {
-            SimAircraft client = SimAircraftHandler.GetAircraftByCallsign(request.Callsign);
+            SimAircraft client = _aircraftService.Handler.GetAircraftByCallsign(request.Callsign);
 
             if (client == null)
             {
@@ -136,7 +139,7 @@ namespace SaunaSim.Api.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public ActionResult SendDirectWaypointCommand(DirectWaypointCommandRequest request)
         {
-            SimAircraft client = SimAircraftHandler.GetAircraftByCallsign(request.Callsign);
+            SimAircraft client = _aircraftService.Handler.GetAircraftByCallsign(request.Callsign);
 
             if (client == null)
             {
@@ -160,7 +163,7 @@ namespace SaunaSim.Api.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public ActionResult SendFlyHeadingCommand(HeadingCommandRequest request)
         {
-            SimAircraft client = SimAircraftHandler.GetAircraftByCallsign(request.Callsign);
+            SimAircraft client = _aircraftService.Handler.GetAircraftByCallsign(request.Callsign);
 
             if (client == null)
             {
@@ -184,7 +187,7 @@ namespace SaunaSim.Api.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public ActionResult SendTurnLeftByHeadingCommand(DegTurnCommandRequest request)
         {
-            SimAircraft client = SimAircraftHandler.GetAircraftByCallsign(request.Callsign);
+            SimAircraft client = _aircraftService.Handler.GetAircraftByCallsign(request.Callsign);
 
             if (client == null)
             {
@@ -208,7 +211,7 @@ namespace SaunaSim.Api.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public ActionResult SendTurnLeftHeadingCommand(HeadingCommandRequest request)
         {
-            SimAircraft client = SimAircraftHandler.GetAircraftByCallsign(request.Callsign);
+            SimAircraft client = _aircraftService.Handler.GetAircraftByCallsign(request.Callsign);
 
             if (client == null)
             {
@@ -232,7 +235,7 @@ namespace SaunaSim.Api.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public ActionResult SendTurnRightByHeadingCommand(DegTurnCommandRequest request)
         {
-            SimAircraft client = SimAircraftHandler.GetAircraftByCallsign(request.Callsign);
+            SimAircraft client = _aircraftService.Handler.GetAircraftByCallsign(request.Callsign);
 
             if (client == null)
             {
@@ -256,7 +259,7 @@ namespace SaunaSim.Api.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public ActionResult SendTurnRightHeadingCommand(HeadingCommandRequest request)
         {
-            SimAircraft client = SimAircraftHandler.GetAircraftByCallsign(request.Callsign);
+            SimAircraft client = _aircraftService.Handler.GetAircraftByCallsign(request.Callsign);
 
             if (client == null)
             {
@@ -280,7 +283,7 @@ namespace SaunaSim.Api.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public ActionResult SendFlyPresentHeadingCommand(NoArgCommandRequest request)
         {
-            SimAircraft client = SimAircraftHandler.GetAircraftByCallsign(request.Callsign);
+            SimAircraft client = _aircraftService.Handler.GetAircraftByCallsign(request.Callsign);
 
             if (client == null)
             {
@@ -304,7 +307,7 @@ namespace SaunaSim.Api.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public ActionResult SendHoldCommand(HoldCommandRequest request)
         {
-            SimAircraft client = SimAircraftHandler.GetAircraftByCallsign(request.Callsign);
+            SimAircraft client = _aircraftService.Handler.GetAircraftByCallsign(request.Callsign);
 
             if (client == null)
             {
@@ -328,7 +331,7 @@ namespace SaunaSim.Api.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public ActionResult SendIlsCommand(LocIlsCommandRequest request)
         {
-            SimAircraft client = SimAircraftHandler.GetAircraftByCallsign(request.Callsign);
+            SimAircraft client = _aircraftService.Handler.GetAircraftByCallsign(request.Callsign);
 
             if (client == null)
             {
@@ -352,7 +355,7 @@ namespace SaunaSim.Api.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public ActionResult SendLocCommand(LocIlsCommandRequest request)
         {
-            SimAircraft client = SimAircraftHandler.GetAircraftByCallsign(request.Callsign);
+            SimAircraft client = _aircraftService.Handler.GetAircraftByCallsign(request.Callsign);
 
             if (client == null)
             {
@@ -376,7 +379,7 @@ namespace SaunaSim.Api.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public ActionResult SendInterceptCourseCommand(InterceptCourseCommandRequest request)
         {
-            SimAircraft client = SimAircraftHandler.GetAircraftByCallsign(request.Callsign);
+            SimAircraft client = _aircraftService.Handler.GetAircraftByCallsign(request.Callsign);
 
             if (client == null)
             {
@@ -400,7 +403,7 @@ namespace SaunaSim.Api.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public ActionResult SendSpeedCommand(SpeedCommandRequest request)
         {
-            SimAircraft client = SimAircraftHandler.GetAircraftByCallsign(request.Callsign);
+            SimAircraft client = _aircraftService.Handler.GetAircraftByCallsign(request.Callsign);
 
             if (client == null)
             {

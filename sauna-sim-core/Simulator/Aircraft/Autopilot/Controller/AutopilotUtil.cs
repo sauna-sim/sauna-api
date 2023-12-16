@@ -1,6 +1,9 @@
 ﻿using System;
+using AviationCalcUtilNet.Aviation;
+using AviationCalcUtilNet.Geo;
 using AviationCalcUtilNet.GeoTools;
 using AviationCalcUtilNet.MathTools;
+using AviationCalcUtilNet.Units;
 using SaunaSim.Core.Simulator.Aircraft.Performance;
 
 namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
@@ -9,25 +12,25 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
     {
         // Roll
         public const double ROLL_TIME = 0.5;
-        public const double ROLL_RATE_MAX = 5.0;
-        public const double ROLL_LIMIT = 25.0;
-        public const double HDG_MAX_RATE = 3.0;
+        public readonly static AngularVelocity ROLL_RATE_MAX = AngularVelocity.FromDegreesPerSecond(5.0);
+        public readonly static Angle ROLL_LIMIT = Angle.FromDegrees(25.0);
+        public readonly static AngularVelocity HDG_MAX_RATE = AngularVelocity.FromDegreesPerSecond(3.0);
         public const double ROLL_TIME_BUFFER = 0.1;
 
         // LNAV
-        public const double MAX_INTC_ANGLE = 45;
-        public const double MIN_XTK_M = 3;
-        public const double MAX_CRS_DEV = 0.1;
-        public const double MAX_INTC_XTK_M = 1852.0;
+        public readonly static Angle MAX_INTC_ANGLE = Angle.FromDegrees(45);
+        public readonly static Length MIN_XTK_M = Length.FromMeters(3);
+        public readonly static Angle MAX_CRS_DEV = Angle.FromDegrees(0.1);
+        public readonly static Length MAX_INTC_XTK_M = Length.FromMeters(1852.0);
         public const double RADIUS_BUFFER_MULT = 1.1;
 
         // Pitch
         public const double PITCH_TIME = 0.5;
-        public const double PITCH_LIMIT_MAX = 30.0;
-        public const double PITCH_LIMIT_MIN = -15.0;
+        public readonly static Angle PITCH_LIMIT_MAX = Angle.FromDegrees(30.0);
+        public readonly static Angle PITCH_LIMIT_MIN = Angle.FromDegrees(-15.0);
         public const double PITCH_TIME_BUFFER = 0.1;
-        public const double PITCH_RATE_NORM_MAX = 1.0;
-        public const double PITCH_RATE_TOLDG_MAX = 3.0;
+        public readonly static AngularVelocity PITCH_RATE_NORM_MAX = AngularVelocity.FromDegreesPerSecond(1.0);
+        public readonly static AngularVelocity PITCH_RATE_TOLDG_MAX = AngularVelocity.FromDegreesPerSecond(3.0);
 
         // Thrust
         public const double THRUST_TIME = 0.5;
@@ -89,9 +92,9 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
         /// <param name="measuredRollAngle">Measured Roll Angle (degrees)</param>
         /// <param name="intervalMs">Update Interval Time (ms)</param>
         /// <returns>Roll Rate (degrees/sec)</returns>
-        public static double CalculateRollRate(double demandedRollAngle, double measuredRollAngle, int intervalMs)
+        public static AngularVelocity CalculateRollRate(Angle demandedRollAngle, Angle measuredRollAngle, int intervalMs)
         {
-            return CalculateRate(demandedRollAngle, measuredRollAngle, ROLL_TIME, ROLL_RATE_MAX, intervalMs);
+            return (AngularVelocity)CalculateRate((double)demandedRollAngle, (double)measuredRollAngle, ROLL_TIME, (double)ROLL_RATE_MAX, intervalMs);
         }
 
         /// <summary>
@@ -101,9 +104,9 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
         /// <param name="measuredPitchAngle">Measured Pitch Angle (degrees)</param>
         /// <param name="intervalMs">Update Interval Time (ms)</param>
         /// <returns>Pitch Rate (degrees/sec)</returns>
-        public static double CalculatePitchRate(double demandedPitchAngle, double measuredPitchAngle, int intervalMs)
+        public static AngularVelocity CalculatePitchRate(Angle demandedPitchAngle, Angle measuredPitchAngle, int intervalMs)
         {
-            return CalculateRate(demandedPitchAngle, measuredPitchAngle, PITCH_TIME, PITCH_RATE_NORM_MAX, intervalMs);
+            return (AngularVelocity)CalculateRate((double)demandedPitchAngle, (double)measuredPitchAngle, PITCH_TIME, (double)PITCH_RATE_NORM_MAX, intervalMs);
         }
 
         /// <summary>
@@ -242,9 +245,9 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
         /// <param name="groundSpeed">Current ground speed (knots)</param>
         /// <param name="intervalMs">Update Interval Time (ms)</param>
         /// <returns>Desired roll (degrees)</returns>
-        public static double CalculateDemandedRollForTurn(double turnAmt, double curRoll, double groundSpeed, int intervalMs)
+        public static Angle CalculateDemandedRollForTurn(Angle turnAmt, Angle curRoll, Velocity groundSpeed, int intervalMs)
         {
-            return CalculateDemandedRollForTurn(turnAmt, curRoll, 0, groundSpeed, intervalMs);
+            return CalculateDemandedRollForTurn(turnAmt, curRoll, (Angle)0, groundSpeed, intervalMs);
         }
 
         /// <summary>
@@ -256,25 +259,25 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
         /// <param name="groundSpeed">Current ground speed (knots)</param>
         /// <param name="intervalMs">Update Interval Time (ms)</param>
         /// <returns>Desired roll (degrees)</returns>
-        public static double CalculateDemandedRollForTurn(double turnAmt, double curRoll, double zeroRoll, double groundSpeed, int intervalMs)
+        public static Angle CalculateDemandedRollForTurn(Angle turnAmt, Angle curRoll, Angle zeroRoll, Velocity groundSpeed, int intervalMs)
         {
-            double maxRoll = GeoUtil.CalculateMaxBankAngle(groundSpeed, ROLL_LIMIT, HDG_MAX_RATE);
-            return CalculateDemandedInput(
-                turnAmt,
-                curRoll,
-                maxRoll,
-                -maxRoll,
-                (double demandedRoll, double measuredRoll) => CalculateRollRate(demandedRoll, measuredRoll, intervalMs),
-                (double roll) => Math.Tan(MathUtil.ConvertDegreesToRadians(roll)) * 1091 / groundSpeed,
-                zeroRoll,
+            Angle maxRoll = AviationUtil.CalculateMaxBankAngle(groundSpeed, ROLL_LIMIT, HDG_MAX_RATE);
+            return (Angle)CalculateDemandedInput(
+                (double)turnAmt,
+                (double)curRoll,
+                (double)maxRoll,
+                (double)-maxRoll,
+                (double demandedRoll, double measuredRoll) => (double)CalculateRollRate((Angle)demandedRoll, (Angle)measuredRoll, intervalMs),
+                (double roll) => Math.Tan((double)roll / (double)groundSpeed),
+                (double)zeroRoll,
                 ROLL_TIME_BUFFER
             ).demandedInput;
         }
 
-        public static double CalculateDemandedThrottleForSpeed(double speedDelta, double curThrottle, double thrustForZeroAccel, Func<double, double> thrustToSpeedAccelFunction, int intervalMs)
+        public static double CalculateDemandedThrottleForSpeed(Velocity speedDelta, double curThrottle, double thrustForZeroAccel, Func<double, double> thrustToSpeedAccelFunction, int intervalMs)
         {
             return CalculateDemandedInput(
-                -speedDelta,
+                (double)-speedDelta,
                 curThrottle,
                 100,
                 0,
@@ -285,67 +288,67 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
             ).demandedInput;
         }
 
-        public static double CalculateDemandedPitchForSpeed(double speedDelta, double curPitch, double pitchForZeroAccel, double maxPitch, double minPitch, Func<double, double> pitchToSpeedAccelFunction,
+        public static Angle CalculateDemandedPitchForSpeed(Velocity speedDelta, Angle curPitch, Angle pitchForZeroAccel, Angle maxPitch, Angle minPitch, Func<Angle, double> pitchToSpeedAccelFunction,
             int intervalMs)
         {
-            double inputToTargetRateFunc(double pitch) => -pitchToSpeedAccelFunction(pitch);
-            return CalculateDemandedInput(
-                speedDelta,
-                curPitch,
-                maxPitch,
-                minPitch,
-                (demandedPitch, measuredPitch) => CalculatePitchRate(demandedPitch, measuredPitch, intervalMs),
+            double inputToTargetRateFunc(double pitch) => -pitchToSpeedAccelFunction((Angle)pitch);
+            return (Angle)CalculateDemandedInput(
+                (double)speedDelta,
+                (double)curPitch,
+                (double)maxPitch,
+                (double)minPitch,
+                (demandedPitch, measuredPitch) => (double)CalculatePitchRate((Angle)demandedPitch, (Angle)measuredPitch, intervalMs),
                 inputToTargetRateFunc,
-                pitchForZeroAccel,
+                (double)pitchForZeroAccel,
                 PITCH_TIME_BUFFER
             ).demandedInput;
         }
 
-        public static double CalculateDemandedPitchForAltitude(double altDelta, double curPitch, double pitchForZeroVs, double pitchIdle, double pitchMax, Func<double, double> pitchToVsFunction, int intervalMs)
+        public static Angle CalculateDemandedPitchForAltitude(Length altDelta, Angle curPitch, Angle pitchForZeroVs, Angle pitchIdle, Angle pitchMax, Func<Angle, Velocity> pitchToVsFunction, int intervalMs)
         {
-            return CalculateDemandedInput(
-                -altDelta,
-                curPitch,
-                pitchMax,
-                pitchIdle,
-                (demandedPitch, measuredPitch) => CalculatePitchRate(demandedPitch, measuredPitch, intervalMs),
-                pitchToVsFunction,
-                pitchForZeroVs,
+            return (Angle)CalculateDemandedInput(
+                (double)-altDelta,
+                (double)curPitch,
+                (double)pitchMax,
+                (double)pitchIdle,
+                (demandedPitch, measuredPitch) => (double)CalculatePitchRate((Angle)demandedPitch, (Angle)measuredPitch, intervalMs),
+                (double pitch) => (double) pitchToVsFunction((Angle) pitch),
+                (double)pitchForZeroVs,
                 PITCH_TIME_BUFFER
             ).demandedInput;
         }
 
-        private static double CalculateCrossTrackRateForTrack(double curTrueTrack, double courseTrueTrack, double groundSpeed)
+        private static Velocity CalculateCrossTrackRateForTrack(Bearing curTrueTrack, Bearing courseTrueTrack, Velocity groundSpeed)
         {
-            return MathUtil.ConvertKtsToMpers(groundSpeed) * Math.Sin(MathUtil.ConvertDegreesToRadians(curTrueTrack - courseTrueTrack));
+            return groundSpeed * Math.Sin((double)(curTrueTrack - courseTrueTrack));
         }
 
-        private static double CalculateRateForNavTurn(double curTrueTrack, double targetTrueTrack, double curRoll, double groundSpeed, int intervalMs)
+        private static AngularVelocity CalculateRateForNavTurn(Bearing curTrueTrack, Bearing targetTrueTrack, Angle curRoll, Velocity groundSpeed, int intervalMs)
         {
-            double turnAmt = GeoUtil.CalculateTurnAmount(curTrueTrack, targetTrueTrack);
-            double maxRoll = GeoUtil.CalculateMaxBankAngle(groundSpeed, ROLL_LIMIT, HDG_MAX_RATE);
-            double time = CalculateDemandedInput(
-                turnAmt,
-                curRoll,
-                maxRoll,
-                -maxRoll,
-                (double demandedRoll, double measuredRoll) => CalculateRollRate(demandedRoll, measuredRoll, intervalMs),
-                (double roll) => Math.Tan(MathUtil.ConvertDegreesToRadians(roll)) * 1091 / groundSpeed,
-                0,
+            Angle turnAmt = targetTrueTrack - curTrueTrack;
+            Angle maxRoll = AviationUtil.CalculateMaxBankAngle(groundSpeed, ROLL_LIMIT, HDG_MAX_RATE);
+            var time = TimeSpan.FromSeconds(CalculateDemandedInput(
+                (double)turnAmt,
+                (double)curRoll,
+                (double)maxRoll,
+                (double)-maxRoll,
+                (double demandedRoll, double measuredRoll) => (double)CalculateRollRate((Angle)demandedRoll, (Angle)measuredRoll, intervalMs),
+                (double roll) => Math.Tan(roll) / (double)groundSpeed,
+                (double)0,
                 ROLL_TIME_BUFFER
-            ).timeToTarget;
+            ).timeToTarget);
 
-            return time < double.Epsilon ? 0 : turnAmt / time;
+            return time.TotalSeconds < double.Epsilon ? (AngularVelocity)0 : turnAmt / time;
         }
 
-        public static (double demandedRoll, double demandedTrack) CalculateDemandedTrackOnCurrentTrack(double courseDeviation, double curTrueTrack, double courseTrueTrack,
-            double curRoll, double groundSpeed, int intervalMs)
+        public static (Angle demandedRoll, Bearing demandedTrack) CalculateDemandedTrackOnCurrentTrack(Angle courseDeviation, Bearing curTrueTrack, Bearing courseTrueTrack,
+            Angle curRoll, Velocity groundSpeed, int intervalMs)
         {
-            double trackDelta = GeoUtil.CalculateTurnAmount(courseTrueTrack, curTrueTrack);
-            double minTrack = courseTrueTrack;
-            double maxTrack = courseTrueTrack;
+            var trackDelta = curTrueTrack - courseTrueTrack;
+            Bearing minTrack = (Bearing)courseTrueTrack.Clone();
+            Bearing maxTrack = (Bearing)courseTrueTrack.Clone();
 
-            if (trackDelta > 0)
+            if ((double)trackDelta > 0)
             {
                 maxTrack = minTrack + trackDelta;
             } else
@@ -353,20 +356,18 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
                 minTrack = maxTrack + trackDelta;
             }
 
-            double demandedTrack = CalculateDemandedInput(
-                -courseDeviation,
-                courseTrueTrack + trackDelta,
-                maxTrack,
-                minTrack,
-                (double demanded, double measured) => CalculateRateForNavTurn(measured, demanded, curRoll, groundSpeed, intervalMs),
-                (double track) => CalculateCrossTrackRateForTrack(track, courseTrueTrack, groundSpeed),
-                courseTrueTrack,
+            Bearing demandedTrack = Bearing.FromRadians(CalculateDemandedInput(
+                (double)-courseDeviation,
+                (courseTrueTrack + trackDelta).Radians,
+                maxTrack.Radians,
+                minTrack.Radians,
+                (double demanded, double measured) => (double) CalculateRateForNavTurn(Bearing.FromRadians(measured), Bearing.FromRadians(demanded), curRoll, groundSpeed, intervalMs),
+                (double track) => (double)CalculateCrossTrackRateForTrack(Bearing.FromRadians(track), courseTrueTrack, groundSpeed),
+                courseTrueTrack.Radians,
                 ROLL_TIME_BUFFER
-            ).demandedInput;
+            ).demandedInput);
 
-            demandedTrack = GeoUtil.NormalizeHeading(demandedTrack);
-
-            double turnAmt = GeoUtil.CalculateTurnAmount(curTrueTrack, demandedTrack);
+            Angle turnAmt = demandedTrack - curTrueTrack;
 
             return (CalculateDemandedRollForTurn(turnAmt, curRoll, groundSpeed, intervalMs), demandedTrack);
         }
