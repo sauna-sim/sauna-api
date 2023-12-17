@@ -1,30 +1,33 @@
 ﻿using System;
 using System.Collections.Generic;
-using AviationCalcUtilNet.GeoTools;
-using AviationCalcUtilNet.GeoTools.MagneticTools;
+using AviationCalcUtilNet.Geo;
+using AviationCalcUtilNet.Magnetic;
+using AviationCalcUtilNet.Units;
 using SaunaSim.Core.Simulator.Aircraft.FMS.NavDisplay;
 
 namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
 {
     public class CourseToAltLeg : IRouteLeg
     {
-        private double _magneticCourse;
-        private double _trueCourse;
-        private double _endAlt;
-        private double _beginAlt;
+        private Bearing _magneticCourse;
+        private Bearing _trueCourse;
+        private Length _endAlt;
+        private Length _beginAlt;
+        private MagneticTileManager _magTileMgr;
 
-        public CourseToAltLeg(double endAlt, BearingTypeEnum courseType, double course)
+        public CourseToAltLeg(Length endAlt, BearingTypeEnum courseType, Bearing course, MagneticTileManager magTileManager)
         {
+            _magTileMgr = magTileManager;
             _endAlt = endAlt;
-            _beginAlt = -1;
+            _beginAlt = Length.FromFeet(-1);
             if (courseType == BearingTypeEnum.TRUE)
             {
                 _trueCourse = course;
-                _magneticCourse = -1;
+                _magneticCourse = Bearing.FromDegrees(-1);
             } else
             {
                 _magneticCourse = course;
-                _trueCourse = -1;
+                _trueCourse = Bearing.FromDegrees(-1);
             }
         }
 
@@ -32,17 +35,17 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
 
         public FmsPoint EndPoint => null;
 
-        public double InitialTrueCourse => _trueCourse;
+        public Bearing InitialTrueCourse => _trueCourse;
 
-        public double FinalTrueCourse => _trueCourse;
+        public Bearing FinalTrueCourse => _trueCourse;
 
-        public double LegLength => 0;
+        public Length LegLength => Length.FromFeet(0);
 
         public RouteLegTypeEnum LegType => RouteLegTypeEnum.COURSE_TO_ALT;
 
         public bool HasLegTerminated(SimAircraft aircraft)
         {
-            if (_beginAlt < 0)
+            if (_beginAlt < Length.FromFeet(0))
             {
                 _beginAlt = aircraft.Position.IndicatedAltitude;
             }
@@ -54,21 +57,21 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
             return aircraft.Position.IndicatedAltitude <= _endAlt;
         }
 
-        public (double requiredTrueCourse, double crossTrackError, double alongTrackDistance, double turnRadius) GetCourseInterceptInfo(SimAircraft aircraft)
+        public (Bearing requiredTrueCourse, Length crossTrackError, Length alongTrackDistance, Length turnRadius) GetCourseInterceptInfo(SimAircraft aircraft)
         {
-            if (_beginAlt < 0)
+            if (_beginAlt.Feet < 0)
             {
-                if (_trueCourse < 0)
+                if (_trueCourse.Degrees < 0)
                 {
-                    _trueCourse = MagneticUtil.ConvertMagneticToTrueTile(_magneticCourse, aircraft.Position.PositionGeoPoint);
-                } else if (_magneticCourse < 0)
+                    _trueCourse = _magTileMgr.MagneticToTrue(aircraft.Position.PositionGeoPoint, DateTime.UtcNow, _magneticCourse);
+                } else if (_magneticCourse.Degrees < 0)
                 {
-                    _magneticCourse = MagneticUtil.ConvertTrueToMagneticTile(_trueCourse, aircraft.Position.PositionGeoPoint);
+                    _magneticCourse = _magTileMgr.TrueToMagnetic(aircraft.Position.PositionGeoPoint, DateTime.UtcNow, _trueCourse);
                 }
                 _beginAlt = aircraft.Position.IndicatedAltitude;
             }
 
-            return (_trueCourse, 0, 0, 0);
+            return (_trueCourse, (Length) 0, (Length)0, (Length)0);
         }
 
         public bool ShouldActivateLeg(SimAircraft aircraft, int intervalMs)
@@ -79,7 +82,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
 
         public override string ToString()
         {
-            return $"{_magneticCourse:000} =(CA)=> {_endAlt}";
+            return $"{_magneticCourse.Degrees:000} =(CA)=> {_endAlt.Feet}";
         }
 
         public void ProcessLeg(SimAircraft aircraft, int intervalMs)

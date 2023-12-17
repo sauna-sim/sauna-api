@@ -1,8 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using AviationCalcUtilNet.GeoTools;
-using AviationCalcUtilNet.GeoTools.MagneticTools;
-using AviationCalcUtilNet.MathTools;
+using AviationCalcUtilNet.Aviation;
+using AviationCalcUtilNet.Geo;
+using AviationCalcUtilNet.Magnetic;
+using AviationCalcUtilNet.Units;
 using SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller;
 using SaunaSim.Core.Simulator.Aircraft.FMS.NavDisplay;
 
@@ -11,21 +12,21 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
     public class CourseToFixLeg : IRouteLeg
     {
         private FmsPoint _endPoint;
-        private double _magneticCourse;
-        private double _trueCourse;
+        private Bearing _magneticCourse;
+        private Bearing _trueCourse;
 
-        public CourseToFixLeg(FmsPoint endPoint, BearingTypeEnum courseType, double course)
+        public CourseToFixLeg(FmsPoint endPoint, BearingTypeEnum courseType, Bearing course, MagneticTileManager magTileMgr)
         {
             _endPoint = endPoint;
             if (courseType == BearingTypeEnum.TRUE)
             {
                 _trueCourse = course;
-                _magneticCourse = MagneticUtil.ConvertTrueToMagneticTile(_trueCourse, endPoint.Point.PointPosition);
+                _magneticCourse = magTileMgr.TrueToMagnetic(endPoint.Point.PointPosition, DateTime.UtcNow, _trueCourse);
             }
             else
             {
                 _magneticCourse = course;
-                _trueCourse = MagneticUtil.ConvertMagneticToTrueTile(_magneticCourse, endPoint.Point.PointPosition);
+                _trueCourse = magTileMgr.MagneticToTrue(endPoint.Point.PointPosition, DateTime.UtcNow, _magneticCourse);
             }
         }
 
@@ -34,28 +35,26 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
         public bool HasLegTerminated(SimAircraft aircraft)
         {
             // Leg terminates when aircraft passes abeam/over terminating point
-            GeoUtil.CalculateCrossTrackErrorM(aircraft.Position.PositionGeoPoint, _endPoint.Point.PointPosition, _trueCourse,
-                out _, out double alongTrackDistance);
+            (_, Length alongTrackDistance, _) = AviationUtil.CalculateLinearCourseIntercept(aircraft.Position.PositionGeoPoint, _endPoint.Point.PointPosition, _trueCourse);
 
-            return alongTrackDistance <= 0;
+            return alongTrackDistance.Meters <= 0;
         }
 
-        public (double requiredTrueCourse, double crossTrackError, double alongTrackDistance, double turnRadius) GetCourseInterceptInfo(SimAircraft aircraft)
+        public (Bearing requiredTrueCourse, Length crossTrackError, Length alongTrackDistance, Length turnRadius) GetCourseInterceptInfo(SimAircraft aircraft)
         {
             // Otherwise calculate cross track error for this leg
-            double crossTrackError = GeoUtil.CalculateCrossTrackErrorM(aircraft.Position.PositionGeoPoint, _endPoint.Point.PointPosition, _trueCourse,
-                out double requiredTrueCourse, out double alongTrackDistance);
+            (Bearing requiredTrueCourse, Length alongTrackDistance, Length crossTrackError) = AviationUtil.CalculateLinearCourseIntercept(aircraft.Position.PositionGeoPoint, _endPoint.Point.PointPosition, _trueCourse);
 
-            return (requiredTrueCourse, crossTrackError, alongTrackDistance, 0);
+            return (requiredTrueCourse, crossTrackError, alongTrackDistance, (Length)0);
         }
 
         public bool ShouldActivateLeg(SimAircraft aircraft, int intervalMs)
         {
-            (double requiredTrueCourse, double crossTrackError, _, _) = GetCourseInterceptInfo(aircraft);
+            (Bearing requiredTrueCourse, Length crossTrackError, _, _) = GetCourseInterceptInfo(aircraft);
 
             // If there's no error
-            double trackDelta = GeoUtil.CalculateTurnAmount(requiredTrueCourse, aircraft.Position.Track_True);
-            if (Math.Abs(trackDelta) < double.Epsilon)
+            Angle trackDelta = aircraft.Position.Track_True - requiredTrueCourse;
+            if (Math.Abs(trackDelta.Radians) < double.Epsilon)
             {
                 return false;
             }

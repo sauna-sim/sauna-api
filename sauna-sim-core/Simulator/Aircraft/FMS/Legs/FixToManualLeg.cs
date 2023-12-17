@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using AviationCalcUtilNet.GeoTools;
-using AviationCalcUtilNet.GeoTools.MagneticTools;
 using SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller;
 using SaunaSim.Core.Simulator.Aircraft.FMS.NavDisplay;
 

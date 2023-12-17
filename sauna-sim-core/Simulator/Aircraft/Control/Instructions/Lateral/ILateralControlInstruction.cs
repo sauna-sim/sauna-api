@@ -22,9 +22,4 @@ namespace SaunaSim.Core.Simulator.Aircraft
         RIGHT = 1,
         SHORTEST = 0
     }
-
-    public interface ILateralControlInstruction : IControlInstruction
-    {
-        LateralControlMode Type { get; }
-    }
 }

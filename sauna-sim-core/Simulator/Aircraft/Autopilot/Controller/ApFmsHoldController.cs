@@ -1,9 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Net;
-using AviationCalcUtilNet.GeoTools;
-using AviationCalcUtilNet.GeoTools.MagneticTools;
-using AviationCalcUtilNet.MathTools;
 using SaunaSim.Core.Data;
 using SaunaSim.Core.Simulator.Aircraft.FMS;
 using SaunaSim.Core.Simulator.Aircraft.FMS.Legs;

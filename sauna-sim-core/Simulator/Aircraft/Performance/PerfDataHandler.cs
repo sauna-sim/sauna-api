@@ -180,49 +180,6 @@ namespace SaunaSim.Core.Simulator.Aircraft.Performance
         {
             return Vi * t + 0.5 * a * Math.Pow(t, 2);
         }
-        
-        public static double ConvertTasToGs(double tas, double fpa_rads, double hwind)
-        {
-            double tas_parallel = tas * Math.Cos(fpa_rads);
-            return tas_parallel - hwind;
-        }
-
-        public static double ConvertGsToTas(double gs, double fpa_rads, double hwind)
-        {
-            double tas_parallel = gs + hwind;
-            double cosine = Math.Cos(fpa_rads);
-            return cosine == 0 ? 0 : tas_parallel / Math.Cos(fpa_rads);
-        }
-        
-        public static double ConvertFpmToMpers(double fpm)
-        {
-            return MathUtil.ConvertFeetToMeters(fpm) / 60;
-        }
-        
-        public static double ConvertMpersToFpm(double mpers)
-        {
-            return MathUtil.ConvertMetersToFeet(60 * mpers);
-        }
-
-        public static double ConvertVsToFpa(double vs, double gs)
-        {
-            if (gs < double.Epsilon)
-            {
-                return 0;
-            }
-
-            return MathUtil.ConvertRadiansToDegrees(Math.Atan2(ConvertFpmToMpers(vs), MathUtil.ConvertKtsToMpers(gs)));
-        }
-
-        public static double ConvertFpaToVs(double fpa, double gs)
-        {
-            if (gs < double.Epsilon)
-            {
-                return 0;
-            }
-
-            return ConvertMpersToFpm(Math.Tan(MathUtil.ConvertDegreesToRadians(fpa)) * MathUtil.ConvertKtsToMpers(gs));
-        }
 
         public static (double, double) CreateLineEquation(double x1, double y1, double x2, double y2)
         {
