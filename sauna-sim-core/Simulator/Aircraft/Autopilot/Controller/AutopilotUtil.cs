@@ -341,7 +341,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
             return time.TotalSeconds < double.Epsilon ? (AngularVelocity)0 : turnAmt / time;
         }
 
-        public static (Angle demandedRoll, Bearing demandedTrack) CalculateDemandedTrackOnCurrentTrack(Angle courseDeviation, Bearing curTrueTrack, Bearing courseTrueTrack,
+        public static (Angle demandedRoll, Bearing demandedTrack) CalculateDemandedTrackOnCurrentTrack(Length courseDeviation, Bearing curTrueTrack, Bearing courseTrueTrack,
             Angle curRoll, Velocity groundSpeed, int intervalMs)
         {
             var trackDelta = curTrueTrack - courseTrueTrack;
@@ -372,25 +372,25 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
             return (CalculateDemandedRollForTurn(turnAmt, curRoll, groundSpeed, intervalMs), demandedTrack);
         }
 
-        public static (double demandedPitch, double demandedFpa) CalculateDemandedPitchForVnav(double vTk_m, double curFpa, double reqFpa, PerfData perfData, double ias_kts, double dens_alt_ft, double mass_kg, double spdBrakePos, int config, double gs_kts, int intervalMs)
+        public static (Angle demandedPitch, Angle demandedFpa) CalculateDemandedPitchForVnav(Length vTk_m, Angle curFpa, Angle reqFpa, PerfData perfData, Velocity ias_kts, Length dens_alt_ft, double mass_kg, double spdBrakePos, int config, Velocity gs_kts, int intervalMs)
         {
             // Get max and min Fpa
-            double maxFpa = 0;
-            double minFpa = reqFpa - 1;
+            Angle maxFpa = Angle.FromDegrees(0);
+            Angle minFpa = reqFpa - Angle.FromDegrees(1);
 
             // Find demanded FPA
-            double targetFpa = CalculateDemandedInput(
-                -vTk_m,
-                curFpa,
-                maxFpa,
-                minFpa,
+            Angle targetFpa = (Angle)(CalculateDemandedInput(
+                (double)-vTk_m,
+                (double)curFpa,
+                (double)maxFpa,
+                (double)minFpa,
                 (double startFpa, double endFpa) =>
                 {
-                    double startPitch = PerfDataHandler.GetRequiredPitchForVs(perfData, PerfDataHandler.ConvertFpaToVs(startFpa, gs_kts), ias_kts, dens_alt_ft, mass_kg, spdBrakePos, config);
+                    double startPitch = PerfDataHandler.GetRequiredPitchForVs(perfData, AviationUtil.CalculateVerticalSpeed(gs_kts, (Angle) startFpa).FeetPerMinute, ias_kts.Knots, dens_alt_ft.Feet, mass_kg, spdBrakePos, config);
 
-                    double endPitch = PerfDataHandler.GetRequiredPitchForVs(perfData, PerfDataHandler.ConvertFpaToVs(endFpa, gs_kts), ias_kts, dens_alt_ft, mass_kg, spdBrakePos, config);
+                    double endPitch = PerfDataHandler.GetRequiredPitchForVs(perfData, AviationUtil.CalculateVerticalSpeed(gs_kts, (Angle)endFpa).FeetPerMinute, ias_kts.Knots, dens_alt_ft.Feet, mass_kg, spdBrakePos, config);
 
-                    double pitchRate = CalculatePitchRate(endPitch, startPitch, intervalMs);
+                    double pitchRate = CalculatePitchRate(Angle.FromDegrees(endPitch), Angle.FromDegrees(startPitch), intervalMs).DegreesPerSecond;
 
                     if (endPitch - startPitch == 0)
                     {
@@ -399,43 +399,36 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
 
                     return (endFpa - startFpa) * pitchRate / (endPitch - startPitch);
                 },
-                (double fpa) =>
-                {
-                    double vs = PerfDataHandler.ConvertFpaToVs(fpa, gs_kts);
+                (double fpa) => AviationUtil.CalculateVerticalSpeed(gs_kts, Angle.FromDegrees(fpa)).MetersPerSecond,
+                (double)reqFpa,
+                PITCH_TIME_BUFFER).demandedInput);
 
-                    vs /= 60;
+            double demandedPitch = PerfDataHandler.GetRequiredPitchForVs(perfData, AviationUtil.CalculateVerticalSpeed(gs_kts, targetFpa).FeetPerMinute,
+                ias_kts.Knots, dens_alt_ft.Feet, mass_kg, 0, config);
 
-                    return MathUtil.ConvertFeetToMeters(vs);
-                },
-                reqFpa,
-                PITCH_TIME_BUFFER).demandedInput;
-
-            double demandedPitch = PerfDataHandler.GetRequiredPitchForVs(perfData, PerfDataHandler.ConvertFpaToVs(targetFpa, gs_kts),
-                ias_kts, dens_alt_ft, mass_kg, 0, config);
-
-            return (demandedPitch, targetFpa);
+            return (Angle.FromDegrees(demandedPitch), targetFpa);
         }
 
-        public static (double demandedRoll, double demandedTrack) CalculateDemandedRollForNav(double courseDeviation, double curTrueTrack, double courseTrueTrack, double courseTurnRadius, double curRoll, double groundSpeed, int intervalMs)
+        public static (Angle demandedRoll, Bearing demandedTrack) CalculateDemandedRollForNav(Length courseDeviation, Bearing curTrueTrack, Bearing courseTrueTrack, Length courseTurnRadius, Angle curRoll, Velocity groundSpeed, int intervalMs)
         {
-            double maxTrack = courseTrueTrack + MAX_INTC_ANGLE;
-            double minTrack = courseTrueTrack - MAX_INTC_ANGLE;
-            double maxAbsTrack = courseTrueTrack + 90;
-            double minAbsTrack = courseTrueTrack - 90;
+            Angle maxTrack = courseTrueTrack.Angle + MAX_INTC_ANGLE;
+            Angle minTrack = courseTrueTrack.Angle - MAX_INTC_ANGLE;
+            Angle maxAbsTrack = courseTrueTrack.Angle + Angle.FromDegrees(90);
+            Angle minAbsTrack = courseTrueTrack.Angle - Angle.FromDegrees(90);
 
-            double trackDelta = GeoUtil.CalculateTurnAmount(courseTrueTrack, curTrueTrack);
-            double adjCurTrack = courseTrueTrack + trackDelta;
+            Angle trackDelta = curTrueTrack - courseTrueTrack;
+            Angle adjCurTrack = courseTrueTrack.Angle + trackDelta;
 
-            double demandedTrack = CalculateDemandedInput(
-                    -courseDeviation,
-                    trackDelta,
-                    MAX_INTC_ANGLE,
-                    -MAX_INTC_ANGLE,
-                    (double demanded, double measured) => CalculateRateForNavTurn(measured, demanded, curRoll, groundSpeed, intervalMs),
-                    (double track) => CalculateCrossTrackRateForTrack(track, 0, groundSpeed),
+            Angle demandedTrack = (Angle) (CalculateDemandedInput(
+                    (double) -courseDeviation,
+                    (double) trackDelta,
+                    (double) MAX_INTC_ANGLE,
+                    (double) -MAX_INTC_ANGLE,
+                    (double demanded, double measured) => (double) CalculateRateForNavTurn((Bearing) measured, (Bearing)demanded, curRoll, groundSpeed, intervalMs),
+                    (double track) => (double)CalculateCrossTrackRateForTrack((Bearing)track, (Bearing)0, groundSpeed),
                     0,
                     0
-                ).demandedInput;
+                ).demandedInput);
 
             // Restrict demanded track to intercept angles
             if (demandedTrack > MAX_INTC_ANGLE)
@@ -446,25 +439,24 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
                 demandedTrack = -MAX_INTC_ANGLE;
             }
 
-            demandedTrack = GeoUtil.NormalizeHeading(courseTrueTrack + demandedTrack);
-
-            double turnAmt = GeoUtil.CalculateTurnAmount(curTrueTrack, demandedTrack);
+            Bearing demandedTrackB = courseTrueTrack + demandedTrack;
+            Angle turnAmt = demandedTrackB - curTrueTrack;
 
             // Figure out if the course is an arc and adjust the "zero" bank accordingly
-            if (Math.Abs(courseTurnRadius) < double.Epsilon)
+            if (Math.Abs(courseTurnRadius.Meters) < double.Epsilon)
             {
-                return (CalculateDemandedRollForTurn(turnAmt, curRoll, groundSpeed, intervalMs), demandedTrack);
+                return (CalculateDemandedRollForTurn(turnAmt, curRoll, groundSpeed, intervalMs), demandedTrackB);
             }
 
             // Calculate Roll Angle for desired turn radius
-            double zeroRoll = GeoUtil.CalculateBankAngle(MathUtil.ConvertMetersToNauticalMiles(Math.Abs(courseTurnRadius)), groundSpeed);
+            Angle zeroRoll = AviationUtil.CalculateBankAngle(Length.FromMeters(Math.Abs(courseTurnRadius.Meters)), groundSpeed);
 
-            if (courseTurnRadius < 0)
+            if (courseTurnRadius.Meters < 0)
             {
                 zeroRoll *= -1;
             }
 
-            return (CalculateDemandedRollForTurn(turnAmt, curRoll, zeroRoll, groundSpeed, intervalMs), demandedTrack);
+            return (CalculateDemandedRollForTurn(turnAmt, curRoll, zeroRoll, groundSpeed, intervalMs), demandedTrackB);
         }
     }
 }

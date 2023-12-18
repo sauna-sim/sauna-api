@@ -3,7 +3,6 @@ using FsdConnectorNet.Args;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using SaunaSim.Core.Data;
-using SaunaSim.Core.Simulator.Aircraft.Control;
 using SaunaSim.Core.Simulator.Commands;
 using System;
 using System.Collections.Generic;

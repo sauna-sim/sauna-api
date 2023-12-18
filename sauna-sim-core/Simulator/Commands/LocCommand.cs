@@ -8,7 +8,6 @@ using NavData_Interface.Objects.Fix;
 using SaunaSim.Core.Data;
 using SaunaSim.Core.Simulator.Aircraft;
 using SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller;
-using SaunaSim.Core.Simulator.Aircraft.Control.Instructions.Lateral;
 using SaunaSim.Core.Simulator.Aircraft.FMS;
 using SaunaSim.Core.Simulator.Aircraft.FMS.Legs;
 

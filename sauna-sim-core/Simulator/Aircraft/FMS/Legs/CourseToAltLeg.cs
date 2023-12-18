@@ -23,11 +23,11 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
             if (courseType == BearingTypeEnum.TRUE)
             {
                 _trueCourse = course;
-                _magneticCourse = Bearing.FromDegrees(-1);
+                _magneticCourse = null;
             } else
             {
                 _magneticCourse = course;
-                _trueCourse = Bearing.FromDegrees(-1);
+                _trueCourse = null;
             }
         }
 
@@ -61,10 +61,10 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
         {
             if (_beginAlt.Feet < 0)
             {
-                if (_trueCourse.Degrees < 0)
+                if (_trueCourse == null)
                 {
                     _trueCourse = _magTileMgr.MagneticToTrue(aircraft.Position.PositionGeoPoint, DateTime.UtcNow, _magneticCourse);
-                } else if (_magneticCourse.Degrees < 0)
+                } else if (_magneticCourse == null)
                 {
                     _magneticCourse = _magTileMgr.TrueToMagnetic(aircraft.Position.PositionGeoPoint, DateTime.UtcNow, _trueCourse);
                 }

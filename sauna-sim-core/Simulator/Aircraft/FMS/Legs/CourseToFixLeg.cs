@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using AviationCalcUtilNet.Aviation;
 using AviationCalcUtilNet.Geo;
+using AviationCalcUtilNet.GeoTools;
 using AviationCalcUtilNet.Magnetic;
 using AviationCalcUtilNet.Units;
 using SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller;
@@ -63,11 +64,12 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
             //double demandedTrack = AutopilotUtil.CalculateDemandedTrackOnCurrentTrack(crossTrackError, aircraft.Position.Track_True, requiredTrueCourse, aircraft.Position.Bank,
             //aircraft.Position.GroundSpeed, intervalMs).demandedTrack;
 
-            double turnLeadDist = GeoUtil.CalculateTurnLeadDistance(aircraft.Position.PositionGeoPoint, _endPoint.Point.PointPosition, aircraft.Position.Track_True, aircraft.Position.TrueAirSpeed, _trueCourse, aircraft.Position.WindDirection, aircraft.Position.WindSpeed, out _, out GeoPoint intersection);
+            (Length turnLeadDist, _, GeoPoint intersection) = AviationUtil.CalculateTurnLeadDistance(aircraft.Position.PositionGeoPoint, _endPoint.Point.PointPosition, aircraft.Position.Track_True, aircraft.Position.TrueAirSpeed, _trueCourse, aircraft.Position.WindDirection, aircraft.Position.WindSpeed, AutopilotUtil.ROLL_LIMIT, AngularVelocity.FromDegreesPerSecond(3))
+                .GetValueOrDefault(((Length) 0, (Length) (-1), null));
 
             turnLeadDist *= 1.2;
 
-            return (GeoPoint.FlatDistanceM(aircraft.Position.PositionGeoPoint, intersection) < MathUtil.ConvertNauticalMilesToMeters(turnLeadDist));
+            return (GeoPoint.FlatDistance(aircraft.Position.PositionGeoPoint, intersection) < turnLeadDist);
             //double requestedTurnDelta = GeoUtil.CalculateTurnAmount(demandedTrack, aircraft.Position.Track_True);
             //return (trackDelta > 0 && requestedTurnDelta > 0 || trackDelta < 0 && requestedTurnDelta < 0);
         }
@@ -76,15 +78,15 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
 
         public FmsPoint EndPoint => _endPoint;
 
-        public double InitialTrueCourse => -1;
+        public Bearing InitialTrueCourse => Bearing.FromDegrees(-1);
 
-        public double FinalTrueCourse => _trueCourse;
+        public Bearing FinalTrueCourse => _trueCourse;
 
-        public double LegLength => 0;
+        public Length LegLength => (Length) 0;
 
         public override string ToString()
         {
-            return $"{_magneticCourse:000.0} =(CF)=> {_endPoint}";
+            return $"{_magneticCourse.Degrees:000.0} =(CF)=> {_endPoint}";
         }
 
         public void ProcessLeg(SimAircraft aircraft, int intervalMs)
