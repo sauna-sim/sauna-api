@@ -1,4 +1,5 @@
 ﻿using AviationCalcUtilNet.GeoTools;
+using AviationCalcUtilNet.Units;
 using NavData_Interface;
 using NavData_Interface.DataSources;
 using NavData_Interface.Objects;
@@ -198,7 +199,7 @@ namespace SaunaSim.Core.Data
         public static Fix GetClosestWaypointByIdentifier(string wpId, double lat, double lon)
         {
             Fix closestFix = null;
-            double closestDistance = double.MaxValue;
+            Length closestDistance = new Length(double.MaxValue);
 
             if (HasNavigraphDataLoaded())
             {
@@ -208,7 +209,7 @@ namespace SaunaSim.Core.Data
                     if (navigraphFix != null)
                     {
                         closestFix = navigraphFix;
-                        closestDistance = GeoPoint.DistanceM(new GeoPoint(lat, lon), closestFix.Location);
+                        closestDistance = GeoPoint.Distance(new GeoPoint(lat, lon), closestFix.Location);
                     }
                 }
             }
@@ -220,7 +221,7 @@ namespace SaunaSim.Core.Data
                     Fix sctFix = navdataInterface.GetClosestFixByIdentifier(new GeoPoint(lat, lon), wpId.ToUpper());
                     if (sctFix != null)
                     {
-                        double distance = GeoPoint.DistanceM(new GeoPoint(lat, lon), sctFix.Location);
+                        Length distance = GeoPoint.Distance(new GeoPoint(lat, lon), sctFix.Location);
 
                         if (distance < closestDistance - 1000)
                         {
@@ -236,7 +237,7 @@ namespace SaunaSim.Core.Data
                 Fix customFix = _customDataInterface.GetClosestFixByIdentifier(new GeoPoint(lat, lon), wpId.ToUpper());
                 if (customFix != null)
                 {
-                    double distance = GeoPoint.DistanceM(new GeoPoint(lat, lon), customFix.Location);
+                    Length distance = GeoPoint.Distance(new GeoPoint(lat, lon), customFix.Location);
 
                     if (distance < closestDistance - 1000)
                     {

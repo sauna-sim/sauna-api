@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using AviationCalcUtilNet.Geo;
 using AviationCalcUtilNet.GeoTools;
+using AviationCalcUtilNet.Units;
 using SaunaSim.Core.Data;
 using SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller;
 using SaunaSim.Core.Simulator.Aircraft.FMS.NavDisplay;
@@ -15,7 +17,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
 
         public ApFmsHoldController Instr => _instr;
 
-        public HoldToManualLeg(FmsPoint startPoint, BearingTypeEnum courseType, double inboundCourse, HoldTurnDirectionEnum turnDir, HoldLegLengthTypeEnum legLengthType, double legLength)
+        public HoldToManualLeg(FmsPoint startPoint, BearingTypeEnum courseType, Bearing inboundCourse, HoldTurnDirectionEnum turnDir, HoldLegLengthTypeEnum legLengthType, double legLength)
         {
             _startPoint = startPoint;
             _endPoint = new FmsPoint(startPoint.Point, RoutePointTypeEnum.FLY_OVER);
@@ -26,11 +28,11 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
 
         public FmsPoint EndPoint => _endPoint;
 
-        public double InitialTrueCourse => _instr.TrueCourse;
+        public Bearing InitialTrueCourse => _instr.TrueCourse;
 
-        public double FinalTrueCourse => _instr.TrueCourse;
+        public Bearing FinalTrueCourse => _instr.TrueCourse;
 
-        public double LegLength => 0;
+        public Length LegLength => (Length)0;
 
         public bool ExitArmed
         {
@@ -64,7 +66,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
             _instr.ProcessLeg(aircraft, intervalMs);
         }
 
-        public (double requiredTrueCourse, double crossTrackError, double alongTrackDistance, double turnRadius) GetCourseInterceptInfo(SimAircraft aircraft)
+        public (Bearing requiredTrueCourse, Length crossTrackError, Length alongTrackDistance, Length turnRadius) GetCourseInterceptInfo(SimAircraft aircraft)
         {
             return _instr.GetCourseInterceptInfo(aircraft);
         }

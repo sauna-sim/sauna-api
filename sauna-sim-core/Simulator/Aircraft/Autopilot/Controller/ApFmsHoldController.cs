@@ -1,6 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Net;
+using AviationCalcUtilNet.Aviation;
+using AviationCalcUtilNet.Geo;
+using AviationCalcUtilNet.GeoTools;
+using AviationCalcUtilNet.Magnetic;
+using AviationCalcUtilNet.Units;
 using SaunaSim.Core.Data;
 using SaunaSim.Core.Simulator.Aircraft.FMS;
 using SaunaSim.Core.Simulator.Aircraft.FMS.Legs;
@@ -30,8 +35,8 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
         private HoldPhaseEnum _holdPhase;
         private HoldEntryEnum _holdEntry;
         private IRoutePoint _routePoint;
-        private double _magneticCourse;
-        private double _trueCourse;
+        private Bearing _magneticCourse;
+        private Bearing _trueCourse;
         private HoldTurnDirectionEnum _turnDir;
         private HoldLegLengthTypeEnum _legLengthType;
         private double _legLength;
@@ -50,15 +55,15 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
         public RadiusToFixLeg InboundTurnLeg => _inboundTurnLeg;
         public TrackToFixLeg InboundLeg => _inboundLeg;
 
-        public double AlongTrack_M { get; private set; }
+        public Length AlongTrack_M { get; private set; }
 
-        public double CrossTrack_M { get; private set; }
+        public Length CrossTrack_M { get; private set; }
 
-        public double CurrentTrueCourse { get; private set; }
+        public Bearing CurrentTrueCourse { get; private set; }
 
-        public double Radius_M { get; private set; }
+        public Length Radius_M { get; private set; }
 
-        public ApFmsHoldController(IRoutePoint holdingPoint, BearingTypeEnum courseType, double inboundCourse, HoldTurnDirectionEnum turnDir, HoldLegLengthTypeEnum legType, double legLength)
+        public ApFmsHoldController(IRoutePoint holdingPoint, BearingTypeEnum courseType, Bearing inboundCourse, HoldTurnDirectionEnum turnDir, HoldLegLengthTypeEnum legType, double legLength, MagneticTileManager magTileMgr)
         {
             _holdPhase = HoldPhaseEnum.ENTRY;
             _holdEntry = HoldEntryEnum.NONE;
@@ -68,11 +73,11 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
             if (courseType == BearingTypeEnum.TRUE)
             {
                 _trueCourse = inboundCourse;
-                _magneticCourse = MagneticUtil.ConvertTrueToMagneticTile(_trueCourse, holdingPoint.PointPosition);
+                _magneticCourse = magTileMgr.TrueToMagnetic(holdingPoint.PointPosition, DateTime.UtcNow, _trueCourse);
             } else
             {
                 _magneticCourse = inboundCourse;
-                _trueCourse = MagneticUtil.ConvertMagneticToTrueTile(_magneticCourse, holdingPoint.PointPosition);
+                _trueCourse = magTileMgr.MagneticToTrue(holdingPoint.PointPosition, DateTime.UtcNow, _magneticCourse);
             }
 
             _turnDir = turnDir;
@@ -87,20 +92,20 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
             }
         }
 
-        public ApFmsHoldController(IRoutePoint holdingPoint, BearingTypeEnum courseType, double inboundCourse, HoldTurnDirectionEnum turnDir) :
-            this(holdingPoint, courseType, inboundCourse, turnDir, HoldLegLengthTypeEnum.DEFAULT, -1)
+        public ApFmsHoldController(IRoutePoint holdingPoint, BearingTypeEnum courseType, Bearing inboundCourse, HoldTurnDirectionEnum turnDir, MagneticTileManager magTileMgr) :
+            this(holdingPoint, courseType, inboundCourse, turnDir, HoldLegLengthTypeEnum.DEFAULT, -1, magTileMgr)
         { }
 
-        public ApFmsHoldController(IRoutePoint holdingPoint, BearingTypeEnum courseType, double inboundCourse) :
-            this(holdingPoint, courseType, inboundCourse, HoldTurnDirectionEnum.RIGHT)
+        public ApFmsHoldController(IRoutePoint holdingPoint, BearingTypeEnum courseType, Bearing inboundCourse, MagneticTileManager magTileMgr) :
+            this(holdingPoint, courseType, inboundCourse, HoldTurnDirectionEnum.RIGHT, magTileMgr)
         { }
 
         public LateralControlMode Type => LateralControlMode.HOLDING_PATTERN;
 
         public HoldPhaseEnum HoldPhase => _holdPhase;
 
-        public double MagneticCourse => _magneticCourse;
-        public double TrueCourse => _trueCourse;
+        public Bearing MagneticCourse => _magneticCourse;
+        public Bearing TrueCourse => _trueCourse;
 
         public bool ExitArmed { get; set; }
 
@@ -147,41 +152,40 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
             }
         }
 
-        private double GetTurnAmount()
+        private Angle GetTurnAmount()
         {
-            return _turnDir == HoldTurnDirectionEnum.RIGHT ? 180 : -180;
+            return _turnDir == HoldTurnDirectionEnum.RIGHT ? Angle.FromDegrees(180) : Angle.FromDegrees(-180);
         }
 
-        private double CalculateMinRadiusOfTurn(double turnAmt, double inboundCourse, double outboundCourse, double windDir, double windSpd, double tas)
+        private Length CalculateMinRadiusOfTurn(Angle turnAmt, Bearing inboundCourse, Bearing outboundCourse, Bearing windDir, Velocity windSpd, Velocity tas)
         {
-            double outR = GeoUtil.CalculateConstantRadiusTurn(inboundCourse, turnAmt, windDir, windSpd, tas);
-            double inR = GeoUtil.CalculateConstantRadiusTurn(outboundCourse, turnAmt, windDir, windSpd, tas);
-            return Math.Max(outR, inR) * AutopilotUtil.RADIUS_BUFFER_MULT;
+            Length outR = AviationUtil.CalculateConstantRadiusTurn(inboundCourse, turnAmt, windDir, windSpd, tas, Angle.FromDegrees(25), AngularVelocity.FromDegreesPerSecond(3));
+            Length inR = AviationUtil.CalculateConstantRadiusTurn(outboundCourse, turnAmt, windDir, windSpd, tas, Angle.FromDegrees(25), AngularVelocity.FromDegreesPerSecond(3));
+            return (Length) (Math.Max((double)outR, (double)inR) * AutopilotUtil.RADIUS_BUFFER_MULT);
         }
 
         private void CalculateParallelEntry(SimAircraft aircraft)
         {
             // Find courses and leg lengths
-            double turnAmt = GetTurnAmount();
-            double outboundCourse = GeoUtil.NormalizeHeading(_trueCourse + turnAmt);
-            double outboundLegLength = GetOutboundDistance(aircraft.Position);
-            double aircraftTurnAmt = GeoUtil.CalculateTurnAmount(aircraft.Position.Track_True, outboundCourse);
-            (double chordHdg, double chordDist) = GeoUtil.CalculateChordHeadingAndDistance(
+            Angle turnAmt = GetTurnAmount();
+            Bearing outboundCourse = _trueCourse + turnAmt;
+            Length outboundLegLength = GetOutboundDistance(aircraft.Position);
+            Angle aircraftTurnAmt = outboundCourse - aircraft.Position.Track_True;
+            (Bearing chordHdg, Length chordDist) = AviationUtil.CalculateChordForTurn(
                 aircraft.Position.Track_True,
-                Math.Abs(aircraftTurnAmt),
-                GeoUtil.CalculateConstantRadiusTurn(aircraft.Position.Track_True, aircraftTurnAmt, aircraft.Position.WindDirection, aircraft.Position.WindSpeed, aircraft.Position.TrueAirSpeed),
-                aircraftTurnAmt > 0
+                aircraftTurnAmt,
+                AviationUtil.CalculateConstantRadiusTurn(aircraft.Position.Track_True, aircraftTurnAmt, aircraft.Position.WindDirection, aircraft.Position.WindSpeed, aircraft.Position.TrueAirSpeed, Angle.FromDegrees(25), AngularVelocity.FromDegreesPerSecond(3))
                 );
 
             // Calculate required radius of turn
-            double r = CalculateMinRadiusOfTurn(turnAmt, _trueCourse, outboundCourse, aircraft.Position.WindDirection, aircraft.Position.WindSpeed, aircraft.Position.TrueAirSpeed);
+            Length r = CalculateMinRadiusOfTurn(turnAmt, _trueCourse, outboundCourse, aircraft.Position.WindDirection, aircraft.Position.WindSpeed, aircraft.Position.TrueAirSpeed);
 
             // Find Points
             _outStartPoint = new RoutePointPbd(_routePoint.PointPosition, chordHdg, chordDist, $"{_routePoint.PointName}H_OS");
-            GeoPoint tempOsPoint = new GeoPoint(_routePoint.PointPosition);
-            tempOsPoint.MoveByNMi(outboundCourse, outboundLegLength);
-            double finOsBearing = GeoPoint.FinalBearing(_routePoint.PointPosition, tempOsPoint);
-            GeoPoint intersection = GeoPoint.Intersection(tempOsPoint, GeoUtil.NormalizeHeading(finOsBearing + (turnAmt / 2)), _outStartPoint.PointPosition, outboundCourse);
+            GeoPoint tempOsPoint = (GeoPoint) _routePoint.PointPosition.Clone();
+            tempOsPoint.MoveBy(outboundCourse, outboundLegLength);
+            Bearing finOsBearing = GeoPoint.FinalBearing(_routePoint.PointPosition, tempOsPoint);
+            GeoPoint intersection = GeoPoint.Intersection(tempOsPoint, finOsBearing + (turnAmt / 2), _outStartPoint.PointPosition, outboundCourse);
 
             if (intersection == null)
             {
@@ -189,8 +193,8 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
             }
 
             _outEndPoint = new RouteWaypoint(intersection);
-            double oeCourse = GeoPoint.FinalBearing(_outStartPoint.PointPosition, _outEndPoint.PointPosition);
-            _inStartPoint = new RoutePointPbd(_outEndPoint.PointPosition, GeoUtil.NormalizeHeading(oeCourse - (turnAmt / 2)), r * 2, $"{_routePoint.PointName}H_IS1");
+            Bearing oeCourse = GeoPoint.FinalBearing(_outStartPoint.PointPosition, _outEndPoint.PointPosition);
+            _inStartPoint = new RoutePointPbd(_outEndPoint.PointPosition, oeCourse - (turnAmt / 2), r * 2, $"{_routePoint.PointName}H_IS1");
 
             // Create FmsPoints
             FmsPoint iePoint = new FmsPoint(_routePoint, RoutePointTypeEnum.FLY_OVER);
@@ -208,16 +212,16 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
         private void CalculateTeardropEntry(SimAircraft aircraft)
         {
             // Find courses and leg lengths
-            double turnAmt = GetTurnAmount();
-            double outboundCourse = GeoUtil.NormalizeHeading(_trueCourse + turnAmt);
-            double outboundLegLength = GetOutboundDistance(aircraft.Position);
+            Angle turnAmt = GetTurnAmount();
+            Bearing outboundCourse = (_trueCourse + turnAmt);
+            Length outboundLegLength = GetOutboundDistance(aircraft.Position);
 
             // Calculate required radius of turn
-            double r = CalculateMinRadiusOfTurn(turnAmt, _trueCourse, outboundCourse, aircraft.Position.WindDirection, aircraft.Position.WindSpeed, aircraft.Position.TrueAirSpeed);
+            Length r = CalculateMinRadiusOfTurn(turnAmt, _trueCourse, outboundCourse, aircraft.Position.WindDirection, aircraft.Position.WindSpeed, aircraft.Position.TrueAirSpeed);
 
             // Find Points
             _inStartPoint = new RoutePointPbd(_routePoint.PointPosition, outboundCourse, outboundLegLength, $"{_routePoint.PointName}H_IS");
-            double bearingToOutStart = GeoUtil.NormalizeHeading(GeoPoint.FinalBearing(_routePoint.PointPosition, _inStartPoint.PointPosition) - (turnAmt / 2));
+            Bearing bearingToOutStart = (GeoPoint.FinalBearing(_routePoint.PointPosition, _inStartPoint.PointPosition) - (turnAmt / 2));
             _outEndPoint = new RoutePointPbd(_inStartPoint.PointPosition, bearingToOutStart, r * 2, $"{_routePoint.PointName}H_OE");
 
             double dirFinalCourse = GeoUtil.CalculateDirectBearingAfterTurn(
@@ -315,11 +319,11 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
             _inboundLeg = new TrackToFixLeg(isPoint, iePoint);
         }
 
-        private double GetOutboundDistance(AircraftPosition position)
+        private Length GetOutboundDistance(AircraftPosition position)
         {
             if (_legLengthType == HoldLegLengthTypeEnum.DISTANCE)
             {
-                return _legLength;
+                return Length.FromNauticalMiles(_legLength);
             }
 
             double legLengthMs;
@@ -329,7 +333,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
                 legLengthMs = _legLength * 60000;
             } else
             {
-                if (position.IndicatedAltitude < 14000)
+                if (position.IndicatedAltitude.Feet < 14000)
                 {
                     legLengthMs = 60000;
                 } else
@@ -416,7 +420,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
             }
         }
 
-        public (double requiredTrueCourse, double crossTrackError, double alongTrackDistance, double turnRadius) GetCourseInterceptInfo(SimAircraft aircraft)
+        public (Bearing requiredTrueCourse, Length crossTrackError, Length alongTrackDistance, Length turnRadius) GetCourseInterceptInfo(SimAircraft aircraft)
         {
             switch (_holdPhase)
             {
@@ -432,7 +436,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
 
 
             double crossTrackError = GeoUtil.CalculateCrossTrackErrorM(aircraft.Position.PositionGeoPoint, _routePoint.PointPosition, _trueCourse,
-out double requiredTrueCourse, out double alongTrackDistance);
+out Length requiredTrueCourse, out double alongTrackDistance);
 
             return (requiredTrueCourse, crossTrackError, alongTrackDistance, 0);
         }

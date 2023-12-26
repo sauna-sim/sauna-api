@@ -64,8 +64,17 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
             //double demandedTrack = AutopilotUtil.CalculateDemandedTrackOnCurrentTrack(crossTrackError, aircraft.Position.Track_True, requiredTrueCourse, aircraft.Position.Bank,
             //aircraft.Position.GroundSpeed, intervalMs).demandedTrack;
 
-            (Length turnLeadDist, _, GeoPoint intersection) = AviationUtil.CalculateTurnLeadDistance(aircraft.Position.PositionGeoPoint, _endPoint.Point.PointPosition, aircraft.Position.Track_True, aircraft.Position.TrueAirSpeed, _trueCourse, aircraft.Position.WindDirection, aircraft.Position.WindSpeed, AutopilotUtil.ROLL_LIMIT, AngularVelocity.FromDegreesPerSecond(3))
-                .GetValueOrDefault(((Length) 0, (Length) (-1), null));
+            (Length turnLeadDist, _, GeoPoint intersection) = AviationUtil.CalculateTurnLeadDistance(
+                aircraft.Position.PositionGeoPoint,
+                _endPoint.Point.PointPosition,
+                aircraft.Position.Track_True,
+                aircraft.Position.TrueAirSpeed,
+                _trueCourse,
+                aircraft.Position.WindDirection,
+                aircraft.Position.WindSpeed,
+                AutopilotUtil.ROLL_LIMIT,
+                AngularVelocity.FromDegreesPerSecond(3)
+                ).GetValueOrDefault(((Length) 0, (Length) (-1), null));
 
             turnLeadDist *= 1.2;
 
