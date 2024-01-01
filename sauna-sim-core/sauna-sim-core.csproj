@@ -21,7 +21,6 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="JsonSchemas\" />
-    <ProjectReference Include="..\NavData-Interface\NavData-Interface\NavData-Interface.csproj" />
     <Folder Include="Simulator\Aircraft\FMS\NavDisplay\" />
   </ItemGroup>
   <ItemGroup>
@@ -29,5 +28,8 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Data\NavData\" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\NavData-Interface\NavData-Interface.csproj" />
   </ItemGroup>
 </Project>
