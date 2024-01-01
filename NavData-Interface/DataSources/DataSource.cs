@@ -26,7 +26,7 @@ namespace NavData_Interface.DataSources
 
             foreach (var fix in fixes)
             {
-                double distance = GeoPoint.DistanceM(point, fix.Location);
+                double distance = GeoPoint.Distance(point, fix.Location).Meters;
                 if (distance < closestDistance)
                 {
                     closestDistance = distance;
