@@ -55,8 +55,8 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
         {
             if (_instr.ExitArmed && _instr.HoldPhase == HoldPhaseEnum.INBOUND)
             {
-                (_, _, double alongTrackM, _) = _instr.GetCourseInterceptInfo(aircraft);
-                return alongTrackM <= 0;
+                (_, _, Length alongTrackM, _) = _instr.GetCourseInterceptInfo(aircraft);
+                return alongTrackM.Meters <= 0;
             }
             return false;
         }

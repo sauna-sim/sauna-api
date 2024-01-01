@@ -3,8 +3,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using AviationCalcUtilNet.Aviation;
+using AviationCalcUtilNet.Geo;
 using AviationCalcUtilNet.GeoTools;
+using AviationCalcUtilNet.Magnetic;
 using AviationCalcUtilNet.MathTools;
+using AviationCalcUtilNet.Units;
 using FsdConnectorNet;
 using NavData_Interface.Objects.Fix;
 using SaunaSim.Core.Data;
@@ -21,30 +25,32 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
         private List<IRouteLeg> _routeLegs;
         private object _routeLegsLock;
         private bool _suspended;
-        private static double MIN_GS_DIFF = 10;
-        private double _lastGs;
+        private static Velocity MIN_GS_DIFF = Velocity.FromKnots(10);
+        private Velocity _lastGs;
         private bool _wpEvtTriggered = false;
+        private MagneticTileManager _magTileMgr;
 
         // Fms Values
-        private double _xTk_m;
-        private double _aTk_m;
-        private double _requiredTrueCourse;
-        private double _turnRadius_m;
-        private double _vTk_m;
-        private double _requiredFpa;
+        private Length _xTk;
+        private Length _aTk;
+        private Bearing _requiredTrueCourse;
+        private Length _turnRadius;
+        private Length _vTk;
+        private Angle _requiredFpa;
 
         public EventHandler<WaypointPassedEventArgs> WaypointPassed;
 
-        public AircraftFms(SimAircraft parentAircraft)
+        public AircraftFms(SimAircraft parentAircraft, MagneticTileManager mgr)
         {
             _parentAircraft = parentAircraft;
             _routeLegsLock = new object();
-            _xTk_m = -1;
-            _aTk_m = -1;
-            _requiredTrueCourse = -1;
-            _vTk_m = -1;
-            _requiredFpa = 0;
-            _turnRadius_m = 0;
+            _xTk = Length.FromMeters(-1);
+            _aTk = Length.FromMeters(-1);
+            _requiredTrueCourse = null;
+            _vTk = Length.FromMeters(-1);
+            _requiredFpa = Angle.FromRadians(0);
+            _turnRadius = Length.FromMeters(-1);
+            _magTileMgr = mgr;
 
             lock (_routeLegsLock)
             {
@@ -54,17 +60,17 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
             _suspended = false;
         }
 
-        public double AlongTrackDistance_m => _aTk_m;
+        public Length AlongTrackDistance => _aTk;
 
-        public double CrossTrackDistance_m => _xTk_m;
+        public Length CrossTrackDistance => _xTk;
 
-        public double RequiredTrueCourse => _requiredTrueCourse;
+        public Bearing RequiredTrueCourse => _requiredTrueCourse;
 
-        public double TurnRadius_m => _turnRadius_m;
+        public Length TurnRadius => _turnRadius;
 
-        public double VerticalTrackDistance_m => _vTk_m;
+        public Length VerticalTrackDistance => _vTk;
 
-        public double RequiredFpa => _requiredFpa;
+        public Angle RequiredFpa => _requiredFpa;
 
         public bool Suspended
         {
@@ -192,7 +198,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
             return null;
         }
 
-        public void ActivateDirectTo(IRoutePoint routePoint, double course = -1)
+        public void ActivateDirectTo(IRoutePoint routePoint, Bearing course = null)
         {
             lock (_routeLegsLock)
             {
@@ -234,9 +240,9 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
                 // Create direct leg
                 IRouteLeg dtoLeg = new DirectToFixLeg(point, _parentAircraft.Position.PositionGeoPoint, _parentAircraft.Position.Track_True, _parentAircraft.Position.GroundSpeed);
 
-                if (course >= 0)
+                if (course != null)
                 {
-                    dtoLeg = new CourseToFixLeg(point, BearingTypeEnum.MAGNETIC, course);
+                    dtoLeg = new CourseToFixLeg(point, BearingTypeEnum.MAGNETIC, course, _magTileMgr);
                 }
 
                 _activeLeg = dtoLeg;
@@ -285,7 +291,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
                     point.PointType = RoutePointTypeEnum.FLY_OVER;
 
                     // Create hold leg
-                    IRouteLeg holdLeg = new HoldToManualLeg(point, BearingTypeEnum.MAGNETIC, magCourse, turnDir, legLengthType, legLength);
+                    IRouteLeg holdLeg = new HoldToManualLeg(point, BearingTypeEnum.MAGNETIC, Bearing.FromDegrees(magCourse), turnDir, legLengthType, legLength);
 
                     // Add leg
                     _routeLegs.Insert(index, holdLeg);
@@ -334,7 +340,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
             return leg?.ShouldActivateLeg(_parentAircraft, intervalMs) ?? false;
         }
 
-        public (double requiredTrueCourse, double crossTrackError, double alongTrackDistance, double turnRadius) CourseInterceptInfo => (_requiredTrueCourse, _xTk_m, _aTk_m, _turnRadius_m);
+        public (Bearing requiredTrueCourse, Length crossTrackError, Length alongTrackDistance, Length turnRadius) CourseInterceptInfo => (_requiredTrueCourse, _xTk, _aTk, _turnRadius);
 
         private bool ShouldStartTurnToNextLeg(int intervalMs)
         {
@@ -351,8 +357,8 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
                 ActiveLeg.EndPoint.PointType == RoutePointTypeEnum.FLY_BY &&
                 nextLeg.StartPoint != null &&
                 ActiveLeg.EndPoint.Point.Equals(nextLeg.StartPoint.Point) &&
-                ActiveLeg.FinalTrueCourse >= 0 && nextLeg.InitialTrueCourse >= 0 &&
-                Math.Abs(GeoUtil.CalculateTurnAmount(ActiveLeg.FinalTrueCourse, nextLeg.InitialTrueCourse)) > 0.5 &&
+                ActiveLeg.FinalTrueCourse != null && nextLeg.InitialTrueCourse != null &&
+                Math.Abs((nextLeg.InitialTrueCourse - ActiveLeg.FinalTrueCourse).Degrees) > 0.5 &&
                 nextLeg.ShouldActivateLeg(_parentAircraft, intervalMs) && !Suspended;
         }
 
@@ -368,16 +374,16 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
 
             if (ShouldStartTurnToNextLeg(intervalMs))
             {
-                double startBearing = ActiveLeg.FinalTrueCourse;
-                double endBearing = nextLeg.InitialTrueCourse;
-                double turnAmt = GeoUtil.CalculateTurnAmount(startBearing, endBearing);
+                Bearing startBearing = ActiveLeg.FinalTrueCourse;
+                Bearing endBearing = nextLeg.InitialTrueCourse;
+                Angle turnAmt = endBearing - startBearing;
 
                 // Find half turn and see if we've crossed abeam the point
-                double bisectorRadial = GeoUtil.NormalizeHeading(startBearing + (turnAmt / 2));
+                Bearing bisectorRadial = startBearing + (turnAmt / 2);
 
-                GeoUtil.CalculateCrossTrackErrorM(_parentAircraft.Position.PositionGeoPoint, ActiveLeg.EndPoint.Point.PointPosition, bisectorRadial, out _, out double bisectorAtk);
+                (_, Length bisectorAtk, _) = AviationUtil.CalculateLinearCourseIntercept(_parentAircraft.Position.PositionGeoPoint, ActiveLeg.EndPoint.Point.PointPosition, bisectorRadial);
 
-                return bisectorAtk <= 0;
+                return bisectorAtk.Meters <= 0;
             }
 
             return false;
@@ -405,10 +411,10 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
             bool hasLegTerminated = ShouldSequenceNextLeg(intervalMs);
 
             // Trigger Waypoint Passed if it has
-            if (_aTk_m > 0 && ActiveLeg.EndPoint != null && ActiveLeg.FinalTrueCourse >= 0)
+            if (_aTk.Meters > 0 && ActiveLeg.EndPoint != null && ActiveLeg.FinalTrueCourse != null)
             {
-                GeoUtil.CalculateCrossTrackErrorM(_parentAircraft.Position.PositionGeoPoint, ActiveLeg.EndPoint.Point.PointPosition, ActiveLeg.FinalTrueCourse, out _, out double act_atk_m);
-                if (act_atk_m <= 0 || hasLegTerminated)
+                (_, Length act_atk_m, _) = AviationUtil.CalculateLinearCourseIntercept(_parentAircraft.Position.PositionGeoPoint, ActiveLeg.EndPoint.Point.PointPosition, ActiveLeg.FinalTrueCourse);
+                if (act_atk_m.Meters <= 0 || hasLegTerminated)
                 {
                     if (!_wpEvtTriggered)
                     {
@@ -432,23 +438,23 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
                 {
                     // Begin turn to next leg, but do not activate
                     nextLeg.ProcessLeg(_parentAircraft, intervalMs);
-                    (_requiredTrueCourse, _xTk_m, _aTk_m, _turnRadius_m) = nextLeg.GetCourseInterceptInfo(_parentAircraft);
+                    (_requiredTrueCourse, _xTk, _aTk, _turnRadius) = nextLeg.GetCourseInterceptInfo(_parentAircraft);
                     return;
                 }
             }
 
             // Calculate course values
-            (_requiredTrueCourse, _xTk_m, _aTk_m, _turnRadius_m) = ActiveLeg.GetCourseInterceptInfo(_parentAircraft);
+            (_requiredTrueCourse, _xTk, _aTk, _turnRadius) = ActiveLeg.GetCourseInterceptInfo(_parentAircraft);
 
             // Check if we need to recalculate remaining legs and VNAV crossing altitudes
-            if (Math.Abs(_lastGs - position.GroundSpeed) > MIN_GS_DIFF)
+            if (Math.Abs((_lastGs - position.GroundSpeed).MetersPerSecond) > MIN_GS_DIFF.MetersPerSecond)
             {
                 RecalculateVnavPath();
                 _lastGs = position.GroundSpeed;
             }
 
             // Calculate VNAV values
-            (_requiredFpa, _vTk_m) = GetPitchInterceptInfoForCurrentLeg();
+            (_requiredFpa, _vTk) = GetPitchInterceptInfoForCurrentLeg();
         }
 
         private void RecalculateVnavPath()
@@ -481,23 +487,23 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
             }
         }
 
-        private (double requiredFpa, double vTk_m) GetPitchInterceptInfoForCurrentLeg()
+        private (Angle requiredFpa, Length vTk_m) GetPitchInterceptInfoForCurrentLeg()
         {
             if (_activeLeg.EndPoint == null || _activeLeg.EndPoint.VnavTargetAltitude < 0 || _activeLeg.EndPoint.AngleConstraint < 0)
             {
-                return (0, 0);
+                return ((Angle)0, (Length)0);
             }
 
             // TODO: Change this to actually figure out the angle
-            double requiredFpa = _activeLeg.EndPoint.AngleConstraint;
+            Angle requiredFpa = Angle.FromDegrees(_activeLeg.EndPoint.AngleConstraint);
 
             // Calculate how much altitude we still need to climb/descend from here to the EndPoint
-            double deltaAlt_m = Math.Tan(MathUtil.ConvertDegreesToRadians(requiredFpa)) * _aTk_m;
+            Length deltaAlt_m = Length.FromMeters(Math.Tan(requiredFpa.Radians) * _aTk.Meters);
 
             // Add to Vnav target alt
-            double altTarget_m = deltaAlt_m + MathUtil.ConvertFeetToMeters(_activeLeg.EndPoint.VnavTargetAltitude);
+            Length altTarget_m = deltaAlt_m + Length.FromFeet(_activeLeg.EndPoint.VnavTargetAltitude);
 
-            double vTk_m = MathUtil.ConvertFeetToMeters(_parentAircraft.Position.TrueAltitude) - altTarget_m;
+            Length vTk_m = _parentAircraft.Position.TrueAltitude - altTarget_m;
 
             return (requiredFpa, vTk_m);
         }

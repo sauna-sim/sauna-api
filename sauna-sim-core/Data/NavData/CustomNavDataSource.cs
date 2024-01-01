@@ -81,7 +81,7 @@ namespace SaunaSim.Core.Data.NavData
         {
             foreach (PublishedHold hold in _pubHolds)
             {
-                if (hold.Waypoint.Identifier.ToUpper() == fix.Identifier.ToUpper() && GeoPoint.DistanceM(hold.Waypoint.Location, fix.Location) < 1000)
+                if (hold.Waypoint.Identifier.ToUpper() == fix.Identifier.ToUpper() && GeoPoint.Distance(hold.Waypoint.Location, fix.Location).Meters < 1000)
                 {
                     return hold;
                 }

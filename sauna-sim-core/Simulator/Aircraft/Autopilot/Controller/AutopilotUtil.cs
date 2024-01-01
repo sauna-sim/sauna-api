@@ -24,6 +24,12 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
         public readonly static Length MAX_INTC_XTK_M = Length.FromMeters(1852.0);
         public const double RADIUS_BUFFER_MULT = 1.1;
 
+        public readonly static Angle LNAV_MAX_COMPUTE_BANK = Angle.FromDegrees(25);
+        public readonly static Angle LNAV_MAX_BANK = Angle.FromDegrees(30);
+        public readonly static Length TERM_MAX_TURN_LEAD = Length.FromNauticalMiles(10);
+        public readonly static Length TERM_ALT_CROSSOVER = Length.FromFeet(20000);
+        public readonly static Length ENRTE_MAX_TURN_LEAD = Length.FromNauticalMiles(20);
+
         // Pitch
         public const double PITCH_TIME = 0.5;
         public readonly static Angle PITCH_LIMIT_MAX = Angle.FromDegrees(30.0);
@@ -31,6 +37,9 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
         public const double PITCH_TIME_BUFFER = 0.1;
         public readonly static AngularVelocity PITCH_RATE_NORM_MAX = AngularVelocity.FromDegreesPerSecond(1.0);
         public readonly static AngularVelocity PITCH_RATE_TOLDG_MAX = AngularVelocity.FromDegreesPerSecond(3.0);
+
+        public readonly static double PITCH_NORM_G_LIMIT = 1.1;
+        
 
         // Thrust
         public const double THRUST_TIME = 0.5;
