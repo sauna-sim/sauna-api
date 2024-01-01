@@ -10,8 +10,8 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.NavDisplay
 
 		public NdLine(GeoPoint start, GeoPoint end)
 		{
-			StartPoint = new GeoPoint(start);
-			EndPoint = new GeoPoint(end);
+			StartPoint = (GeoPoint)start.Clone();
+			EndPoint = (GeoPoint)end.Clone();
 		}
 	}
 }
