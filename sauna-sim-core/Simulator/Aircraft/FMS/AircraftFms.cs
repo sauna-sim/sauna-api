@@ -152,15 +152,13 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
             {
                 try
                 {
+                    // If inserting as the first item, add discontinuity
                     _routeLegs.Insert(index, routeLeg);
-                    if(index == 0)
+                    if (index == 0)
                     {
-                        if(ActiveLeg != null && (ActiveLeg.LegType == RouteLegTypeEnum.DIRECT_TO_FIX || ActiveLeg.LegType == RouteLegTypeEnum.COURSE_TO_FIX))
-                        {
-                            _routeLegs.Insert(1, new DiscoLeg(0));                            
-                        }
-                        ActivateNextLeg();
+                        _routeLegs.Insert(1, new DiscoLeg(0));
                     }
+                    RecalculateVnavPath();
                 }
                 catch (ArgumentOutOfRangeException ex) { }
             }
