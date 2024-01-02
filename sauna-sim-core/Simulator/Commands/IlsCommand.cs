@@ -34,8 +34,8 @@ namespace SaunaSim.Core.Simulator.Commands
             _locRoutePoint = new RouteWaypoint("LOC" + _loc.Runway_identifier, _loc.Loc_location);
             FmsPoint locFmsPoint = new FmsPoint(_locRoutePoint, RoutePointTypeEnum.FLY_OVER)
             {
-                LowerAltitudeConstraint = _loc.Glideslope.Gs_elevation,
-                UpperAltitudeConstraint = _loc.Glideslope.Gs_elevation,
+                LowerAltitudeConstraint = _loc.Glideslope.Gs_elevation + 50,
+                UpperAltitudeConstraint = _loc.Glideslope.Gs_elevation + 50,
                 AngleConstraint = _loc.Glideslope.Gs_angle
             };
             CourseToFixLeg locLeg = new CourseToFixLeg(locFmsPoint, BearingTypeEnum.MAGNETIC, _loc.Loc_bearing);
