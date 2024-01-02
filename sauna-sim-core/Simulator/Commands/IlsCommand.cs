@@ -61,7 +61,7 @@ namespace SaunaSim.Core.Simulator.Commands
             Aircraft.Autopilot.AddArmedVerticalMode(VerticalModeType.APCH);
 
             // Add event handler
-            Aircraft.Fms.WaypointPassed += OnLanded;
+            //Aircraft.Fms.WaypointPassed += OnLanded;
         }
 
         public void OnLanded(object sender, WaypointPassedEventArgs e)

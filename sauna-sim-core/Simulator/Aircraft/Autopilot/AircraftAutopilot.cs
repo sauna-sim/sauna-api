@@ -8,13 +8,15 @@ using SaunaSim.Core.Simulator.Aircraft.FMS;
 using SaunaSim.Core.Simulator.Aircraft.FMS.Legs;
 using SaunaSim.Core.Simulator.Aircraft.Performance;
 using System.Net;
+using SaunaSim.Core.Data;
+using FsdConnectorNet.Args;
 
 namespace SaunaSim.Core.Simulator.Aircraft.Autopilot
 {
     public class AircraftAutopilot
     {
         private readonly SimAircraft _parentAircraft;
-
+        
         // Autopilot internal variables
         private double _targetThrust;
         private double _targetBank;
@@ -40,6 +42,9 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot
         private McpSpeedSelectorType _spdMode;
         private McpSpeedUnitsType _spdUnits;
         private int _selSpd;
+
+        //Airport Elev
+        private double _airportElev = DataHandler.GetAirportByIdentifier(DataHandler.FAKE_AIRPORT_NAME).Elevation;
 
         public AircraftAutopilot(SimAircraft parentAircraft)
         {
@@ -204,7 +209,12 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot
                     _curVertMode = VerticalModeType.FPA;
                     _selFpa = _parentAircraft.Position.FlightPathAngle;
                     PitchHandleFpa(intervalMs);
-                } else
+                } else if (_parentAircraft.Position.TrueAltitude < (DataHandler.GetAirportByIdentifier(DataHandler.FAKE_AIRPORT_NAME).Elevation + 30))
+                {
+                    _curVertMode = VerticalModeType.LAND;
+                    PitchHandleLand(intervalMs);
+                }
+                else
                 {
                     _curThrustMode = ThrustModeType.SPEED;
 
@@ -229,6 +239,9 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot
 
                     PitchHandleVnav(intervalMs);
                 }
+            }else if(_curVertMode == VerticalModeType.LAND)
+            {
+                PitchHandleLand(intervalMs);
             }
         }
 
@@ -345,7 +358,17 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot
 
             return Math.Abs(zeroVsPitch - pitchTarget) < double.Epsilon;
         }
+        private void PitchHandleLand(int intervalMs)
+        {
+            double altDelta = _parentAircraft.Position.IndicatedAltitude - _airportElev;
+            _curThrustMode = ThrustModeType.THRUST;
+            _targetThrust = 0;
 
+            _targetPitch = PerfDataHandler.GetRequiredPitchForVs(_parentAircraft.PerformanceData, -200,
+                        _parentAircraft.Position.IndicatedAirSpeed, _parentAircraft.Position.DensityAltitude, _parentAircraft.Data.Mass_kg,
+                        _parentAircraft.Data.SpeedBrakePos, _parentAircraft.Data.Config);
+            _parentAircraft.Position.PitchRate = AutopilotUtil.CalculatePitchRate(_targetPitch, _parentAircraft.Position.Pitch, intervalMs);
+        }
         private void PitchHandleAsel(int intervalMs)
         {
             double altDelta = _parentAircraft.Position.IndicatedAltitude - _selAlt;

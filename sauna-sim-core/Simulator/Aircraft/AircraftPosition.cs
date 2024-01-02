@@ -119,9 +119,16 @@ namespace SaunaSim.Core.Simulator.Aircraft
                 // Calculate True Heading
                 _trueHdg = MagneticUtil.ConvertMagneticToTrueTile(_magneticHdg, PositionGeoPoint);
 
-                // Calculate True Track
-                double wca = _tas == 0 ? 0 : Math.Acos(WindXComp / _tas);
-                _trueTrack = GeoUtil.NormalizeHeading(_trueHdg + wca);
+                if(_onGround)
+                {
+                    _trueTrack = _trueHdg;
+                }
+                else
+                {
+                    // Calculate True Track
+                    double wca = _tas == 0 ? 0 : Math.Acos(WindXComp / _tas);
+                    _trueTrack = GeoUtil.NormalizeHeading(_trueHdg + wca);
+                }
             }
         }
 
@@ -136,9 +143,17 @@ namespace SaunaSim.Core.Simulator.Aircraft
                 // Set Magnetic Heading
                 _magneticHdg = MagneticUtil.ConvertTrueToMagneticTile(_trueHdg, PositionGeoPoint);
 
-                // Calculate True Track
-                double wca = _tas == 0 ? 0 : Math.Acos(WindXComp / _tas);
-                _trueTrack = GeoUtil.NormalizeHeading(_trueHdg + wca);
+                if(_onGround)
+                {
+                    _trueTrack = _trueHdg;
+                }
+                else
+                {
+
+                    // Calculate True Track
+                    double wca = _tas == 0 ? 0 : Math.Acos(WindXComp / _tas);
+                    _trueTrack = GeoUtil.NormalizeHeading(_trueHdg + wca);
+                }
             }
         }
 
@@ -150,9 +165,16 @@ namespace SaunaSim.Core.Simulator.Aircraft
             {
                 _trueTrack = value;
 
-                // Calculate True Heading
-                double wca = _tas == 0 ? 0 : Math.Acos(WindXComp / _tas);
-                _trueHdg = GeoUtil.NormalizeHeading(_trueTrack - wca);
+                if(_onGround)
+                {
+                    _trueHdg = _trueTrack;
+                }
+                else
+                {
+                    // Calculate True Heading
+                    double wca = _tas == 0 ? 0 : Math.Acos(WindXComp / _tas);
+                    _trueHdg = GeoUtil.NormalizeHeading(_trueTrack - wca);
+                }
 
                 // Set Magnetic Heading
                 _magneticHdg = MagneticUtil.ConvertTrueToMagneticTile(_trueHdg, PositionGeoPoint);
