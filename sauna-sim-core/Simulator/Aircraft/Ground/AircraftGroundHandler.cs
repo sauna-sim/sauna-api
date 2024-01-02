@@ -84,7 +84,6 @@ namespace SaunaSim.Core.Simulator.Aircraft.Ground
                         if (_parentAircraft.Position.Track_True > _parentAircraft.Fms.ActiveLeg.FinalTrueCourse)
                         {
                             _parentAircraft.Position.Track_True = _parentAircraft.Fms.ActiveLeg.FinalTrueCourse;
-                            _parentAircraft.Position.Heading_True = _parentAircraft.Position.Track_True;
                             _parentAircraft.Position.YawRate = 0;
                         }
                     }
@@ -95,7 +94,6 @@ namespace SaunaSim.Core.Simulator.Aircraft.Ground
                         if (_parentAircraft.Position.Track_True < _parentAircraft.Fms.ActiveLeg.FinalTrueCourse)
                         {
                             _parentAircraft.Position.Track_True = _parentAircraft.Fms.ActiveLeg.FinalTrueCourse;
-                            _parentAircraft.Position.Heading_True = _parentAircraft.Position.Track_True;
                             _parentAircraft.Position.YawRate = 0;
                         }
                     }
@@ -154,7 +152,9 @@ namespace SaunaSim.Core.Simulator.Aircraft.Ground
                     _parentAircraft.Autopilot.AddArmedVerticalMode(VerticalModeType.FLCH);
                     _parentAircraft.FlightPhase = FlightPhaseType.IN_FLIGHT;
                 }
-            }                     
+            }
+
+            _parentAircraft.Position.Heading_True = _parentAircraft.Position.Track_True;
         }
 
         private void HandleOnLand(int intervalMs)
