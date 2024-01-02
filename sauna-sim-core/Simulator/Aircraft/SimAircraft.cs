@@ -22,6 +22,7 @@ using SaunaSim.Core.Simulator.Aircraft.FMS;
 using SaunaSim.Core.Simulator.Aircraft.Performance;
 using System.Diagnostics;
 using System.ComponentModel.Design;
+using SaunaSim.Core.Simulator.Aircraft.Ground;
 
 namespace SaunaSim.Core.Simulator.Aircraft
 {
@@ -93,7 +94,8 @@ namespace SaunaSim.Core.Simulator.Aircraft
         public Connection Connection { get; private set; }
 
         private ConnectionStatusType _connectionStatus = ConnectionStatusType.WAITING;
-        public ConnectionStatusType ConnectionStatus {
+        public ConnectionStatusType ConnectionStatus
+        {
             get => _connectionStatus;
             private set
             {
@@ -161,6 +163,9 @@ namespace SaunaSim.Core.Simulator.Aircraft
         private AircraftAutopilot _autopilot;
         public AircraftAutopilot Autopilot => _autopilot;
 
+        private AircraftGroundHandler _groundhandler;
+        public AircraftGroundHandler GroundHandler => _groundhandler;
+
         private AircraftFms _fms;
         public AircraftFms Fms => _fms;
 
@@ -190,7 +195,8 @@ namespace SaunaSim.Core.Simulator.Aircraft
                 if (ConnectionStatus == ConnectionStatusType.CONNECTED)
                 {
                     Connection.SendFlightPlan(value);
-                } else
+                }
+                else
                 {
                     _flightPlan = value;
                 }
@@ -198,6 +204,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
         }
 
         public FlightPhaseType FlightPhase { get; set; }
+
 
         // Loggers
         public Action<string> LogInfo { get; set; }
@@ -223,8 +230,10 @@ namespace SaunaSim.Core.Simulator.Aircraft
 
             _simRate = 10;
             _paused = true;
+
             _position = new AircraftPosition(this, lat, lon, alt)
             {
+
                 Pitch = 2.5,
                 Bank = 0,
                 IndicatedAirSpeed = 250.0,
@@ -251,6 +260,11 @@ namespace SaunaSim.Core.Simulator.Aircraft
                 CurrentLateralMode = LateralModeType.HDG,
                 CurrentThrustMode = ThrustModeType.SPEED,
                 CurrentVerticalMode = VerticalModeType.FLCH
+            };
+
+            _groundhandler = new AircraftGroundHandler(this)
+            {
+
             };
 
             _fms = new AircraftFms(this);
@@ -374,19 +388,14 @@ namespace SaunaSim.Core.Simulator.Aircraft
         }
         private void HandleOnGround()
         {
-            if(Position.OnGround == false)
-            {
-                Position.OnGround = true;
-            }
+            // Run ground handler
+            _groundhandler.OnPositionUpdate((int)(AppSettingsManager.PosCalcRate * (_simRate / 10.0)));
 
-            if (Data.SpeedBrakePos <= 0)
-            {
-                Data.SpeedBrakePos = 1;
-            }
-            
+            // TODO: Update Mass
+
+            // Move aircraft
             MoveAircraftOnGround((int)(AppSettingsManager.PosCalcRate * (_simRate / 10.0)));
         }
-
         private void AircraftPositionWorker()
         {
             while (_shouldUpdatePosition)
@@ -397,21 +406,23 @@ namespace SaunaSim.Core.Simulator.Aircraft
                 // Calculate position
                 if (!_paused)
                 {
-                    if(FlightPhase == FlightPhaseType.IN_FLIGHT)
+                    if (FlightPhase == FlightPhaseType.IN_FLIGHT)
                     {
                         //If we're on APCH below 50ft afe then switch flight phase to ground
-                        if(_autopilot.CurrentVerticalMode == VerticalModeType.LAND && 
+                        if (_autopilot.CurrentVerticalMode == VerticalModeType.LAND &&
                             (Position.TrueAltitude < (airportElev + 1)))
                         {
                             FlightPhase = FlightPhaseType.ON_GROUND;
+
+                            _groundhandler.GroundPhase = GroundPhaseType.LAND;
                             HandleOnGround();
                         }
                         else
                         {
                             HandleInFlight();
-                        }                        
+                        }
                     }
-                    else if(FlightPhase == FlightPhaseType.ON_GROUND)
+                    else if (FlightPhase == FlightPhaseType.ON_GROUND)
                     {
                         HandleOnGround();
                     }
@@ -426,7 +437,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
                 }
 
                 // Remove calculation time from position calculation rate
-                int sleepTime = AppSettingsManager.PosCalcRate - (int) _lagTimer.ElapsedMilliseconds;
+                int sleepTime = AppSettingsManager.PosCalcRate - (int)_lagTimer.ElapsedMilliseconds;
 
                 // Sleep the thread
                 if (sleepTime > 0)
@@ -438,61 +449,12 @@ namespace SaunaSim.Core.Simulator.Aircraft
         private void MoveAircraftOnGround(int intervalMs)
         {
             double t = intervalMs / 1000.0;
-            double accel = -2;
-            // Calculate Pitch, Bank, and Thrust Lever Position
-            if(Position.Pitch > 0)
-            {
-                Position.PitchRate = -0.6;
-                Position.Pitch += PerfDataHandler.CalculateDisplacement(Position.PitchRate, 0, t);
-            }
-            else
-            {
-                Position.PitchRate = 0;
-                Position.Pitch = 0;
-            }
-            if(Position.Heading_True != Position.Track_True)
-            {                
-                if(Position.Heading_True > Position.Track_True)
-                {                    
-                    Position.YawRate = -1;
-                    Position.Heading_True += PerfDataHandler.CalculateDisplacement(Position.YawRate, 0, t);
-                    if(Position.Heading_True < Position.Track_True)
-                    {
-                        Position.Heading_True = Position.Track_True;
-                        Position.YawRate = 0;
-                    }
-                }
-                else
-                { 
-                    Position.YawRate = 1;
-                    Position.Heading_True += PerfDataHandler.CalculateDisplacement(Position.YawRate, 0, t);
-                    if (Position.Heading_True > Position.Track_True)
-                    {
-                        Position.Heading_True = Position.Track_True;
-                        Position.YawRate = 0;
-                    }
-                }
-
-            }
-
-            Position.Bank = 0;
-            Data.ThrustLeverPos = 0;
-            double curGs = Position.GroundSpeed;
-            //Calculating final velocity
-            double vi = MathUtil.ConvertKtsToMpers(curGs);
-            double vf = PerfDataHandler.CalculateFinalVelocity(vi, accel, t);
-
-            if(vf <= 0)
-            {
-                vf = 0;
-                accel = PerfDataHandler.CalculateAcceleration(vi, vf, t);
-            }
-
+            double vi = MathUtil.ConvertKtsToMpers(Position.GroundSpeed);
+            double vf = PerfDataHandler.CalculateFinalVelocity(vi, Position.Forward_Acceleration, t);
             Position.GroundSpeed = MathUtil.ConvertMpersToKts(vf);
-
             //Calculate displacement
-            double displacement = PerfDataHandler.CalculateDisplacement(vi, accel, t);
-            
+            double displacement = PerfDataHandler.CalculateDisplacement(vi, Position.Forward_Acceleration, t);
+
             GeoPoint point = new GeoPoint(Position.PositionGeoPoint);
             point.MoveByM(Position.Track_True, displacement);
             Position.Latitude = point.Lat;

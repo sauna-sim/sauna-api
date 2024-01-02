@@ -146,6 +146,26 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
             }
         }
 
+        public void InsertAtIndex(IRouteLeg routeLeg, int index)
+        {
+            lock(_routeLegsLock)
+            {
+                try
+                {
+                    _routeLegs.Insert(index, routeLeg);
+                    if(index == 0)
+                    {
+                        if(ActiveLeg != null && (ActiveLeg.LegType == RouteLegTypeEnum.DIRECT_TO_FIX || ActiveLeg.LegType == RouteLegTypeEnum.COURSE_TO_FIX))
+                        {
+                            _routeLegs.Insert(1, new DiscoLeg(0));                            
+                        }
+                        ActivateNextLeg();
+                    }
+                }
+                catch (ArgumentOutOfRangeException ex) { }
+            }
+        }
+
         public void AddRouteLeg(IRouteLeg routeLeg)
         {
             lock (_routeLegsLock)

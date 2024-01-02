@@ -75,15 +75,35 @@ namespace SaunaSim.Core.Data.Loaders
                 XpdrMode = XpdrMode
             };
 
+			//Figure out if aircraft on ground
+			//Find closest airport within 10miles
+			//if airplane alt is <= 500ft afe = onground
+			var closestAirport = DataHandler.GetAirportByIdentifier(DataHandler.FAKE_AIRPORT_NAME);
+
+
+            if (closestAirport != null && aircraft.Position.TrueAltitude < closestAirport.Elevation + 500)
+			{
+				aircraft.Position.OnGround = true;
+				aircraft.Position.TrueAltitude = closestAirport.Elevation;
+				aircraft.Position.GroundSpeed = 0;
+				aircraft.Position.Pitch = 0;
+				aircraft.Position.Bank = 0;
+
+				aircraft.FlightPhase = FlightPhaseType.ON_GROUND;
+			}
+			
 			// Speed
-			if (IsSpeedMach)
+			if(!aircraft.Position.OnGround)
 			{
-				aircraft.Position.MachNumber = Speed;
-			}
-			else
-			{
-				aircraft.Position.IndicatedAirSpeed = Speed;
-			}
+                if (IsSpeedMach)
+                {
+                    aircraft.Position.MachNumber = Speed;
+                }
+                else
+                {
+                    aircraft.Position.IndicatedAirSpeed = Speed;
+                }
+            }
 
 			// Flightplan
             FlightPlan flightPlan;
