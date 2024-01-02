@@ -121,11 +121,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
                 // Calculate True Heading
                 _trueHdg = MagneticUtil.ConvertMagneticToTrueTile(_magneticHdg, PositionGeoPoint);
 
-                if(_onGround)
-                {
-                    _trueTrack = _trueHdg;
-                }
-                else
+                if(!_onGround)
                 {
                     // Calculate True Track
                     double wca = _tas == 0 ? 0 : Math.Acos(WindXComp / _tas);
@@ -145,13 +141,8 @@ namespace SaunaSim.Core.Simulator.Aircraft
                 // Set Magnetic Heading
                 _magneticHdg = MagneticUtil.ConvertTrueToMagneticTile(_trueHdg, PositionGeoPoint);
 
-                if(_onGround)
+                if(!_onGround)
                 {
-                    _trueTrack = _trueHdg;
-                }
-                else
-                {
-
                     // Calculate True Track
                     double wca = _tas == 0 ? 0 : Math.Acos(WindXComp / _tas);
                     _trueTrack = GeoUtil.NormalizeHeading(_trueHdg + wca);
@@ -167,11 +158,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
             {
                 _trueTrack = value;
 
-                if(_onGround)
-                {
-                    _trueHdg = _trueTrack;
-                }
-                else
+                if(!_onGround)
                 {
                     // Calculate True Heading
                     double wca = _tas == 0 ? 0 : Math.Acos(WindXComp / _tas);

@@ -450,6 +450,30 @@ namespace SaunaSim.Core.Simulator.Aircraft
                 Position.PitchRate = 0;
                 Position.Pitch = 0;
             }
+            if(Position.Heading_True != Position.Track_True)
+            {                
+                if(Position.Heading_True > Position.Track_True)
+                {                    
+                    Position.YawRate = -1;
+                    Position.Heading_True += PerfDataHandler.CalculateDisplacement(Position.YawRate, 0, t);
+                    if(Position.Heading_True < Position.Track_True)
+                    {
+                        Position.Heading_True = Position.Track_True;
+                        Position.YawRate = 0;
+                    }
+                }
+                else
+                { 
+                    Position.YawRate = 1;
+                    Position.Heading_True += PerfDataHandler.CalculateDisplacement(Position.YawRate, 0, t);
+                    if (Position.Heading_True > Position.Track_True)
+                    {
+                        Position.Heading_True = Position.Track_True;
+                        Position.YawRate = 0;
+                    }
+                }
+
+            }
 
             Position.Bank = 0;
             Data.ThrustLeverPos = 0;
