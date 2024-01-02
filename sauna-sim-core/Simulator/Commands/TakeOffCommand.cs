@@ -44,15 +44,6 @@ namespace SaunaSim.Core.Simulator.Commands
                 Aircraft.Fms.ActivateNextLeg();
             }
 
-            foreach (IRouteLeg leg in Aircraft.Fms.GetRouteLegs())
-            {
-                if (leg.Equals(toLeg))
-                {
-                    break;
-                }
-                Aircraft.Fms.ActivateNextLeg();
-            }
-
             Aircraft.GroundHandler.GroundPhase = GroundPhaseType.TAKEOFF;
             //Aircraft.Autopilot.AddArmedLateralMode(LateralModeType.LNAV);
             //Aircraft.Autopilot.AddArmedVerticalMode(VerticalModeType.APCH);

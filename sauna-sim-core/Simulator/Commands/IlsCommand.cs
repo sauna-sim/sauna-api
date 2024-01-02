@@ -48,15 +48,6 @@ namespace SaunaSim.Core.Simulator.Commands
                 Aircraft.Fms.ActivateNextLeg();
             }
 
-            foreach (IRouteLeg leg in Aircraft.Fms.GetRouteLegs())
-            {
-                if (leg.Equals(locLeg))
-                {
-                    break;
-                }
-                Aircraft.Fms.ActivateNextLeg();
-            }
-
             Aircraft.Autopilot.AddArmedLateralMode(LateralModeType.APCH);
             Aircraft.Autopilot.AddArmedVerticalMode(VerticalModeType.APCH);
 
