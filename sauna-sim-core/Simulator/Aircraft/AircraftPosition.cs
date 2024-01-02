@@ -163,10 +163,11 @@ namespace SaunaSim.Core.Simulator.Aircraft
                     // Calculate True Heading
                     double wca = _tas == 0 ? 0 : Math.Acos(WindXComp / _tas);
                     _trueHdg = GeoUtil.NormalizeHeading(_trueTrack - wca);
+
+                    // Set Magnetic Heading
+                    _magneticHdg = MagneticUtil.ConvertTrueToMagneticTile(_trueHdg, PositionGeoPoint);
                 }
 
-                // Set Magnetic Heading
-                _magneticHdg = MagneticUtil.ConvertTrueToMagneticTile(_trueHdg, PositionGeoPoint);
             }
         }
 
