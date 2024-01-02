@@ -223,7 +223,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
 
             _simRate = 10;
             _paused = true;
-            _position = new AircraftPosition(lat, lon, alt)
+            _position = new AircraftPosition(this, lat, lon, alt)
             {
                 Pitch = 2.5,
                 Bank = 0,
@@ -233,7 +233,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
 
             FlightPhase = FlightPhaseType.IN_FLIGHT;
 
-            _data = new AircraftData()
+            _data = new AircraftData(this)
             {
                 ThrustLeverPos = 0,
                 SpeedBrakePos = 0,
@@ -377,6 +377,11 @@ namespace SaunaSim.Core.Simulator.Aircraft
             if(Position.OnGround == false)
             {
                 Position.OnGround = true;
+            }
+
+            if (Data.SpeedBrakePos <= 0)
+            {
+                Data.SpeedBrakePos = 1;
             }
             
             MoveAircraftOnGround((int)(AppSettingsManager.PosCalcRate * (_simRate / 10.0)));

@@ -12,6 +12,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
 {
     public class AircraftPosition
     {
+        private SimAircraft _parentAircraft;
         private double _lat;
         private double _lon;
         private double _altInd;
@@ -39,8 +40,9 @@ namespace SaunaSim.Core.Simulator.Aircraft
         private double _windSpeed;
         private bool _onGround;
 
-        public AircraftPosition(double lat, double lon, double indAlt)
+        public AircraftPosition(SimAircraft parentAircraft, double lat, double lon, double indAlt)
         {
+            _parentAircraft = parentAircraft;
             _lat = lat;
             _lon = lon;
             IndicatedAltitude = indAlt;
@@ -385,7 +387,17 @@ namespace SaunaSim.Core.Simulator.Aircraft
         public bool OnGround
         {
             get => _onGround;
-            set => _onGround = value;
+            set
+            {
+                var oldValue = _onGround;
+                _onGround = value;
+
+                // Update FSD
+                if (oldValue != _onGround)
+                {
+                    _parentAircraft.Connection.SetOnGround(_onGround);
+                }
+            }
         }
 
         public double BankRate
