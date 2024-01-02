@@ -4,7 +4,7 @@ using System.Text;
 
 namespace NavData_Interface.Objects.LegCollections.Procedures
 {
-    public class Sid : TerminalProcedure
-    {
-    }
+    //public class Sid : TerminalProcedure
+    //{
+    //}
 }

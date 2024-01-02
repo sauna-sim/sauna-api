@@ -15,7 +15,5 @@ namespace NavData_Interface.Objects.LegCollections.Legs
 
         public Fix EndPoint { get; }
 
-        public WaypointDescription
-
     }
 }

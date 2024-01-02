@@ -29,22 +29,22 @@ namespace NavData_Interface.Objects.LegCollections.Airways
         Both
     }
 
-    public class Airway : LegCollection
-    {
-        // public LegSet Legs
+    //public class Airway : LegCollection
+    //{
+    //    // public LegSet Legs
 
-        public AirwayLevel Level { get; }
+    //    public AirwayLevel Level { get; }
 
-        public AirwayDirection Direction { get; }
+    //    public AirwayDirection Direction { get; }
 
-        // private string _cruiseLevelTable;
-        // public CruiseLevelTable ApplicableCruiseLevelTable(DataSource source) => source.GetCruiseLevelTable(_cruiseLevelTable);
+    //    // private string _cruiseLevelTable;
+    //    // public CruiseLevelTable ApplicableCruiseLevelTable(DataSource source) => source.GetCruiseLevelTable(_cruiseLevelTable);
 
 
-        public Airway(string areaCode, string identifier, string icaoCode, AirwayLevel level, AirwayDirection direction) : base(areaCode, identifier, icaoCode)
-        {
-            Level = level;
-            Direction = direction;
-        }
-    }
+    //    public Airway(string areaCode, string identifier, string icaoCode, AirwayLevel level, AirwayDirection direction) : base(areaCode, identifier, icaoCode)
+    //    {
+    //        Level = level;
+    //        Direction = direction;
+    //    }
+    //}
 }

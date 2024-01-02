@@ -6,11 +6,11 @@ using System.Text;
 
 namespace NavData_Interface.DataSources.DFDUtility.Factory
 {
-    public class AirwayFactory
-    {
-        internal static Airway Factory(SQLiteDataReader reader)
-        {
+    //public class AirwayFactory
+    //{
+    //    internal static Airway Factory(SQLiteDataReader reader)
+    //    {
             
-        }
-    }
+    //    }
+    //}
 }

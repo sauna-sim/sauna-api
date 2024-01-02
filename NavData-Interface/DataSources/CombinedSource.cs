@@ -1,4 +1,5 @@
 ﻿using AviationCalcUtilNet.GeoTools;
+using AviationCalcUtilNet.Units;
 using NavData_Interface.Objects;
 using NavData_Interface.Objects.Fixes;
 using System.Collections;
@@ -133,7 +134,7 @@ namespace NavData_Interface.DataSources
                     // before adding each fix in the list, we have to check if this fix is already in the list
                     for (int i = 0; i < lastIndexToCheck; i++)
                     {
-                        if (GeoPoint.DistanceM(fixes[i].Location, fix.Location) < 1000)
+                        if (GeoPoint.Distance(fixes[i].Location, fix.Location) < Length.FromMeters(1000))
                         {
                             goto nextFixInSource;
                         }
