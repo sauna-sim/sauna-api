@@ -460,7 +460,14 @@ namespace SaunaSim.Core.Simulator.Aircraft
             Position.Latitude = point.Lat;
             Position.Longitude = point.Lon;
 
-            Position.TrueAltitude = airportElev;
+            if(Position.VerticalSpeed > 0)
+            {
+                Position.TrueAltitude += PerfDataHandler.CalculateDisplacement(Position.VerticalSpeed / 60, 0, t);
+            }
+            else
+            {
+                Position.TrueAltitude = airportElev;
+            }                        
         }
         private void MoveAircraft(int intervalMs)
         {
