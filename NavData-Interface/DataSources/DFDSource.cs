@@ -307,8 +307,7 @@ namespace NavData_Interface.DataSources
             return objects;
         }
 
-        override
-        public List<Fix> GetFixesByIdentifier(string identifier)
+        public override List<Fix> GetFixesByIdentifier(string identifier)
         {
             List<Fix> foundFixes = new List<Fix>();
 
@@ -346,7 +345,7 @@ namespace NavData_Interface.DataSources
             double bestDistance = double.MaxValue;
             foreach (var airport in airports)
             {
-                var distance = GeoPoint.DistanceM(airport.Location, position);
+                var distance = GeoPoint.Distance(airport.Location, position).Meters;
                 if (distance < bestDistance)
                 {
                     bestDistance = distance;
@@ -354,6 +353,32 @@ namespace NavData_Interface.DataSources
                 }
             }
             return closestAirport;
+        }
+
+        private SQLiteCommand RunwayLookupByAirportIdentifier(string airportIdentifier, string runwayIdentifier)
+        {
+            SQLiteCommand command = new SQLiteCommand();
+
+            command.CommandText = $"SELECT * FROM tbl_runways WHERE airport_identifier == @airport AND runway_identifier == RW@runway";
+
+            command.Parameters.AddWithValue("@airport", airportIdentifier);
+            command.Parameters.AddWithValue("@runway", runwayIdentifier);
+
+            return command;
+        }
+
+        public override Runway GetRunwayFromAirportRunwayIdentifier(string airportIdentifier, string runwayIdentifier)
+        {
+            List<Runway> runways = GetObjectsWithQuery<Runway>(
+                RunwayLookupByAirportIdentifier(airportIdentifier, runwayIdentifier),
+                reader => RunwayFactory.Factory(reader));
+
+            if (runways.Count == 0)
+            {
+                return null;
+            }
+
+            return runways[0];
         }
     }
 }

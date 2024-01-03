@@ -174,7 +174,7 @@ namespace NavData_Interface.DataSources
             foreach (var source in _sources.Values)
             {
                 Airport currentSourceAirport = source.GetClosestAirportWithinRadius(position, radiusM);
-                double currentDistance = GeoPoint.DistanceM(position, currentSourceAirport.Location);
+                double currentDistance = GeoPoint.Distance(position, currentSourceAirport.Location).Meters;
 
                 if (currentDistance < closestDistance)
                 {
@@ -199,6 +199,21 @@ namespace NavData_Interface.DataSources
         IEnumerator IEnumerable.GetEnumerator()
         {
             return _sources.GetEnumerator();
+        }
+
+        public override Runway GetRunwayFromAirportRunwayIdentifier(string airportIdentifier, string runwayIdentifier)
+        {
+            foreach (var source in _sources.Values)
+            {
+                var runway = source.GetRunwayFromAirportRunwayIdentifier(airportIdentifier, runwayIdentifier);
+
+                if (runway != null)
+                {
+                    return runway;
+                }
+            }
+
+            return null;
         }
     }
 }

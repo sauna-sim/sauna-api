@@ -1,4 +1,5 @@
 ﻿using NavData_Interface.Objects.LegCollections.Airways;
+using NavData_Interface.Objects.LegCollections.Legs;
 using System;
 using System.Collections.Generic;
 using System.Data.SQLite;

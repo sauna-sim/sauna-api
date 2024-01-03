@@ -103,7 +103,7 @@ namespace NavData_Interface.DataSources
             double bestDistance = double.MaxValue;
             foreach (var airport in _airports)
             {
-                var distance = GeoPoint.DistanceM(airport.Location, position);
+                var distance = GeoPoint.Distance(airport.Location, position).Meters;
                 if (distance < bestDistance)
                 {
                     bestDistance = distance;
@@ -111,6 +111,12 @@ namespace NavData_Interface.DataSources
                 }
             }
             return closestAirport;
+        }
+
+        public override Runway GetRunwayFromAirportRunwayIdentifier(string airportIdentifier, string runwayIdentifier)
+        {
+            // TODO !!
+            return null;
         }
     }
 }

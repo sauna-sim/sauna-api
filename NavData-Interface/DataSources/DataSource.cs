@@ -18,6 +18,8 @@ namespace NavData_Interface.DataSources
 
         public abstract Airport GetClosestAirportWithinRadius(GeoPoint position, double radiusM);
 
+        public abstract Runway GetRunwayFromAirportRunwayIdentifier(string airportIdentifier, string runwayIdentifier);
+
         public Fix GetClosestFixByIdentifier(GeoPoint point, string identifier)
         {
             var fixes = GetFixesByIdentifier(identifier);
