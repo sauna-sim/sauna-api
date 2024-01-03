@@ -18,7 +18,6 @@ using SaunaSim.Core.Simulator.Aircraft.Performance;
 using SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller;
 using SaunaSim.Core.Simulator.Aircraft.FMS;
 using SaunaSim.Core.Simulator.Aircraft.FMS.Legs;
-using NavData_Interface.Objects.Fix;
 using NavData_Interface.Objects;
 using System.Runtime.CompilerServices;
 using System.Configuration;

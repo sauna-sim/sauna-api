@@ -29,4 +29,7 @@
   <ItemGroup>
     <Folder Include="Data\NavData\" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\NavData-Interface\NavData-Interface.csproj" />
+  </ItemGroup>
 </Project>

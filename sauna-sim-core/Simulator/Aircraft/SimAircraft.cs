@@ -272,7 +272,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
 
             };
 
-            _fms = new AircraftFms(this);
+            _fms = new AircraftFms(this, _magTileManager);
             PerformanceData = perfData;
             // Control = new AircraftControl(new HeadingHoldInstruction(Convert.ToInt32(hdg_mag)), new AltitudeHoldInstruction(Convert.ToInt32(alt)));
             DelayMs = delayMs;
@@ -421,7 +421,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
                     {
                         //If we're on APCH below 50ft afe then switch flight phase to ground
                         if (_autopilot.CurrentVerticalMode == VerticalModeType.LAND &&
-                            (Position.TrueAltitude < (airportElev + 1)))
+                            (Position.TrueAltitude < Length.FromFeet(airportElev + 1)))
                         {
                             FlightPhase = FlightPhaseType.ON_GROUND;
 
@@ -457,27 +457,28 @@ namespace SaunaSim.Core.Simulator.Aircraft
                 }
             }
         }
+
         private void MoveAircraftOnGround(int intervalMs)
         {
-            double t = intervalMs / 1000.0;
-            double vi = MathUtil.ConvertKtsToMpers(Position.GroundSpeed);
-            double vf = PerfDataHandler.CalculateFinalVelocity(vi, Position.Forward_Acceleration, t);
-            Position.GroundSpeed = MathUtil.ConvertMpersToKts(vf);
+            TimeSpan t = TimeSpan.FromMilliseconds(intervalMs);
+            Velocity vi = Position.GroundSpeed;
+            Velocity vf = (Velocity) PerfDataHandler.CalculateFinalVelocity((double)vi, Position.Forward_Acceleration, t.TotalSeconds);
+            Position.GroundSpeed = vf;
             //Calculate displacement
-            double displacement = PerfDataHandler.CalculateDisplacement(vi, Position.Forward_Acceleration, t);
+            Length displacement = (Length)PerfDataHandler.CalculateDisplacement((double)vi, Position.Forward_Acceleration, t.TotalSeconds);
 
-            GeoPoint point = new GeoPoint(Position.PositionGeoPoint);
-            point.MoveByM(Position.Track_True, displacement);
+            GeoPoint point = (GeoPoint)Position.PositionGeoPoint.Clone();
+            point.MoveBy(Position.Track_True, displacement);
             Position.Latitude = point.Lat;
             Position.Longitude = point.Lon;
 
-            if(Position.VerticalSpeed > 0)
+            if(Position.VerticalSpeed.Value() > 0)
             {
-                Position.TrueAltitude += PerfDataHandler.CalculateDisplacement(Position.VerticalSpeed / 60, 0, t);
+                Position.TrueAltitude += Length.FromMeters(PerfDataHandler.CalculateDisplacement(Position.VerticalSpeed.MetersPerSecond, 0, t.TotalSeconds));
             }
             else
             {
-                Position.TrueAltitude = airportElev;
+                Position.TrueAltitude = Length.FromFeet(airportElev);
             }                        
         }
         private void MoveAircraft(int intervalMs)

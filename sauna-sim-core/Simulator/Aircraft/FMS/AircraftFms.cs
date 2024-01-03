@@ -162,7 +162,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
                     _routeLegs.Insert(index, routeLeg);
                     if (index == 0)
                     {
-                        _routeLegs.Insert(1, new DiscoLeg(0));
+                        _routeLegs.Insert(1, new DiscoLeg(Bearing.FromDegrees(0)));
                     }
                     RecalculateVnavPath();
                 }
