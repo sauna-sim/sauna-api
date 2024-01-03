@@ -201,7 +201,6 @@ namespace SaunaSim.Core.Simulator.Aircraft
                 {
                     _tas = AtmosUtil.ConvertIasToTas(_ias, AtmosUtil.ISA_STD_PRES_hPa, _altTrue, 0, AtmosUtil.ISA_STD_TEMP_K, out _mach);
                 }
-
                 _gs = _tas == 0 ? 0 : (_tas - WindHComp);
             }
         }
@@ -356,6 +355,10 @@ namespace SaunaSim.Core.Simulator.Aircraft
                     }
 
                     SurfacePressure_hPa = _gribPoint.SfcPress_hPa != 0 ? _gribPoint.SfcPress_hPa : AtmosUtil.ISA_STD_PRES_hPa;
+                    if(_onGround)
+                    {
+                        AltimeterSetting_hPa = SurfacePressure_hPa;
+                    }
 
                     // Density Alt
                     double T = AtmosUtil.CalculateTempAtAlt(MathUtil.ConvertFeetToMeters(_altTrue), _gribPoint.GeoPotentialHeight_M, _gribPoint.Temp_K);

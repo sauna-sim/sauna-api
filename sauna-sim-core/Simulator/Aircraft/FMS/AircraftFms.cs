@@ -6,17 +6,27 @@ using System.Threading.Tasks;
 using AviationCalcUtilNet.GeoTools;
 using AviationCalcUtilNet.MathTools;
 using FsdConnectorNet;
+using FsdConnectorNet.Args;
 using NavData_Interface.Objects.Fix;
 using SaunaSim.Core.Data;
+using SaunaSim.Core.Simulator.Aircraft.Autopilot;
 using SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller;
 using SaunaSim.Core.Simulator.Aircraft.FMS.Legs;
 
 namespace SaunaSim.Core.Simulator.Aircraft.FMS
 {
+    public enum FmsPhaseType
+    {
+        CLIMB,
+        CRUISE,
+        DESCENT,
+        APPROACH,
+        GO_AORUND
+    }
     public class AircraftFms
     {
         private SimAircraft _parentAircraft;
-        private int _cruiseAlt;
+        // private int _cruiseAlt;
         private IRouteLeg _activeLeg;
         private List<IRouteLeg> _routeLegs;
         private object _routeLegsLock;
@@ -32,6 +42,8 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
         private double _turnRadius_m;
         private double _vTk_m;
         private double _requiredFpa;
+        private McpSpeedUnitsType _spdUnits;
+        private int _selSpd;
 
         public EventHandler<WaypointPassedEventArgs> WaypointPassed;
 
@@ -52,6 +64,8 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
             }
 
             _suspended = false;
+
+            PhaseType = FmsPhaseType.CRUISE;
         }
 
         public double AlongTrackDistance_m => _aTk_m;
@@ -66,6 +80,11 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
 
         public double RequiredFpa => _requiredFpa;
 
+        public FmsPhaseType PhaseType { get; set; }
+        public McpSpeedUnitsType FmsSpeedUnits => _spdUnits;
+        public int FmsSpeedValue => _selSpd;
+
+
         public bool Suspended
         {
             get => _suspended;
@@ -74,8 +93,8 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
 
         public int CruiseAltitude
         {
-            get => _cruiseAlt;
-            set => _cruiseAlt = value;
+            get => (int)(_parentAircraft.FlightPlan != null ? _parentAircraft.FlightPlan.Value.cruiseLevel:0);
+            // set => _cruiseAlt = value;
         }
 
         private string _depIcao;
@@ -148,7 +167,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
 
         public void InsertAtIndex(IRouteLeg routeLeg, int index)
         {
-            lock(_routeLegsLock)
+            lock (_routeLegsLock)
             {
                 try
                 {
@@ -222,11 +241,13 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
                     point = _activeLeg.StartPoint;
                     _routeLegs.Insert(0, _activeLeg);
                     index = 0;
-                } else if (_activeLeg != null && _activeLeg.EndPoint != null && _activeLeg.EndPoint.Point.Equals(routePoint))
+                }
+                else if (_activeLeg != null && _activeLeg.EndPoint != null && _activeLeg.EndPoint.Point.Equals(routePoint))
                 {
                     point = _activeLeg.EndPoint;
                     index = 0;
-                } else
+                }
+                else
                 {
                     foreach (IRouteLeg leg in _routeLegs)
                     {
@@ -235,7 +256,8 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
                             index = _routeLegs.IndexOf(leg);
                             point = leg.StartPoint;
                             break;
-                        } else if (leg.EndPoint != null && leg.EndPoint.Point.Equals(routePoint))
+                        }
+                        else if (leg.EndPoint != null && leg.EndPoint.Point.Equals(routePoint))
                         {
                             index = _routeLegs.IndexOf(leg) + 1;
                             point = leg.EndPoint;
@@ -264,7 +286,8 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
                 {
                     // Remove everything before index
                     _routeLegs.RemoveRange(0, index);
-                } else
+                }
+                else
                 {
                     _routeLegs.Insert(0, new DiscoLeg(dtoLeg.FinalTrueCourse));
                 }
@@ -284,7 +307,8 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
                 {
                     index = 0;
                     point = _activeLeg.EndPoint;
-                } else
+                }
+                else
                 {
                     foreach (IRouteLeg leg in _routeLegs)
                     {
@@ -403,6 +427,12 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
 
         public void OnPositionUpdate(int intervalMs)
         {
+            // Method to set FMS phase
+            SetPhase();
+
+            // Set FMS Speed
+            CalculateFmsSpeed();
+
             var position = _parentAircraft.Position;
 
             // Activate next leg if there's no active leg
@@ -446,7 +476,8 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
                 {
                     // Activate next leg on termination
                     ActivateNextLeg();
-                } else if (ShouldStartTurnToNextLeg(intervalMs))
+                }
+                else if (ShouldStartTurnToNextLeg(intervalMs))
                 {
                     // Begin turn to next leg, but do not activate
                     nextLeg.ProcessLeg(_parentAircraft, intervalMs);
@@ -469,6 +500,131 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
             (_requiredFpa, _vTk_m) = GetPitchInterceptInfoForCurrentLeg();
         }
 
+        private void SetPhase()
+        {
+            if (PhaseType == FmsPhaseType.CLIMB && Math.Abs(_parentAircraft.Position.IndicatedAltitude - CruiseAltitude) < 50)
+            {
+                PhaseType = FmsPhaseType.CRUISE;
+            }
+            else if (PhaseType == FmsPhaseType.CRUISE && _parentAircraft.Autopilot.SelectedAltitude < CruiseAltitude - 100 &&
+                (_parentAircraft.Autopilot.CurrentVerticalMode != VerticalModeType.ALT || _parentAircraft.Autopilot.CurrentVerticalMode != VerticalModeType.VALT))
+            {
+                PhaseType = FmsPhaseType.DESCENT;
+            }
+            // TODO: Need to implement Airport Distance
+            else if (PhaseType == FmsPhaseType.DESCENT && _parentAircraft.Position.IndicatedAltitude < _parentAircraft.airportElev + 5000)
+            {
+                PhaseType = FmsPhaseType.APPROACH;
+            }
+        }
+
+        private void CalculateFmsSpeed()
+        {
+            if (PhaseType == FmsPhaseType.CLIMB)
+            {
+                if (_parentAircraft.Position.IndicatedAltitude < _parentAircraft.airportElev + 1000)
+                {
+                    _spdUnits = McpSpeedUnitsType.KNOTS;
+                    _selSpd = 180;
+                }
+                else if (_parentAircraft.Position.IndicatedAltitude < _parentAircraft.airportElev + 3000)
+                {
+                    _spdUnits = McpSpeedUnitsType.KNOTS;
+                    _selSpd = 210;
+                }
+                else if (_parentAircraft.Position.IndicatedAltitude < _parentAircraft.airportElev + 10000)
+                {
+                    _spdUnits = McpSpeedUnitsType.KNOTS;
+                    _selSpd = 250;
+                }
+                else
+                {
+                    // spd 270/.76 
+                    var climbIas = _parentAircraft.PerformanceData.Climb_KIAS;
+                    var climbMach = _parentAircraft.PerformanceData.Climb_Mach;
+
+                    SetConversionSpeed(climbIas, climbMach);
+                }
+            }
+            else if (PhaseType == FmsPhaseType.CRUISE)
+            {
+                if (_parentAircraft.Position.IndicatedAltitude < _parentAircraft.airportElev + 10000)
+                {
+                    _spdUnits = McpSpeedUnitsType.KNOTS;
+                    _selSpd = 250;
+                }
+                else
+                {
+                    // spd 270/.76 
+                    var cruiseIas = _parentAircraft.PerformanceData.Cruise_KIAS;
+                    var cruiseMach = _parentAircraft.PerformanceData.Cruise_Mach;
+
+                    SetConversionSpeed(cruiseIas, cruiseMach);
+                }
+            }
+            else if (PhaseType == FmsPhaseType.DESCENT)
+            {
+                if (_parentAircraft.Position.IndicatedAltitude < _parentAircraft.airportElev + 10000)
+                {
+                    _spdUnits = McpSpeedUnitsType.KNOTS;
+                    _selSpd = 250;
+                }
+                else
+                {
+                    var descentIas = _parentAircraft.PerformanceData.Descent_KIAS;
+                    var descentMach = _parentAircraft.PerformanceData.Descent_Mach;
+
+                    SetConversionSpeed(descentIas, descentMach);
+                }
+            }
+            else if (PhaseType == FmsPhaseType.APPROACH)
+            {
+                if (_parentAircraft.Position.IndicatedAltitude < _parentAircraft.airportElev + 1300)
+                {
+                    _spdUnits = McpSpeedUnitsType.KNOTS;
+                    _selSpd = 135;
+                }
+                else if (_parentAircraft.Position.IndicatedAltitude < _parentAircraft.airportElev + 2000)
+                {
+                    _spdUnits = McpSpeedUnitsType.KNOTS;
+                    _selSpd = 160;
+                }
+                else if (_parentAircraft.Position.IndicatedAltitude < _parentAircraft.airportElev + 3000)
+                {
+                    _spdUnits = McpSpeedUnitsType.KNOTS;
+                    _selSpd = 180;
+                }
+                else
+                {
+                    _spdUnits = McpSpeedUnitsType.KNOTS;
+                    _selSpd = 210;
+                }
+            }
+        }
+        private void SetConversionSpeed(int ias, double mach)
+        {
+            double curIasMach;
+            var gribPoint = _parentAircraft.Position.GribPoint;
+            if (gribPoint != null)
+            {
+                AtmosUtil.ConvertIasToTas(ias, gribPoint.Level_hPa, _parentAircraft.Position.TrueAltitude, gribPoint.GeoPotentialHeight_Ft, gribPoint.Temp_K, out curIasMach);
+            }
+            else
+            {
+                AtmosUtil.ConvertIasToTas(ias, AtmosUtil.ISA_STD_PRES_hPa, _parentAircraft.Position.TrueAltitude, 0, AtmosUtil.ISA_STD_TEMP_K, out curIasMach);
+            }
+
+            if (curIasMach >= mach)
+            {
+                _spdUnits = McpSpeedUnitsType.MACH;
+                _selSpd = (int)(mach * 100);
+            }
+            else
+            {
+                _spdUnits = McpSpeedUnitsType.KNOTS;
+                _selSpd = ias;
+            }
+        }
         private void RecalculateVnavPath()
         {
             lock (_routeLegsLock)

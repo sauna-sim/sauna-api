@@ -21,9 +21,13 @@ namespace SaunaSim.Core.Simulator.Commands
         public void ExecuteCommand()
         {
             // Add speed assignment to aircraft
-            Aircraft.Autopilot.SelectedSpeed = Ias;
-            Aircraft.Autopilot.SelectedSpeedMode = McpSpeedSelectorType.MANUAL;
-            Aircraft.Autopilot.SelectedSpeedUnits = McpSpeedUnitsType.KNOTS;
+            if (Type != ConstraintType.FREE)
+            {
+                Aircraft.Autopilot.SelectedSpeed = Ias;
+                Aircraft.Autopilot.SelectedSpeedUnits = McpSpeedUnitsType.KNOTS;
+            }
+
+            Aircraft.Autopilot.SelectedSpeedMode = Type == ConstraintType.FREE ? McpSpeedSelectorType.FMS : McpSpeedSelectorType.MANUAL;            
         }
 
         public bool HandleCommand(SimAircraft aircraft, Action<string> logger, ConstraintType constraintType, int speed)

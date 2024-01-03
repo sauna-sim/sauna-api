@@ -2,6 +2,7 @@
 using AviationCalcUtilNet.MathTools;
 using SaunaSim.Core.Data;
 using SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller;
+using SaunaSim.Core.Simulator.Aircraft.FMS;
 using SaunaSim.Core.Simulator.Aircraft.Performance;
 using System;
 using System.Collections.Generic;
@@ -86,7 +87,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Ground
                 {
                     _parentAircraft.Data.Config = 1;
                     _parentAircraft.Data.SpeedBrakePos = 0;
-                    _parentAircraft.Data.ThrustLeverPos = 100;                    
+                    _parentAircraft.Data.ThrustLeverPos = 100;                  
 
                     double accel = 2;
                     double curGs = _parentAircraft.Position.GroundSpeed;
@@ -115,26 +116,27 @@ namespace SaunaSim.Core.Simulator.Aircraft.Ground
                 else
                 {
                     TakeoffPhase = TakeoffPhaseType.CLIMB;
+                    _parentAircraft.Fms.PhaseType = FmsPhaseType.CLIMB;
                 }
             }
             else if(TakeoffPhase == TakeoffPhaseType.CLIMB)
             {
                 // Cur alt > airport elev + 700ft, INFLIGHT AP FLCH (180kts), TRK rwy trk
-                if (_parentAircraft.Position.TrueAltitude > _parentAircraft.airportElev + 500)
-                {
-                    _parentAircraft.Data.Config = 0;
+                if (_parentAircraft.Position.TrueAltitude > _parentAircraft.airportElev + 50)
+                {                    
                     _parentAircraft.Position.OnGround = false;
                     
-                    _parentAircraft.Autopilot.SelectedSpeed = 180;
+                    _parentAircraft.Autopilot.SelectedSpeed = 170;
                     _parentAircraft.Autopilot.AddArmedLateralMode(LateralModeType.LNAV);
                     _parentAircraft.Autopilot.AddArmedVerticalMode(VerticalModeType.FLCH);
+                    _parentAircraft.Autopilot.SelectedSpeedMode = Autopilot.McpSpeedSelectorType.FMS;
                     _parentAircraft.FlightPhase = FlightPhaseType.IN_FLIGHT;
                     return;
                 }
                 else
                 {
                     var gribPoint = _parentAircraft.Position.GribPoint;
-                    var alt = _parentAircraft.airportElev + 500;
+                    var alt = _parentAircraft.airportElev + 50;
                     var altDens = alt;
                     if (gribPoint != null)
                     {
