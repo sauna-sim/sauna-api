@@ -133,7 +133,7 @@ namespace NavData_Interface.DataSources
                     // before adding each fix in the list, we have to check if this fix is already in the list
                     for (int i = 0; i < lastIndexToCheck; i++)
                     {
-                        if (GeoPoint.DistanceM(fixes[i].Location, fix.Location) < 1000)
+                        if (GeoPoint.Distance(fixes[i].Location, fix.Location).Meters < 1000)
                         {
                             goto nextFixInSource;
                         }
@@ -173,7 +173,7 @@ namespace NavData_Interface.DataSources
             foreach (var source in _sources.Values)
             {
                 Airport currentSourceAirport = source.GetClosestAirportWithinRadius(position, radiusM);
-                double currentDistance = GeoPoint.DistanceM(position, currentSourceAirport.Location);
+                double currentDistance = GeoPoint.Distance(position, currentSourceAirport.Location).Meters;
 
                 if (currentDistance < closestDistance)
                 {
@@ -198,6 +198,21 @@ namespace NavData_Interface.DataSources
         IEnumerator IEnumerable.GetEnumerator()
         {
             return _sources.GetEnumerator();
+        }
+
+        public override Runway GetRunwayFromAirportRunwayIdentifier(string airportIdentifier, string runwayIdentifier)
+        {
+            foreach (var source in _sources.Values)
+            {
+                var runway = source.GetRunwayFromAirportRunwayIdentifier(airportIdentifier, runwayIdentifier);
+
+                if (runway != null)
+                {
+                    return runway;
+                }
+            }
+
+            return null;
         }
     }
 }
