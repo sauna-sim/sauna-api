@@ -14,6 +14,7 @@
         TOGA,
         LDG,
         TAXI,
-        APCH
+        APCH,
+        LAND
     }
 }

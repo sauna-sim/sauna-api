@@ -21,6 +21,8 @@ using SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller;
 using SaunaSim.Core.Simulator.Aircraft.FMS;
 using SaunaSim.Core.Simulator.Aircraft.Performance;
 using System.Diagnostics;
+using System.ComponentModel.Design;
+using SaunaSim.Core.Simulator.Aircraft.Ground;
 
 namespace SaunaSim.Core.Simulator.Aircraft
 {
@@ -92,7 +94,8 @@ namespace SaunaSim.Core.Simulator.Aircraft
         public Connection Connection { get; private set; }
 
         private ConnectionStatusType _connectionStatus = ConnectionStatusType.WAITING;
-        public ConnectionStatusType ConnectionStatus {
+        public ConnectionStatusType ConnectionStatus
+        {
             get => _connectionStatus;
             private set
             {
@@ -160,6 +163,9 @@ namespace SaunaSim.Core.Simulator.Aircraft
         private AircraftAutopilot _autopilot;
         public AircraftAutopilot Autopilot => _autopilot;
 
+        private AircraftGroundHandler _groundhandler;
+        public AircraftGroundHandler GroundHandler => _groundhandler;
+
         private AircraftFms _fms;
         public AircraftFms Fms => _fms;
 
@@ -189,7 +195,8 @@ namespace SaunaSim.Core.Simulator.Aircraft
                 if (ConnectionStatus == ConnectionStatusType.CONNECTED)
                 {
                     Connection.SendFlightPlan(value);
-                } else
+                }
+                else
                 {
                     _flightPlan = value;
                 }
@@ -198,12 +205,16 @@ namespace SaunaSim.Core.Simulator.Aircraft
 
         public FlightPhaseType FlightPhase { get; set; }
 
+
         // Loggers
         public Action<string> LogInfo { get; set; }
 
         public Action<string> LogWarn { get; set; }
 
         public Action<string> LogError { get; set; }
+
+        //Airport Elevation
+        public double airportElev = DataHandler.GetAirportByIdentifier(DataHandler.FAKE_AIRPORT_NAME).Elevation;
 
         public SimAircraft(string callsign, string networkId, string password, string fullname, string hostname, ushort port, ProtocolRevision protocol, ClientInfo clientInfo,
             PerfData perfData, double lat, double lon, double alt, double hdg_mag, int delayMs = 0)
@@ -219,17 +230,19 @@ namespace SaunaSim.Core.Simulator.Aircraft
 
             _simRate = 10;
             _paused = true;
-            _position = new AircraftPosition(lat, lon, alt)
+
+            _position = new AircraftPosition(this, lat, lon, alt)
             {
+
                 Pitch = 2.5,
                 Bank = 0,
                 IndicatedAirSpeed = 250.0,
                 Heading_Mag = hdg_mag
             };
 
-            FlightPhase = FlightPhaseType.ENROUTE;
+            FlightPhase = FlightPhaseType.IN_FLIGHT;
 
-            _data = new AircraftData()
+            _data = new AircraftData(this)
             {
                 ThrustLeverPos = 0,
                 SpeedBrakePos = 0,
@@ -247,6 +260,11 @@ namespace SaunaSim.Core.Simulator.Aircraft
                 CurrentLateralMode = LateralModeType.HDG,
                 CurrentThrustMode = ThrustModeType.SPEED,
                 CurrentVerticalMode = VerticalModeType.FLCH
+            };
+
+            _groundhandler = new AircraftGroundHandler(this)
+            {
+
             };
 
             _fms = new AircraftFms(this);
@@ -355,7 +373,29 @@ namespace SaunaSim.Core.Simulator.Aircraft
             _shouldUpdatePosition = false;
             _delayTimer?.Stop();
         }
+        private void HandleInFlight()
+        {
+            // Update FMS
+            _fms.OnPositionUpdate((int)(AppSettingsManager.PosCalcRate * (_simRate / 10.0)));
 
+            // Run Autopilot
+            _autopilot.OnPositionUpdate((int)(AppSettingsManager.PosCalcRate * (_simRate / 10.0)));
+
+            // TODO: Update Mass
+
+            // Move Aircraft
+            MoveAircraft((int)(AppSettingsManager.PosCalcRate * (_simRate / 10.0)));
+        }
+        private void HandleOnGround()
+        {
+            // Run ground handler
+            _groundhandler.OnPositionUpdate((int)(AppSettingsManager.PosCalcRate * (_simRate / 10.0)));
+
+            // TODO: Update Mass
+
+            // Move aircraft
+            MoveAircraftOnGround((int)(AppSettingsManager.PosCalcRate * (_simRate / 10.0)));
+        }
         private void AircraftPositionWorker()
         {
             while (_shouldUpdatePosition)
@@ -366,16 +406,26 @@ namespace SaunaSim.Core.Simulator.Aircraft
                 // Calculate position
                 if (!_paused)
                 {
-                    // Update FMS
-                    _fms.OnPositionUpdate((int)(AppSettingsManager.PosCalcRate * (_simRate / 10.0)));
+                    if (FlightPhase == FlightPhaseType.IN_FLIGHT)
+                    {
+                        //If we're on APCH below 50ft afe then switch flight phase to ground
+                        if (_autopilot.CurrentVerticalMode == VerticalModeType.LAND &&
+                            (Position.TrueAltitude < (airportElev + 1)))
+                        {
+                            FlightPhase = FlightPhaseType.ON_GROUND;
 
-                    // Run Autopilot
-                    _autopilot.OnPositionUpdate((int)(AppSettingsManager.PosCalcRate * (_simRate / 10.0)));
-
-                    // TODO: Update Mass
-
-                    // Move Aircraft
-                    MoveAircraft((int)(AppSettingsManager.PosCalcRate * (_simRate / 10.0)));
+                            _groundhandler.GroundPhase = GroundPhaseType.LAND;
+                            HandleOnGround();
+                        }
+                        else
+                        {
+                            HandleInFlight();
+                        }
+                    }
+                    else if (FlightPhase == FlightPhaseType.ON_GROUND)
+                    {
+                        HandleOnGround();
+                    }
 
                     // Update Grib Data
                     Position.UpdateGribPoint();
@@ -387,7 +437,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
                 }
 
                 // Remove calculation time from position calculation rate
-                int sleepTime = AppSettingsManager.PosCalcRate - (int) _lagTimer.ElapsedMilliseconds;
+                int sleepTime = AppSettingsManager.PosCalcRate - (int)_lagTimer.ElapsedMilliseconds;
 
                 // Sleep the thread
                 if (sleepTime > 0)
@@ -396,7 +446,29 @@ namespace SaunaSim.Core.Simulator.Aircraft
                 }
             }
         }
+        private void MoveAircraftOnGround(int intervalMs)
+        {
+            double t = intervalMs / 1000.0;
+            double vi = MathUtil.ConvertKtsToMpers(Position.GroundSpeed);
+            double vf = PerfDataHandler.CalculateFinalVelocity(vi, Position.Forward_Acceleration, t);
+            Position.GroundSpeed = MathUtil.ConvertMpersToKts(vf);
+            //Calculate displacement
+            double displacement = PerfDataHandler.CalculateDisplacement(vi, Position.Forward_Acceleration, t);
 
+            GeoPoint point = new GeoPoint(Position.PositionGeoPoint);
+            point.MoveByM(Position.Track_True, displacement);
+            Position.Latitude = point.Lat;
+            Position.Longitude = point.Lon;
+
+            if(Position.VerticalSpeed > 0)
+            {
+                Position.TrueAltitude += PerfDataHandler.CalculateDisplacement(Position.VerticalSpeed / 60, 0, t);
+            }
+            else
+            {
+                Position.TrueAltitude = airportElev;
+            }                        
+        }
         private void MoveAircraft(int intervalMs)
         {
             double t = intervalMs / 1000.0;

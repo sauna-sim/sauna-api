@@ -12,10 +12,11 @@ using SaunaSim.Core.Simulator.Aircraft.Control.Instructions.Lateral;
 using SaunaSim.Core.Simulator.Aircraft.Control.Instructions.Vertical;
 using SaunaSim.Core.Simulator.Aircraft.FMS;
 using SaunaSim.Core.Simulator.Aircraft.FMS.Legs;
+using SaunaSim.Core.Simulator.Aircraft.Ground;
 
 namespace SaunaSim.Core.Simulator.Commands
 {
-    public class IlsCommand : IAircraftCommand
+    public class TakeOffCommand : IAircraftCommand
     {
         public SimAircraft Aircraft { get; set; }
         public Action<string> Logger { get; set; }
@@ -30,37 +31,25 @@ namespace SaunaSim.Core.Simulator.Commands
                 Aircraft.Autopilot.SelectedHeading = (int)Aircraft.Position.Heading_Mag;
             }
 
-            // Add the LOC leg
-            _locRoutePoint = new RouteWaypoint("LOC" + _loc.Runway_identifier, _loc.Loc_location);
-            FmsPoint locFmsPoint = new FmsPoint(_locRoutePoint, RoutePointTypeEnum.FLY_OVER)
-            {
-                LowerAltitudeConstraint = _loc.Glideslope.Gs_elevation + 50,
-                UpperAltitudeConstraint = _loc.Glideslope.Gs_elevation + 50,
-                AngleConstraint = _loc.Glideslope.Gs_angle
-            };
-            CourseToFixLeg locLeg = new CourseToFixLeg(locFmsPoint, BearingTypeEnum.MAGNETIC, _loc.Loc_bearing);
+            // Add the LOC/TO leg
+            _locRoutePoint = new RouteWaypoint("RWY" + _loc.Runway_identifier, _loc.Loc_location);
+            FmsPoint locFmsPoint = new FmsPoint(_locRoutePoint, RoutePointTypeEnum.FLY_OVER);
+            FixToManualLeg toLeg = new FixToManualLeg(locFmsPoint, BearingTypeEnum.MAGNETIC, _loc.Loc_bearing);
 
-            Aircraft.Fms.AddRouteLeg(locLeg);
+            Aircraft.Fms.InsertAtIndex(toLeg, 0);
 
             // Activate leg now, skipping all previous legs
-            while ((Aircraft.Fms.ActiveLeg == null || !Aircraft.Fms.ActiveLeg.Equals(locLeg)) && Aircraft.Fms.GetRouteLegs().Count > 0)
+            while ((Aircraft.Fms.ActiveLeg == null || !Aircraft.Fms.ActiveLeg.Equals(toLeg)) && Aircraft.Fms.GetRouteLegs().Count > 0)
             {
                 Aircraft.Fms.ActivateNextLeg();
             }
 
-            Aircraft.Autopilot.AddArmedLateralMode(LateralModeType.APCH);
-            Aircraft.Autopilot.AddArmedVerticalMode(VerticalModeType.APCH);
+            Aircraft.GroundHandler.GroundPhase = GroundPhaseType.TAKEOFF;
+            //Aircraft.Autopilot.AddArmedLateralMode(LateralModeType.LNAV);
+            //Aircraft.Autopilot.AddArmedVerticalMode(VerticalModeType.APCH);
 
             // Add event handler
             //Aircraft.Fms.WaypointPassed += OnLanded;
-        }
-
-        public void OnLanded(object sender, WaypointPassedEventArgs e)
-        {
-            if (e.RoutePoint.Equals(_locRoutePoint))
-            {
-                SimAircraftHandler.RemoveAircraftByCallsign(Aircraft.Callsign);
-            }
         }
 
         public bool HandleCommand(SimAircraft aircraft, Action<string> logger, string runway)
@@ -72,13 +61,13 @@ namespace SaunaSim.Core.Simulator.Commands
 
             if (wp == null)
             {
-                Logger?.Invoke($"ERROR: Localizer {runway} not found!");
+                Logger?.Invoke($"ERROR: Threshold {runway} not found!");
                 return false;
             }
 
             _loc = wp;
 
-            Logger?.Invoke($"{Aircraft.Callsign} flying ILS {runway}");
+            Logger?.Invoke($"{Aircraft.Callsign} Taking off Runway {runway}");
 
             return true;
         }
@@ -88,7 +77,7 @@ namespace SaunaSim.Core.Simulator.Commands
             // Check argument length
             if (args.Count < 1)
             {
-                Logger?.Invoke($"ERROR: ILS requires at least 1 arguments!");
+                Logger?.Invoke($"ERROR: Takeoff requires at least 1 arguments!");
                 return false;
             }
 
@@ -102,13 +91,13 @@ namespace SaunaSim.Core.Simulator.Commands
             
             if (wp == null)
             {
-                Logger?.Invoke($"ERROR: Localizer {rwyStr} not found!");
+                Logger?.Invoke($"ERROR: Runway {rwyStr} not found!");
                 return false;
             }
 
             _loc = wp;
 
-            Logger?.Invoke($"{Aircraft.Callsign} flying ILS {rwyStr}");
+            Logger?.Invoke($"{Aircraft.Callsign} Taking off Runway {rwyStr}");
 
             return true;
         }
