@@ -13,7 +13,7 @@
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="PShivaraman.AviationCalcUtilNet" Version="2.7.2" />
-    <PackageReference Include="CaspianMerlin.FsdConnectorNet" Version="0.2.24" />
+    <PackageReference Include="CaspianMerlin.FsdConnectorNet" Version="0.2.25" />
   </ItemGroup>
   <ItemGroup>
     <None Remove="JsonSchemas\" />

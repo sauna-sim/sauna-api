@@ -132,6 +132,10 @@ namespace SaunaSim.Core.Simulator.Commands
                 case "apch":
                     cmd = new IlsCommand();
                     break;
+                case "to":
+                case "takeoff":
+                    cmd = new TakeOffCommand();
+                    break;
                 case "int":
                 case "intercept":
                     cmd = new InterceptCourseCommand();

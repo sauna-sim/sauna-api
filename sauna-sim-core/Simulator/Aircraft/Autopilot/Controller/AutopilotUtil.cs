@@ -295,7 +295,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
                 thrustForZeroAccel,
                 THRUST_TIME_BUFFER
             ).demandedInput;
-        }
+        }        
 
         public static Angle CalculateDemandedPitchForSpeed(Velocity speedDelta, Angle curPitch, Angle pitchForZeroAccel, Angle maxPitch, Angle minPitch, Func<Angle, double> pitchToSpeedAccelFunction,
             int intervalMs)

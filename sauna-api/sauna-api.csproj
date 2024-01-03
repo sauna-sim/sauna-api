@@ -9,7 +9,7 @@
     <StartupObject>SaunaSim.Api.Program</StartupObject>
     <AssemblyName>SaunaApi</AssemblyName>
     <NeutralLanguage>en-US</NeutralLanguage>
-    <Version>0.15.0</Version>
+    <Version>0.16.0</Version>
 	<AssemblyVersion>$(Version)</AssemblyVersion>
     <FileVersion>$(Version)</FileVersion>
     <EnableUnmanagedDebugging>true</EnableUnmanagedDebugging>
@@ -37,7 +37,7 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="PShivaraman.AviationCalcUtilNet" Version="2.7.2" />
-    <PackageReference Include="CaspianMerlin.FsdConnectorNet" Version="0.2.24" />
+    <PackageReference Include="CaspianMerlin.FsdConnectorNet" Version="0.2.25" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
   </ItemGroup>
 

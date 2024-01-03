@@ -63,7 +63,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Performance
                         MinKias = 110,
                         NormKias = 140,
                         VsPenalty = -1000,
-                        PitchChange = -15
+                        PitchChange = -10
                     }
                 },
                 MTOW_kg = 78000,
@@ -122,7 +122,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Performance
             double zeroAccelThrust = -dataPoint.AccelLevelIdleThrust / (dataPoint.AccelLevelMaxThrust - dataPoint.AccelLevelIdleThrust);
             double thrustDelta = ((desiredAccelFwd - dataPoint.AccelLevelIdleThrust) / (dataPoint.AccelLevelMaxThrust - dataPoint.AccelLevelIdleThrust)) - zeroAccelThrust;
             double pitchPerc = thrustLeverPos - thrustDelta;
-            double pitch_degs = pitchPerc * (dataPoint.PitchClimb - dataPoint.PitchDescent) - dataPoint.PitchDescent;
+            double pitch_degs = pitchPerc * (dataPoint.PitchClimb - dataPoint.PitchDescent) + dataPoint.PitchDescent;
 
             return pitch_degs;
         }
@@ -133,7 +133,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Performance
             PerfDataPoint dataPoint = perfData.GetDataPoint((int)dens_alt_ft, (int)ias_kts, (int)mass_kg, spdBrake, config);
 
             double pitchPerc = (desiredVs - dataPoint.VsDescent) / (dataPoint.VsClimb - dataPoint.VsDescent);
-            double pitch_degs = (pitchPerc * (dataPoint.PitchClimb - dataPoint.PitchDescent)) - dataPoint.PitchDescent;
+            double pitch_degs = (pitchPerc * (dataPoint.PitchClimb - dataPoint.PitchDescent)) + dataPoint.PitchDescent;
 
             return pitch_degs;
         }
@@ -152,7 +152,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Performance
         public static (double accelFwd, double vs) CalculatePerformance(PerfData perfData, double pitch_degs, double thrustLeverPos, double ias_kts, double dens_alt_ft, double mass_kg, double spdBrake, int config)
         {
             PerfDataPoint dataPoint = perfData.GetDataPoint((int) dens_alt_ft, (int) ias_kts, (int) mass_kg, spdBrake, config);
-            double pitchPerc = (pitch_degs + dataPoint.PitchDescent) / (dataPoint.PitchClimb - dataPoint.PitchDescent);
+            double pitchPerc = (pitch_degs - dataPoint.PitchDescent) / (dataPoint.PitchClimb - dataPoint.PitchDescent);
             double vs = pitchPerc * (dataPoint.VsClimb - dataPoint.VsDescent) + dataPoint.VsDescent;
             double thrustDelta = thrustLeverPos - pitchPerc;
             double zeroAccelThrust = -dataPoint.AccelLevelIdleThrust / (dataPoint.AccelLevelMaxThrust - dataPoint.AccelLevelIdleThrust);

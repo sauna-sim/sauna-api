@@ -15,6 +15,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
 {
     public class AircraftPosition
     {
+        private SimAircraft _parentAircraft;
         private Latitude _lat;
         private Longitude _lon;
         private Length _altInd;
@@ -45,6 +46,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
 
         public AircraftPosition(Latitude lat, Longitude lon, Length indAlt, MagneticTileManager magneticTileManager)
         {
+            _parentAircraft = parentAircraft;
             _lat = lat;
             _lon = lon;
             IndicatedAltitude = indAlt;
@@ -124,9 +126,12 @@ namespace SaunaSim.Core.Simulator.Aircraft
                 // Calculate True Heading
                 _trueHdg = _magTileMgr.MagneticToTrue(PositionGeoPoint, DateTime.UtcNow, _magneticHdg);
 
-                // Calculate True Track
-                Angle wca = (double) _tas == 0 ? (Angle) 0 : (Angle) Math.Acos((double) WindXComp / (double)_tas);
-                _trueTrack = _trueHdg + wca;
+                if (!_onGround)
+                {
+                    // Calculate True Track
+                    Angle wca = (double)_tas == 0 ? (Angle)0 : (Angle)Math.Acos((double)WindXComp / (double)_tas);
+                    _trueTrack = _trueHdg + wca;
+                }
             }
         }
 
@@ -141,9 +146,12 @@ namespace SaunaSim.Core.Simulator.Aircraft
                 // Set Magnetic Heading
                 _magneticHdg = _magTileMgr.TrueToMagnetic(PositionGeoPoint, DateTime.UtcNow, _trueHdg);
 
-                // Calculate True Track
-                var wca = (double) _tas == 0 ? (Angle) 0 : (Angle) Math.Acos((double) WindXComp / (double) _tas);
-                _trueTrack = _trueHdg + wca;
+                if (!_onGround)
+                {
+                    // Calculate True Track
+                    var wca = (double)_tas == 0 ? (Angle)0 : (Angle)Math.Acos((double)WindXComp / (double)_tas);
+                    _trueTrack = _trueHdg + wca;
+                }
             }
         }
 
@@ -155,12 +163,15 @@ namespace SaunaSim.Core.Simulator.Aircraft
             {
                 _trueTrack = value;
 
-                // Calculate True Heading
-                var wca = (double) _tas == 0 ? (Angle) 0 : (Angle) Math.Acos((double) WindXComp / (double) _tas);
-                _trueHdg = _trueTrack - wca;
+                if (!_onGround)
+                {
+                    // Calculate True Heading
+                    var wca = (double)_tas == 0 ? (Angle)0 : (Angle)Math.Acos((double)WindXComp / (double)_tas);
+                    _trueHdg = _trueTrack - wca;
 
-                // Set Magnetic Heading
-                _magneticHdg = _magTileMgr.TrueToMagnetic(PositionGeoPoint, DateTime.UtcNow, _trueHdg);
+                    // Set Magnetic Heading
+                    _magneticHdg = _magTileMgr.TrueToMagnetic(PositionGeoPoint, DateTime.UtcNow, _trueHdg);
+                }
             }
         }
 
@@ -369,7 +380,17 @@ namespace SaunaSim.Core.Simulator.Aircraft
         public bool OnGround
         {
             get => _onGround;
-            set => _onGround = value;
+            set
+            {
+                var oldValue = _onGround;
+                _onGround = value;
+
+                // Update FSD
+                if (oldValue != _onGround)
+                {
+                    _parentAircraft.Connection.SetOnGround(_onGround);
+                }
+            }
         }
 
         public AngularVelocity BankRate
