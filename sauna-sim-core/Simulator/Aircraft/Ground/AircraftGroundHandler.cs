@@ -110,7 +110,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Ground
             }
             else if(TakeoffPhase == TakeoffPhaseType.ROTATE)
             {
-                if (_parentAircraft.Position.Pitch < 1)
+                if (_parentAircraft.Position.Pitch < 4)
                 {
                     _parentAircraft.Position.PitchRate = 2;
                     _parentAircraft.Position.Pitch += PerfDataHandler.CalculateDisplacement(_parentAircraft.Position.PitchRate, 0, t);
