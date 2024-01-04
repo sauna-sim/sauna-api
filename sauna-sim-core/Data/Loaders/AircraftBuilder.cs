@@ -89,7 +89,7 @@ namespace SaunaSim.Core.Data.Loaders
 				aircraft.Position.Pitch = 0;
 				aircraft.Position.Bank = 0;
 
-				aircraft.FlightPhase = FlightPhaseType.ON_GROUND;
+                aircraft.FlightPhase = FlightPhaseType.ON_GROUND;
 			}
 			
 			// Speed

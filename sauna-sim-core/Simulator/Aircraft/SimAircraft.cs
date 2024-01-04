@@ -368,6 +368,13 @@ namespace SaunaSim.Core.Simulator.Aircraft
 
             // Send Flight Plan
             Connection.SendFlightPlan(_flightPlan);
+
+            Connection.SetOnGround(_position.OnGround);
+
+            var flapsPct = (double)_data.Config / PerformanceData.ConfigList.Count;
+            Connection.SetFlapsPct((int)(flapsPct * 100.0));
+            Connection.SetGearDown(PerformanceData.ConfigList[_data.Config].GearDown);
+            Connection.SetSpoilersDeployed(_data.SpeedBrakePos > 0);
         }
 
         private void OnConnectionTerminated(object sender, EventArgs e)

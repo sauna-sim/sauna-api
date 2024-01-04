@@ -36,6 +36,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Ground
         public AircraftGroundHandler(SimAircraft parentAircraft)
         {
             _parentAircraft = parentAircraft;
+            GroundPhase = GroundPhaseType.GROUND;
             TakeoffPhase = TakeoffPhaseType.LINEUP;
         }
 
@@ -52,6 +53,10 @@ namespace SaunaSim.Core.Simulator.Aircraft.Ground
 
                 // Update Takeoff Logic
                 HandleOnTakeoff(intervalMs);
+            }
+            else
+            {
+
             }
         }
 
@@ -85,7 +90,6 @@ namespace SaunaSim.Core.Simulator.Aircraft.Ground
                 //Thrust 100, Config 1, RWY track,
                 if (_parentAircraft.Position.IndicatedAirSpeed < 140)
                 {
-                    _parentAircraft.Data.Config = 1;
                     _parentAircraft.Data.SpeedBrakePos = 0;
                     _parentAircraft.Data.ThrustLeverPos = 100;                  
 
@@ -115,6 +119,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Ground
                 }
                 else
                 {
+                    _parentAircraft.Position.OnGround = false;
                     TakeoffPhase = TakeoffPhaseType.CLIMB;
                     _parentAircraft.Fms.PhaseType = FmsPhaseType.CLIMB;
                 }
@@ -124,8 +129,8 @@ namespace SaunaSim.Core.Simulator.Aircraft.Ground
                 // Cur alt > airport elev + 700ft, INFLIGHT AP FLCH (180kts), TRK rwy trk
                 if (_parentAircraft.Position.TrueAltitude > _parentAircraft.airportElev + 50)
                 {                    
-                    _parentAircraft.Position.OnGround = false;
-                    
+                    _parentAircraft.Data.Config = 1;
+
                     _parentAircraft.Autopilot.SelectedSpeed = 170;
                     _parentAircraft.Autopilot.AddArmedLateralMode(LateralModeType.LNAV);
                     _parentAircraft.Autopilot.AddArmedVerticalMode(VerticalModeType.FLCH);
