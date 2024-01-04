@@ -10,6 +10,7 @@ using NavData_Interface.DataSources.DFDUtility.Factory;
 using NavData_Interface.Objects;
 using AviationCalcUtilNet.MathTools;
 using NavData_Interface.Objects.Fixes.Waypoints;
+using NavData_Interface.Objects.LegCollections.Airways;
 
 namespace NavData_Interface.DataSources
 {
@@ -379,6 +380,28 @@ namespace NavData_Interface.DataSources
             }
 
             return runways[0];
+        }
+
+        private SQLiteCommand AirwayLookupByIdentifier(string airwayIdentifier)
+        {
+            SQLiteCommand command = new SQLiteCommand();
+
+            command.CommandText = $"SELECT * FROM tbl_airways WHERE airway_identifier == @airway";
+
+            command.Parameters.AddWithValue("@airway", airwayIdentifier);
+
+            return command;
+        }
+
+        public override Airway GetAirwayFromIdentifierAndFixes(string airwayIdentifier, Fix startFix, Fix endFix)
+        {
+            var reader = AirwayLookupByIdentifier(airwayIdentifier).ExecuteReader();
+
+            var airway = AirwayFactory.Factory(reader);
+
+            airway.selectSection(startFix, endFix);
+
+            return airway;
         }
     }
 }

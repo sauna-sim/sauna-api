@@ -1,6 +1,7 @@
 ﻿using AviationCalcUtilNet.GeoTools;
 using NavData_Interface.Objects;
 using NavData_Interface.Objects.Fixes;
+using NavData_Interface.Objects.LegCollections.Airways;
 using System;
 using System.Collections.Generic;
 using System.Security.Cryptography;
@@ -19,6 +20,8 @@ namespace NavData_Interface.DataSources
         public abstract Airport GetClosestAirportWithinRadius(GeoPoint position, double radiusM);
 
         public abstract Runway GetRunwayFromAirportRunwayIdentifier(string airportIdentifier, string runwayIdentifier);
+
+        public abstract Airway GetAirwayFromIdentifierAndFixes(string airwayIdentifier, Fix startFix, Fix endFix);
 
         public Fix GetClosestFixByIdentifier(GeoPoint point, string identifier)
         {
