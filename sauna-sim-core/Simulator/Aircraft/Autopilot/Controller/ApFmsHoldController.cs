@@ -100,8 +100,6 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
             this(holdingPoint, courseType, inboundCourse, HoldTurnDirectionEnum.RIGHT, magTileMgr)
         { }
 
-        public LateralControlMode Type => LateralControlMode.HOLDING_PATTERN;
-
         public HoldPhaseEnum HoldPhase => _holdPhase;
 
         public Bearing MagneticCourse => _magneticCourse;

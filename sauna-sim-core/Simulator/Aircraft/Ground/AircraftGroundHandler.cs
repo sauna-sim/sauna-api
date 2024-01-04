@@ -1,5 +1,8 @@
-﻿using AviationCalcUtilNet.GeoTools;
+﻿using AviationCalcUtilNet.Atmos;
+using AviationCalcUtilNet.Geo;
+using AviationCalcUtilNet.GeoTools;
 using AviationCalcUtilNet.MathTools;
+using AviationCalcUtilNet.Units;
 using SaunaSim.Core.Data;
 using SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller;
 using SaunaSim.Core.Simulator.Aircraft.Performance;
@@ -27,7 +30,6 @@ namespace SaunaSim.Core.Simulator.Aircraft.Ground
 
     public class AircraftGroundHandler
     {
-
         private SimAircraft _parentAircraft;
         public GroundPhaseType GroundPhase { get; set; }
         public TakeoffPhaseType TakeoffPhase { get; set; }
@@ -64,36 +66,35 @@ namespace SaunaSim.Core.Simulator.Aircraft.Ground
             {
                 // CurPos -> Rwy Threshold pos
                 var rwyThreshold = _parentAircraft.Fms.ActiveLeg.StartPoint.Point.PointPosition;
-                double bearing = GeoPoint.FinalBearing(_parentAircraft.Position.PositionGeoPoint, rwyThreshold);
+                Bearing bearing = GeoPoint.FinalBearing(_parentAircraft.Position.PositionGeoPoint, rwyThreshold);
                 _parentAircraft.Position.Track_True = bearing;
-                double distance = GeoPoint.FlatDistanceM(_parentAircraft.Position.PositionGeoPoint, rwyThreshold);
-                if (distance < 10)
+                Length distance = GeoPoint.FlatDistance(_parentAircraft.Position.PositionGeoPoint, rwyThreshold);
+                if (distance < Length.FromMeters(10))
                 {
-                    _parentAircraft.Position.GroundSpeed = 0;
+                    _parentAircraft.Position.GroundSpeed = Velocity.FromKnots(0);
                     _parentAircraft.Position.Track_True = _parentAircraft.Fms.ActiveLeg.InitialTrueCourse;
                     TakeoffPhase = TakeoffPhaseType.THRUSTSET;
                 }
                 else
                 {
-                    _parentAircraft.Position.GroundSpeed = 10;
+                    _parentAircraft.Position.GroundSpeed = Velocity.FromKnots(10);
                 }
             }
             else if(TakeoffPhase == TakeoffPhaseType.THRUSTSET)
             {
                 //When aircraft is on Rwy Threshold Pos, TAKEOFF set
                 //Thrust 100, Config 1, RWY track,
-                if (_parentAircraft.Position.IndicatedAirSpeed < 140)
+                if (_parentAircraft.Position.IndicatedAirSpeed < Velocity.FromKnots(140))
                 {
                     _parentAircraft.Data.Config = 1;
                     _parentAircraft.Data.SpeedBrakePos = 0;
                     _parentAircraft.Data.ThrustLeverPos = 100;                    
 
                     double accel = 2;
-                    double curGs = _parentAircraft.Position.GroundSpeed;
-                    double vi = MathUtil.ConvertKtsToMpers(curGs);
-                    double vf = PerfDataHandler.CalculateFinalVelocity(vi, accel, t);
+                    Velocity vi = _parentAircraft.Position.GroundSpeed;
+                    Velocity vf = Velocity.FromMetersPerSecond(PerfDataHandler.CalculateFinalVelocity(vi.MetersPerSecond, accel, t));
 
-                    accel = PerfDataHandler.CalculateAcceleration(vi, vf, t);
+                    accel = PerfDataHandler.CalculateAcceleration(vi.MetersPerSecond, vf.MetersPerSecond, t);
                     _parentAircraft.Position.Forward_Acceleration = accel;
                 }
                 else
@@ -104,12 +105,12 @@ namespace SaunaSim.Core.Simulator.Aircraft.Ground
             else if(TakeoffPhase == TakeoffPhaseType.ROTATE)
             {
                 //Speed 140 (vr), pitch 3deg
-                if (_parentAircraft.Position.IndicatedAirSpeed < 160)
+                if (_parentAircraft.Position.IndicatedAirSpeed < Velocity.FromKnots(160))
                 {
-                    if (_parentAircraft.Position.Pitch < 4)
+                    if (_parentAircraft.Position.Pitch < Angle.FromDegrees(4))
                     {
-                        _parentAircraft.Position.PitchRate = 2;
-                        _parentAircraft.Position.Pitch += PerfDataHandler.CalculateDisplacement(_parentAircraft.Position.PitchRate, 0, t);
+                        _parentAircraft.Position.PitchRate = AngularVelocity.FromDegreesPerSecond(2);
+                        _parentAircraft.Position.Pitch += Angle.FromRadians(PerfDataHandler.CalculateDisplacement(_parentAircraft.Position.PitchRate.RadiansPerSecond, 0, t));
                     }
                 }
                 else
@@ -120,7 +121,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Ground
             else if(TakeoffPhase == TakeoffPhaseType.CLIMB)
             {
                 // Cur alt > airport elev + 700ft, INFLIGHT AP FLCH (180kts), TRK rwy trk
-                if (_parentAircraft.Position.TrueAltitude > _parentAircraft.airportElev + 500)
+                if (_parentAircraft.Position.TrueAltitude > Length.FromFeet(_parentAircraft.RelaventAirport.Elevation + 500))
                 {
                     _parentAircraft.Data.Config = 0;
                     _parentAircraft.Position.OnGround = false;
@@ -134,25 +135,25 @@ namespace SaunaSim.Core.Simulator.Aircraft.Ground
                 else
                 {
                     var gribPoint = _parentAircraft.Position.GribPoint;
-                    var alt = _parentAircraft.airportElev + 500;
-                    var altDens = alt;
+                    var alt = Length.FromFeet(_parentAircraft.RelaventAirport.Elevation + 500);
+                    Length altDens;
                     if (gribPoint != null)
                     {
-                        double T = AtmosUtil.CalculateTempAtAlt(MathUtil.ConvertFeetToMeters(alt), gribPoint.GeoPotentialHeight_M, gribPoint.Temp_K);
-                        double p = AtmosUtil.CalculatePressureAtAlt(MathUtil.ConvertFeetToMeters(alt), gribPoint.GeoPotentialHeight_M, gribPoint.Level_hPa * 100, T);
-                        altDens = MathUtil.ConvertMetersToFeet(AtmosUtil.CalculateDensityAltitude(p, T));
+                        Temperature T = AtmosUtil.CalculateTempAtAlt(alt, gribPoint.GeoPotentialHeight, gribPoint.Temp);
+                        Pressure p = AtmosUtil.CalculatePressureAtAlt(alt, gribPoint.GeoPotentialHeight, gribPoint.LevelPressure, T);
+                        altDens = AtmosUtil.CalculateDensityAltitude(p, T);
                     }
                     else
                     {
-                        double T = AtmosUtil.CalculateTempAtAlt(MathUtil.ConvertFeetToMeters(alt), 0, AtmosUtil.ISA_STD_TEMP_K);
-                        double p = AtmosUtil.CalculatePressureAtAlt(MathUtil.ConvertFeetToMeters(alt), 0, AtmosUtil.ISA_STD_PRES_Pa, T);
-                        altDens = MathUtil.ConvertMetersToFeet(AtmosUtil.CalculateDensityAltitude(p, T));
+                        Temperature T = AtmosUtil.CalculateTempAtAlt(alt, (Length)0, AtmosUtil.ISA_STD_TEMP);
+                        Pressure p = AtmosUtil.CalculatePressureAtAlt(alt, (Length)0, AtmosUtil.ISA_STD_PRES, T);
+                        altDens = AtmosUtil.CalculateDensityAltitude(p, T);
                     }
 
 
-                    var neededPitch = PerfDataHandler.GetRequiredPitchForThrust(_parentAircraft.PerformanceData, _parentAircraft.Data.ThrustLeverPos / 100.0, 0, 180, altDens, _parentAircraft.Data.Mass_kg, _parentAircraft.Data.SpeedBrakePos, 0);
-                    var neededVs = PerfDataHandler.CalculatePerformance(_parentAircraft.PerformanceData, neededPitch, _parentAircraft.Data.ThrustLeverPos / 100.0, 180, altDens, _parentAircraft.Data.Mass_kg, _parentAircraft.Data.SpeedBrakePos, 0);
-                    _parentAircraft.Position.VerticalSpeed = neededVs.vs;
+                    var neededPitch = Angle.FromDegrees(PerfDataHandler.GetRequiredPitchForThrust(_parentAircraft.PerformanceData, _parentAircraft.Data.ThrustLeverPos / 100.0, 0, 180, altDens.Feet, _parentAircraft.Data.Mass_kg, _parentAircraft.Data.SpeedBrakePos, 0));
+                    var neededVs = Velocity.FromFeetPerMinute(PerfDataHandler.CalculatePerformance(_parentAircraft.PerformanceData, neededPitch.Degrees, _parentAircraft.Data.ThrustLeverPos / 100.0, 180, altDens.Feet, _parentAircraft.Data.Mass_kg, _parentAircraft.Data.SpeedBrakePos, 0).vs);
+                    _parentAircraft.Position.VerticalSpeed = neededVs;
                     _parentAircraft.Position.Pitch = neededPitch;                    
                 }
             }
@@ -175,47 +176,47 @@ namespace SaunaSim.Core.Simulator.Aircraft.Ground
             double t = intervalMs / 1000.0;
             double accel = -2;
             // Calculate Pitch, Bank, and Thrust Lever Position
-            if (_parentAircraft.Position.Pitch > 0)
+            if (_parentAircraft.Position.Pitch.Radians > 0)
             {
-                _parentAircraft.Position.PitchRate = -0.6;
-                _parentAircraft.Position.Pitch += PerfDataHandler.CalculateDisplacement(_parentAircraft.Position.PitchRate, 0, t);
+                _parentAircraft.Position.PitchRate = AngularVelocity.FromDegreesPerSecond(-0.6);
+                _parentAircraft.Position.Pitch += Angle.FromRadians(PerfDataHandler.CalculateDisplacement(_parentAircraft.Position.PitchRate.RadiansPerSecond, 0, t));
             }
             else
             {
-                _parentAircraft.Position.PitchRate = 0;
-                _parentAircraft.Position.Pitch = 0;
+                _parentAircraft.Position.PitchRate = (AngularVelocity)0;
+                _parentAircraft.Position.Pitch = (Angle)0;
             }
             if (_parentAircraft.Position.Heading_True != _parentAircraft.Position.Track_True)
             {
                 if (_parentAircraft.Position.Heading_True > _parentAircraft.Position.Track_True)
                 {
-                    _parentAircraft.Position.YawRate = -1;
-                    _parentAircraft.Position.Heading_True += PerfDataHandler.CalculateDisplacement(_parentAircraft.Position.YawRate, 0, t);
+                    _parentAircraft.Position.YawRate = AngularVelocity.FromDegreesPerSecond(-1);
+                    _parentAircraft.Position.Heading_True += Angle.FromRadians(PerfDataHandler.CalculateDisplacement(_parentAircraft.Position.YawRate.RadiansPerSecond, 0, t));
                     if (_parentAircraft.Position.Heading_True < _parentAircraft.Position.Track_True)
                     {
                         _parentAircraft.Position.Heading_True = _parentAircraft.Position.Track_True;
-                        _parentAircraft.Position.YawRate = 0;
+                        _parentAircraft.Position.YawRate = (AngularVelocity)0;
                     }
                 }
                 else
                 {
-                    _parentAircraft.Position.YawRate = 1;
-                    _parentAircraft.Position.Heading_True += PerfDataHandler.CalculateDisplacement(_parentAircraft.Position.YawRate, 0, t);
+                    _parentAircraft.Position.YawRate = AngularVelocity.FromDegreesPerSecond(1);
+                    _parentAircraft.Position.Heading_True += Angle.FromRadians(PerfDataHandler.CalculateDisplacement(_parentAircraft.Position.YawRate.RadiansPerSecond, 0, t));
                     if (_parentAircraft.Position.Heading_True > _parentAircraft.Position.Track_True)
                     {
                         _parentAircraft.Position.Heading_True = _parentAircraft.Position.Track_True;
-                        _parentAircraft.Position.YawRate = 0;
+                        _parentAircraft.Position.YawRate = (AngularVelocity)0;
                     }
                 }
 
             }
 
-            _parentAircraft.Position.Bank = 0;
+            _parentAircraft.Position.Bank = (Angle)0;
             _parentAircraft.Data.ThrustLeverPos = 0;
-            double curGs = _parentAircraft.Position.GroundSpeed;
+
             //Calculating final velocity
-            double vi = MathUtil.ConvertKtsToMpers(curGs);
-            double vf = PerfDataHandler.CalculateFinalVelocity(vi, accel, t);
+            Velocity vi = _parentAircraft.Position.GroundSpeed;
+            Velocity vf = Velocity.FromMetersPerSecond(PerfDataHandler.CalculateFinalVelocity(vi.MetersPerSecond, accel, t));
 
             if (vf <= 0)
             {

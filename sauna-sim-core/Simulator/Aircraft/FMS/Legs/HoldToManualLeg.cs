@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using AviationCalcUtilNet.Geo;
 using AviationCalcUtilNet.GeoTools;
+using AviationCalcUtilNet.Magnetic;
 using AviationCalcUtilNet.Units;
 using SaunaSim.Core.Data;
 using SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller;
@@ -17,11 +18,11 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
 
         public ApFmsHoldController Instr => _instr;
 
-        public HoldToManualLeg(FmsPoint startPoint, BearingTypeEnum courseType, Bearing inboundCourse, HoldTurnDirectionEnum turnDir, HoldLegLengthTypeEnum legLengthType, double legLength)
+        public HoldToManualLeg(FmsPoint startPoint, BearingTypeEnum courseType, Bearing inboundCourse, HoldTurnDirectionEnum turnDir, HoldLegLengthTypeEnum legLengthType, double legLength, MagneticTileManager magTileMgr)
         {
             _startPoint = startPoint;
             _endPoint = new FmsPoint(startPoint.Point, RoutePointTypeEnum.FLY_OVER);
-            _instr = new ApFmsHoldController(startPoint.Point, courseType, inboundCourse, turnDir, legLengthType, legLength);
+            _instr = new ApFmsHoldController(startPoint.Point, courseType, inboundCourse, turnDir, legLengthType, legLength, magTileMgr);
         }
 
         public FmsPoint StartPoint => _startPoint;

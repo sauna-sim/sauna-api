@@ -26,6 +26,7 @@ using AviationCalcUtilNet.Geo;
 using AviationCalcUtilNet.Units;
 using AviationCalcUtilNet.Aviation;
 using SaunaSim.Core.Simulator.Aircraft.Ground;
+using NavData_Interface.Objects.Fixes;
 
 namespace SaunaSim.Core.Simulator.Aircraft
 {
@@ -217,8 +218,8 @@ namespace SaunaSim.Core.Simulator.Aircraft
 
         public Action<string> LogError { get; set; }
 
-        //Airport Elevation
-        public double airportElev = DataHandler.GetAirportByIdentifier(DataHandler.FAKE_AIRPORT_NAME).Elevation;
+        //Airport
+        public Airport RelaventAirport { get; set; }
 
         public SimAircraft(string callsign, string networkId, string password, string fullname, string hostname, ushort port, ProtocolRevision protocol, ClientInfo clientInfo,
             PerfData perfData, Latitude lat, Longitude lon, Length alt, Bearing hdg_mag, MagneticTileManager magTileManager, GribTileManager gribTileManager, int delayMs = 0)
@@ -233,7 +234,6 @@ namespace SaunaSim.Core.Simulator.Aircraft
             Connection.PrivateMessageReceived += OnPrivateMessageReceived;
             _magTileManager = magTileManager;
             _gribTileManager = gribTileManager;
-
             _simRate = 10;
             _paused = true;
 
@@ -267,15 +267,15 @@ namespace SaunaSim.Core.Simulator.Aircraft
                 CurrentVerticalMode = VerticalModeType.FLCH
             };
 
-            _groundhandler = new AircraftGroundHandler(this)
-            {
-
-            };
+            _groundhandler = new AircraftGroundHandler(this);
 
             _fms = new AircraftFms(this, _magTileManager);
             PerformanceData = perfData;
-            // Control = new AircraftControl(new HeadingHoldInstruction(Convert.ToInt32(hdg_mag)), new AltitudeHoldInstruction(Convert.ToInt32(alt)));
+
             DelayMs = delayMs;
+
+            // Set Relavent airport
+            RelaventAirport = DataHandler.GetAirportByIdentifier(DataHandler.FAKE_AIRPORT_NAME);
 
             AircraftType = "A320"; // TODO: Change This
             AirlineCode = "JBU"; // TODO: Change This
@@ -421,7 +421,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
                     {
                         //If we're on APCH below 50ft afe then switch flight phase to ground
                         if (_autopilot.CurrentVerticalMode == VerticalModeType.LAND &&
-                            (Position.TrueAltitude < Length.FromFeet(airportElev + 1)))
+                            (Position.TrueAltitude < Length.FromFeet(RelaventAirport.Elevation + 1)))
                         {
                             FlightPhase = FlightPhaseType.ON_GROUND;
 
@@ -478,7 +478,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
             }
             else
             {
-                Position.TrueAltitude = Length.FromFeet(airportElev);
+                Position.TrueAltitude = Length.FromFeet(RelaventAirport.Elevation);
             }                        
         }
         private void MoveAircraft(int intervalMs)
