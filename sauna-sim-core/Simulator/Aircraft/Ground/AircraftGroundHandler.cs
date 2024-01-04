@@ -73,10 +73,12 @@ namespace SaunaSim.Core.Simulator.Aircraft.Ground
                 double bearing = GeoPoint.FinalBearing(_parentAircraft.Position.PositionGeoPoint, rwyThreshold);
                 _parentAircraft.Position.Track_True = bearing;
                 double distance = GeoPoint.FlatDistanceM(_parentAircraft.Position.PositionGeoPoint, rwyThreshold);
-                if (distance < 10)
+                if (distance < 1)
                 {
                     _parentAircraft.Position.GroundSpeed = 0;
                     _parentAircraft.Position.Track_True = _parentAircraft.Fms.ActiveLeg.InitialTrueCourse;
+                    _parentAircraft.Position.Latitude = rwyThreshold.Lat;
+                    _parentAircraft.Position.Longitude = rwyThreshold.Lon;
                     TakeoffPhase = TakeoffPhaseType.THRUSTSET;
                 }
                 else
@@ -111,7 +113,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Ground
                 //Speed 140 (vr), pitch 3deg
                 if (_parentAircraft.Position.IndicatedAirSpeed < 160)
                 {
-                    if (_parentAircraft.Position.Pitch < 4)
+                    if (_parentAircraft.Position.Pitch < 1)
                     {
                         _parentAircraft.Position.PitchRate = 2;
                         _parentAircraft.Position.Pitch += PerfDataHandler.CalculateDisplacement(_parentAircraft.Position.PitchRate, 0, t);
@@ -128,7 +130,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Ground
             {
                 // Cur alt > airport elev + 700ft, INFLIGHT AP FLCH (180kts), TRK rwy trk
                 if (_parentAircraft.Position.TrueAltitude > _parentAircraft.airportElev + 50)
-                {                    
+                {
                     _parentAircraft.Data.Config = 1;
 
                     _parentAircraft.Autopilot.SelectedSpeed = 170;
@@ -140,31 +142,53 @@ namespace SaunaSim.Core.Simulator.Aircraft.Ground
                 }
                 else
                 {
-                    var gribPoint = _parentAircraft.Position.GribPoint;
                     var alt = _parentAircraft.airportElev + 50;
-                    var altDens = alt;
-                    if (gribPoint != null)
-                    {
-                        double T = AtmosUtil.CalculateTempAtAlt(MathUtil.ConvertFeetToMeters(alt), gribPoint.GeoPotentialHeight_M, gribPoint.Temp_K);
-                        double p = AtmosUtil.CalculatePressureAtAlt(MathUtil.ConvertFeetToMeters(alt), gribPoint.GeoPotentialHeight_M, gribPoint.Level_hPa * 100, T);
-                        altDens = MathUtil.ConvertMetersToFeet(AtmosUtil.CalculateDensityAltitude(p, T));
-                    }
-                    else
-                    {
-                        double T = AtmosUtil.CalculateTempAtAlt(MathUtil.ConvertFeetToMeters(alt), 0, AtmosUtil.ISA_STD_TEMP_K);
-                        double p = AtmosUtil.CalculatePressureAtAlt(MathUtil.ConvertFeetToMeters(alt), 0, AtmosUtil.ISA_STD_PRES_Pa, T);
-                        altDens = MathUtil.ConvertMetersToFeet(AtmosUtil.CalculateDensityAltitude(p, T));
-                    }
 
+                    (double targetPitch, double targetVs) = GetTargetPitchAndVsForAlt(alt);
 
-                    var neededPitch = PerfDataHandler.GetRequiredPitchForThrust(_parentAircraft.PerformanceData, _parentAircraft.Data.ThrustLeverPos / 100.0, 0, 180, altDens, _parentAircraft.Data.Mass_kg, _parentAircraft.Data.SpeedBrakePos, 0);
-                    var neededVs = PerfDataHandler.CalculatePerformance(_parentAircraft.PerformanceData, neededPitch, _parentAircraft.Data.ThrustLeverPos / 100.0, 180, altDens, _parentAircraft.Data.Mass_kg, _parentAircraft.Data.SpeedBrakePos, 0);
-                    _parentAircraft.Position.VerticalSpeed = neededVs.vs;
-                    _parentAircraft.Position.Pitch = neededPitch;                    
+                    // Find time to get to 50ft.
+                    var deltaAlt = alt - _parentAircraft.Position.IndicatedAltitude;
+
+                    // Find Vi, Vf, and time
+                    var vi = _parentAircraft.Position.VerticalSpeed / 60.0;
+                    var vf = targetVs / 60.0;
+                    var time = deltaAlt / (0.5 * (vf + vi));
+
+                    // Figure out pitch velocity to get smooth pitch and alt change
+                    var pitchVel = (targetPitch - _parentAircraft.Position.Pitch) / time;
+                    var altAccel = PerfDataHandler.CalculateAcceleration(vi, vf, time);
+
+                    var finalVs = PerfDataHandler.CalculateFinalVelocity(vi, altAccel, t) * 60;
+                    
+                    _parentAircraft.Position.VerticalSpeed = finalVs;
+                    _parentAircraft.Position.PitchRate = pitchVel;
+                    _parentAircraft.Position.Pitch += PerfDataHandler.CalculateDisplacement(pitchVel, 0, t);                    
                 }
             }
 
             _parentAircraft.Position.Heading_True = _parentAircraft.Position.Track_True;
+        }
+
+        private (double targetPitch, double targetVs) GetTargetPitchAndVsForAlt(double alt)
+        {
+            var gribPoint = _parentAircraft.Position.GribPoint;
+            double altDens;
+            if (gribPoint != null)
+            {
+                double T = AtmosUtil.CalculateTempAtAlt(MathUtil.ConvertFeetToMeters(alt), gribPoint.GeoPotentialHeight_M, gribPoint.Temp_K);
+                double p = AtmosUtil.CalculatePressureAtAlt(MathUtil.ConvertFeetToMeters(alt), gribPoint.GeoPotentialHeight_M, gribPoint.Level_hPa * 100, T);
+                altDens = MathUtil.ConvertMetersToFeet(AtmosUtil.CalculateDensityAltitude(p, T));
+            } else
+            {
+                double T = AtmosUtil.CalculateTempAtAlt(MathUtil.ConvertFeetToMeters(alt), 0, AtmosUtil.ISA_STD_TEMP_K);
+                double p = AtmosUtil.CalculatePressureAtAlt(MathUtil.ConvertFeetToMeters(alt), 0, AtmosUtil.ISA_STD_PRES_Pa, T);
+                altDens = MathUtil.ConvertMetersToFeet(AtmosUtil.CalculateDensityAltitude(p, T));
+            }
+
+            var neededPitch = PerfDataHandler.GetRequiredPitchForThrust(_parentAircraft.PerformanceData, _parentAircraft.Data.ThrustLeverPos / 100.0, 0, 180, altDens, _parentAircraft.Data.Mass_kg, _parentAircraft.Data.SpeedBrakePos, 0);
+            var (_, vs) = PerfDataHandler.CalculatePerformance(_parentAircraft.PerformanceData, neededPitch, _parentAircraft.Data.ThrustLeverPos / 100.0, 180, altDens, _parentAircraft.Data.Mass_kg, _parentAircraft.Data.SpeedBrakePos, 0);
+
+            return (neededPitch, vs);
         }
 
         private void HandleOnLand(int intervalMs)
