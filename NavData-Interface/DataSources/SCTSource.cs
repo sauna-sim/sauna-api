@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Security.Cryptography.X509Certificates;
+using AviationCalcUtilNet.Geo;
 using AviationCalcUtilNet.GeoTools;
+using AviationCalcUtilNet.Units;
 using NavData_Interface.Objects;
 using NavData_Interface.Objects.Fixes;
 using NavData_Interface.Objects.Fixes.Navaids;
@@ -64,7 +66,8 @@ namespace NavData_Interface.DataSources
                                 }
                                 catch (Exception) { }
 
-                                GeoUtil.ConvertVrcToDecimalDegs(items[2], items[3], out double lat, out double lon);
+                                var lat = Latitude.FromVrc(items[2]);
+                                var lon = Longitude.FromVrc(items[3]);
 
                                 if (sectionName == "VOR")
                                 {
@@ -83,7 +86,8 @@ namespace NavData_Interface.DataSources
 
                             if (items.Length >= 3)
                             {
-                                GeoUtil.ConvertVrcToDecimalDegs(items[1], items[2], out double lat, out double lon);
+                                var lat = Latitude.FromVrc(items[1]);
+                                var lon = Longitude.FromVrc(items[2]);
                                 _fixes.Add(new Waypoint(items[0], items[0], new GeoPoint(lat, lon)));
                             }
                             break;
@@ -123,23 +127,23 @@ namespace NavData_Interface.DataSources
         /// <param name="position">The centre point</param>
         /// <param name="radiusM">The radius in which to search for airports</param>
         /// <returns>The closest airport within the radius specified, or null if none found</returns>
-        public override Airport GetClosestAirportWithinRadius(GeoPoint position, double radiusM)
+        public override Airport GetClosestAirportWithinRadius(GeoPoint position, Length radius)
         {
             Airport closestAirport = null;
-            double closestDistance = double.MaxValue;
+            Length closestDistance = new Length(double.MaxValue);
             foreach (var fix in _fixes)
             {
                 if (fix.GetType() != typeof(Airport))
                 {
                     continue;
                 }
-                double distanceM = GeoPoint.DistanceM(position, fix.Location);
+                Length distance = GeoPoint.Distance(position, fix.Location);
 
-                if (distanceM > radiusM) { continue; }
+                if (distance > radius) { continue; }
 
-                if (distanceM < closestDistance)
+                if (distance < closestDistance)
                 {
-                    closestDistance = distanceM;
+                    closestDistance = distance;
                     closestAirport = (Airport)fix;
                 }
             }

@@ -1,4 +1,5 @@
 ﻿using AviationCalcUtilNet.GeoTools;
+using AviationCalcUtilNet.Units;
 using NavData_Interface.Objects;
 using NavData_Interface.Objects.Fixes;
 using NavData_Interface.Objects.LegCollections.Airways;
@@ -17,7 +18,7 @@ namespace NavData_Interface.DataSources
 
         public abstract Localizer GetLocalizerFromAirportRunway(string airportIdentifier, string runwayIdentifier);
 
-        public abstract Airport GetClosestAirportWithinRadius(GeoPoint position, double radiusM);
+        public abstract Airport GetClosestAirportWithinRadius(GeoPoint position, Length radius);
 
         public abstract Runway GetRunwayFromAirportRunwayIdentifier(string airportIdentifier, string runwayIdentifier);
 

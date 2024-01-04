@@ -11,6 +11,8 @@ using NavData_Interface.Objects;
 using AviationCalcUtilNet.MathTools;
 using NavData_Interface.Objects.Fixes.Waypoints;
 using NavData_Interface.Objects.LegCollections.Airways;
+using AviationCalcUtilNet.Units;
+using AviationCalcUtilNet.Geo;
 
 namespace NavData_Interface.DataSources
 {
@@ -190,42 +192,44 @@ namespace NavData_Interface.DataSources
             return cmd;
         }
 
-        public SQLiteCommand AirportsFilterByDistance(GeoPoint position, double radiusM)
+        public SQLiteCommand AirportsFilterByDistance(GeoPoint position, Length radius)
         {
-            radiusM = Math.Min(radiusM, MathUtil.ConvertNauticalMilesToMeters(100));
+            radius = Length.FromMeters(Math.Min(radius.Meters, Length.FromNauticalMiles(100).Meters));
 
             // Figure out where our extremities are
-            double leftLon, rightLon, bottomLat, topLat;
+            Longitude leftLon, rightLon;
+            Latitude bottomLat, topLat;
+
             {
-                var leftPoint = new GeoPoint(position);
-                leftPoint.MoveByM(270.0, radiusM);
+                var leftPoint = (GeoPoint)position.Clone();
+                leftPoint.MoveBy(Bearing.FromDegrees(270), radius);
                 leftLon = leftPoint.Lon;
 
-                var rightPoint = new GeoPoint(position);
-                rightPoint.MoveByM(90.0, radiusM);
+                var rightPoint = (GeoPoint)position.Clone();
+                rightPoint.MoveBy(Bearing.FromDegrees(90), radius);
                 rightLon = rightPoint.Lon;
 
-                var bottomPoint = new GeoPoint(position);
-                bottomPoint.MoveByM(180.0, radiusM);
+                var bottomPoint = (GeoPoint)position.Clone();
+                bottomPoint.MoveBy(Bearing.FromDegrees(180), radius);
                 bottomLat = bottomPoint.Lat;
 
-                var topPoint = new GeoPoint(position);
-                topPoint.MoveByM(360.0, radiusM);
+                var topPoint = (GeoPoint)position.Clone();
+                topPoint.MoveBy(Bearing.FromDegrees(360), radius);
                 topLat = topPoint.Lat;
             }
 
-            double maxLat = MathUtil.ConvertRadiansToDegrees(Math.Acos(radiusM / (GeoUtil.EARTH_RADIUS_M * Math.PI)));
+            Latitude maxLat = Latitude.FromRadians(Math.Acos(radius.Meters / (GeoUtil.EARTH_RADIUS.Meters * Math.PI)));
             if (topLat > maxLat)
             {
-                leftLon = -180;
-                rightLon = 180;
-                topLat = 90;
+                leftLon = Longitude.FromDegrees(-180);
+                rightLon = Longitude.FromDegrees(180);
+                topLat = Latitude.FromDegrees(90);
             }
-            else if (bottomLat < -maxLat)
+            else if (bottomLat < new Latitude(-maxLat.Angle))
             {
-                leftLon = -180;
-                rightLon = 180;
-                bottomLat = -90;
+                leftLon = Longitude.FromDegrees(-180);
+                rightLon = Longitude.FromDegrees(180);
+                bottomLat = Latitude.FromDegrees(-90);
             }
 
             if (rightLon <= leftLon)
@@ -236,10 +240,10 @@ namespace NavData_Interface.DataSources
                     CommandText = $"SELECT * FROM tbl_airports WHERE (airport_ref_latitude BETWEEN @bottomLat AND @topLat) AND (airport_ref_longitude >= @leftLon OR airport_ref_longitude <= @rightLon)"
                 };
 
-                cmd.Parameters.AddWithValue("@bottomLat", bottomLat);
-                cmd.Parameters.AddWithValue("@topLat", topLat);
-                cmd.Parameters.AddWithValue("@leftLon", leftLon);
-                cmd.Parameters.AddWithValue("@rightLon", rightLon);
+                cmd.Parameters.AddWithValue("@bottomLat", bottomLat.Degrees);
+                cmd.Parameters.AddWithValue("@topLat", topLat.Degrees);
+                cmd.Parameters.AddWithValue("@leftLon", leftLon.Degrees);
+                cmd.Parameters.AddWithValue("@rightLon", rightLon.Degrees);
 
                 return cmd;
             }
@@ -251,10 +255,10 @@ namespace NavData_Interface.DataSources
                     CommandText = $"SELECT * FROM tbl_airports WHERE (airport_ref_latitude BETWEEN @bottomLat AND @topLat) AND (airport_ref_longitude BETWEEN @leftLon AND @rightLon)"
                 };
 
-                cmd.Parameters.AddWithValue("@bottomLat", bottomLat);
-                cmd.Parameters.AddWithValue("@topLat", topLat);
-                cmd.Parameters.AddWithValue("@leftLon", leftLon);
-                cmd.Parameters.AddWithValue("@rightLon", rightLon);
+                cmd.Parameters.AddWithValue("@bottomLat", bottomLat.Degrees);
+                cmd.Parameters.AddWithValue("@topLat", topLat.Degrees);
+                cmd.Parameters.AddWithValue("@leftLon", leftLon.Degrees);
+                cmd.Parameters.AddWithValue("@rightLon", rightLon.Degrees);
 
                 return cmd;
             }
@@ -336,11 +340,11 @@ namespace NavData_Interface.DataSources
         /// Gets the closest airport within a square.
         /// </summary>
         /// <param name="position">The centre of the square</param>
-        /// <param name="radiusM">The distance from the centre to each side of the square</param>
+        /// <param name="radius">The distance from the centre to each side of the square</param>
         /// <returns>The closest airport within the square, or null if none found</returns>
-        public override Airport GetClosestAirportWithinRadius(GeoPoint position, double radiusM)
+        public override Airport GetClosestAirportWithinRadius(GeoPoint position, Length radius)
         {
-            List<Airport> airports = GetObjectsWithQuery<Airport>(AirportsFilterByDistance(position, radiusM), reader => AirportFactory.Factory(reader));
+            List<Airport> airports = GetObjectsWithQuery<Airport>(AirportsFilterByDistance(position, radius), reader => AirportFactory.Factory(reader));
 
             Airport closestAirport = null;
             double bestDistance = double.MaxValue;

@@ -4,6 +4,7 @@ using NavData_Interface.Objects;
 using System;
 using System.Collections.Generic;
 using NavData_Interface.Objects.LegCollections.Airways;
+using AviationCalcUtilNet.Units;
 
 namespace NavData_Interface.DataSources
 {
@@ -90,7 +91,7 @@ namespace NavData_Interface.DataSources
         {
             foreach (PublishedHold hold in _pubHolds)
             {
-                if (hold.Waypoint.Identifier.ToUpper() == fix.Identifier.ToUpper() && GeoPoint.DistanceM(hold.Waypoint.Location, fix.Location) < 1000)
+                if (hold.Waypoint.Identifier.ToUpper() == fix.Identifier.ToUpper() && GeoPoint.Distance(hold.Waypoint.Location, fix.Location) < Length.FromMeters(1000))
                 {
                     return hold;
                 }
@@ -98,7 +99,7 @@ namespace NavData_Interface.DataSources
             return null;
         }
 
-        public override Airport GetClosestAirportWithinRadius(GeoPoint position, double radiusM)
+        public override Airport GetClosestAirportWithinRadius(GeoPoint position, Length radius)
         {
             Airport closestAirport = null;
             double bestDistance = double.MaxValue;

@@ -167,14 +167,14 @@ namespace NavData_Interface.DataSources
             return null;
         }
 
-        public override Airport GetClosestAirportWithinRadius(GeoPoint position, double radiusM)
+        public override Airport GetClosestAirportWithinRadius(GeoPoint position, Length radius)
         {
             double closestDistance = double.MaxValue;
             Airport closestAirport = null;
 
             foreach (var source in _sources.Values)
             {
-                Airport currentSourceAirport = source.GetClosestAirportWithinRadius(position, radiusM);
+                Airport currentSourceAirport = source.GetClosestAirportWithinRadius(position, radius);
                 double currentDistance = GeoPoint.Distance(position, currentSourceAirport.Location).Meters;
 
                 if (currentDistance < closestDistance)
