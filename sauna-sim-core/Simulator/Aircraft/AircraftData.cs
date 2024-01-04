@@ -40,6 +40,23 @@ namespace SaunaSim.Core.Simulator.Aircraft
 
         public double ThrustLeverVel { get; set; }
 
+        private bool _thrustReverse = false;
+        public bool ThrustReverse
+        {
+            get
+            {
+                return _thrustReverse;
+            }
+            set
+            {
+                if (value != _thrustReverse)
+                {
+                    _parentAircraft.Connection.SetEnginesReversing(value);
+                }
+                _thrustReverse = value;
+            }
+        }
+
         private double _spdBrakePos = 0;
         public double SpeedBrakePos
         {

@@ -20,6 +20,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Ground
 
     public enum TakeoffPhaseType
     {
+        TAXI,
         LINEUP,
         THRUSTSET,
         ROTATE,
@@ -37,7 +38,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Ground
         {
             _parentAircraft = parentAircraft;
             GroundPhase = GroundPhaseType.GROUND;
-            TakeoffPhase = TakeoffPhaseType.LINEUP;
+            TakeoffPhase = TakeoffPhaseType.TAXI;
         }
 
         public void OnPositionUpdate(int intervalMs)
@@ -54,18 +55,16 @@ namespace SaunaSim.Core.Simulator.Aircraft.Ground
                 // Update Takeoff Logic
                 HandleOnTakeoff(intervalMs);
             }
-            else
-            {
-
-            }
         }
 
         private void HandleOnTakeoff(int intervalMs)
         {            
             double t = intervalMs / 1000.0;
 
-            
-
+            if(TakeoffPhase == TakeoffPhaseType.TAXI)
+            {
+                TakeoffPhase = TakeoffPhaseType.LINEUP;
+            }    
             if(TakeoffPhase == TakeoffPhaseType.LINEUP)
             {
                 // CurPos -> Rwy Threshold pos
@@ -166,7 +165,10 @@ namespace SaunaSim.Core.Simulator.Aircraft.Ground
                 }
             }
 
-            _parentAircraft.Position.Heading_True = _parentAircraft.Position.Track_True;
+            if(_parentAircraft.Position.OnGround)
+            {
+                _parentAircraft.Position.Heading_True = _parentAircraft.Position.Track_True;
+            }            
         }
 
         private (double targetPitch, double targetVs) GetTargetPitchAndVsForAlt(double alt)
@@ -198,11 +200,11 @@ namespace SaunaSim.Core.Simulator.Aircraft.Ground
                 _parentAircraft.Position.OnGround = true;
             }
 
-            if (_parentAircraft.Data.SpeedBrakePos <= 0)
-            {
-                _parentAircraft.Data.SpeedBrakePos = 1;
-            }
             
+            _parentAircraft.Data.SpeedBrakePos = 1;
+            _parentAircraft.Data.ThrustReverse = true;
+                       
+
             double t = intervalMs / 1000.0;
             double accel = -2;
             // Calculate Pitch, Bank, and Thrust Lever Position
