@@ -21,6 +21,9 @@ using SaunaSim.Core.Simulator.Aircraft.FMS.Legs;
 using NavData_Interface.Objects;
 using System.Runtime.CompilerServices;
 using System.Configuration;
+using NavData_Interface.Objects.Fixes;
+using SaunaSim.Api.Services;
+using AviationCalcUtilNet.Geo;
 
 namespace SaunaSim.Api.Controllers
 {
@@ -30,10 +33,12 @@ namespace SaunaSim.Api.Controllers
     {
 
         private readonly ILogger<DataController> _logger;
+        private readonly ISimAircraftService _aircraftService;
 
-        public DataController(ILogger<DataController> logger)
+        public DataController(ILogger<DataController> logger, ISimAircraftService aircraftService)
         {
             _logger = logger;
+            _aircraftService = aircraftService;
         }
 
         [HttpGet("settings")]
@@ -81,12 +86,12 @@ namespace SaunaSim.Api.Controllers
 
             return navigraphCreds;
         }
-        	
+
         [HttpGet("hasNavigraphDataLoaded")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         public ActionResult<NavigraphLoadedResponse> GetHasNavigraphDataLoaded()
         {
-            return Ok(new NavigraphLoadedResponse() { Loaded = DataHandler.HasNavigraphDataLoaded(), Uuid = DataHandler.GetNavigraphFileUuid()});
+            return Ok(new NavigraphLoadedResponse() { Loaded = DataHandler.HasNavigraphDataLoaded(), Uuid = DataHandler.GetNavigraphFileUuid() });
         }
 
         [HttpGet("loadedSectorFiles")]
@@ -108,8 +113,7 @@ namespace SaunaSim.Api.Controllers
             } catch (System.IO.FileNotFoundException)
             {
                 return BadRequest("The file could not be found.");
-            }
-            catch (Exception)
+            } catch (Exception)
             {
                 return BadRequest("The file is not a valid Sector file.");
             }
@@ -182,8 +186,9 @@ namespace SaunaSim.Api.Controllers
                         int squawk = 0;
                         try
                         {
-                             squawk = Convert.ToInt32(items[2]);
-                        } catch (Exception e){
+                            squawk = Convert.ToInt32(items[2]);
+                        } catch (Exception e)
+                        {
                             if (e is not OverflowException && e is not FormatException)
                             {
                                 throw;
@@ -200,11 +205,11 @@ namespace SaunaSim.Api.Controllers
 
                         EuroScopeLoader.ReadVatsimPosFlag(Convert.ToInt32(items[8]), out double hdg, out double bank, out double pitch, out bool onGround);
                         //SimAircraft(string callsign, string networkId, string password,        string fullname, string hostname, ushort port, bool vatsim,   ProtocolRevision protocol,      double lat, double lon, double alt, double hdg_mag, int delayMs = 0)
-                        lastPilot = new AircraftBuilder(callsign, request.Cid, request.Password, request.Server, request.Port)
+                        lastPilot = new AircraftBuilder(callsign, request.Cid, request.Password, request.Server, request.Port, _aircraftService.Handler.MagTileManager, _aircraftService.Handler.GribTileManager)
                         {
                             Protocol = request.Protocol,
-                                Position = new GeoPoint(lat, lon, Convert.ToDouble(items[6])),
-                                HeadingMag = hdg,
+                            Position = new GeoPoint(lat, lon, Convert.ToDouble(items[6])),
+                            HeadingMag = Bearing.FromDegrees(hdg),
                             LogInfo = (string msg) =>
                             {
                                 _logger.LogInformation($"{callsign}: {msg}");
@@ -317,18 +322,18 @@ namespace SaunaSim.Api.Controllers
 
                             if (refLat > 180 || refLon > 180)
                             {
-                                refLat = threshold.Lat;
-                                refLon = threshold.Lon;
+                                refLat = threshold.Lat.Degrees;
+                                refLon = threshold.Lon.Degrees;
                             }
 
-                            double course = 0;
+                            Bearing course = Bearing.FromRadians(0);
                             if (items.Length == 4)
                             {
-                                course = Convert.ToDouble(items[3]);
+                                course = Bearing.FromDegrees(Convert.ToDouble(items[3]));
                             } else if (items.Length > 4)
                             {
                                 GeoPoint otherThreshold = new GeoPoint(Convert.ToDouble(items[3]), Convert.ToDouble(items[4]));
-                                course = MagneticUtil.ConvertTrueToMagneticTile(GeoPoint.InitialBearing(threshold, otherThreshold), threshold);
+                                course = _aircraftService.Handler.MagTileManager.TrueToMagnetic(threshold, DateTime.UtcNow, GeoPoint.InitialBearing(threshold, otherThreshold));
                             }
 
                             int elev = 0;
@@ -340,7 +345,7 @@ namespace SaunaSim.Api.Controllers
                             }
 
                             Glideslope gs = new Glideslope(threshold, 3.0, elev);
-                            Localizer loc = new Localizer("", "", DataHandler.FAKE_AIRPORT_NAME, wpId, wpId, threshold, 0, course, 0, IlsCategory.CATI, gs, 0);
+                            Localizer loc = new Localizer("", "", DataHandler.FAKE_AIRPORT_NAME, wpId, wpId, threshold, 0, course.Degrees, 0, IlsCategory.CATI, gs, 0);
 
                             DataHandler.AddLocalizer(loc);
                         } catch (Exception)

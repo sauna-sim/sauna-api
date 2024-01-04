@@ -192,9 +192,6 @@ namespace SaunaSim.Core.Data.Loaders
                 aircraft.Autopilot.AddArmedLateralMode(LateralModeType.LNAV);
             }
 
-            SimAircraftHandler.AddAircraft(aircraft);
-            aircraft.Start();
-
 			return aircraft;
         }
 

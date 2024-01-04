@@ -15,12 +15,12 @@ using SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller;
 using SaunaSim.Core.Simulator.Aircraft.FMS;
 using SaunaSim.Core.Simulator.Aircraft.FMS.Legs;
 using SaunaSim.Core.Simulator.Aircraft.Performance;
-using NavData_Interface.Objects.Fix;
 using SaunaSim.Core.Data.Loaders;
 using SaunaSim.Core.Simulator.Aircraft.Autopilot;
 using System.Threading;
 using SaunaSim.Api.WebSockets;
 using SaunaSim.Api.Services;
+using AviationCalcUtilNet.Geo;
 
 namespace SaunaSim.Api.Controllers
 {
@@ -50,14 +50,16 @@ namespace SaunaSim.Api.Controllers
                     request.Cid,
                     request.Password,
                     request.Server,
-                    request.Port)
+                    request.Port,
+                    _aircraftService.Handler.MagTileManager,
+                    _aircraftService.Handler.GribTileManager)
                 {
                     FullName = request.FullName,
                     Protocol = request.Protocol,
                     Position = new AviationCalcUtilNet.GeoTools.GeoPoint(request.Position.Latitude,
                     request.Position.Longitude,
                     request.Position.IndicatedAltitude),
-                    HeadingMag = request.Position.MagneticHeading,
+                    HeadingMag = Bearing.FromDegrees(request.Position.MagneticHeading),
                     LogInfo = (string msg) =>
                     {
                         _logger.LogInformation($"{request.Callsign}: {msg}");
@@ -82,6 +84,8 @@ namespace SaunaSim.Api.Controllers
                 }
 
                 var pilot = builder.Push(PrivateInfoLoader.GetClientInfo((string msg) => { _logger.LogWarning($"{request.Callsign}: {msg}"); }));
+                _aircraftService.Handler.AddAircraft(pilot);
+                pilot.Start();
 
                 return Ok(new AircraftResponse(pilot, true));
             } catch (Exception e)
