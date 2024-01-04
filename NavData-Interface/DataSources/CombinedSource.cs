@@ -1,6 +1,7 @@
 ﻿using AviationCalcUtilNet.GeoTools;
 using NavData_Interface.Objects;
 using NavData_Interface.Objects.Fixes;
+using NavData_Interface.Objects.LegCollections.Airways;
 using System.Collections;
 using System.Collections.Generic;
 
@@ -209,6 +210,21 @@ namespace NavData_Interface.DataSources
                 if (runway != null)
                 {
                     return runway;
+                }
+            }
+
+            return null;
+        }
+
+        public override Airway GetAirwayFromIdentifierAndFixes(string airwayIdentifier, Fix startFix, Fix endFix)
+        {
+            foreach (var source in _sources.Values)
+            {
+                var airway = source.GetAirwayFromIdentifierAndFixes(airwayIdentifier, startFix, endFix);
+
+                if (airway != null)
+                {
+                    return airway;
                 }
             }
 

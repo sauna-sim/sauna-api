@@ -14,11 +14,9 @@ namespace NavData_Interface.Objects.Fixes.Waypoints
 
         public string Region_code { get; }
 
-        public WaypointType Type { get; }
+        public Waypoint(string identifier, string name, GeoPoint location, string area_code, string icao_code) : this(identifier, name, location, area_code, icao_code, "") { }
 
-        public Waypoint(string identifier, string name, GeoPoint location, string area_code, string icao_code, WaypointType type) : this(identifier, name, location, area_code, icao_code, "", type) { }
-
-        public Waypoint(string identifier, string name, GeoPoint location, string area_code, string icao_code, string region_code, WaypointType type) : base(identifier, name, location)
+        public Waypoint(string identifier, string name, GeoPoint location, string area_code, string icao_code, string region_code) : base(identifier, name, location)
         {
             Area_code = area_code;
             Icao_code = icao_code;
@@ -32,11 +30,9 @@ namespace NavData_Interface.Objects.Fixes.Waypoints
                 IsTerminal = true;
                 Region_code = region_code;
             }
-            
-            Type = type;
         }
 
-        public Waypoint(string identifier, string name, GeoPoint location) : this(identifier, name, location, "", "", new WaypointType())
+        public Waypoint(string identifier, string name, GeoPoint location) : this(identifier, name, location, "", "")
         {
 
         }

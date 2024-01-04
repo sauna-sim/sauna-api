@@ -6,6 +6,7 @@ using NavData_Interface.Objects;
 using NavData_Interface.Objects.Fixes;
 using NavData_Interface.Objects.Fixes.Navaids;
 using NavData_Interface.Objects.Fixes.Waypoints;
+using NavData_Interface.Objects.LegCollections.Airways;
 
 namespace NavData_Interface.DataSources
 {
@@ -148,6 +149,11 @@ namespace NavData_Interface.DataSources
         public override Runway GetRunwayFromAirportRunwayIdentifier(string airportIdentifier, string runwayIdentifier)
         {
             // TODO: !!
+            return null;
+        }
+
+        public override Airway GetAirwayFromIdentifierAndFixes(string airwayIdentifier, Fix startFix, Fix endFix)
+        {
             return null;
         }
     }
