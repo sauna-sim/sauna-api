@@ -110,14 +110,10 @@ namespace SaunaSim.Core.Simulator.Aircraft.Ground
             }
             else if(TakeoffPhase == TakeoffPhaseType.ROTATE)
             {
-                //Speed 140 (vr), pitch 3deg
-                if (_parentAircraft.Position.IndicatedAirSpeed < 160)
+                if (_parentAircraft.Position.Pitch < 1)
                 {
-                    if (_parentAircraft.Position.Pitch < 1)
-                    {
-                        _parentAircraft.Position.PitchRate = 2;
-                        _parentAircraft.Position.Pitch += PerfDataHandler.CalculateDisplacement(_parentAircraft.Position.PitchRate, 0, t);
-                    }
+                    _parentAircraft.Position.PitchRate = 2;
+                    _parentAircraft.Position.Pitch += PerfDataHandler.CalculateDisplacement(_parentAircraft.Position.PitchRate, 0, t);
                 }
                 else
                 {
@@ -133,7 +129,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Ground
                 {
                     _parentAircraft.Data.Config = 1;
 
-                    _parentAircraft.Autopilot.SelectedSpeed = 170;
+                    _parentAircraft.Autopilot.SelectedSpeed = 180;
                     _parentAircraft.Autopilot.AddArmedLateralMode(LateralModeType.LNAV);
                     _parentAircraft.Autopilot.AddArmedVerticalMode(VerticalModeType.FLCH);
                     _parentAircraft.Autopilot.SelectedSpeedMode = Autopilot.McpSpeedSelectorType.FMS;
@@ -159,7 +155,11 @@ namespace SaunaSim.Core.Simulator.Aircraft.Ground
                     var altAccel = PerfDataHandler.CalculateAcceleration(vi, vf, time);
 
                     var finalVs = PerfDataHandler.CalculateFinalVelocity(vi, altAccel, t) * 60;
-                    
+
+                    // Calculate fwd accel
+                    var fwdAccel = PerfDataHandler.CalculateAcceleration(MathUtil.ConvertKtsToMpers(_parentAircraft.Position.IndicatedAirSpeed), MathUtil.ConvertKtsToMpers(180), time);
+
+                    _parentAircraft.Position.Forward_Acceleration = fwdAccel;
                     _parentAircraft.Position.VerticalSpeed = finalVs;
                     _parentAircraft.Position.PitchRate = pitchVel;
                     _parentAircraft.Position.Pitch += PerfDataHandler.CalculateDisplacement(pitchVel, 0, t);                    
