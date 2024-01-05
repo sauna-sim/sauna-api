@@ -3,7 +3,7 @@ using AviationCalcUtilNet.Units;
 using NavData_Interface;
 using NavData_Interface.DataSources;
 using NavData_Interface.Objects;
-using NavData_Interface.Objects.Fix;
+using NavData_Interface.Objects.Fixes;
 using SaunaSim.Core.Data.NavData;
 using System;
 using System.Collections.Generic;

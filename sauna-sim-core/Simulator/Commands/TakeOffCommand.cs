@@ -3,13 +3,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using AviationCalcUtilNet.Geo;
+using AviationCalcUtilNet.Magnetic;
 using NavData_Interface.Objects;
-using NavData_Interface.Objects.Fix;
+using NavData_Interface.Objects.Fixes;
 using SaunaSim.Core.Data;
 using SaunaSim.Core.Simulator.Aircraft;
 using SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller;
-using SaunaSim.Core.Simulator.Aircraft.Control.Instructions.Lateral;
-using SaunaSim.Core.Simulator.Aircraft.Control.Instructions.Vertical;
 using SaunaSim.Core.Simulator.Aircraft.FMS;
 using SaunaSim.Core.Simulator.Aircraft.FMS.Legs;
 using SaunaSim.Core.Simulator.Aircraft.Ground;
@@ -23,6 +23,12 @@ namespace SaunaSim.Core.Simulator.Commands
 
         private Localizer _loc;
         private IRoutePoint _locRoutePoint;
+        private MagneticTileManager _magTileMgr;
+
+        public TakeOffCommand(MagneticTileManager magTileMgr)
+        {
+            _magTileMgr = magTileMgr;
+        }
         
         public void ExecuteCommand()
         {
@@ -34,7 +40,7 @@ namespace SaunaSim.Core.Simulator.Commands
             // Add the LOC/TO leg
             _locRoutePoint = new RouteWaypoint("RWY" + _loc.Runway_identifier, _loc.Loc_location);
             FmsPoint locFmsPoint = new FmsPoint(_locRoutePoint, RoutePointTypeEnum.FLY_OVER);
-            FixToManualLeg toLeg = new FixToManualLeg(locFmsPoint, BearingTypeEnum.MAGNETIC, _loc.Loc_bearing);
+            FixToManualLeg toLeg = new FixToManualLeg(locFmsPoint, BearingTypeEnum.MAGNETIC, Bearing.FromDegrees(_loc.Loc_bearing), _magTileMgr);
 
             Aircraft.Fms.InsertAtIndex(toLeg, 0);
 
