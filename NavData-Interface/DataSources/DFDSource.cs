@@ -22,9 +22,11 @@ namespace NavData_Interface.DataSources
 
         public string Airac_version { get; }
 
+        public string Uuid { get; }
+
         public override string GetId()
         {
-            return Airac_version;
+            return Uuid;
         }
 
         /// <summary>
@@ -32,8 +34,10 @@ namespace NavData_Interface.DataSources
         /// </summary>
         /// <param name="filePath">The path to the DFD file.</param>
         /// <exception cref="System.IO.FileNotFoundException">If the provided file wasn't found</exception>
-        public DFDSource(string filePath)
+        public DFDSource(string filePath, string uuid)
         {
+            Uuid = uuid;
+
             var connectionString = new SQLiteConnectionStringBuilder()
             {
                 DataSource = filePath,
