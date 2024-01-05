@@ -120,16 +120,16 @@ namespace NavData_Interface.DataSources
             return cmd;
         }
 
-        public Airport GetAirportByIdentifier(string identifier)
+        public override Airport GetAirportByIdentifier(string airportIdentifier)
         {
-            var airports = GetObjectsWithQuery<Airport>(AirportLookupByIdentifier(identifier), reader => AirportFactory.Factory(reader));
+            var airports = GetObjectsWithQuery<Airport>(AirportLookupByIdentifier(airportIdentifier), reader => AirportFactory.Factory(reader));
 
             if (airports.Count == 1)
             {
                 return airports[0];
             } else if (airports.Count > 1)
             {
-                Console.Error.WriteLine($"Found two airport results for {identifier}. This should never happen!");
+                Console.Error.WriteLine($"Found two airport results for {airportIdentifier}. This should never happen!");
             }
 
             return null;

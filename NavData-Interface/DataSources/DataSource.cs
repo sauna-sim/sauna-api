@@ -18,6 +18,8 @@ namespace NavData_Interface.DataSources
 
         public abstract Localizer GetLocalizerFromAirportRunway(string airportIdentifier, string runwayIdentifier);
 
+        public abstract Airport GetAirportByIdentifier(string airportIdentifier);
+
         public abstract Airport GetClosestAirportWithinRadius(GeoPoint position, Length radius);
 
         public abstract Runway GetRunwayFromAirportRunwayIdentifier(string airportIdentifier, string runwayIdentifier);
