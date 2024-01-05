@@ -1,6 +1,6 @@
 ﻿using AviationCalcUtilNet.GeoTools;
+using NavData_Interface.Objects.Fixes;
 using SaunaSim.Core.Data;
-using NavData_Interface.Objects.Fix;
 
 namespace SaunaSim.Core.Simulator.Aircraft.FMS
 {

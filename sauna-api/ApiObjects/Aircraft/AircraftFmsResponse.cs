@@ -1,4 +1,4 @@
-using NavData_Interface.Objects.Fix;
+using NavData_Interface.Objects.Fixes;
 using SaunaSim.Core.Data;
 using System.Collections.Generic;
 using System.Text;

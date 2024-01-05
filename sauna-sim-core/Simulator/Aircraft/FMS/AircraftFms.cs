@@ -309,7 +309,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
                     point.PointType = RoutePointTypeEnum.FLY_OVER;
 
                     // Create hold leg
-                    IRouteLeg holdLeg = new HoldToManualLeg(point, BearingTypeEnum.MAGNETIC, Bearing.FromDegrees(magCourse), turnDir, legLengthType, legLength);
+                    IRouteLeg holdLeg = new HoldToManualLeg(point, BearingTypeEnum.MAGNETIC, Bearing.FromDegrees(magCourse), turnDir, legLengthType, legLength, _magTileMgr);
 
                     // Add leg
                     _routeLegs.Insert(index, holdLeg);

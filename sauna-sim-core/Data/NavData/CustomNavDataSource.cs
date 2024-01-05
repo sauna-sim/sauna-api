@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using AviationCalcUtilNet.GeoTools;
 using NavData_Interface.DataSources;
 using NavData_Interface.Objects;
-using NavData_Interface.Objects.Fix;
+using NavData_Interface.Objects.Fixes;
 
 namespace SaunaSim.Core.Data.NavData
 {
