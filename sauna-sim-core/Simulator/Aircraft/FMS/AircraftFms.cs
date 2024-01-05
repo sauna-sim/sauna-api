@@ -21,7 +21,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
         CRUISE,
         DESCENT,
         APPROACH,
-        GO_AORUND
+        GO_AROUND
     }
     public class AircraftFms
     {
@@ -516,6 +516,10 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
             {
                 PhaseType = FmsPhaseType.APPROACH;
             }
+            else if (PhaseType == FmsPhaseType.GO_AROUND && _parentAircraft.Position.IndicatedAltitude > _parentAircraft.airportElev + 1300)
+            {
+                PhaseType = FmsPhaseType.APPROACH;
+            }
         }
 
         private void CalculateFmsSpeed()
@@ -599,6 +603,11 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
                     _spdUnits = McpSpeedUnitsType.KNOTS;
                     _selSpd = 210;
                 }
+            }
+            else if(PhaseType == FmsPhaseType.GO_AROUND)
+            {
+                _spdUnits = McpSpeedUnitsType.KNOTS;
+                _selSpd = 135;
             }
         }
         private void SetConversionSpeed(int ias, double mach)
