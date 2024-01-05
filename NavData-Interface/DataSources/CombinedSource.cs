@@ -236,5 +236,23 @@ namespace NavData_Interface.DataSources
 
             return false;
         }
+
+        /// <summary>
+        /// Returns the first instance of a source of the specified type.
+        /// </summary>
+        /// <typeparam name="T">The t</typeparam>
+        /// <returns></returns>
+        public DataSource GetSourceType<T>() where T : DataSource
+        {
+            foreach (var source in _sources.Values)
+            {
+                if (source is T)
+                {
+                    return source;
+                }
+            }
+
+            return null;
+        }
     }
 }
