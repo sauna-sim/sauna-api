@@ -18,6 +18,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Performance
                 Descent_KIAS = 290,
                 Descent_Mach = 0.78,
                 Engines = 2,
+                EnginesReverse = true,
                 ConfigList = new List<PerfConfigSetting>()
                 {
                     new PerfConfigSetting()

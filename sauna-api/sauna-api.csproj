@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
@@ -34,7 +34,7 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="PShivaraman.AviationCalcUtilNet" Version="1.2.0" />
-    <PackageReference Include="CaspianMerlin.FsdConnectorNet" Version="0.2.25" />
+    <PackageReference Include="CaspianMerlin.FsdConnectorNet" Version="0.2.26" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
   </ItemGroup>
 

@@ -23,6 +23,7 @@ using SaunaSim.Core.Simulator.Aircraft.Performance;
 using System.Diagnostics;
 using System.ComponentModel.Design;
 using SaunaSim.Core.Simulator.Aircraft.Ground;
+using SaunaSim.Core.Simulator.Aircraft.Pilot;
 
 namespace SaunaSim.Core.Simulator.Aircraft
 {
@@ -166,6 +167,9 @@ namespace SaunaSim.Core.Simulator.Aircraft
         private AircraftGroundHandler _groundhandler;
         public AircraftGroundHandler GroundHandler => _groundhandler;
 
+        private ArtificialPilot _artificialpilot;
+        public ArtificialPilot ArtificialPilot => _artificialpilot;
+
         private AircraftFms _fms;
         public AircraftFms Fms => _fms;
 
@@ -262,10 +266,9 @@ namespace SaunaSim.Core.Simulator.Aircraft
                 CurrentVerticalMode = VerticalModeType.FLCH
             };
 
-            _groundhandler = new AircraftGroundHandler(this)
-            {
-
-            };
+            _groundhandler = new AircraftGroundHandler(this) { };
+            
+            _artificialpilot = new ArtificialPilot(this) { };
 
             _fms = new AircraftFms(this);
             PerformanceData = perfData;
@@ -365,6 +368,26 @@ namespace SaunaSim.Core.Simulator.Aircraft
 
             // Send Flight Plan
             Connection.SendFlightPlan(_flightPlan);
+
+            // Stick to Ground
+            Connection.SetOnGround(_position.OnGround);
+
+            // Set Flap, Gear and Spoiler Position
+            var flapsPct = (double)_data.Config / PerformanceData.ConfigList.Count;
+            Connection.SetFlapsPct((int)(flapsPct * 100.0));
+            Connection.SetGearDown(PerformanceData.ConfigList[_data.Config].GearDown);
+            Connection.SetSpoilersDeployed(_data.SpeedBrakePos > 0);
+
+            // Set Aircraft Lights
+            Connection.SetBeaconLight(true);
+            Connection.SetNavLights(true);
+            Connection.SetStrobeLight(false);
+            Connection.SetLandingLights(false);
+            Connection.SetTaxiLights(false);
+            Connection.SetLogoLight(false);
+
+            // Set Engines ON/OFF
+            Connection.SetEnginesOn(true);
         }
 
         private void OnConnectionTerminated(object sender, EventArgs e)
@@ -377,6 +400,9 @@ namespace SaunaSim.Core.Simulator.Aircraft
         {
             // Update FMS
             _fms.OnPositionUpdate((int)(AppSettingsManager.PosCalcRate * (_simRate / 10.0)));
+
+            // Run Config Handler
+            _artificialpilot.OnPositionUpdate((int)(AppSettingsManager.PosCalcRate * (_simRate / 10.0)));
 
             // Run Autopilot
             _autopilot.OnPositionUpdate((int)(AppSettingsManager.PosCalcRate * (_simRate / 10.0)));
@@ -426,6 +452,9 @@ namespace SaunaSim.Core.Simulator.Aircraft
                     {
                         HandleOnGround();
                     }
+
+                    // Update Aircraft FSD Config
+                    _artificialpilot.AircraftLights();
 
                     // Update Grib Data
                     Position.UpdateGribPoint();
