@@ -35,7 +35,7 @@ namespace NavData_Interface.Objects.LegCollections.Airways
     {
         private List<AirwayPoint> _points;
 
-        public List<Leg> SelectedLegs { get; }
+        public List<Leg> SelectedLegs { get; private set; }
 
         public override IEnumerator<Leg> GetEnumerator()
         {
@@ -46,7 +46,7 @@ namespace NavData_Interface.Objects.LegCollections.Airways
 
         private int _selectedEndPointIndex;
 
-        public void selectSection(Fix startFix, Fix endFix)
+        public void SelectSection(Fix startFix, Fix endFix)
         {
             _selectedStartPointIndex = -1;
             _selectedEndPointIndex = -1;
@@ -125,6 +125,8 @@ namespace NavData_Interface.Objects.LegCollections.Airways
                         legStartPoint.Description,
                         legEndPoint.Description));
             }
+
+            SelectedLegs = legs;
         }
 
         internal Airway(List<AirwayPoint> points) : base()
@@ -139,7 +141,7 @@ namespace NavData_Interface.Objects.LegCollections.Airways
 
         internal Airway(List<AirwayPoint> points, Fix startFix, Fix endFix) : this(points)
         {
-            selectSection(startFix, endFix);
+            SelectSection(startFix, endFix);
         }
     }
 }

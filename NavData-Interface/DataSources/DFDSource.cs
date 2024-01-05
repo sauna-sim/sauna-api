@@ -403,7 +403,7 @@ namespace NavData_Interface.DataSources
 
             var airway = AirwayFactory.Factory(reader);
 
-            airway.selectSection(startFix, endFix);
+            airway.SelectSection(startFix, endFix);
 
             return airway;
         }
