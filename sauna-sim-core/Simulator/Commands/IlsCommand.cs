@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using AviationCalcUtilNet.Magnetic;
 using NavData_Interface.Objects;
 using NavData_Interface.Objects.Fixes;
 using SaunaSim.Core.Data;
@@ -20,6 +21,12 @@ namespace SaunaSim.Core.Simulator.Commands
 
         private Localizer _loc;
         private IRoutePoint _locRoutePoint;
+        private MagneticTileManager _magTileMgr;
+
+        public IlsCommand(MagneticTileManager magTileMgr)
+        {
+            _magTileMgr = magTileMgr;
+        }
         
         public void ExecuteCommand()
         {
@@ -36,7 +43,7 @@ namespace SaunaSim.Core.Simulator.Commands
                 UpperAltitudeConstraint = _loc.Glideslope.Gs_elevation + 50,
                 AngleConstraint = _loc.Glideslope.Gs_angle
             };
-            CourseToFixLeg locLeg = new CourseToFixLeg(locFmsPoint, BearingTypeEnum.MAGNETIC, _loc.Loc_bearing);
+            CourseToFixLeg locLeg = new CourseToFixLeg(locFmsPoint, BearingTypeEnum.MAGNETIC, _loc.Loc_bearing, _magTileMgr);
 
             Aircraft.Fms.AddRouteLeg(locLeg);
 
@@ -48,17 +55,6 @@ namespace SaunaSim.Core.Simulator.Commands
 
             Aircraft.Autopilot.AddArmedLateralMode(LateralModeType.APCH);
             Aircraft.Autopilot.AddArmedVerticalMode(VerticalModeType.APCH);
-
-            // Add event handler
-            //Aircraft.Fms.WaypointPassed += OnLanded;
-        }
-
-        public void OnLanded(object sender, WaypointPassedEventArgs e)
-        {
-            if (e.RoutePoint.Equals(_locRoutePoint))
-            {
-                SimAircraftHandler.RemoveAircraftByCallsign(Aircraft.Callsign);
-            }
         }
 
         public bool HandleCommand(SimAircraft aircraft, Action<string> logger, string runway)

@@ -44,7 +44,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
         private bool _onGround;
         private MagneticTileManager _magTileMgr;
 
-        public AircraftPosition(Latitude lat, Longitude lon, Length indAlt, MagneticTileManager magneticTileManager)
+        public AircraftPosition(Latitude lat, Longitude lon, Length indAlt, SimAircraft parentAircraft, MagneticTileManager magneticTileManager)
         {
             _parentAircraft = parentAircraft;
             _lat = lat;
