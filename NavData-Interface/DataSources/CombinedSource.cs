@@ -231,5 +231,18 @@ namespace NavData_Interface.DataSources
 
             return null;
         }
+
+        public bool HasSourceType<T>()
+        {
+            foreach (var source in _sources.Values)
+            {
+                if (source is T)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
     }
 }
