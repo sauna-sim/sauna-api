@@ -23,15 +23,7 @@ namespace NavData_Interface.DataSources
         {
             _id = id;
         }
-
-        public CombinedSource(string id, DataSource dataSource) : this(id)
-        {
-            _sources = new SortedList<int, DataSource>
-            {
-                { 0, dataSource }
-            };
-        }
-
+        
         /// <summary>
         /// Creates a new combined source from a list of DataSources
         /// </summary>
@@ -62,7 +54,7 @@ namespace NavData_Interface.DataSources
         }
 
         /// <summary>
-        /// Adds the specified source to the sources, with the specified priority. Throws ArgumentException if there already is a source with that priority.
+        /// Adds the specified source to the sources, with the specified priority.
         /// </summary>
         /// <param name="source">The source to be added</param>
         /// <param name="priority">The priority of the source</param>
