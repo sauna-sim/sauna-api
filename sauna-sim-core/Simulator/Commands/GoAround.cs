@@ -36,7 +36,7 @@ namespace SaunaSim.Core.Simulator.Commands
 
             if(Aircraft.Position.TrueAltitude < Math.Abs(Aircraft.airportElev + 200))
             {
-                Logger?.Invoke($"ERROR: Go Around requires at least 2 arguments!");
+                Logger?.Invoke($"ERROR: Aircraft Too Low LANDING!");
                 return false;
             }
 
