@@ -160,5 +160,18 @@ namespace NavData_Interface.DataSources
         {
             return null;
         }
+
+        public override Airport GetAirportByIdentifier(string airportIdentifier)
+        {
+            foreach (var fix in _fixes)
+            {
+                if (fix is Airport && fix.Identifier == airportIdentifier)
+                {
+                    return (Airport)fix;
+                }
+            }
+
+            return null;
+        }
     }
 }

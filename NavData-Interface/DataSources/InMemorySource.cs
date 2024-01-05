@@ -53,7 +53,7 @@ namespace NavData_Interface.DataSources
         }
 
 
-        public Airport GetAirportByIdentifier(string identifier)
+        public override Airport GetAirportByIdentifier(string identifier)
         {
             foreach (Airport airport in _airports)
             {
