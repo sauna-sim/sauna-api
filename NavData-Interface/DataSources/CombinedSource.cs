@@ -240,15 +240,15 @@ namespace NavData_Interface.DataSources
         /// <summary>
         /// Returns the first instance of a source of the specified type.
         /// </summary>
-        /// <typeparam name="T">The t</typeparam>
+        /// <typeparam name="T">The type of the DataSource required</typeparam>
         /// <returns></returns>
-        public DataSource GetSourceType<T>() where T : DataSource
+        public T GetSourceType<T>() where T : DataSource
         {
             foreach (var source in _sources.Values)
             {
                 if (source is T)
                 {
-                    return source;
+                    return (T)source;
                 }
             }
 
