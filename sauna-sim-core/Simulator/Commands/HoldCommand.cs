@@ -27,7 +27,7 @@ namespace SaunaSim.Core.Simulator.Commands
             Logger = logger;
 
             // Find Waypoint
-            Fix wp = DataHandler.GetClosestWaypointByIdentifier(waypoint, Aircraft.Position.Latitude, Aircraft.Position.Longitude);
+            Fix wp = DataHandler.GetClosestWaypointByIdentifier(waypoint, Aircraft.Position.PositionGeoPoint);
 
             if (wp == null)
             {
@@ -37,7 +37,7 @@ namespace SaunaSim.Core.Simulator.Commands
 
             if (isPublishedHold)
             {
-                PublishedHold pubHold = DataHandler.GetPublishedHold(wp.Identifier, wp.Location.Lat, wp.Location.Lon);
+                PublishedHold pubHold = DataHandler.GetPublishedHold(wp.Identifier, wp.Location);
 
                 if (pubHold == null)
                 {
@@ -83,7 +83,7 @@ namespace SaunaSim.Core.Simulator.Commands
             args.RemoveAt(0);
 
             // Find Waypoint
-            Fix wp = DataHandler.GetClosestWaypointByIdentifier(wpStr, Aircraft.Position.Latitude, Aircraft.Position.Longitude);
+            Fix wp = DataHandler.GetClosestWaypointByIdentifier(wpStr, Aircraft.Position.PositionGeoPoint);
 
             if (wp == null)
             {
@@ -167,7 +167,7 @@ namespace SaunaSim.Core.Simulator.Commands
 
         public bool TryGetPublishedHold(Fix wp, ref List<string> args)
         {
-            PublishedHold pubHold = DataHandler.GetPublishedHold(wp.Identifier, wp.Location.Lat, wp.Location.Lon);
+            PublishedHold pubHold = DataHandler.GetPublishedHold(wp.Identifier, wp.Location);
 
             if (pubHold == null)
             {

@@ -1,7 +1,9 @@
 ﻿using AviationCalcUtilNet.Atmos;
 using AviationCalcUtilNet.Geo;
 using AviationCalcUtilNet.GeoTools;
+using AviationCalcUtilNet.Math;
 using AviationCalcUtilNet.MathTools;
+using AviationCalcUtilNet.Physics;
 using AviationCalcUtilNet.Units;
 using SaunaSim.Core.Data;
 using SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller;
@@ -92,9 +94,9 @@ namespace SaunaSim.Core.Simulator.Aircraft.Ground
 
                     double accel = 2;
                     Velocity vi = _parentAircraft.Position.GroundSpeed;
-                    Velocity vf = Velocity.FromMetersPerSecond(PerfDataHandler.CalculateFinalVelocity(vi.MetersPerSecond, accel, t));
+                    Velocity vf = Velocity.FromMetersPerSecond(PhysicsUtil.KinematicsFinalVelocity(vi.MetersPerSecond, accel, t));
 
-                    accel = PerfDataHandler.CalculateAcceleration(vi.MetersPerSecond, vf.MetersPerSecond, t);
+                    accel = PhysicsUtil.KinematicsAcceleration(vi.MetersPerSecond, vf.MetersPerSecond, t);
                     _parentAircraft.Position.Forward_Acceleration = accel;
                 }
                 else
@@ -110,7 +112,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Ground
                     if (_parentAircraft.Position.Pitch < Angle.FromDegrees(4))
                     {
                         _parentAircraft.Position.PitchRate = AngularVelocity.FromDegreesPerSecond(2);
-                        _parentAircraft.Position.Pitch += Angle.FromRadians(PerfDataHandler.CalculateDisplacement(_parentAircraft.Position.PitchRate.RadiansPerSecond, 0, t));
+                        _parentAircraft.Position.Pitch += Angle.FromRadians(PhysicsUtil.KinematicsDisplacement1(_parentAircraft.Position.PitchRate.RadiansPerSecond, 0, t));
                     }
                 }
                 else
@@ -179,7 +181,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Ground
             if (_parentAircraft.Position.Pitch.Radians > 0)
             {
                 _parentAircraft.Position.PitchRate = AngularVelocity.FromDegreesPerSecond(-0.6);
-                _parentAircraft.Position.Pitch += Angle.FromRadians(PerfDataHandler.CalculateDisplacement(_parentAircraft.Position.PitchRate.RadiansPerSecond, 0, t));
+                _parentAircraft.Position.Pitch += Angle.FromRadians(PhysicsUtil.KinematicsDisplacement1(_parentAircraft.Position.PitchRate.RadiansPerSecond, 0, t));
             }
             else
             {
@@ -191,7 +193,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Ground
                 if (_parentAircraft.Position.Heading_True > _parentAircraft.Position.Track_True)
                 {
                     _parentAircraft.Position.YawRate = AngularVelocity.FromDegreesPerSecond(-1);
-                    _parentAircraft.Position.Heading_True += Angle.FromRadians(PerfDataHandler.CalculateDisplacement(_parentAircraft.Position.YawRate.RadiansPerSecond, 0, t));
+                    _parentAircraft.Position.Heading_True += Angle.FromRadians(PhysicsUtil.KinematicsDisplacement1(_parentAircraft.Position.YawRate.RadiansPerSecond, 0, t));
                     if (_parentAircraft.Position.Heading_True < _parentAircraft.Position.Track_True)
                     {
                         _parentAircraft.Position.Heading_True = _parentAircraft.Position.Track_True;
@@ -201,7 +203,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Ground
                 else
                 {
                     _parentAircraft.Position.YawRate = AngularVelocity.FromDegreesPerSecond(1);
-                    _parentAircraft.Position.Heading_True += Angle.FromRadians(PerfDataHandler.CalculateDisplacement(_parentAircraft.Position.YawRate.RadiansPerSecond, 0, t));
+                    _parentAircraft.Position.Heading_True += Angle.FromRadians(PhysicsUtil.KinematicsDisplacement1(_parentAircraft.Position.YawRate.RadiansPerSecond, 0, t));
                     if (_parentAircraft.Position.Heading_True > _parentAircraft.Position.Track_True)
                     {
                         _parentAircraft.Position.Heading_True = _parentAircraft.Position.Track_True;
@@ -216,12 +218,12 @@ namespace SaunaSim.Core.Simulator.Aircraft.Ground
 
             //Calculating final velocity
             Velocity vi = _parentAircraft.Position.GroundSpeed;
-            Velocity vf = Velocity.FromMetersPerSecond(PerfDataHandler.CalculateFinalVelocity(vi.MetersPerSecond, accel, t));
+            Velocity vf = Velocity.FromMetersPerSecond(PhysicsUtil.KinematicsFinalVelocity(vi.MetersPerSecond, accel, t));
 
-            if (vf <= 0)
+            if (vf.MetersPerSecond <= 0)
             {
-                vf = 0;
-                accel = PerfDataHandler.CalculateAcceleration(vi, vf, t);
+                vf = Velocity.FromMetersPerSecond(0);
+                accel = PhysicsUtil.CalculateAcceleration(vi, vf, t);
             }
             _parentAircraft.Position.Forward_Acceleration = accel;            
         }

@@ -2,7 +2,9 @@
 using AviationCalcUtilNet.Aviation;
 using AviationCalcUtilNet.Geo;
 using AviationCalcUtilNet.GeoTools;
+using AviationCalcUtilNet.Math;
 using AviationCalcUtilNet.MathTools;
+using AviationCalcUtilNet.Physics;
 using AviationCalcUtilNet.Units;
 using SaunaSim.Core.Simulator.Aircraft.Performance;
 
@@ -171,8 +173,8 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
             {
                 double maxInputOutRate = inputRateFunction(zeroTargetRateInput, maxInput);
                 maxInputOut_t = Math.Abs(Math.Abs(maxInput - zeroTargetRateInput) / maxInputOutRate) * (1 + inputTimeBuffer);
-                double inputOutTarget_a = PerfDataHandler.CalculateAcceleration(maxInputTargetRate, 0, maxInputOut_t);
-                inputOutTargetDelta = PerfDataHandler.CalculateDisplacement(maxInputTargetRate, inputOutTarget_a, maxInputOut_t);
+                double inputOutTarget_a = PhysicsUtil.KinematicsAcceleration(maxInputTargetRate, 0, maxInputOut_t);
+                inputOutTargetDelta = PhysicsUtil.KinematicsDisplacement2(maxInputTargetRate, inputOutTarget_a, maxInputOut_t);
             }
 
             // Calculate time and target delta to get from current input to maximum input if there is a difference
@@ -180,8 +182,8 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
             {
                 double maxInputInRate = inputRateFunction(maxInput, curInput);
                 maxInputIn_t = Math.Abs(Math.Abs(curInput - maxInput) / maxInputInRate) * (1 + inputTimeBuffer);
-                double inputInTarget_a = PerfDataHandler.CalculateAcceleration(curInputTargetRate, maxInputTargetRate, maxInputIn_t);
-                inputInTargetDelta = PerfDataHandler.CalculateDisplacement(curInputTargetRate, inputInTarget_a, maxInputIn_t);
+                double inputInTarget_a = PhysicsUtil.KinematicsAcceleration(curInputTargetRate, maxInputTargetRate, maxInputIn_t);
+                inputInTargetDelta = PhysicsUtil.KinematicsDisplacement2(curInputTargetRate, inputInTarget_a, maxInputIn_t);
             }
 
             // Return max if we're going in the wrong direction.
@@ -196,16 +198,16 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
             }
 
             // Create Equations
-            (double m1, double b1) = PerfDataHandler.CreateLineEquation(0, curInput, inputInTargetDelta, maxInput);
-            (double m2, double b2) = PerfDataHandler.CreateLineEquation(deltaToTarget - inputOutTargetDelta, maxInput, deltaToTarget, zeroTargetRateInput);
+            Polynomial p1 = MathUtil.CreateLineEquation(0, curInput, inputInTargetDelta, maxInput);
+            Polynomial p2 = MathUtil.CreateLineEquation(deltaToTarget - inputOutTargetDelta, maxInput, deltaToTarget, zeroTargetRateInput);
             (double m3, double b3) = (0, maxInput);
             /*Console.WriteLine($"f(x) = {m1}x+{b1}");
             Console.WriteLine($"g(x) = {m2}x+{b2}");
             Console.WriteLine($"h(x) = {m3}x+{b3}");
             Console.WriteLine($"x = {deltaToTarget}");*/
 
-            (double inputOutIntersectionX, double inputOutIntersectionY) = PerfDataHandler.FindLinesIntersection(m2, b2, m3, b3);
-            (double midPointTargetDelta, double midPointInput) = PerfDataHandler.FindLinesIntersection(m1, b1, m2, b2);
+            (double inputOutIntersectionX, double inputOutIntersectionY) = MathUtil.Find2LinesIntersection(p2.Coefficients[1], p2.Coefficients[0], m3, b3);
+            (double midPointTargetDelta, double midPointInput) = MathUtil.Find2LinesIntersection(p1.Coefficients[1], p1.Coefficients[0], p2.Coefficients[1], p2.Coefficients[0]);
 
             // If midpoint is above max input
             if ((deltaToTarget >= 0 && midPointInput > maxInput) || ((deltaToTarget <= 0 && midPointInput < maxInput)))

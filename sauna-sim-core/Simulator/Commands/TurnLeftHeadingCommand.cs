@@ -62,7 +62,7 @@ namespace SaunaSim.Core.Simulator.Commands
                 Logger?.Invoke($"{Aircraft.Callsign} turning left heading {headingString} degrees.");
 
                 // Check > 180 deg
-                if (GeoUtil.CalculateTurnAmount(Aircraft.Position.Heading_Mag, Hdg) > 0)
+                if ((Bearing.FromDegrees(Hdg) - Aircraft.Position.Heading_Mag).Value() > 0)
                 {
                     Logger?.Invoke($"WARNING: {Aircraft.Callsign} left turn exceeds 180 degrees!!");
                 }
