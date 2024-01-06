@@ -39,7 +39,7 @@ namespace SaunaSim.Core.Simulator.Commands
             Logger = logger;
 
             // Find Waypoint
-            Fix wp = DataHandler.GetClosestWaypointByIdentifier(waypoint, Aircraft.Position.Latitude, Aircraft.Position.Longitude);
+            Fix wp = DataHandler.GetClosestWaypointByIdentifier(waypoint, Aircraft.Position.PositionGeoPoint);
 
             if (wp == null)
             {
@@ -79,7 +79,7 @@ namespace SaunaSim.Core.Simulator.Commands
             args.RemoveAt(0);
 
             // Find Waypoint
-            Fix wp = DataHandler.GetClosestWaypointByIdentifier(wpStr, Aircraft.Position.Latitude, Aircraft.Position.Longitude);
+            Fix wp = DataHandler.GetClosestWaypointByIdentifier(wpStr, Aircraft.Position.PositionGeoPoint);
 
             if (wp == null)
             {

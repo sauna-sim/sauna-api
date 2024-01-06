@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using AviationCalcUtilNet.Magnetic;
 using NavData_Interface.Objects;
 using NavData_Interface.Objects.Fixes;
 using SaunaSim.Core.Data;
@@ -19,6 +20,12 @@ namespace SaunaSim.Core.Simulator.Commands
         public Action<string> Logger { get; set; }
 
         private Localizer _loc;
+        private MagneticTileManager _magTileMgr;
+
+        public LocCommand(MagneticTileManager magTileMgr)
+        {
+            _magTileMgr = magTileMgr;
+        }
 
         public void ExecuteCommand()
         {
@@ -35,7 +42,7 @@ namespace SaunaSim.Core.Simulator.Commands
                 UpperAltitudeConstraint = _loc.Glideslope.Gs_elevation,
                 AngleConstraint = _loc.Glideslope.Gs_angle
             };
-            CourseToFixLeg locLeg = new CourseToFixLeg(locFmsPoint, BearingTypeEnum.MAGNETIC, _loc.Loc_bearing);
+            CourseToFixLeg locLeg = new CourseToFixLeg(locFmsPoint, BearingTypeEnum.MAGNETIC, _loc.Loc_bearing, _magTileMgr);
             Aircraft.Fms.AddRouteLeg(locLeg);
 
             // Activate leg now, skipping all previous legs
