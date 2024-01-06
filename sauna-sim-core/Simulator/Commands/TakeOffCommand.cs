@@ -58,26 +58,6 @@ namespace SaunaSim.Core.Simulator.Commands
             //Aircraft.Fms.WaypointPassed += OnLanded;
         }
 
-        public bool HandleCommand(SimAircraft aircraft, Action<string> logger, string runway)
-        {
-            Aircraft = aircraft;
-            Logger = logger;
-            // Find Waypoint
-            Localizer wp = DataHandler.GetLocalizer(DataHandler.FAKE_AIRPORT_NAME, runway);
-
-            if (wp == null)
-            {
-                Logger?.Invoke($"ERROR: Threshold {runway} not found!");
-                return false;
-            }
-
-            _loc = wp;
-
-            Logger?.Invoke($"{Aircraft.Callsign} Taking off Runway {runway}");
-
-            return true;
-        }
-
         public bool HandleCommand(ref List<string> args)
         {
             // Check argument length

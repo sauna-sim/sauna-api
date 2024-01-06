@@ -16,6 +16,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Performance
         
         // Performance
         public int Engines { get; set; }
+        public bool EnginesReverse { get; set; }
         public List<PerfConfigSetting> ConfigList { get; set; }
         public int DataPointMass_kg { get; set; }
         public int DataPointDeltaMass_kg { get; set; }

@@ -70,6 +70,14 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot
 
         public void OnPositionUpdate(int intervalMs)
         {
+            // Check for FMS Speed
+            if (_spdMode == McpSpeedSelectorType.FMS)
+            {
+                _spdUnits = _parentAircraft.Fms.FmsSpeedUnits;
+                _selSpd = _parentAircraft.Fms.FmsSpeedValue;
+            }
+
+            
             // Run Bank Controller
             RunRollController(intervalMs);
 

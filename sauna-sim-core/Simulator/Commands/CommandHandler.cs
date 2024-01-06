@@ -145,6 +145,10 @@ namespace SaunaSim.Core.Simulator.Commands
                 case "takeoff":
                     cmd = new TakeOffCommand(_handler.MagTileManager);
                     break;
+                case "ga":
+                case "goaround":
+                    cmd = new GoAround();
+                    break;
                 case "int":
                 case "intercept":
                     cmd = new InterceptCourseCommand();

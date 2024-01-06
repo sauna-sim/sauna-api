@@ -362,6 +362,11 @@ namespace SaunaSim.Core.Simulator.Aircraft
 
                     SurfacePressure = (double)_gribPoint.SfcPress != 0 ? _gribPoint.SfcPress : AtmosUtil.ISA_STD_PRES;
 
+                    if (_onGround)
+                    {
+                        AltimeterSetting = SurfacePressure;
+                    }
+
                     // Density Alt
                     Temperature T = AtmosUtil.CalculateTempAtAlt(_altTrue, _gribPoint.GeoPotentialHeight, _gribPoint.Temp);
                     Pressure p = AtmosUtil.CalculatePressureAtAlt(_altTrue, _gribPoint.GeoPotentialHeight, _gribPoint.LevelPressure, T);
