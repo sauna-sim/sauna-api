@@ -1,4 +1,6 @@
-﻿using AviationCalcUtilNet.GeoTools;
+﻿using AviationCalcUtilNet.Geo;
+using AviationCalcUtilNet.GeoTools;
+using AviationCalcUtilNet.Units;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -9,38 +11,36 @@ namespace NavData_Interface.Objects.Fixes
     {
         public string AirportIdentifier { get; }
 
-        public double Gradient { get; }
+        public Angle Gradient { get; }
 
-        public double MagneticBearing { get; }
+        public Bearing MagneticBearing { get; }
 
-        public double TrueBearing { get; }
+        public Bearing TrueBearing { get; }
 
-        public int ThresholdElevation { get; }
+        public Length ThresholdElevation { get; }
 
-        public int DisplacedThresholdLength { get; }
+        public Length DisplacedThresholdLength { get; }
 
-        public int ThresholdCrossingHeight { get; }
+        public Length ThresholdCrossingHeight { get; }
 
-        public int Length { get; }
+        public Length Length { get; }
 
-        public int Width { get; }
+        public Length Width { get; }
 
         // Localizer Stuff
-
-        // Surface Code
 
         public Runway(
             string identifier, 
             GeoPoint location, 
             string airportIdentifier, 
-            double gradient, 
-            double magneticBearing, 
-            double trueBearing, 
-            int thresholdElevation, 
-            int displacedThresholdLength, 
-            int thresholdCrossingHeight,
-            int length, 
-            int width) : base(identifier, identifier, location)
+            Angle gradient, 
+            Bearing magneticBearing, 
+            Bearing trueBearing, 
+            Length thresholdElevation, 
+            Length displacedThresholdLength, 
+            Length thresholdCrossingHeight,
+            Length length, 
+            Length width) : base(identifier, identifier, location)
         {
             AirportIdentifier = airportIdentifier;
             Gradient = gradient;

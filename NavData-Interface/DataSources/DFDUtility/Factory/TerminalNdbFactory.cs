@@ -1,4 +1,5 @@
-﻿using NavData_Interface.Objects.Fixes.Navaids;
+﻿using AviationCalcUtilNet.Units;
+using NavData_Interface.Objects.Fixes.Navaids;
 using System;
 using System.Collections.Generic;
 using System.Data.SQLite;
@@ -18,7 +19,7 @@ namespace NavData_Interface.DataSources.DFDUtility.Factory
                 reader["icao_code"].ToString(),
                 reader["ndb_name"].ToString(),
                 Double.Parse(reader["ndb_frequency"].ToString()),
-                Int32.Parse(reader["range"].ToString()),
+                Length.FromNauticalMiles(Int32.Parse(reader["range"].ToString())),
                 reader["airport_identifier"].ToString()
                 );
         }

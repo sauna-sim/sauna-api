@@ -71,13 +71,13 @@ namespace NavData_Interface.DataSources
 
                                 if (sectionName == "VOR")
                                 {
-                                    _fixes.Add(new VhfNavaid(new GeoPoint(lat, lon), "", "", "", items[0], items[0], freq, "", null, 0, 0, 0, 0));
+                                    _fixes.Add(new VhfNavaid(new GeoPoint(lat, lon), "", "", "", items[0], items[0], freq, "", null, null));
                                 } else if (sectionName == "NDB")
                                 {
-                                    _fixes.Add(new Ndb(items[0], new GeoPoint(lat, lon), "", "", items[0], freq, 0));
+                                    _fixes.Add(new Ndb(items[0], new GeoPoint(lat, lon), "", "", items[0], freq, new Length(0)));
                                 } else if (sectionName == "AIRPORT")
                                 {
-                                    _fixes.Add(new Airport(items[0], new GeoPoint(lat, lon), "", "", "", items[0], false, RunwaySurfaceCode.Undefined, 0, 0, 0, 0, 0, ""));
+                                    _fixes.Add(new Airport(items[0], new GeoPoint(lat, lon), "", "", "", items[0], false, RunwaySurfaceCode.Undefined, null, null, null, null, null, ""));
                                 }
                             }
                             break;

@@ -1,4 +1,5 @@
-﻿using NavData_Interface.Objects.Fixes;
+﻿using AviationCalcUtilNet.Units;
+using NavData_Interface.Objects.Fixes;
 using System;
 using System.Collections.Generic;
 using System.Data.SQLite;
@@ -34,11 +35,11 @@ namespace NavData_Interface.DataSources.DFDUtility.Factory
             var speed_limit_raw = reader["speed_limit"].ToString();
             var speed_limit_altitude_raw = reader["speed_limit_altitude"].ToString();
 
-            var elevation = elevation_raw == "" ? 0 : Int32.Parse(elevation_raw);
-            var transition_altitude = transition_altitude_raw == "" ? 0 : Int32.Parse(transition_altitude_raw);
-            var transition_level = transition_level_raw == "" ? 0 : Int32.Parse(transition_level_raw);
-            var speed_limit = speed_limit_raw == "" ? 0 : Int32.Parse(speed_limit_raw);
-            var speed_limit_altitude = speed_limit_altitude_raw == "" ? 0 : Int32.Parse(speed_limit_altitude_raw);
+            var elevation = elevation_raw == "" ? Length.FromFeet(0) : Length.FromFeet(Int32.Parse(elevation_raw));
+            var transition_altitude = transition_altitude_raw == "" ? Length.FromFeet(0) : Length.FromFeet(Int32.Parse(transition_altitude_raw));
+            var transition_level = transition_level_raw == "" ? Length.FromFeet(0) : Length.FromFeet(Int32.Parse(transition_level_raw));
+            var speed_limit = speed_limit_raw == "" ? Velocity.FromKnots(0) : Velocity.FromKnots(Int32.Parse(speed_limit_raw));
+            var speed_limit_altitude = speed_limit_altitude_raw == "" ? Length.FromFeet(0) : Length.FromFeet(Int32.Parse(speed_limit_altitude_raw));
 
             return new Airport(
                 reader["airport_identifier"].ToString(),

@@ -1,4 +1,6 @@
-﻿using AviationCalcUtilNet.GeoTools;
+﻿using AviationCalcUtilNet.Geo;
+using AviationCalcUtilNet.GeoTools;
+using AviationCalcUtilNet.Units;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -32,9 +34,9 @@ namespace NavData_Interface.Objects
 
         public double Loc_frequency { get; }
 
-        public double Loc_bearing { get; }
+        public Bearing Loc_bearing { get; }
 
-        public double Loc_width { get; }
+        public Angle Loc_width { get; }
 
         public IlsCategory Loc_category { get; }
 
@@ -50,8 +52,8 @@ namespace NavData_Interface.Objects
             string loc_identifier,
             GeoPoint loc_location,
             double loc_frequency,
-            double loc_bearing,
-            double loc_width,
+            Bearing loc_bearing,
+            Angle loc_width,
             IlsCategory loc_category,
             double station_declination) :
             this(
@@ -75,8 +77,8 @@ namespace NavData_Interface.Objects
             string loc_identifier,
             GeoPoint loc_location,
             double loc_frequency,
-            double loc_bearing,
-            double loc_width,
+            Bearing loc_bearing,
+            Angle loc_width,
             IlsCategory loc_category,
             Glideslope glideslope,
             double station_declination) 

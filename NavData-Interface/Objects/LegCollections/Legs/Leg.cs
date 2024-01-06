@@ -1,4 +1,6 @@
-﻿using AviationCalcUtilNet.GeoTools;
+﻿using AviationCalcUtilNet.Geo;
+using AviationCalcUtilNet.GeoTools;
+using AviationCalcUtilNet.Units;
 using NavData_Interface.Objects.Fixes;
 using NavData_Interface.Objects.Fixes.Waypoints;
 using System;
@@ -38,13 +40,13 @@ namespace NavData_Interface.Objects.LegCollections.Legs
     {
         public LegType Type;
 
-        public int? SpeedRestriction { get; }
+        public Velocity SpeedRestriction { get; }
 
         public SpeedRestrictionType? SpeedType { get; }
 
-        public int? LowerAltitudeConstraint { get; }
+        public Length LowerAltitudeConstraint { get; }
 
-        public int? HigherAltitudeConstraint { get; }
+        public Length HigherAltitudeConstraint { get; }
 
         public Fix StartPoint { get; }
 
@@ -56,22 +58,22 @@ namespace NavData_Interface.Objects.LegCollections.Legs
 
         public bool IsFinalLeg => EndPointDescription.IsEndOfRoute;
 
-        public double? OutboundMagneticCourse { get; }
+        public Bearing OutboundMagneticCourse { get; }
 
-        public double? InboundMagneticCourse { get; }
+        public Bearing InboundMagneticCourse { get; }
 
         public Leg(
         LegType type,
-        int? speedRestriction,
+        Velocity speedRestriction,
         SpeedRestrictionType? speedType,
-        int? lowerAltitudeConstraint,
-        int? higherAltitudeConstraint,
+        Length lowerAltitudeConstraint,
+        Length higherAltitudeConstraint,
         Fix startPoint,
         Fix endPoint,
         WaypointDescription startPointDescription,
         WaypointDescription endPointDescription,
-        double? outboundMagneticCourse,
-        double? inboundMagneticCourse)
+        Bearing outboundMagneticCourse,
+        Bearing inboundMagneticCourse)
         {
             Type = type;
             SpeedRestriction = speedRestriction;

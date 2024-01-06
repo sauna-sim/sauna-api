@@ -1,4 +1,5 @@
 ﻿using AviationCalcUtilNet.GeoTools;
+using AviationCalcUtilNet.Units;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -26,15 +27,15 @@ namespace NavData_Interface.Objects.Fixes
 
         public RunwaySurfaceCode Longest_runway_surface { get; }
 
-        public int Elevation { get; }
+        public Length Elevation { get; }
 
-        public int Transition_altitude { get; }
+        public Length Transition_altitude { get; }
 
-        public int Transition_level { get; }
+        public Length Transition_level { get; }
 
-        public int Speed_limit { get; }
+        public Velocity Speed_limit { get; }
 
-        public int Speed_limit_altitude { get; }
+        public Length Speed_limit_altitude { get; }
 
         public string Iata_ata_designator { get; }
 
@@ -47,11 +48,11 @@ namespace NavData_Interface.Objects.Fixes
             string name,
             bool isIfr,
             RunwaySurfaceCode longest_runway_surface,
-            int elevation,
-            int transition_altitude,
-            int transition_level,
-            int speed_limit,
-            int speed_limit_altitude,
+            Length elevation,
+            Length transition_altitude,
+            Length transition_level,
+            Velocity speed_limit,
+            Length speed_limit_altitude,
             string iata_ata_designator
             ) : base(identifier, name, location)
         {

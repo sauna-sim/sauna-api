@@ -1,4 +1,5 @@
-﻿using AviationCalcUtilNet.GeoTools;
+﻿using AviationCalcUtilNet.Geo;
+using AviationCalcUtilNet.GeoTools;
 using NavData_Interface.Objects.Fixes.Waypoints;
 using System;
 using System.Collections.Generic;
@@ -13,8 +14,8 @@ namespace NavData_Interface.DataSources.DFDUtility
         internal static GeoPoint locationFromColumns(SQLiteDataReader reader, string latColumn, string lonColumn)
         {
             return new GeoPoint(
-                Double.Parse(reader[latColumn].ToString()),
-                Double.Parse(reader[lonColumn].ToString())
+                Latitude.FromDegrees(Double.Parse(reader[latColumn].ToString())),
+                Longitude.FromDegrees(Double.Parse(reader[lonColumn].ToString()))
                 );
         }
 

@@ -1,4 +1,5 @@
 ﻿using AviationCalcUtilNet.GeoTools;
+using AviationCalcUtilNet.Units;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -18,7 +19,7 @@ namespace NavData_Interface.Objects.Fixes.Navaids
             string icaoCode, 
             string name, 
             double frequency,
-            int range) :
+            Length range) :
             this(identifier, location, areaCode, icaoCode, name, frequency, range, "") { }
 
         public Ndb(string identifier,
@@ -27,7 +28,7 @@ namespace NavData_Interface.Objects.Fixes.Navaids
             string icaoCode,
             string name,
             double frequency,
-            int range,
+            Length range,
             string region_code) :
             base(areaCode, identifier, icaoCode, location, name, frequency, range)
         {

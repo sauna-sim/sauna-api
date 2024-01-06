@@ -1,4 +1,5 @@
 ﻿using AviationCalcUtilNet.GeoTools;
+using AviationCalcUtilNet.Units;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -9,14 +10,14 @@ namespace NavData_Interface.Objects
     {
         public GeoPoint Gs_location { get; }
 
-        public double Gs_angle { get; }
+        public Angle Gs_angle { get; }
 
-        public int Gs_elevation { get; }
+        public Length Gs_elevation { get; }
 
         public Glideslope(
             GeoPoint gs_location, 
-            double gs_angle,
-            int gs_elevation
+            Angle gs_angle,
+            Length gs_elevation
             )
         {
             Gs_location = gs_location;

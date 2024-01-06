@@ -1,4 +1,5 @@
-﻿using NavData_Interface.Objects.Fixes.Navaids;
+﻿using AviationCalcUtilNet.Units;
+using NavData_Interface.Objects.Fixes.Navaids;
 using System;
 using System.Collections.Generic;
 using System.Data.SQLite;
@@ -10,12 +11,9 @@ namespace NavData_Interface.DataSources.DFDUtility.Factory
     {
         internal static VhfNavaid Factory(SQLiteDataReader reader)
         {
-            // these may be null. In that case, set to 0.
-            var ilsdme_bias_string = reader["ilsdme_bias"].ToString();
-            var ilsdme_bias = ilsdme_bias_string == "" ? 0 : Double.Parse(ilsdme_bias_string);
+            var dme_location = SQLHelper.locationFromColumns(reader, "dme_latitude", "dme_longitude");
 
-            var station_declination_string = reader["station_declination"].ToString();
-            var station_declination = station_declination_string == "" ? 0 : Double.Parse(station_declination_string);
+            dme_location.Alt = Length.FromFeet(Double.Parse(reader["dme_elevation"].ToString()));
 
             var navaid = new VhfNavaid
                 (
@@ -27,11 +25,8 @@ namespace NavData_Interface.DataSources.DFDUtility.Factory
                 reader["vor_name"].ToString(),
                 Double.Parse(reader["vor_frequency"].ToString()),
                 reader["dme_ident"].ToString(),
-                SQLHelper.locationFromColumns(reader, "dme_latitude", "dme_longitude"),
-                Int32.Parse(reader["dme_elevation"].ToString()),
-                ilsdme_bias,
-                Int32.Parse(reader["range"].ToString()),
-                station_declination
+                dme_location,
+                Length.FromNauticalMiles(Int32.Parse(reader["range"].ToString()))
                 );
 
             return navaid;

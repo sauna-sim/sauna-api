@@ -1,4 +1,6 @@
-﻿using NavData_Interface.Objects;
+﻿using AviationCalcUtilNet.Units;
+using AviationCalcUtilNet.Geo;
+using NavData_Interface.Objects;
 using System;
 using System.Data.SQLite;
 
@@ -15,8 +17,8 @@ namespace NavData_Interface.DataSources.DFDUtility.Factory
             var loc_identifier = reader["llz_identifier"].ToString();
             var loc_location = SQLHelper.locationFromColumns(reader, "llz_latitude", "llz_longitude");
             var loc_frequency = Double.Parse(reader["llz_frequency"].ToString());
-            var loc_bearing = Double.Parse(reader["llz_bearing"].ToString());
-            var loc_width = Double.Parse(reader["llz_width"].ToString());
+            var loc_bearing = Bearing.FromDegrees(Double.Parse(reader["llz_bearing"].ToString()));
+            var loc_width = Angle.FromDegrees(Double.Parse(reader["llz_width"].ToString()));
             var loc_category_raw = reader["ils_mls_gls_category"].ToString();
 
             var loc_category = IlsCategory.LocalizerOnly;
@@ -55,8 +57,8 @@ namespace NavData_Interface.DataSources.DFDUtility.Factory
             try
             {
                 var gs_location = SQLHelper.locationFromColumns(reader, "gs_latitude", "gs_longitude");
-                var gs_angle = Double.Parse(reader["gs_angle"].ToString());
-                var gs_elevation = Int32.Parse(reader["gs_elevation"].ToString());
+                var gs_angle = Angle.FromDegrees(Double.Parse(reader["gs_angle"].ToString()));
+                var gs_elevation = Length.FromFeet(Int32.Parse(reader["gs_elevation"].ToString()));
 
                 glideslope = new Glideslope(
                     gs_location,

@@ -7,30 +7,6 @@ using System.Text;
 
 namespace NavData_Interface.Objects.LegCollections.Airways
 {
-    public enum AirwayType
-    {
-        AirlineSpecific,
-        DirectRoute,
-        Helicopter,
-        OfficialNonRnav,
-        Rnav,
-        UndesignatedRoute
-    }
-
-    public enum AirwayLevel
-    {
-        High,
-        Low,
-        Both
-    }
-
-    public enum AirwayDirection
-    {
-        Forward,
-        Backward,
-        Both
-    }
-
     public class Airway : LegCollection
     {
         private List<AirwayPoint> _points;

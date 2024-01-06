@@ -20,6 +20,19 @@ namespace NavData_Interface.Objects.LegCollections.Procedures
 
         private SidEnumerator _enumerator;
 
+        public Sid(List<Transition> rwyTransitions, List<Leg> commonLegs, List<Transition> transitions) 
+        { 
+            _rwyTransitions = rwyTransitions;
+            _commonLegs = commonLegs;
+            _transitions = transitions;
+        }
+
+        public Sid(List<Transition> rwyTransitions, List<Leg> commonLegs, List<Transition> transitions, string runway, string transition) : this(rwyTransitions, commonLegs, transitions)
+        {
+            selectRunwayTransition(runway);
+            selectTransition(transition);
+        }
+
         public override IEnumerator<Leg> GetEnumerator()
         {
             return _enumerator;
@@ -35,7 +48,18 @@ namespace NavData_Interface.Objects.LegCollections.Procedures
                     transition.TransitionIdentifier.EndsWith("B") && runwayIdentifier.Substring(0, 4) == transition.TransitionIdentifier.Substring(0, 4))
                 {
                     _selectedRwyTransition = transition;
-                    _enumerator.Reset();
+
+                    if (_selectedTransition != null)
+                    {
+                        if (_enumerator == null)
+                        {
+                            _enumerator = new SidEnumerator(this);
+                        }
+                        else
+                        {
+                            _enumerator.Reset();
+                        }
+                    }
                     return;
                 }
             }
@@ -50,7 +74,17 @@ namespace NavData_Interface.Objects.LegCollections.Procedures
                 if (transition.TransitionIdentifier == transitionIdentifier)
                 {
                     _selectedTransition = transition;
-                    _enumerator.Reset();
+                    if (_selectedRwyTransition != null)
+                    {
+                        if (_enumerator == null)
+                        {
+                            _enumerator = new SidEnumerator(this);
+                        }
+                        else
+                        {
+                            _enumerator.Reset();
+                        }
+                    }
                     return;
                 }
             }
