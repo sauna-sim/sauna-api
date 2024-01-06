@@ -68,14 +68,14 @@ namespace SaunaSim.Api.Controllers
             }
 
             SimAircraft aircraft = client;
-            var remaining_args = CommandHandler.HandleCommand(request.Command, aircraft, request.Args, LogCommandInfo);
+            var remaining_args = _aircraftService.CommandHandler.HandleCommand(request.Command, aircraft, request.Args, LogCommandInfo);
             while (remaining_args.Count > 0)
             {
                 // Get command name
                 string command = remaining_args[0].ToLower();
                 remaining_args.RemoveAt(0);
 
-                remaining_args = CommandHandler.HandleCommand(command, aircraft, remaining_args, LogCommandInfo);
+                remaining_args = _aircraftService.CommandHandler.HandleCommand(command, aircraft, remaining_args, LogCommandInfo);
             }
             return Ok();
         }
@@ -103,7 +103,7 @@ namespace SaunaSim.Api.Controllers
             AltitudeCommand command = new AltitudeCommand();
             bool result = command.HandleCommand(aircraft, LogCommandInfo, request.Altitude, request.PressureAlt, altimSetting, request.PressureInInHg);
 
-            if (result && CommandHandler.QueueCommand(command))
+            if (result && _aircraftService.CommandHandler.QueueCommand(command))
             {
                 return Ok();
             }
@@ -127,7 +127,7 @@ namespace SaunaSim.Api.Controllers
             DepartOnHeadingCommand command = new DepartOnHeadingCommand();
             bool result = command.HandleCommand(aircraft, LogCommandInfo, request.Waypoint, request.Heading);
 
-            if (result && CommandHandler.QueueCommand(command))
+            if (result && _aircraftService.CommandHandler.QueueCommand(command))
             {
                 return Ok();
             }
@@ -151,7 +151,7 @@ namespace SaunaSim.Api.Controllers
             DirectWaypointCommand command = new DirectWaypointCommand();
             bool result = command.HandleCommand(aircraft, LogCommandInfo, request.Waypoint);
 
-            if (result && CommandHandler.QueueCommand(command))
+            if (result && _aircraftService.CommandHandler.QueueCommand(command))
             {
                 return Ok();
             }
@@ -175,7 +175,7 @@ namespace SaunaSim.Api.Controllers
             FlyHeadingCommand command = new FlyHeadingCommand();
             bool result = command.HandleCommand(aircraft, LogCommandInfo, request.Heading);
 
-            if (result && CommandHandler.QueueCommand(command))
+            if (result && _aircraftService.CommandHandler.QueueCommand(command))
             {
                 return Ok();
             }
@@ -199,7 +199,7 @@ namespace SaunaSim.Api.Controllers
             TurnLeftByHeadingCommand command = new TurnLeftByHeadingCommand();
             bool result = command.HandleCommand(aircraft, LogCommandInfo, request.DegreesToTurn);
 
-            if (result && CommandHandler.QueueCommand(command))
+            if (result && _aircraftService.CommandHandler.QueueCommand(command))
             {
                 return Ok();
             }
@@ -223,7 +223,7 @@ namespace SaunaSim.Api.Controllers
             TurnLeftHeadingCommand command = new TurnLeftHeadingCommand();
             bool result = command.HandleCommand(aircraft, LogCommandInfo, request.Heading);
 
-            if (result && CommandHandler.QueueCommand(command))
+            if (result && _aircraftService.CommandHandler.QueueCommand(command))
             {
                 return Ok();
             }
@@ -247,7 +247,7 @@ namespace SaunaSim.Api.Controllers
             TurnRightByHeadingCommand command = new TurnRightByHeadingCommand();
             bool result = command.HandleCommand(aircraft, LogCommandInfo, request.DegreesToTurn);
 
-            if (result && CommandHandler.QueueCommand(command))
+            if (result && _aircraftService.CommandHandler.QueueCommand(command))
             {
                 return Ok();
             }
@@ -271,7 +271,7 @@ namespace SaunaSim.Api.Controllers
             TurnRightHeadingCommand command = new TurnRightHeadingCommand();
             bool result = command.HandleCommand(aircraft, LogCommandInfo, request.Heading);
 
-            if (result && CommandHandler.QueueCommand(command))
+            if (result && _aircraftService.CommandHandler.QueueCommand(command))
             {
                 return Ok();
             }
@@ -295,7 +295,7 @@ namespace SaunaSim.Api.Controllers
             FlyPresentHeadingCommand command = new FlyPresentHeadingCommand();
             bool result = command.HandleCommand(aircraft, LogCommandInfo);
 
-            if (result && CommandHandler.QueueCommand(command))
+            if (result && _aircraftService.CommandHandler.QueueCommand(command))
             {
                 return Ok();
             }
@@ -319,7 +319,7 @@ namespace SaunaSim.Api.Controllers
             HoldCommand command = new HoldCommand();
             bool result = command.HandleCommand(aircraft, LogCommandInfo, request.Waypoint, request.PublishedHold, request.InboundCourse, request.TurnDirection, request.LegLengthType, request.LegLength);
 
-            if (result && CommandHandler.QueueCommand(command))
+            if (result && _aircraftService.CommandHandler.QueueCommand(command))
             {
                 return Ok();
             }
@@ -340,10 +340,10 @@ namespace SaunaSim.Api.Controllers
 
             SimAircraft aircraft = client;
 
-            IlsCommand command = new IlsCommand();
+            IlsCommand command = new IlsCommand(_aircraftService.Handler.MagTileManager);
             bool result = command.HandleCommand(aircraft, LogCommandInfo, request.Runway);
 
-            if (result && CommandHandler.QueueCommand(command))
+            if (result && _aircraftService.CommandHandler.QueueCommand(command))
             {
                 return Ok();
             }
@@ -364,10 +364,10 @@ namespace SaunaSim.Api.Controllers
 
             SimAircraft aircraft = client;
 
-            LocCommand command = new LocCommand();
+            LocCommand command = new LocCommand(_aircraftService.Handler.MagTileManager);
             bool result = command.HandleCommand(aircraft, LogCommandInfo, request.Runway);
 
-            if (result && CommandHandler.QueueCommand(command))
+            if (result && _aircraftService.CommandHandler.QueueCommand(command))
             {
                 return Ok();
             }
@@ -391,7 +391,7 @@ namespace SaunaSim.Api.Controllers
             InterceptCourseCommand command = new InterceptCourseCommand();
             bool result = command.HandleCommand(aircraft, LogCommandInfo, request.Waypoint, request.Course);
 
-            if (result && CommandHandler.QueueCommand(command))
+            if (result && _aircraftService.CommandHandler.QueueCommand(command))
             {
                 return Ok();
             }
@@ -415,7 +415,7 @@ namespace SaunaSim.Api.Controllers
             SpeedCommand command = new SpeedCommand();
             bool result = command.HandleCommand(aircraft, LogCommandInfo, request.ConstraintType, request.Speed);
 
-            if (result && CommandHandler.QueueCommand(command))
+            if (result && _aircraftService.CommandHandler.QueueCommand(command))
             {
                 return Ok();
             }
