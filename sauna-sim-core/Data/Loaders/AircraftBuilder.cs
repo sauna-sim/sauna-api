@@ -14,6 +14,7 @@ using SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller;
 using SaunaSim.Core.Simulator.Aircraft.FMS;
 using SaunaSim.Core.Simulator.Aircraft.FMS.Legs;
 using SaunaSim.Core.Simulator.Aircraft.Performance;
+using SaunaSim.Core.Simulator.Commands;
 
 namespace SaunaSim.Core.Data.Loaders
 {
@@ -21,6 +22,7 @@ namespace SaunaSim.Core.Data.Loaders
 	{
 		public MagneticTileManager MagTileManager { get; private set; }
 		public GribTileManager GribTileManager { get; private set; }
+		public CommandHandler CommandHandler { get; private set; }
 		public string Callsign { get; set; }
 		public string Cid { get; set; }
 		public string Password { get; set; }
@@ -43,15 +45,16 @@ namespace SaunaSim.Core.Data.Loaders
 		public int RequestedAlt { get; set; } = -1;
 		public List<FactoryFmsWaypoint> FmsWaypoints { get; set; } = new List<FactoryFmsWaypoint>();
 
-		internal AircraftBuilder(MagneticTileManager magTileMgr, GribTileManager gribTileMgr) {
+		internal AircraftBuilder(MagneticTileManager magTileMgr, GribTileManager gribTileMgr, CommandHandler commandHandler) {
 			MagTileManager = magTileMgr;
 			GribTileManager = gribTileMgr;
+			CommandHandler = commandHandler;
 			LogInfo = (string msg) => { Console.WriteLine($"{Callsign}: [INFO] {msg}"); };
             LogWarn = (string msg) => { Console.WriteLine($"{Callsign}: [WARN] {msg}"); };
             LogError = (string msg) => { Console.WriteLine($"{Callsign}: [ERROR] {msg}"); };
         }
 
-		public AircraftBuilder(string callsign, string cid, string password, string server, int port, MagneticTileManager magTileMgr, GribTileManager gribTileMgr) : this(magTileMgr, gribTileMgr)
+		public AircraftBuilder(string callsign, string cid, string password, string server, int port, MagneticTileManager magTileMgr, GribTileManager gribTileMgr, CommandHandler commandHandler) : this(magTileMgr, gribTileMgr, commandHandler)
 		{
 			Callsign = callsign;
 			Cid = cid;
@@ -78,6 +81,7 @@ namespace SaunaSim.Core.Data.Loaders
 				HeadingMag,
 				MagTileManager,
 				GribTileManager,
+				CommandHandler,
 				DelayMs)
 			{
                 LogInfo = LogInfo,

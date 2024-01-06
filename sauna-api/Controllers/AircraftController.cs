@@ -52,7 +52,8 @@ namespace SaunaSim.Api.Controllers
                     request.Server,
                     request.Port,
                     _aircraftService.Handler.MagTileManager,
-                    _aircraftService.Handler.GribTileManager)
+                    _aircraftService.Handler.GribTileManager,
+                    _aircraftService.CommandHandler)
                 {
                     FullName = request.FullName,
                     Protocol = request.Protocol,

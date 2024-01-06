@@ -89,6 +89,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
         private Stopwatch _lagTimer;
         private GribTileManager _gribTileManager;
         private MagneticTileManager _magTileManager;
+        private CommandHandler _commandHandler;
 
         // Events
         public event EventHandler<AircraftPositionUpdateEventArgs> PositionUpdated;
@@ -229,7 +230,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
         public Airport RelaventAirport { get; set; }
 
         public SimAircraft(string callsign, string networkId, string password, string fullname, string hostname, ushort port, ProtocolRevision protocol, ClientInfo clientInfo,
-              PerfData perfData, Latitude lat, Longitude lon, Length alt, Bearing hdg_mag, MagneticTileManager magTileManager, GribTileManager gribTileManager, int delayMs = 0)
+              PerfData perfData, Latitude lat, Longitude lon, Length alt, Bearing hdg_mag, MagneticTileManager magTileManager, GribTileManager gribTileManager, CommandHandler commandHandler, int delayMs = 0)
         {
             LoginInfo = new LoginInfo(networkId, password, callsign, fullname, PilotRatingType.Student, hostname, protocol, AppSettingsManager.CommandFrequency, port);
             _clientInfo = clientInfo;
@@ -242,6 +243,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
 
             _magTileManager = magTileManager;
             _gribTileManager = gribTileManager;
+            _commandHandler = commandHandler;
 
             _simRate = 10;
             _paused = true;
@@ -336,7 +338,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
                     string command = split[0].ToLower();
                     split.RemoveAt(0);
 
-                    split = CommandHandler.HandleCommand(command, this, split, (string msg) =>
+                    split = _commandHandler.HandleCommand(command, this, split, (string msg) =>
                     {
                         string returnMsg = msg.Replace($"{Callsign} ", "");
                         Connection.SendFrequencyMessage(e.Frequency, returnMsg);
@@ -357,7 +359,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
                 string command = split[0].ToLower();
                 split.RemoveAt(0);
 
-                split = CommandHandler.HandleCommand(command, this, split, (string msg) =>
+                split = _commandHandler.HandleCommand(command, this, split, (string msg) =>
                 {
                     string returnMsg = msg.Replace($"{Callsign} ", "");
                     Connection.SendPrivateMessage(e.From, returnMsg);
