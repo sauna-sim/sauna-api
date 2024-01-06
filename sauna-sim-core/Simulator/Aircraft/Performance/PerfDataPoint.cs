@@ -1,4 +1,5 @@
-﻿using System;
+﻿using AviationCalcUtilNet.Math;
+using System;
 using System.Collections.Generic;
 
 namespace SaunaSim.Core.Simulator.Aircraft.Performance
@@ -19,14 +20,15 @@ namespace SaunaSim.Core.Simulator.Aircraft.Performance
             double multiplier = (double)(x - x1) / (x2 - x1);
             PerfDataPoint newPoint = new PerfDataPoint()
             {
-                VsClimb = (int)PerfDataHandler.InterpolateNumbers(x1Dp.VsClimb, x2Dp.VsClimb, multiplier),
-                VsDescent = (int)PerfDataHandler.InterpolateNumbers(x1Dp.VsDescent, x2Dp.VsDescent, multiplier),
-                PitchClimb = PerfDataHandler.InterpolateNumbers(x1Dp.PitchClimb, x2Dp.PitchClimb, multiplier),
-                PitchDescent = PerfDataHandler.InterpolateNumbers(x1Dp.PitchDescent, x2Dp.PitchDescent, multiplier),
-                AccelLevelMaxThrust = PerfDataHandler.InterpolateNumbers(x1Dp.AccelLevelMaxThrust, x2Dp.AccelLevelMaxThrust, multiplier),
-                AccelLevelIdleThrust = PerfDataHandler.InterpolateNumbers(x1Dp.AccelLevelIdleThrust, x2Dp.AccelLevelIdleThrust, multiplier),
-                N1Climb = PerfDataHandler.InterpolateNumbers(x1Dp.N1Climb, x2Dp.N1Climb, multiplier),
-                N1Descent = PerfDataHandler.InterpolateNumbers(x1Dp.N1Descent, x2Dp.N1Descent, multiplier)
+                // MathUtil
+                VsClimb = (int)MathUtil.InterpolateNumbers(x1Dp.VsClimb, x2Dp.VsClimb, multiplier),
+                VsDescent = (int)MathUtil.InterpolateNumbers(x1Dp.VsDescent, x2Dp.VsDescent, multiplier),
+                PitchClimb = MathUtil.InterpolateNumbers(x1Dp.PitchClimb, x2Dp.PitchClimb, multiplier),
+                PitchDescent = MathUtil.InterpolateNumbers(x1Dp.PitchDescent, x2Dp.PitchDescent, multiplier),
+                AccelLevelMaxThrust = MathUtil.InterpolateNumbers(x1Dp.AccelLevelMaxThrust, x2Dp.AccelLevelMaxThrust, multiplier),
+                AccelLevelIdleThrust = MathUtil.InterpolateNumbers(x1Dp.AccelLevelIdleThrust, x2Dp.AccelLevelIdleThrust, multiplier),
+                N1Climb = MathUtil.InterpolateNumbers(x1Dp.N1Climb, x2Dp.N1Climb, multiplier),
+                N1Descent = MathUtil.InterpolateNumbers(x1Dp.N1Descent, x2Dp.N1Descent, multiplier)
             };
             return newPoint;
         }

@@ -27,6 +27,7 @@ using AviationCalcUtilNet.Units;
 using AviationCalcUtilNet.Aviation;
 using SaunaSim.Core.Simulator.Aircraft.Ground;
 using NavData_Interface.Objects.Fixes;
+using AviationCalcUtilNet.Physics;
 
 namespace SaunaSim.Core.Simulator.Aircraft
 {
@@ -237,7 +238,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
             _simRate = 10;
             _paused = true;
 
-            _position = new AircraftPosition(lat, lon, alt, _magTileManager)
+            _position = new AircraftPosition(lat, lon, alt, this, _magTileManager)
             {
                 Pitch = Angle.FromDegrees(2.5),
                 Bank = Angle.FromDegrees(0),
@@ -462,10 +463,10 @@ namespace SaunaSim.Core.Simulator.Aircraft
         {
             TimeSpan t = TimeSpan.FromMilliseconds(intervalMs);
             Velocity vi = Position.GroundSpeed;
-            Velocity vf = (Velocity) PerfDataHandler.CalculateFinalVelocity((double)vi, Position.Forward_Acceleration, t.TotalSeconds);
+            Velocity vf = PhysicsUtil.KinematicsFinalVelocity(vi, Position.Forward_Acceleration, t);
             Position.GroundSpeed = vf;
             //Calculate displacement
-            Length displacement = (Length)PerfDataHandler.CalculateDisplacement((double)vi, Position.Forward_Acceleration, t.TotalSeconds);
+            Length displacement = PhysicsUtil.KinematicsDisplacement2(vi, Position.Forward_Acceleration, t);
 
             GeoPoint point = (GeoPoint)Position.PositionGeoPoint.Clone();
             point.MoveBy(Position.Track_True, displacement);
@@ -474,7 +475,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
 
             if(Position.VerticalSpeed.Value() > 0)
             {
-                Position.TrueAltitude += Length.FromMeters(PerfDataHandler.CalculateDisplacement(Position.VerticalSpeed.MetersPerSecond, 0, t.TotalSeconds));
+                Position.TrueAltitude += PhysicsUtil.KinematicsDisplacement1(Position.VerticalSpeed, (Velocity) 0, t);
             }
             else
             {
@@ -486,9 +487,9 @@ namespace SaunaSim.Core.Simulator.Aircraft
             double t = intervalMs / 1000.0;
 
             // Calculate Pitch, Bank, and Thrust Lever Position
-            Position.Pitch += PerfDataHandler.CalculateDisplacement((double)Position.PitchRate, 0, t);
-            Position.Bank += PerfDataHandler.CalculateDisplacement((double)Position.BankRate, 0, t);
-            Data.ThrustLeverPos += PerfDataHandler.CalculateDisplacement(Data.ThrustLeverVel, 0, t);
+            Position.Pitch += PhysicsUtil.KinematicsDisplacement2((double)Position.PitchRate, 0, t);
+            Position.Bank += PhysicsUtil.KinematicsDisplacement2((double)Position.BankRate, 0, t);
+            Data.ThrustLeverPos += PhysicsUtil.KinematicsDisplacement2(Data.ThrustLeverVel, 0, t);
 
             // Calculate Performance Values
             (double accelFwd, double vs) = PerfDataHandler.CalculatePerformance(PerformanceData, Position.Pitch.Degrees, Data.ThrustLeverPos / 100.0, Position.IndicatedAirSpeed.Knots,
@@ -496,11 +497,11 @@ namespace SaunaSim.Core.Simulator.Aircraft
 
             // Calculate New Velocities
             Velocity curGs = Position.GroundSpeed;
-            Position.IndicatedAirSpeed = (Velocity)PerfDataHandler.CalculateFinalVelocity((double) Position.IndicatedAirSpeed, Velocity.ConvertKtsToMpers(accelFwd), t);
+            Position.IndicatedAirSpeed = (Velocity) PhysicsUtil.KinematicsFinalVelocity((double) Position.IndicatedAirSpeed, Velocity.ConvertKtsToMpers(accelFwd), t);
             Position.VerticalSpeed = Velocity.FromFeetPerMinute(vs);
 
             // Calculate Accelerations
-            Position.Forward_Acceleration = accelFwd;
+            Position.Forward_Acceleration = (Acceleration) accelFwd;
 
             // Calculate Displacement
             Length displacement = (Length)(0.5 * (double)(Position.GroundSpeed + curGs) * t);

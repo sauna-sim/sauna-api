@@ -28,7 +28,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
         private Pressure _altSetting = AtmosUtil.ISA_STD_PRES;
         private Pressure _sfcPress = AtmosUtil.ISA_STD_PRES;
         private Velocity _ias;
-        private double _fwdAccel;
+        private Acceleration _fwdAccel;
         private Velocity _tas;
         private Velocity _gs;
         private double _mach;
@@ -44,7 +44,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
         private bool _onGround;
         private MagneticTileManager _magTileMgr;
 
-        public AircraftPosition(Latitude lat, Longitude lon, Length indAlt, MagneticTileManager magneticTileManager)
+        public AircraftPosition(Latitude lat, Longitude lon, Length indAlt, SimAircraft parentAircraft, MagneticTileManager magneticTileManager)
         {
             _parentAircraft = parentAircraft;
             _lat = lat;
@@ -271,7 +271,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
         public AngularVelocity Pitch_Velocity => _pitchRate;
 
         // Acceleration
-        public double Forward_Acceleration
+        public Acceleration Forward_Acceleration
         {
             get => _fwdAccel;
             set => _fwdAccel = value;

@@ -6,6 +6,7 @@ using AviationCalcUtilNet.Geo;
 using AviationCalcUtilNet.GeoTools;
 using AviationCalcUtilNet.Magnetic;
 using AviationCalcUtilNet.Units;
+using NavData_Interface.Objects;
 using SaunaSim.Core.Data;
 using SaunaSim.Core.Simulator.Aircraft.FMS;
 using SaunaSim.Core.Simulator.Aircraft.FMS.Legs;

@@ -10,6 +10,7 @@ using AviationCalcUtilNet.Magnetic;
 using AviationCalcUtilNet.MathTools;
 using AviationCalcUtilNet.Units;
 using FsdConnectorNet;
+using NavData_Interface.Objects;
 using NavData_Interface.Objects.Fixes;
 using SaunaSim.Core.Data;
 using SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller;
