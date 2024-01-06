@@ -7,6 +7,7 @@ using AviationCalcUtilNet.GeoTools;
 using AviationCalcUtilNet.Magnetic;
 using AviationCalcUtilNet.Units;
 using FsdConnectorNet;
+using NavData_Interface.Objects;
 using NavData_Interface.Objects.Fixes;
 using SaunaSim.Core.Simulator.Aircraft;
 using SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller;
@@ -142,7 +143,7 @@ namespace SaunaSim.Core.Data.Loaders
 
 			foreach (FactoryFmsWaypoint waypoint in FmsWaypoints)
 			{
-                Fix nextWp = DataHandler.GetClosestWaypointByIdentifier(waypoint.Identifier, aircraft.Position.Latitude, aircraft.Position.Longitude);
+                Fix nextWp = DataHandler.GetClosestWaypointByIdentifier(waypoint.Identifier, aircraft.Position.PositionGeoPoint);
 
                 if (nextWp != null)
                 {
@@ -167,12 +168,12 @@ namespace SaunaSim.Core.Data.Loaders
 
 					if (waypoint.ShouldHold)
 					{
-                        PublishedHold pubHold = DataHandler.GetPublishedHold(fmsPt.Point.PointName, fmsPt.Point.PointPosition.Lat.Degrees, fmsPt.Point.PointPosition.Lon.Degrees);
+                        PublishedHold pubHold = DataHandler.GetPublishedHold(fmsPt.Point.PointName, fmsPt.Point.PointPosition);
 
                         if (pubHold != null)
                         {
                             fmsPt.PointType = RoutePointTypeEnum.FLY_OVER;
-                            HoldToManualLeg leg = new HoldToManualLeg(lastPoint, BearingTypeEnum.MAGNETIC, Bearing.FromDegrees(pubHold.InboundCourse), pubHold.TurnDirection, pubHold.LegLengthType, pubHold.LegLength);
+                            HoldToManualLeg leg = new HoldToManualLeg(lastPoint, BearingTypeEnum.MAGNETIC, pubHold.InboundCourse, pubHold.TurnDirection, pubHold.LegLengthType, pubHold.LegLength, MagTileManager);
                             legs.Add(leg);
                             lastPoint = leg.EndPoint;
                         }

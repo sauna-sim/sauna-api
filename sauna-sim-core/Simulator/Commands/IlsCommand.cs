@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using AviationCalcUtilNet.Magnetic;
+using AviationCalcUtilNet.Units;
 using NavData_Interface.Objects;
 using NavData_Interface.Objects.Fixes;
 using SaunaSim.Core.Data;
@@ -39,9 +40,9 @@ namespace SaunaSim.Core.Simulator.Commands
             _locRoutePoint = new RouteWaypoint("LOC" + _loc.Runway_identifier, _loc.Loc_location);
             FmsPoint locFmsPoint = new FmsPoint(_locRoutePoint, RoutePointTypeEnum.FLY_OVER)
             {
-                LowerAltitudeConstraint = _loc.Glideslope.Gs_elevation + 50,
-                UpperAltitudeConstraint = _loc.Glideslope.Gs_elevation + 50,
-                AngleConstraint = _loc.Glideslope.Gs_angle
+                LowerAltitudeConstraint = (int)(_loc.Glideslope.Gs_elevation + Length.FromFeet(50)).Feet,
+                UpperAltitudeConstraint = (int)(_loc.Glideslope.Gs_elevation + Length.FromFeet(50)).Feet,
+                AngleConstraint = (int)_loc.Glideslope.Gs_angle
             };
             CourseToFixLeg locLeg = new CourseToFixLeg(locFmsPoint, BearingTypeEnum.MAGNETIC, _loc.Loc_bearing, _magTileMgr);
 

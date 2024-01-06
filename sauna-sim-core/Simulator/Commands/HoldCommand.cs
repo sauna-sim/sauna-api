@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using AviationCalcUtilNet.Geo;
 using NavData_Interface.Objects;
 using NavData_Interface.Objects.Fixes;
 using SaunaSim.Core.Data;
@@ -56,7 +57,7 @@ namespace SaunaSim.Core.Simulator.Commands
                 return true;
             }
 
-            if (!Aircraft.Fms.AddHold(new RouteWaypoint(wp), inboundCourse, turnDir, legLengthType, legLength))
+            if (!Aircraft.Fms.AddHold(new RouteWaypoint(wp), Bearing.FromDegrees(inboundCourse), turnDir, legLengthType, legLength))
             {
                 Logger?.Invoke($"ERROR - {wp.Identifier} not found in flight plan!");
                 return false;
@@ -138,7 +139,7 @@ namespace SaunaSim.Core.Simulator.Commands
                             }
                         }                        
                     }
-                    if (!Aircraft.Fms.AddHold(new RouteWaypoint(wp), inbdCrs, turnDir, lengthType, legLength))
+                    if (!Aircraft.Fms.AddHold(new RouteWaypoint(wp), Bearing.FromDegrees(inbdCrs), turnDir, lengthType, legLength))
                     {
                         Logger?.Invoke($"ERROR - {wp.Identifier} not found in flight plan!");
                         return false;

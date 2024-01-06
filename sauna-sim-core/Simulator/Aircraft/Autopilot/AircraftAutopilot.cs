@@ -216,7 +216,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot
                     _curVertMode = VerticalModeType.FPA;
                     _selFpa = _parentAircraft.Position.FlightPathAngle.Degrees;
                     PitchHandleFpa(intervalMs);
-                } else if (_parentAircraft.Position.TrueAltitude < Length.FromFeet(_parentAircraft.RelaventAirport.Elevation + 30))
+                } else if (_parentAircraft.Position.TrueAltitude < _parentAircraft.RelaventAirport.Elevation + Length.FromFeet(30))
                 {
                     _curVertMode = VerticalModeType.LAND;
                     PitchHandleLand(intervalMs);
@@ -368,7 +368,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot
 
         private void PitchHandleLand(int intervalMs)
         {
-            Length altDelta = _parentAircraft.Position.IndicatedAltitude - Length.FromFeet(_parentAircraft.RelaventAirport.Elevation);
+            Length altDelta = _parentAircraft.Position.IndicatedAltitude - _parentAircraft.RelaventAirport.Elevation.Feet;
             _curThrustMode = ThrustModeType.THRUST;
             _targetThrust = 0;
 

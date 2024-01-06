@@ -40,7 +40,7 @@ namespace SaunaSim.Core.Simulator.Commands
             // Add the LOC/TO leg
             _locRoutePoint = new RouteWaypoint("RWY" + _loc.Runway_identifier, _loc.Loc_location);
             FmsPoint locFmsPoint = new FmsPoint(_locRoutePoint, RoutePointTypeEnum.FLY_OVER);
-            FixToManualLeg toLeg = new FixToManualLeg(locFmsPoint, BearingTypeEnum.MAGNETIC, Bearing.FromDegrees(_loc.Loc_bearing), _magTileMgr);
+            FixToManualLeg toLeg = new FixToManualLeg(locFmsPoint, BearingTypeEnum.MAGNETIC, Bearing.FromDegrees((double)_loc.Loc_bearing), _magTileMgr);
 
             Aircraft.Fms.InsertAtIndex(toLeg, 0);
 
