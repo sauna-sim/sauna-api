@@ -1,4 +1,5 @@
-﻿using SaunaSim.Core.Simulator.Aircraft.FMS;
+﻿using AviationCalcUtilNet.Units;
+using SaunaSim.Core.Simulator.Aircraft.FMS;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -108,7 +109,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Pilot
             else
             {
                 StrobeLights = true;
-                if(_parentAircraft.Position.IndicatedAltitude < 10000)
+                if(_parentAircraft.Position.IndicatedAltitude < Length.FromFeet(10000))
                 {
                     LandingLights = true;
                     LogoLights = true;

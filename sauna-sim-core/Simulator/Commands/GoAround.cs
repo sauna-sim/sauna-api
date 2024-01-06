@@ -1,4 +1,5 @@
-﻿using SaunaSim.Core.Simulator.Aircraft;
+﻿using AviationCalcUtilNet.Units;
+using SaunaSim.Core.Simulator.Aircraft;
 using SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller;
 using SaunaSim.Core.Simulator.Aircraft.FMS;
 using System;
@@ -34,7 +35,7 @@ namespace SaunaSim.Core.Simulator.Commands
                 return false;
             }
 
-            if(Aircraft.Position.TrueAltitude < Math.Abs(Aircraft.airportElev + 200))
+            if(Aircraft.Position.TrueAltitude < Aircraft.RelaventAirport.Elevation + Length.FromFeet(200))
             {
                 Logger?.Invoke($"ERROR: Aircraft Too Low LANDING!");
                 return false;

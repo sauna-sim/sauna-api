@@ -17,7 +17,8 @@ namespace NavData_Interface.DataSources.DFDUtility.Factory
 
             var airportIdentifier = reader["airport_identifier"].ToString();
             var runwayIdentifier = reader["runway_identifier"].ToString().TrimStart('R', 'W');
-            var gradient = Angle.FromPercentage(Double.Parse(reader["runway_gradient"].ToString()));
+            // TODO: 
+            // var gradient = Angle.FromPercentage(Double.Parse(reader["runway_gradient"].ToString()));
             var magBearing = Bearing.FromDegrees(Double.Parse(reader["runway_magnetic_bearing"].ToString()));
             var truBearing = Bearing.FromDegrees(Double.Parse(reader["runway_true_bearing"].ToString()));
             var thrElevation = Length.FromFeet(Int32.Parse(reader["landing_threshold_elevation"].ToString()));
@@ -30,7 +31,8 @@ namespace NavData_Interface.DataSources.DFDUtility.Factory
                 runwayIdentifier,
                 location,
                 airportIdentifier,
-                gradient,
+                Angle.FromDegrees(0),
+                // gradient,
                 magBearing,
                 truBearing,
                 thrElevation,
