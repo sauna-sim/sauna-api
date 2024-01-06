@@ -305,7 +305,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
             }
         }
 
-        public bool AddHold(IRoutePoint rp, double magCourse, HoldTurnDirectionEnum turnDir, HoldLegLengthTypeEnum legLengthType, double legLength)
+        public bool AddHold(IRoutePoint rp, Bearing magCourse, HoldTurnDirectionEnum turnDir, HoldLegLengthTypeEnum legLengthType, double legLength)
         {
             lock (_routeLegsLock)
             {
@@ -336,7 +336,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
                     point.PointType = RoutePointTypeEnum.FLY_OVER;
 
                     // Create hold leg
-                    IRouteLeg holdLeg = new HoldToManualLeg(point, BearingTypeEnum.MAGNETIC, Bearing.FromDegrees(magCourse), turnDir, legLengthType, legLength, _magTileMgr);
+                    IRouteLeg holdLeg = new HoldToManualLeg(point, BearingTypeEnum.MAGNETIC, magCourse, turnDir, legLengthType, legLength, _magTileMgr);
 
                     // Add leg
                     _routeLegs.Insert(index, holdLeg);
