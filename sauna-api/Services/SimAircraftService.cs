@@ -4,6 +4,7 @@ using System.IO;
 using System.Threading;
 using Microsoft.Extensions.Logging;
 using SaunaSim.Api.Controllers;
+using SaunaSim.Api.WebSockets;
 using SaunaSim.Core.Simulator.Aircraft;
 using SaunaSim.Core.Simulator.Commands;
 
@@ -16,6 +17,8 @@ namespace SaunaSim.Api.Services
         public SimAircraftHandler Handler { get; private set; }
 
 		public CommandHandler CommandHandler { get; private set; }
+
+		public WebSocketHandler WebSocketHandler { get; private set; }
 
 		public Mutex AircraftListLock => Handler.SimAircraftListLock;
 
@@ -30,6 +33,7 @@ namespace SaunaSim.Api.Services
 				LogFunc
 			);
 			CommandHandler = new CommandHandler(Handler);
+			WebSocketHandler = new WebSocketHandler(Handler);
 		}
 
 		private void LogFunc(string msg, int priority)

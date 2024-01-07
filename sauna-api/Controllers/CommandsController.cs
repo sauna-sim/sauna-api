@@ -21,8 +21,8 @@ namespace SaunaSim.Api.Controllers
     [Route("api/commands")]
     public class CommandsController : ControllerBase
     {
-        private static List<string> _commandsBuffer = new List<string>();
-        private static SemaphoreSlim _commandsBufferLock = new SemaphoreSlim(1);
+        private List<string> _commandsBuffer = new List<string>();
+        private SemaphoreSlim _commandsBufferLock = new SemaphoreSlim(1);
 
         private readonly ISimAircraftService _aircraftService;
         private readonly ILogger<DataController> _logger;
@@ -33,13 +33,13 @@ namespace SaunaSim.Api.Controllers
             _aircraftService = aircraftService;
         }
 
-        private static void LogCommandInfo(string msg)
+        private void LogCommandInfo(string msg)
         {
             _commandsBufferLock.Wait();
             _commandsBuffer.Add(msg);
             _commandsBufferLock.Release();
 
-            WebSocketHandler.SendCommandMsg(msg).ConfigureAwait(false);
+            _aircraftService.WebSocketHandler.SendCommandMsg(msg).ConfigureAwait(false);
         }
 
         [HttpGet("commandBuffer")]
