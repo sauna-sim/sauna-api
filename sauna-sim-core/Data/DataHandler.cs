@@ -28,6 +28,7 @@ namespace SaunaSim.Core.Data
 
         static DataHandler()
         {
+            _navdataMutex = new Mutex();
             _navdataSource = new CombinedSource("_combined_source_sauna_api");
             _navdataSource.AddSource(new InMemorySource("sauna_api_in_memory_navdata_source"), MEM_PRIORITY);
         }
