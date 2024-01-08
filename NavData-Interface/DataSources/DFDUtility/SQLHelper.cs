@@ -19,6 +19,11 @@ namespace NavData_Interface.DataSources.DFDUtility
                 );
         }
 
+        internal static GeoPoint locationFromColumns(SQLiteDataReader reader)
+        {
+            return locationFromColumns(reader, "waypoint_latitude", "waypoint_longitude");
+        }
+
         internal static WaypointDescription waypointDescriptionFromDescriptionString(string descriptionString)
         {
             if (descriptionString.Length != 3)

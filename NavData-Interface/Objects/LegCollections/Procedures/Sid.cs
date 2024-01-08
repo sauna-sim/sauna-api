@@ -1,4 +1,5 @@
-﻿using NavData_Interface.Objects.LegCollections.Legs;
+﻿using AviationCalcUtilNet.Units;
+using NavData_Interface.Objects.LegCollections.Legs;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -19,6 +20,13 @@ namespace NavData_Interface.Objects.LegCollections.Procedures
         private Transition _selectedTransition;
 
         private SidEnumerator _enumerator;
+
+        /// <summary>
+        /// Returns the applicable transition altitude to use when flying this SID.
+        /// <br></br>
+        /// Returns null if the departure has multiple runway transitions and none are selected.
+        /// </summary>
+        public Length TransitionAltitude { get; }
 
         public Sid(List<Transition> rwyTransitions, List<Leg> commonLegs, List<Transition> transitions) 
         { 

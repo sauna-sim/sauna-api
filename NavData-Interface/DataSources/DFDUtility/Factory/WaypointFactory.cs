@@ -12,8 +12,8 @@ namespace NavData_Interface.DataSources.DFDUtility.Factory
         {
             var waypoint = new Waypoint(
                     reader["waypoint_identifier"].ToString(),
-                    reader["waypoint_name"].ToString(),
-                    SQLHelper.locationFromColumns(reader, "waypoint_latitude", "waypoint_longitude"),
+                    reader["waypoint_name"]?.ToString() ?? reader["waypoint_identifier"].ToString(),
+                    SQLHelper.locationFromColumns(reader),
                     reader["area_code"].ToString(),
                     reader["icao_code"].ToString()
                 );

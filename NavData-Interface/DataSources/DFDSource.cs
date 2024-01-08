@@ -366,7 +366,7 @@ namespace NavData_Interface.DataSources
 
         private SQLiteCommand RunwayLookupByAirportIdentifier(string airportIdentifier, string runwayIdentifier)
         {
-            SQLiteCommand command = new SQLiteCommand();
+            SQLiteCommand command = new SQLiteCommand(_connection);
 
             command.CommandText = $"SELECT * FROM tbl_runways WHERE airport_identifier == @airport AND runway_identifier == RW@runway";
 
@@ -392,7 +392,7 @@ namespace NavData_Interface.DataSources
 
         private SQLiteCommand AirwayLookupByIdentifier(string airwayIdentifier)
         {
-            SQLiteCommand command = new SQLiteCommand();
+            SQLiteCommand command = new SQLiteCommand(_connection);
 
             command.CommandText = $"SELECT * FROM tbl_airways WHERE airway_identifier == @airway";
 
