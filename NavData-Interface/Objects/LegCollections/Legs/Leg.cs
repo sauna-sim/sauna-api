@@ -54,17 +54,19 @@ namespace NavData_Interface.Objects.LegCollections.Legs
     {
         public LegType Type;
 
-        public Velocity SpeedRestriction { get; }
+        public Velocity SpeedRestriction { get; internal set; }
 
-        public SpeedRestrictionType? SpeedType { get; }
+        public SpeedRestrictionType? SpeedType { get; internal set; }
 
         public Length LowerAltitudeConstraint { get; }
 
-        public Length HigherAltitudeConstraint { get; }
+        public Length UpperAltitudeConstraint { get; }
 
         public Fix EndPoint { get; }
 
-        public VhfNavaid RecommendedNavaid { get; }
+        public Fix CenterPoint { get; }
+
+        public Navaid RecommendedNavaid { get; }
 
         public WaypointDescription EndPointDescription { get; }
 
@@ -126,9 +128,37 @@ namespace NavData_Interface.Objects.LegCollections.Legs
                     return LegType.HOLD_TO_FIX;
                 case "MH":
                     return LegType.HOLD_TO_MANUAL;
+                default:
+                    // Should never reach here. However, if it does, this will probably make the leg get ignored
+                    return LegType.INITIAL_FIX;
             }
+        }
 
-            return LegType.INITIAL_FIX;
+        public Leg(LegType type,
+                    Velocity speedRestriction,
+                    SpeedRestrictionType? speedType,
+                    Length lowerAltitudeConstraint,
+                    Length higherAltitudeConstraint,
+                    Fix endPoint,
+                    WaypointDescription endPointDescription,
+                    Fix centerPoint,
+                    Navaid recommendedNavaid,
+                    Bearing outboundMagneticCourse,
+                    RequiredTurnDirectionType? requiredTurnDirection,
+                    Length arcRadius)
+        {
+            Type = type;
+            SpeedRestriction = speedRestriction;
+            SpeedType = speedType;
+            LowerAltitudeConstraint = lowerAltitudeConstraint;
+            UpperAltitudeConstraint = higherAltitudeConstraint;
+            EndPoint = endPoint;
+            CenterPoint = centerPoint;
+            RecommendedNavaid = recommendedNavaid;
+            EndPointDescription = endPointDescription;
+            OutboundMagneticCourse = outboundMagneticCourse;
+            RequiredTurnDirection = requiredTurnDirection;
+            ArcRadius = arcRadius;
         }
     }
 }

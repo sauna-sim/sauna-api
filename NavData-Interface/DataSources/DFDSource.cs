@@ -13,6 +13,7 @@ using NavData_Interface.Objects.Fixes.Waypoints;
 using NavData_Interface.Objects.LegCollections.Airways;
 using AviationCalcUtilNet.Units;
 using AviationCalcUtilNet.Geo;
+using NavData_Interface.Objects.LegCollections.Procedures;
 
 namespace NavData_Interface.DataSources
 {
@@ -410,6 +411,11 @@ namespace NavData_Interface.DataSources
             airway.SelectSection(startFix, endFix);
 
             return airway;
+        }
+
+        public override Sid GetGetSidByAirportAndIdentifier(string airportIdentifier, string sidIdentifier)
+        {
+
         }
     }
 }

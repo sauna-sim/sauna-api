@@ -21,21 +21,37 @@ namespace NavData_Interface.Objects.LegCollections.Procedures
 
         private SidEnumerator _enumerator;
 
+        private Length _transitionAltitude;
+
         /// <summary>
         /// Returns the applicable transition altitude to use when flying this SID.
         /// <br></br>
         /// Returns null if the departure has multiple runway transitions and none are selected.
         /// </summary>
-        public Length TransitionAltitude { get; }
+        public Length TransitionAltitude
+        {
+            get
+            {
+                if (_selectedRwyTransition != null)
+                {
+                    return _selectedRwyTransition.TransitionAltitude;
+                }
+                else
+                {
+                    return _transitionAltitude;
+                }
+            }
+        }
 
-        public Sid(List<Transition> rwyTransitions, List<Leg> commonLegs, List<Transition> transitions) 
+        public Sid(List<Transition> rwyTransitions, List<Leg> commonLegs, List<Transition> transitions, Length transitionAltitude) 
         { 
             _rwyTransitions = rwyTransitions;
             _commonLegs = commonLegs;
             _transitions = transitions;
+            _transitionAltitude = transitionAltitude;
         }
 
-        public Sid(List<Transition> rwyTransitions, List<Leg> commonLegs, List<Transition> transitions, string runway, string transition) : this(rwyTransitions, commonLegs, transitions)
+        public Sid(List<Transition> rwyTransitions, List<Leg> commonLegs, List<Transition> transitions, Length transitionAltitude, string runway, string transition) : this(rwyTransitions, commonLegs, transitions, transitionAltitude)
         {
             selectRunwayTransition(runway);
             selectTransition(transition);
