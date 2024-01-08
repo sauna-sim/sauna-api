@@ -27,7 +27,7 @@ namespace NavData_Interface.DataSources
 
         public abstract Airway GetAirwayFromIdentifierAndFixes(string airwayIdentifier, Fix startFix, Fix endFix);
 
-        public Sid GetSidByAirportAndIdentifier(string airportIdentifier, string sidIdentifier)
+        public virtual Sid GetSidByAirportAndIdentifier(string airportIdentifier, string sidIdentifier)
         {
             return null;
         }

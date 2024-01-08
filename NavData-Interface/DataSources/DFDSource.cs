@@ -81,8 +81,7 @@ namespace NavData_Interface.DataSources
             }
         }
 
-        override
-        public Localizer GetLocalizerFromAirportRunway(string airportIdentifier, string runwayIdentifier)
+        public override Localizer GetLocalizerFromAirportRunway(string airportIdentifier, string runwayIdentifier)
         {
             var foundLocs = GetObjectsWithQuery<Localizer>(LocalizerLookupByAirportRunway(airportIdentifier, runwayIdentifier), reader => LocalizerFactory.Factory(reader));
 
@@ -413,9 +412,25 @@ namespace NavData_Interface.DataSources
             return airway;
         }
 
-        public override Sid GetGetSidByAirportAndIdentifier(string airportIdentifier, string sidIdentifier)
+        private SQLiteCommand SidLookupByAirportAndIdentifier(string airportIdentifier, string sidIdentifier)
         {
+            SQLiteCommand command = new SQLiteCommand(_connection);
 
+            command.CommandText = $"SELECT * FROM tbl_sids WHERE airport_identifier == @airport AND procedure_identifier = @sid";
+
+            command.Parameters.AddWithValue("@airport", airportIdentifier);
+            command.Parameters.AddWithValue("@sid", sidIdentifier);
+
+            return command;
+        }
+
+        public override Sid GetSidByAirportAndIdentifier(string airportIdentifier, string sidIdentifier)
+        {
+            var reader = SidLookupByAirportAndIdentifier(airportIdentifier, sidIdentifier).ExecuteReader();
+
+            var sid = SidFactory.Factory(reader, _connection);
+
+            return sid;
         }
     }
 }

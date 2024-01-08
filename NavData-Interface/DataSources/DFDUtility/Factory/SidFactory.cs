@@ -15,7 +15,7 @@ namespace NavData_Interface.DataSources.DFDUtility.Factory
 {
     internal class SidFactory
     {
-        public Sid Factory(SQLiteDataReader reader, SQLiteConnection connection)
+        public static Sid Factory(SQLiteDataReader reader, SQLiteConnection connection)
         {
             var runwayTransitions = new List<Transition>();
             var commonLegs = new List<Leg>();
@@ -84,7 +84,7 @@ namespace NavData_Interface.DataSources.DFDUtility.Factory
             return new Sid(runwayTransitions, commonLegs, transitions, transitionAltitude);
         }
 
-        private Transition ReadTransition(SQLiteDataReader reader, SQLiteConnection connection, string transitionIdentifier)
+        private static Transition ReadTransition(SQLiteDataReader reader, SQLiteConnection connection, string transitionIdentifier)
         {
             // The transition altitude for this SID is always on the first leg of each transition. Store it now
             var transitionAltitude = Length.FromFeet(Double.Parse(reader["transition_altitude"].ToString()));
@@ -96,42 +96,10 @@ namespace NavData_Interface.DataSources.DFDUtility.Factory
                 legs.Add(ReadLeg(reader, connection));
             }
 
-            CleanUpLegs(legs, true);
-
             return new Transition(legs, transitionIdentifier, transitionAltitude);
         }
 
-        private void CleanUpLegs(List<Leg> legs, bool isSid)
-        {
-            SpeedRestrictionType? type = null;
-            Velocity speed = null;
-
-            // Iterate forwards or backwards, depending on SID/STAR.
-            // SID Speeds apply to all the previous legs, while
-            // STAR Speeds apply to all future legs.
-            for (int i = isSid? legs.Count - 1 : 0; isSid? i >= 0 : i < legs.Count; i += isSid? -1 : 1)
-            {
-                var leg = legs[i];
-
-                if (leg.SpeedType != null)
-                {
-                    // If this is the start of a speed restriction, update our current variables
-                    type = leg.SpeedType;
-                    speed = leg.SpeedRestriction;
-                } else
-                {
-                    if (type != null)
-                    {
-                        // This isn't the start of a speed restriction.
-                        // If one has already started, copy it to this leg.
-                        leg.SpeedType = type;
-                        leg.SpeedRestriction = speed;
-                    }
-                }
-            }
-        }
-
-        private Leg ReadLeg(SQLiteDataReader reader, SQLiteConnection connection)
+        private static Leg ReadLeg(SQLiteDataReader reader, SQLiteConnection connection)
         {
             var waypointIdentifier = reader["waypoint_identifier"]?.ToString();
 
