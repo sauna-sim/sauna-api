@@ -10,7 +10,7 @@
     <AssemblyName>SaunaApi</AssemblyName>
     <NeutralLanguage>en-US</NeutralLanguage>
     <Version>0.17.0</Version>
-	<AssemblyVersion>$(Version)</AssemblyVersion>
+	  <AssemblyVersion>$(Version)</AssemblyVersion>
     <FileVersion>$(Version)</FileVersion>
     <EnableUnmanagedDebugging>true</EnableUnmanagedDebugging>
     <ServerGarbageCollection>false</ServerGarbageCollection>
