@@ -63,7 +63,7 @@ namespace SaunaSim.Core.Data.Loaders
 			Password = password;
 		}
 
-		public SimAircraft Push(ClientInfo clientInfo)
+		public SimAircraft Create(ClientInfo clientInfo)
 		{
 			SimAircraft aircraft = new SimAircraft(
 				Callsign,

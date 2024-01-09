@@ -84,7 +84,7 @@ namespace SaunaSim.Api.Controllers
                     builder.FmsWaypoints = request.FmsWaypointList;
                 }
 
-                var pilot = builder.Push(PrivateInfoLoader.GetClientInfo((string msg) => { _logger.LogWarning($"{request.Callsign}: {msg}"); }));
+                var pilot = builder.Create(PrivateInfoLoader.GetClientInfo((string msg) => { _logger.LogWarning($"{request.Callsign}: {msg}"); }));
                 _aircraftService.Handler.AddAircraft(pilot);
                 pilot.Start();
 

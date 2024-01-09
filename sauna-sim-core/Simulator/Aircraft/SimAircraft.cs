@@ -270,8 +270,8 @@ namespace SaunaSim.Core.Simulator.Aircraft
 
             _autopilot = new AircraftAutopilot(this)
             {
-                SelectedAltitude = Convert.ToInt32(alt),
-                SelectedHeading = Convert.ToInt32(hdg_mag),
+                SelectedAltitude = Convert.ToInt32(alt.Feet),
+                SelectedHeading = Convert.ToInt32(hdg_mag.Degrees),
                 SelectedSpeed = Convert.ToInt32(250.0),
                 CurrentLateralMode = LateralModeType.HDG,
                 CurrentThrustMode = ThrustModeType.SPEED,

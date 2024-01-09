@@ -25,8 +25,8 @@ namespace SaunaSim.Core.Simulator.Aircraft
         private Bearing _magneticHdg;
         private Bearing _trueHdg;
         private Bearing _trueTrack;
-        private Pressure _altSetting = AtmosUtil.ISA_STD_PRES;
-        private Pressure _sfcPress = AtmosUtil.ISA_STD_PRES;
+        private Pressure _altSetting;
+        private Pressure _sfcPress;
         private Velocity _ias;
         private Acceleration _fwdAccel;
         private Velocity _tas;
@@ -47,9 +47,32 @@ namespace SaunaSim.Core.Simulator.Aircraft
         public AircraftPosition(Latitude lat, Longitude lon, Length indAlt, SimAircraft parentAircraft, MagneticTileManager magneticTileManager)
         {
             _parentAircraft = parentAircraft;
+
             _lat = lat;
             _lon = lon;
             IndicatedAltitude = indAlt;
+
+            _magneticHdg = (Bearing)0;
+            _trueHdg = (Bearing)0;
+            _trueTrack = (Bearing)0;
+            _altSetting = AtmosUtil.ISA_STD_PRES;
+            _sfcPress = AtmosUtil.ISA_STD_PRES;
+            _ias = (Velocity)0;
+            _fwdAccel = (Acceleration)0;
+            _tas = (Velocity)0;
+            _gs = (Velocity)0;
+            _mach = 0;
+            _gribPoint = null;
+            _bank = (Angle)0;
+            _pitch = (Angle)0;
+            _bankRate = (AngularVelocity)0;
+            _pitchRate = (AngularVelocity)0;
+            _yawRate = (AngularVelocity)0;
+            _verticalSpeed = (Velocity)0;
+            _windDirection = (Bearing)0;
+            _windSpeed = (Velocity)0;
+            _onGround = false;
+        
             _magTileMgr = magneticTileManager;
         }
 

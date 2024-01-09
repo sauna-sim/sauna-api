@@ -389,7 +389,9 @@ namespace SaunaSim.Api.Controllers
 
                 foreach (AircraftBuilder pilot in pilots)
                 {
-                    pilot.Push(PrivateInfoLoader.GetClientInfo((string msg) => { _logger.LogWarning($"{pilot.Callsign}: {msg}"); }));
+                    var aircraft = pilot.Create(PrivateInfoLoader.GetClientInfo((string msg) => { _logger.LogWarning($"{pilot.Callsign}: {msg}"); }));
+                    _aircraftService.Handler.AddAircraft(aircraft);
+                    aircraft.Start();
                 }
             } catch (Exception ex)
             {
