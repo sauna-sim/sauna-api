@@ -160,5 +160,24 @@ namespace NavData_Interface.Objects.LegCollections.Legs
             RequiredTurnDirection = requiredTurnDirection;
             ArcRadius = arcRadius;
         }
+
+        public override string ToString()
+        {
+            string lowerAltitudeConstraintString = LowerAltitudeConstraint != null ? $"Alt: {LowerAltitudeConstraint.Feet:F0}" : "Alt: N/A";
+            string upperAltitudeConstraintString = UpperAltitudeConstraint != null ? $" - {UpperAltitudeConstraint.Feet:F0} feet" : string.Empty;
+
+            return $"{Enum.GetName(typeof(LegType), Type)} | " +
+                   $"{(SpeedRestriction != null ? $"Speed: {SpeedRestriction.Knots:F0}kts" : "No Speed")} | " +
+                   $"{(SpeedType.HasValue ? $"Speed Type: {Enum.GetName(typeof(SpeedRestrictionType), SpeedType)}" : "No Speed Type")} | " +
+                   $"{lowerAltitudeConstraintString}{upperAltitudeConstraintString} | " +
+                   $"End: {EndPoint?.Identifier} | " +
+                   $"{(CenterPoint != null ? $"Center: {CenterPoint.Identifier}" : "No Center")} | " +
+                   $"{(RecommendedNavaid != null ? $"Navaid: {RecommendedNavaid.Identifier}" : "No Navaid")} | " +
+                   $"{EndPointDescription} | " +
+                   $"Course: {OutboundMagneticCourse?.Degrees} | " +
+                   $"{(RequiredTurnDirection.HasValue ? $"Turn: {Enum.GetName(typeof(RequiredTurnDirectionType), RequiredTurnDirection)}" : "No Turn")} | " +
+                   $"{(ArcRadius != null ? $"Arc Radius: {ArcRadius.NauticalMiles:F0}" : "No Arc Radius")} ";
+        }
+
     }
 }

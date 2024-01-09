@@ -27,5 +27,11 @@ namespace NavData_Interface.Objects.LegCollections.Procedures
         /// 
         /// </summary>
         public string RouteIdentifier { get; }
+
+        public TerminalProcedure(string airportIdentifier, string routeIdentifier)
+        {
+            AirportIdentifier = airportIdentifier;
+            RouteIdentifier = routeIdentifier;
+        }
     }
 }

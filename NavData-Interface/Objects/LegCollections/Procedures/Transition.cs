@@ -25,5 +25,21 @@ namespace NavData_Interface.Objects.LegCollections.Procedures
             TransitionIdentifier = transitionIdentifier;
             TransitionAltitude = transitionAltitude;
         }
+
+        public override string ToString()
+        {
+            var transitionString =
+                $"Transition: {TransitionIdentifier}\n" +
+                $"Transition Altitude: {TransitionAltitude.Feet:F0}\n" +
+                "----------------\nLegs:\n";
+
+            foreach (var leg in legs)
+            {
+                transitionString += $"\t{leg.ToString()}\n";
+            }
+
+            return transitionString;
+        }
+
     }
 }

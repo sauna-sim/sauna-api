@@ -26,10 +26,12 @@ namespace NavData_Interface.DataSources.DFDUtility
 
         internal static WaypointDescription waypointDescriptionFromDescriptionString(string descriptionString)
         {
-            if (descriptionString.Length != 3)
+            if (descriptionString.Length > 3)
             {
                 throw new FormatException("The waypoint description is invalid because the description field isn't the right length");
             }
+
+            descriptionString = descriptionString.PadRight(3);
 
             bool isEndOfRoute = false;
             bool isFlyOver = false;

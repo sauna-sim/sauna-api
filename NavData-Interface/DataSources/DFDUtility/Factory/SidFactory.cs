@@ -26,6 +26,11 @@ namespace NavData_Interface.DataSources.DFDUtility.Factory
             // if you're here cause there's an infinite loop in this function
             // try reader.read() instead of HasRows
             // idk documentation is kinda unclear
+            reader.Read();
+
+            var airportIdentifier = reader["airport_identifier"].ToString();
+            var routeIdentifier = reader["procedure_identifier"].ToString();
+
             while (reader.HasRows)
             {
                 switch (reader["route_type"].ToString())
@@ -40,7 +45,7 @@ namespace NavData_Interface.DataSources.DFDUtility.Factory
                         }
                     case "5":
                         // This leg is for the common portion. Read just this leg and add it
-                        if (runwayTransitions.Count == 0 && reader["transition_altitude"] != null)
+                        if (runwayTransitions.Count == 0 && reader["transition_altitude"].ToString() != "")
                         {
                             // When there are no runway transitions, the first leg of the common part will have
                             // A non-null transition_altitude, which is the transition altitude for this SID.
@@ -81,7 +86,7 @@ namespace NavData_Interface.DataSources.DFDUtility.Factory
                 }
             }
 
-            return new Sid(runwayTransitions, commonLegs, transitions, transitionAltitude);
+            return new Sid(airportIdentifier, routeIdentifier, runwayTransitions, commonLegs, transitions, transitionAltitude);
         }
 
         private static Transition ReadTransition(SQLiteDataReader reader, SQLiteConnection connection, string transitionIdentifier)
@@ -91,7 +96,7 @@ namespace NavData_Interface.DataSources.DFDUtility.Factory
 
             var legs = new List<Leg>();
 
-            while (reader.Read() && reader["transition_identifier"]?.ToString() == transitionIdentifier)
+            while (reader.Read() && reader["transition_identifier"].ToString() == transitionIdentifier)
             {
                 legs.Add(ReadLeg(reader, connection));
             }
@@ -101,12 +106,12 @@ namespace NavData_Interface.DataSources.DFDUtility.Factory
 
         private static Leg ReadLeg(SQLiteDataReader reader, SQLiteConnection connection)
         {
-            var waypointIdentifier = reader["waypoint_identifier"]?.ToString();
+            var waypointIdentifier = reader["waypoint_identifier"].ToString();
 
             Waypoint waypoint = null;
             WaypointDescription waypointDescription = null;
 
-            if (waypointIdentifier != null)
+            if (waypointIdentifier != "")
             {
                 waypoint = new Waypoint(waypointIdentifier, SQLHelper.locationFromColumns(reader));
                 waypointDescription = SQLHelper.waypointDescriptionFromDescriptionString(reader["waypoint_description_code"].ToString());
@@ -131,19 +136,21 @@ namespace NavData_Interface.DataSources.DFDUtility.Factory
 
             Navaid recommendedNavaid = null;
 
-            if (reader["recommended_navaid"].ToString() != null)
+            if (reader["recommanded_navaid"].ToString() != "")
             {
                 // Get the recommended navaid from the DB
+                // The id is of the format tablename|id
+                var fullId = reader["recommanded_id"].ToString().Split('|');
+
+                var table = fullId[0];
+                var id = fullId[1];
+
                 var cmd = new SQLiteCommand(connection)
                 {
-                    CommandText = $"SELECT * FROM @table WHERE id = @id"
+                    CommandText = $"SELECT * FROM {table} WHERE id = @id"
                 };
 
-                // The id is of the format tablename|id
-                var table = reader["recommended_id"].ToString().Split('|')[0];
-
-                cmd.Parameters.AddWithValue("table", table);
-                cmd.Parameters.AddWithValue("id", reader["recommended_id"].ToString());
+                cmd.Parameters.AddWithValue("@id", id);
 
                 // Depending on the table, we need to choose the right factory
                 if (table == "tbl_vhfnavaids")
@@ -162,16 +169,16 @@ namespace NavData_Interface.DataSources.DFDUtility.Factory
 
             Length arcRadius = null;
 
-            if (arcRadiusRaw != null)
+            if (arcRadiusRaw != "")
             {
                 arcRadius = Length.FromFeet(Int32.Parse(arcRadiusRaw));
             }
 
-            var magneticCourseRaw = reader["magnetic_course"]?.ToString();
+            var magneticCourseRaw = reader["magnetic_course"].ToString();
 
             Bearing outBoundMagneticCourse = null;
 
-            if (magneticCourseRaw != null)
+            if (magneticCourseRaw != "")
             {
                 outBoundMagneticCourse = Bearing.FromDegrees(Double.Parse(magneticCourseRaw));
             }
@@ -183,10 +190,10 @@ namespace NavData_Interface.DataSources.DFDUtility.Factory
 
             int altitude1 = 0, altitude2 = 0;
 
-            if (reader["altitude1"] != null)
+            if (reader["altitude1"].ToString() != "")
             {
 
-                if (reader["altitude1"]?.ToString().StartsWith("FL") == true)
+                if (reader["altitude1"].ToString().StartsWith("FL") == true)
                 {
                     altitude1 = 100 * Int32.Parse(reader["altitude1"].ToString().Substring(2, 3));
                 }
@@ -196,10 +203,10 @@ namespace NavData_Interface.DataSources.DFDUtility.Factory
                 }
             }
 
-            if (reader["altitude2"] != null)
+            if (reader["altitude2"].ToString() != "")
             {
                 
-                if (reader["altitude2"]?.ToString().StartsWith("FL") == true)
+                if (reader["altitude2"].ToString().StartsWith("FL") == true)
                 {
                     altitude2 = 100 * Int32.Parse(reader["altitude2"].ToString().Substring(2, 3));
                 } else
@@ -234,16 +241,16 @@ namespace NavData_Interface.DataSources.DFDUtility.Factory
             } 
 
             SpeedRestrictionType? speedRestrictionType = null;
-            var speedRestrictionTypeRaw = reader["speed_limit_description"]?.ToString();
+            var speedRestrictionTypeRaw = reader["speed_limit_description"].ToString();
 
             Velocity speedLimit = null;
 
-            if (reader["speed_limit"]?.ToString() != null)
+            if (reader["speed_limit"].ToString() != "")
             {
                 speedLimit = Velocity.FromKnots(Int32.Parse(reader["speed_limit"].ToString()));
             }
 
-            if (speedRestrictionTypeRaw == null && reader["speed_limit"] != null)
+            if (speedRestrictionTypeRaw == "" && reader["speed_limit"].ToString() != "")
             {
                 speedRestrictionType = SpeedRestrictionType.AT;
             } else if (speedRestrictionTypeRaw == "+")
@@ -256,9 +263,9 @@ namespace NavData_Interface.DataSources.DFDUtility.Factory
 
             Fix centerFix = null;
 
-            var centerWaypointIdent = reader["center_waypoint"]?.ToString();
+            var centerWaypointIdent = reader["center_waypoint"].ToString();
             
-            if (centerWaypointIdent != null)
+            if (centerWaypointIdent != "")
             {
                 GeoPoint centerWaypointLocation = SQLHelper.locationFromColumns(reader, "center_waypoint_latitude", "center_waypoint_longitude");
 

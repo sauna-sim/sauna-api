@@ -11,6 +11,8 @@ namespace NavData_Interface.DataSources.DFDUtility.Factory
     {
         internal static VhfNavaid Factory(SQLiteDataReader reader)
         {
+            reader.Read();
+
             var dme_location = SQLHelper.locationFromColumns(reader, "dme_latitude", "dme_longitude");
 
             dme_location.Alt = Length.FromFeet(Double.Parse(reader["dme_elevation"].ToString()));

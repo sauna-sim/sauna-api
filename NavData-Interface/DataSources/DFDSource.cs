@@ -30,6 +30,11 @@ namespace NavData_Interface.DataSources
             return Uuid;
         }
 
+        public DFDSource(string filePath) : this(filePath, "")
+        {
+
+        }
+
         /// <summary>
         /// Creates a new DFD data source.
         /// </summary>

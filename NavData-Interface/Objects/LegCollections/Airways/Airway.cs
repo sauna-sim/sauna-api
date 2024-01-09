@@ -73,33 +73,32 @@ namespace NavData_Interface.Objects.LegCollections.Airways
 
             List<Leg> legs = new List<Leg>();
 
-            int increment;
+            var forwards = _selectedEndPointIndex > _selectedStartPointIndex;
 
-            if (_selectedEndPointIndex > _selectedStartPointIndex)
+            for (var i = _selectedStartPointIndex; forwards? i <= _selectedEndPointIndex : i >= _selectedEndPointIndex; i += forwards? 1 : -1)
             {
-                increment = 1;
-            } else
-            {
-                increment = -1;
-            }
+                var legEndPoint = _points[i];
 
-            for (var i = _selectedStartPointIndex; i != _selectedEndPointIndex; i += increment)
-            {
-                var legStartPoint = _points[i];
-                var legEndPoint = _points[i + increment];
-
-                if (legStartPoint.Description.IsEndOfRoute)
+                if (legEndPoint.Description.IsEndOfRoute && i != _selectedEndPointIndex)
                 {
                     throw new ArgumentException("There is a discontinuity in the airway between these points");
                 }
 
                 legs.Add(
                     new Leg(
-                        LegType.TRACK_TO_FIX,
-                        legStartPoint.Point,
+                        i == _selectedStartPointIndex ? LegType.INITIAL_FIX : LegType.TRACK_TO_FIX,
+                        null,
+                        null,
+                        null,
+                        null,
                         legEndPoint.Point,
-                        legStartPoint.Description,
-                        legEndPoint.Description));
+                        legEndPoint.Description,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null
+                        ));
             }
 
             SelectedLegs = legs;

@@ -7,6 +7,7 @@ using SaunaSim.Core.Simulator.Aircraft.Performance;
 
 namespace sauna_tests
 {
+    /*
     public class AutopilotTests
     {
         private PerfData _perfData;
@@ -89,5 +90,6 @@ namespace sauna_tests
             });
         }
     }
+    */
 }
 

@@ -43,15 +43,17 @@ namespace NavData_Interface.Objects.LegCollections.Procedures
             }
         }
 
-        public Sid(List<Transition> rwyTransitions, List<Leg> commonLegs, List<Transition> transitions, Length transitionAltitude) 
+        public Sid(string airportIdentifier, string routeIdentifier, List<Transition> rwyTransitions, List<Leg> commonLegs, List<Transition> transitions, Length transitionAltitude) : base(airportIdentifier, routeIdentifier)
         { 
             _rwyTransitions = rwyTransitions;
             _commonLegs = commonLegs;
             _transitions = transitions;
             _transitionAltitude = transitionAltitude;
+
+            _enumerator = new SidEnumerator(this);
         }
 
-        public Sid(List<Transition> rwyTransitions, List<Leg> commonLegs, List<Transition> transitions, Length transitionAltitude, string runway, string transition) : this(rwyTransitions, commonLegs, transitions, transitionAltitude)
+        public Sid(string airportIdentifier, string routeIdentifier, List<Transition> rwyTransitions, List<Leg> commonLegs, List<Transition> transitions, Length transitionAltitude, string runway, string transition) : this(airportIdentifier, routeIdentifier, rwyTransitions, commonLegs, transitions, transitionAltitude)
         {
             selectRunwayTransition(runway);
             selectTransition(transition);
@@ -163,7 +165,7 @@ namespace NavData_Interface.Objects.LegCollections.Procedures
                         goto case 0;
                     case 0:
                         _cursor++;
-                        if (_cursor >= _parent._selectedRwyTransition.legs.Count)
+                        if (_parent._selectedRwyTransition == null || _cursor >= _parent._selectedRwyTransition.legs.Count)
                         {
                             _state++;
                             _cursor = 0;
@@ -186,7 +188,7 @@ namespace NavData_Interface.Objects.LegCollections.Procedures
                         }
                     case 2:
                         _cursor++;
-                        if (_cursor >= _parent._selectedTransition.legs.Count)
+                        if (_parent._selectedTransition == null || _cursor >= _parent._selectedTransition.legs.Count)
                         {
                             _state++;
                             _cursor = 0;
@@ -214,6 +216,36 @@ namespace NavData_Interface.Objects.LegCollections.Procedures
                 _state = -1;
                 _cursor = 0;
             }
+        }
+
+        public override string ToString()
+        {
+            var initialString = 
+                $"SID: {AirportIdentifier} - {RouteIdentifier}\n" +
+                $"Runway: {_selectedRwyTransition?.TransitionIdentifier} Transition: {_selectedTransition?.TransitionIdentifier}\n" +
+                $"Transition Altitude: {TransitionAltitude}\n" +
+                $"Runway transitions: \n";
+
+            foreach (var transition in _rwyTransitions)
+            {
+                initialString = initialString + transition.ToString() + "\n";
+            }
+
+            initialString += "----------------\nCommon legs: \n";
+
+            foreach (var leg in _commonLegs)
+            {
+                initialString = initialString + leg.ToString() + "\n";
+            }
+
+            initialString += "----------------\nTransitions: \n";
+
+            foreach (var transition in _transitions)
+            {
+                initialString = initialString + transition.ToString() + "\n";
+            }
+
+            return initialString;
         }
     }
 }
