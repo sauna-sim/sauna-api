@@ -198,8 +198,8 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
             }
 
             // Create Equations
-            Polynomial p1 = MathUtil.CreateLineEquation(0, curInput, inputInTargetDelta, maxInput);
-            Polynomial p2 = MathUtil.CreateLineEquation(deltaToTarget - inputOutTargetDelta, maxInput, deltaToTarget, zeroTargetRateInput);
+            Polynomial p1 = MathUtil.CreateLineEquation(0, curInput, inputInTargetDelta, maxInput) ?? new Polynomial(new double[] { 0, double.PositiveInfinity });
+            Polynomial p2 = MathUtil.CreateLineEquation(deltaToTarget - inputOutTargetDelta, maxInput, deltaToTarget, zeroTargetRateInput) ?? new Polynomial(new double[] { 0, double.PositiveInfinity });
             (double m3, double b3) = (0, maxInput);
             /*Console.WriteLine($"f(x) = {m1}x+{b1}");
             Console.WriteLine($"g(x) = {m2}x+{b2}");
