@@ -48,10 +48,6 @@ namespace SaunaSim.Core.Simulator.Aircraft
         {
             _parentAircraft = parentAircraft;
 
-            _lat = lat;
-            _lon = lon;
-            IndicatedAltitude = indAlt;
-
             _magneticHdg = (Bearing)0;
             _trueHdg = (Bearing)0;
             _trueTrack = (Bearing)0;
@@ -72,8 +68,12 @@ namespace SaunaSim.Core.Simulator.Aircraft
             _windDirection = (Bearing)0;
             _windSpeed = (Velocity)0;
             _onGround = false;
-        
+
             _magTileMgr = magneticTileManager;
+
+            _lat = lat;
+            _lon = lon;
+            IndicatedAltitude = indAlt;            
         }
 
         // Position
