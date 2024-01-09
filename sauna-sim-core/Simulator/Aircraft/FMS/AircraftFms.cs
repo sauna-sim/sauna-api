@@ -39,7 +39,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
         private object _routeLegsLock;
         private bool _suspended;
         private static Velocity MIN_GS_DIFF = Velocity.FromKnots(10);
-        private Velocity _lastGs;
+        private Velocity _lastGs = (Velocity) 0;
         private bool _wpEvtTriggered = false;
         private MagneticTileManager _magTileMgr;
 

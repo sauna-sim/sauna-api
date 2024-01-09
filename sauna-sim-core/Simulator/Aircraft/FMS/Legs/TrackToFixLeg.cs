@@ -73,6 +73,11 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
             (Length turnLeadDist, _, GeoPoint intersection) = AviationUtil.CalculateTurnLeadDistance(aircraft.Position.PositionGeoPoint, _startPoint.Point.PointPosition, aircraft.Position.Track_True, aircraft.Position.TrueAirSpeed, _initialBearing, aircraft.Position.WindDirection, aircraft.Position.WindSpeed, Angle.FromDegrees(25), AngularVelocity.FromDegreesPerSecond(3))
                 .GetValueOrDefault(((Length)0, (Length)(-1), null));
 
+            if (intersection == null)
+            {
+                return false;
+            }
+
             turnLeadDist *= 1.2;
 
             return (GeoPoint.FlatDistance(aircraft.Position.PositionGeoPoint, intersection) < turnLeadDist);
