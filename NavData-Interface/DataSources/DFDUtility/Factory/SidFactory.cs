@@ -138,30 +138,42 @@ namespace NavData_Interface.DataSources.DFDUtility.Factory
 
             if (reader["recommanded_navaid"].ToString() != "")
             {
-                // Get the recommended navaid from the DB
-                // The id is of the format tablename|id
-                var fullId = reader["recommanded_id"].ToString().Split('|');
-
-                var table = fullId[0];
-                var id = fullId[1];
-
-                var cmd = new SQLiteCommand(connection)
+                try
                 {
-                    CommandText = $"SELECT * FROM {table} WHERE id = @id"
-                };
+                    // Get the recommended navaid from the DB
+                    // The id is of the format tablename|id
+                    var fullId = reader["recommanded_id"].ToString().Split('|');
 
-                cmd.Parameters.AddWithValue("@id", id);
+                    var table = fullId[0];
+                    var id = fullId[1];
 
-                // Depending on the table, we need to choose the right factory
-                if (table == "tbl_vhfnavaids")
+                    var cmd = new SQLiteCommand(connection)
+                    {
+                        CommandText = $"SELECT * FROM {table} WHERE id = @id"
+                    };
+
+                    cmd.Parameters.AddWithValue("@id", id);
+
+                    // Depending on the table, we need to choose the right factory
+                    if (table == "tbl_vhfnavaids")
+                    {
+                        recommendedNavaid = VhfNavaidFactory.Factory(cmd.ExecuteReader());
+                    }
+                    else if (table == "tbl_terminal_ndbnavaids")
+                    {
+                        recommendedNavaid = TerminalNdbFactory.Factory(cmd.ExecuteReader());
+                    }
+                    else if (table == "tbl_enroute_ndbnavaids")
+                    {
+                        recommendedNavaid = NdbFactory.Factory(cmd.ExecuteReader());
+                    }
+                } catch (Exception e)
                 {
-                    recommendedNavaid = VhfNavaidFactory.Factory(cmd.ExecuteReader());
-                } else if (table == "tbl_terminal_ndbnavaids")
-                {
-                    recommendedNavaid = TerminalNdbFactory.Factory(cmd.ExecuteReader());
-                } else if (table == "tbl_enroute_ndbnavaids")
-                {
-                    recommendedNavaid = NdbFactory.Factory(cmd.ExecuteReader());
+                    // Probably doesn't have ids.
+                    var navaidIdentifier = reader["recommanded_navaid"].ToString();
+                    GeoPoint location = SQLHelper.locationFromColumns(reader, "recommanded_navaid_latitude", "recommanded_navaid_longitude");
+
+                    recommendedNavaid = new VhfNavaid(location, "", "", "", navaidIdentifier, navaidIdentifier, 199.998, "", null, Length.FromNauticalMiles(200));
                 }
             }
 
