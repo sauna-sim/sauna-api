@@ -152,7 +152,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
                 if (!_onGround)
                 {
                     // Calculate True Track
-                    Angle wca = (double)_tas == 0 ? (Angle)0 : (Angle)Math.Acos((double)WindXComp / (double)_tas);
+                    Angle wca = (double)_tas == 0 ? (Angle)0 : (Angle)Math.Atan2((double)WindXComp, (double)_tas);
                     _trueTrack = _trueHdg + wca;
                 }
             }
@@ -172,7 +172,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
                 if (!_onGround)
                 {
                     // Calculate True Track
-                    var wca = (double)_tas == 0 ? (Angle)0 : (Angle)Math.Acos((double)WindXComp / (double)_tas);
+                    var wca = (double)_tas == 0 ? (Angle)0 : (Angle)Math.Atan2((double)WindXComp, (double)_tas);
                     _trueTrack = _trueHdg + wca;
                 }
             }
@@ -189,7 +189,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
                 if (!_onGround)
                 {
                     // Calculate True Heading
-                    var wca = (double)_tas == 0 ? (Angle)0 : (Angle)Math.Acos((double)WindXComp / (double)_tas);
+                    var wca = (double)_tas == 0 ? (Angle)0 : (Angle)Math.Atan2((double)WindXComp, (double)_tas);
                     _trueHdg = _trueTrack - wca;
 
                     // Set Magnetic Heading
