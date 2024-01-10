@@ -31,7 +31,7 @@ namespace NavData_Interface.Objects.LegCollections.Procedures
             var transitionString =
                 $"Transition: {TransitionIdentifier}\n" +
                 $"Transition Altitude: {TransitionAltitude.Feet:F0}\n" +
-                "----------------\nLegs:\n";
+                "\nLegs:\n";
 
             foreach (var leg in legs)
             {

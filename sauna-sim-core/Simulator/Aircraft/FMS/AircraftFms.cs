@@ -201,6 +201,15 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
             }
         }
 
+        public void AddAllLegs(IList<IRouteLeg> routeLegs)
+        {
+            lock (_routeLegsLock)
+            {
+                _routeLegs.AddRange(routeLegs);
+                RecalculateVnavPath();
+            }
+        }
+
         public IRouteLeg ActivateNextLeg()
         {
             lock (_routeLegsLock)

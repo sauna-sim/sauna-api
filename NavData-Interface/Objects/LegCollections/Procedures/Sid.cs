@@ -19,8 +19,6 @@ namespace NavData_Interface.Objects.LegCollections.Procedures
         
         private Transition _selectedTransition;
 
-        private SidEnumerator _enumerator;
-
         private Length _transitionAltitude;
 
         /// <summary>
@@ -49,8 +47,6 @@ namespace NavData_Interface.Objects.LegCollections.Procedures
             _commonLegs = commonLegs;
             _transitions = transitions;
             _transitionAltitude = transitionAltitude;
-
-            _enumerator = new SidEnumerator(this);
         }
 
         public Sid(string airportIdentifier, string routeIdentifier, List<Transition> rwyTransitions, List<Leg> commonLegs, List<Transition> transitions, Length transitionAltitude, string runway, string transition) : this(airportIdentifier, routeIdentifier, rwyTransitions, commonLegs, transitions, transitionAltitude)
@@ -61,7 +57,7 @@ namespace NavData_Interface.Objects.LegCollections.Procedures
 
         public override IEnumerator<Leg> GetEnumerator()
         {
-            return _enumerator;
+            return new SidEnumerator(this);
         }
 
         public void selectRunwayTransition(string runwayIdentifier)
@@ -74,18 +70,6 @@ namespace NavData_Interface.Objects.LegCollections.Procedures
                     transition.TransitionIdentifier.EndsWith("B") && runwayIdentifier.Substring(0, 4) == transition.TransitionIdentifier.Substring(0, 4))
                 {
                     _selectedRwyTransition = transition;
-
-                    if (_selectedTransition != null)
-                    {
-                        if (_enumerator == null)
-                        {
-                            _enumerator = new SidEnumerator(this);
-                        }
-                        else
-                        {
-                            _enumerator.Reset();
-                        }
-                    }
                     return;
                 }
             }
@@ -100,17 +84,6 @@ namespace NavData_Interface.Objects.LegCollections.Procedures
                 if (transition.TransitionIdentifier == transitionIdentifier)
                 {
                     _selectedTransition = transition;
-                    if (_selectedRwyTransition != null)
-                    {
-                        if (_enumerator == null)
-                        {
-                            _enumerator = new SidEnumerator(this);
-                        }
-                        else
-                        {
-                            _enumerator.Reset();
-                        }
-                    }
                     return;
                 }
             }
@@ -161,14 +134,14 @@ namespace NavData_Interface.Objects.LegCollections.Procedures
                 {
                     case -1:
                         _state++;
-                        _cursor = 0;
+                        _cursor = -1;
                         goto case 0;
                     case 0:
                         _cursor++;
                         if (_parent._selectedRwyTransition == null || _cursor >= _parent._selectedRwyTransition.legs.Count)
                         {
                             _state++;
-                            _cursor = 0;
+                            _cursor = -1;
                             goto case 1;
                         } else
                         {
@@ -179,7 +152,7 @@ namespace NavData_Interface.Objects.LegCollections.Procedures
                         if (_cursor >= _parent._commonLegs.Count)
                         {
                             _state++;
-                            _cursor = 0;
+                            _cursor = -1;
                             goto case 2;
                         }
                         else
@@ -224,25 +197,25 @@ namespace NavData_Interface.Objects.LegCollections.Procedures
                 $"SID: {AirportIdentifier} - {RouteIdentifier}\n" +
                 $"Runway: {_selectedRwyTransition?.TransitionIdentifier} Transition: {_selectedTransition?.TransitionIdentifier}\n" +
                 $"Transition Altitude: {TransitionAltitude}\n" +
-                $"Runway transitions: \n";
+                $"Runway transitions: \n\n";
 
             foreach (var transition in _rwyTransitions)
             {
-                initialString = initialString + transition.ToString() + "\n";
+                initialString = initialString + transition.ToString() + "\n---------------------------------------\n";
             }
 
-            initialString += "----------------\nCommon legs: \n";
+            initialString += "\nCommon legs: \n";
 
             foreach (var leg in _commonLegs)
             {
-                initialString = initialString + leg.ToString() + "\n";
+                initialString = initialString + "\t" + leg.ToString() + "\n";
             }
 
-            initialString += "----------------\nTransitions: \n";
+            initialString += "\nTransitions: \n\n";
 
             foreach (var transition in _transitions)
             {
-                initialString = initialString + transition.ToString() + "\n";
+                initialString = initialString + transition.ToString() + "\n---------------------------------------\n";
             }
 
             return initialString;
