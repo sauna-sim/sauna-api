@@ -279,7 +279,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
                 (double)maxRoll,
                 (double)-maxRoll,
                 (double demandedRoll, double measuredRoll) => (double)CalculateRollRate((Angle)demandedRoll, (Angle)measuredRoll, intervalMs),
-                (double roll) => Math.Tan((double)roll / (double)groundSpeed),
+                (double roll) => GeoUtil.EARTH_GRAVITY.Value() * Math.Tan(roll) / groundSpeed.Value(),
                 (double)zeroRoll,
                 ROLL_TIME_BUFFER
             ).demandedInput;
@@ -344,7 +344,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
                 (double)maxRoll,
                 (double)-maxRoll,
                 (double demandedRoll, double measuredRoll) => (double)CalculateRollRate((Angle)demandedRoll, (Angle)measuredRoll, intervalMs),
-                (double roll) => Math.Tan(roll) / (double)groundSpeed,
+                (double roll) => GeoUtil.EARTH_GRAVITY.Value() * Math.Tan(roll) / groundSpeed.Value(),
                 (double)0,
                 ROLL_TIME_BUFFER
             ).timeToTarget);
