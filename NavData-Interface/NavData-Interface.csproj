@@ -7,7 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="PShivaraman.AviationCalcUtilNet" Version="2.11.8" />
+    <PackageReference Include="PShivaraman.AviationCalcUtilNet" Version="2.11.10" />
     <PackageReference Include="SQLite" Version="3.13.0" />
     <PackageReference Include="System.Data.SQLite" Version="1.0.117" />
   </ItemGroup>
