@@ -213,7 +213,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
             if ((deltaToTarget >= 0 && midPointInput > maxInput) || ((deltaToTarget <= 0 && midPointInput < maxInput)))
             {
                 midPointTargetDelta = inputOutIntersectionX;
-                midPointInput = inputOutIntersectionY;
+                midPointInput = maxInput;
             }
 
             // If we're on target
