@@ -248,7 +248,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
                 }
                 else
                 {
-                    (this._ias, this._mach) = AtmosUtil.ConvertIasToTas(_tas, AtmosUtil.ISA_STD_PRES, _altTrue, (Length)0, AtmosUtil.ISA_STD_TEMP);
+                    (this._ias, this._mach) = AtmosUtil.ConvertTasToIas(_tas, AtmosUtil.ISA_STD_PRES, _altTrue, (Length)0, AtmosUtil.ISA_STD_TEMP);
                 }
             }
         }

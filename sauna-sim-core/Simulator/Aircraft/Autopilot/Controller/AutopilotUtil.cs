@@ -407,20 +407,20 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
                 (double)minFpa,
                 (double startFpa, double endFpa) =>
                 {
-                    double startPitch = PerfDataHandler.GetRequiredPitchForVs(perfData, AviationUtil.CalculateVerticalSpeed(gs_kts, (Angle) startFpa).FeetPerMinute, ias_kts.Knots, dens_alt_ft.Feet, mass_kg, spdBrakePos, config);
+                    Angle startPitch = Angle.FromDegrees(PerfDataHandler.GetRequiredPitchForVs(perfData, AviationUtil.CalculateVerticalSpeed(gs_kts, (Angle) startFpa).FeetPerMinute, ias_kts.Knots, dens_alt_ft.Feet, mass_kg, spdBrakePos, config));
 
-                    double endPitch = PerfDataHandler.GetRequiredPitchForVs(perfData, AviationUtil.CalculateVerticalSpeed(gs_kts, (Angle)endFpa).FeetPerMinute, ias_kts.Knots, dens_alt_ft.Feet, mass_kg, spdBrakePos, config);
+                    Angle endPitch = Angle.FromDegrees(PerfDataHandler.GetRequiredPitchForVs(perfData, AviationUtil.CalculateVerticalSpeed(gs_kts, (Angle)endFpa).FeetPerMinute, ias_kts.Knots, dens_alt_ft.Feet, mass_kg, spdBrakePos, config));
 
-                    double pitchRate = CalculatePitchRate(Angle.FromDegrees(endPitch), Angle.FromDegrees(startPitch), intervalMs).DegreesPerSecond;
+                    AngularVelocity pitchRate = CalculatePitchRate(endPitch, startPitch, intervalMs);
 
-                    if (endPitch - startPitch == 0)
+                    if (endPitch.Radians - startPitch.Radians == 0)
                     {
                         return 0;
                     }
 
-                    return (endFpa - startFpa) * pitchRate / (endPitch - startPitch);
+                    return (endFpa - startFpa) * pitchRate.RadiansPerSecond / (endPitch.Radians - startPitch.Radians);
                 },
-                (double fpa) => AviationUtil.CalculateVerticalSpeed(gs_kts, Angle.FromDegrees(fpa)).MetersPerSecond,
+                (double fpa) => AviationUtil.CalculateVerticalSpeed(gs_kts, Angle.FromRadians(fpa)).MetersPerSecond,
                 (double)reqFpa,
                 PITCH_TIME_BUFFER).demandedInput);
 
