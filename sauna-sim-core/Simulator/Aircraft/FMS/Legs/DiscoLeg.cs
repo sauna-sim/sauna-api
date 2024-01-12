@@ -1,14 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
+using AviationCalcUtilNet.Geo;
+using AviationCalcUtilNet.Units;
 using SaunaSim.Core.Simulator.Aircraft.FMS.NavDisplay;
 
 namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
 {
 	public class DiscoLeg : IRouteLeg
 	{
-        private double _initialTrueCourse;
+        private Bearing _initialTrueCourse;
 
-		public DiscoLeg(double initialTrueCourse)
+		public DiscoLeg(Bearing initialTrueCourse)
 		{
             _initialTrueCourse = initialTrueCourse;
 		}
@@ -17,19 +19,19 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
 
         public FmsPoint EndPoint => null;
 
-        public double InitialTrueCourse => _initialTrueCourse;
+        public Bearing InitialTrueCourse => _initialTrueCourse;
 
-        public double FinalTrueCourse => _initialTrueCourse;
+        public Bearing FinalTrueCourse => _initialTrueCourse;
 
-        public double LegLength => 0;
+        public Length LegLength => (Length) 0;
 
         public RouteLegTypeEnum LegType => RouteLegTypeEnum.DISCO;
 
         public List<NdLine> UiLines => new List<NdLine>();
 
-        public (double requiredTrueCourse, double crossTrackError, double alongTrackDistance, double turnRadius) GetCourseInterceptInfo(SimAircraft aircraft)
+        public (Bearing requiredTrueCourse, Length crossTrackError, Length alongTrackDistance, Length turnRadius) GetCourseInterceptInfo(SimAircraft aircraft)
         {
-            return (_initialTrueCourse, 0, 0, 0);
+            return (_initialTrueCourse, (Length) 0, (Length) 0, (Length)0);
         }
 
         public bool HasLegTerminated(SimAircraft aircraft)

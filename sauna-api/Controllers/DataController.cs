@@ -4,7 +4,6 @@ using SaunaSim.Core.Data;
 using SaunaSim.Core.Simulator.Aircraft;
 using SaunaSim.Core.Simulator.Commands;
 using AviationCalcUtilNet.GeoTools;
-using AviationCalcUtilNet.GeoTools.MagneticTools;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -19,10 +18,13 @@ using SaunaSim.Core.Simulator.Aircraft.Performance;
 using SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller;
 using SaunaSim.Core.Simulator.Aircraft.FMS;
 using SaunaSim.Core.Simulator.Aircraft.FMS.Legs;
-using NavData_Interface.Objects.Fix;
 using NavData_Interface.Objects;
 using System.Runtime.CompilerServices;
 using System.Configuration;
+using NavData_Interface.Objects.Fixes;
+using SaunaSim.Api.Services;
+using AviationCalcUtilNet.Geo;
+using AviationCalcUtilNet.Units;
 
 namespace SaunaSim.Api.Controllers
 {
@@ -32,10 +34,12 @@ namespace SaunaSim.Api.Controllers
     {
 
         private readonly ILogger<DataController> _logger;
+        private readonly ISimAircraftService _aircraftService;
 
-        public DataController(ILogger<DataController> logger)
+        public DataController(ILogger<DataController> logger, ISimAircraftService aircraftService)
         {
             _logger = logger;
+            _aircraftService = aircraftService;
         }
 
         [HttpGet("settings")]
@@ -83,12 +87,12 @@ namespace SaunaSim.Api.Controllers
 
             return navigraphCreds;
         }
-        	
+
         [HttpGet("hasNavigraphDataLoaded")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         public ActionResult<NavigraphLoadedResponse> GetHasNavigraphDataLoaded()
         {
-            return Ok(new NavigraphLoadedResponse() { Loaded = DataHandler.HasNavigraphDataLoaded(), Uuid = DataHandler.GetNavigraphFileUuid()});
+            return Ok(new NavigraphLoadedResponse() { Loaded = DataHandler.HasNavigraphDataLoaded(), Uuid = DataHandler.GetNavigraphFileUuid() });
         }
 
         [HttpGet("loadedSectorFiles")]
@@ -110,8 +114,7 @@ namespace SaunaSim.Api.Controllers
             } catch (System.IO.FileNotFoundException)
             {
                 return BadRequest("The file could not be found.");
-            }
-            catch (Exception)
+            } catch (Exception)
             {
                 return BadRequest("The file is not a valid Sector file.");
             }
@@ -177,15 +180,16 @@ namespace SaunaSim.Api.Controllers
                         // Load the coordinates. These could be in decimal or DMS format.
                         // TODO: If this fails, skip this aircraft. Right now, we set pos to 0,0!
 
-                        double lat = 0;
-                        double lon = 0;
+                        Latitude lat = (Latitude)0;
+                        Longitude lon = (Longitude)0;
 
                         // XPDR code
                         int squawk = 0;
                         try
                         {
-                             squawk = Convert.ToInt32(items[2]);
-                        } catch (Exception e){
+                            squawk = Convert.ToInt32(items[2]);
+                        } catch (Exception e)
+                        {
                             if (e is not OverflowException && e is not FormatException)
                             {
                                 throw;
@@ -202,11 +206,11 @@ namespace SaunaSim.Api.Controllers
 
                         EuroScopeLoader.ReadVatsimPosFlag(Convert.ToInt32(items[8]), out double hdg, out double bank, out double pitch, out bool onGround);
                         //SimAircraft(string callsign, string networkId, string password,        string fullname, string hostname, ushort port, bool vatsim,   ProtocolRevision protocol,      double lat, double lon, double alt, double hdg_mag, int delayMs = 0)
-                        lastPilot = new AircraftBuilder(callsign, request.Cid, request.Password, request.Server, request.Port)
+                        lastPilot = new AircraftBuilder(callsign, request.Cid, request.Password, request.Server, request.Port, _aircraftService.Handler.MagTileManager, _aircraftService.Handler.GribTileManager, _aircraftService.CommandHandler)
                         {
                             Protocol = request.Protocol,
-                                Position = new GeoPoint(lat, lon, Convert.ToDouble(items[6])),
-                                HeadingMag = hdg,
+                            Position = new GeoPoint(lat, lon, Length.FromFeet(Convert.ToDouble(items[6]))),
+                            HeadingMag = Bearing.FromDegrees(hdg),
                             LogInfo = (string msg) =>
                             {
                                 _logger.LogInformation($"{callsign}: {msg}");
@@ -319,21 +323,21 @@ namespace SaunaSim.Api.Controllers
 
                             if (refLat > 180 || refLon > 180)
                             {
-                                refLat = threshold.Lat;
-                                refLon = threshold.Lon;
+                                refLat = threshold.Lat.Degrees;
+                                refLon = threshold.Lon.Degrees;
                             }
 
-                            double course = 0;
+                            Bearing course = Bearing.FromRadians(0);
                             if (items.Length == 4)
                             {
-                                course = Convert.ToDouble(items[3]);
+                                course = Bearing.FromDegrees(Convert.ToDouble(items[3]));
                             } else if (items.Length > 4)
                             {
                                 GeoPoint otherThreshold = new GeoPoint(Convert.ToDouble(items[3]), Convert.ToDouble(items[4]));
-                                course = MagneticUtil.ConvertTrueToMagneticTile(GeoPoint.InitialBearing(threshold, otherThreshold), threshold);
+                                course = _aircraftService.Handler.MagTileManager.TrueToMagnetic(threshold, DateTime.UtcNow, GeoPoint.InitialBearing(threshold, otherThreshold));
                             }
 
-                            int elev = 0;
+                            Length elev = (Length)0;
                             Airport airport = DataHandler.GetAirportByIdentifier(DataHandler.FAKE_AIRPORT_NAME);
 
                             if (airport != null)
@@ -341,8 +345,8 @@ namespace SaunaSim.Api.Controllers
                                 elev = airport.Elevation;
                             }
 
-                            Glideslope gs = new Glideslope(threshold, 3.0, elev);
-                            Localizer loc = new Localizer("", "", DataHandler.FAKE_AIRPORT_NAME, wpId, wpId, threshold, 0, course, 0, IlsCategory.CATI, gs, 0);
+                            Glideslope gs = new Glideslope(threshold, Angle.FromDegrees(3.0), elev);
+                            Localizer loc = new Localizer("", "", DataHandler.FAKE_AIRPORT_NAME, wpId, wpId, threshold, 0, course, (Angle)0, IlsCategory.CATI, gs, 0);
 
                             DataHandler.AddLocalizer(loc);
                         } catch (Exception)
@@ -358,10 +362,10 @@ namespace SaunaSim.Api.Controllers
                             string wpId = items[1];
                             double inboundCourse = Convert.ToDouble(items[2]);
                             HoldTurnDirectionEnum turnDirection = (HoldTurnDirectionEnum)Convert.ToInt32(items[3]);
-                            Fix fix = DataHandler.GetClosestWaypointByIdentifier(wpId, refLat, refLon);
+                            Fix fix = DataHandler.GetClosestWaypointByIdentifier(wpId, new GeoPoint(Latitude.FromDegrees(refLat), Longitude.FromDegrees(refLon)));
                             if (fix != null)
                             {
-                                DataHandler.AddPublishedHold(new PublishedHold(fix, inboundCourse, turnDirection));
+                                DataHandler.AddPublishedHold(new PublishedHold(fix, Bearing.FromDegrees(inboundCourse), turnDirection));
                             }
                         } catch (Exception)
                         {
@@ -374,7 +378,7 @@ namespace SaunaSim.Api.Controllers
                         try
                         {
                             double airportElev = Convert.ToDouble(items[1]);
-                            Airport airport = new Airport(DataHandler.FAKE_AIRPORT_NAME, new GeoPoint(0, 0, 0), "", "", "", DataHandler.FAKE_AIRPORT_NAME, true, RunwaySurfaceCode.Hard, (int)airportElev, 18000, 180, 250, 10000, "");
+                            Airport airport = new Airport(DataHandler.FAKE_AIRPORT_NAME, new GeoPoint(0, 0, 0), "", "", "", DataHandler.FAKE_AIRPORT_NAME, true, RunwaySurfaceCode.Hard, Length.FromFeet(airportElev), Length.FromFeet(18000), Length.FromFeet(18000), Velocity.FromKnots(250), Length.FromFeet(10000), "");
                             DataHandler.AddAirport(airport);
                         } catch (Exception)
                         {
@@ -385,7 +389,9 @@ namespace SaunaSim.Api.Controllers
 
                 foreach (AircraftBuilder pilot in pilots)
                 {
-                    pilot.Push(PrivateInfoLoader.GetClientInfo((string msg) => { _logger.LogWarning($"{pilot.Callsign}: {msg}"); }));
+                    var aircraft = pilot.Create(PrivateInfoLoader.GetClientInfo((string msg) => { _logger.LogWarning($"{pilot.Callsign}: {msg}"); }));
+                    _aircraftService.Handler.AddAircraft(aircraft);
+                    aircraft.Start();
                 }
             } catch (Exception ex)
             {

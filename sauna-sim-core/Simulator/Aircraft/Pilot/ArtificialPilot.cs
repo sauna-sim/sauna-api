@@ -1,4 +1,5 @@
-﻿using SaunaSim.Core.Simulator.Aircraft.FMS;
+﻿using AviationCalcUtilNet.Units;
+using SaunaSim.Core.Simulator.Aircraft.FMS;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -107,7 +108,8 @@ namespace SaunaSim.Core.Simulator.Aircraft.Pilot
             }
             else
             {
-                if(_parentAircraft.Position.IndicatedAltitude < 10000)
+                StrobeLights = true;
+                if(_parentAircraft.Position.IndicatedAltitude < Length.FromFeet(10000))
                 {
                     LandingLights = true;
                     LogoLights = true;
@@ -138,6 +140,14 @@ namespace SaunaSim.Core.Simulator.Aircraft.Pilot
                 _parentAircraft.Data.Config = 3;
             }
             else if (_parentAircraft.Fms.PhaseType == FmsPhaseType.APPROACH && _parentAircraft.Fms.FmsSpeedValue <= 180)
+            {
+                _parentAircraft.Data.Config = 2;
+            }
+            else if (_parentAircraft.Fms.PhaseType == FmsPhaseType.APPROACH && _parentAircraft.Fms.FmsSpeedValue <= 210)
+            {
+                _parentAircraft.Data.Config = 0;
+            }
+            else if(_parentAircraft.Fms.PhaseType == FmsPhaseType.GO_AROUND && _parentAircraft.Fms.FmsSpeedValue >= 135)
             {
                 _parentAircraft.Data.Config = 2;
             }

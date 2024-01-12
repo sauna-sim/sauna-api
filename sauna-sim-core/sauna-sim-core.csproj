@@ -2,7 +2,7 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <Platforms>x86;x64</Platforms>
-    <Version>0.16.0</Version>
+    <Version>0.17.0</Version>
     <AssemblyVersion>$(Version)</AssemblyVersion>
     <FileVersion>$(Version)</FileVersion>
     <Description>Sauna Simulator Core Library</Description>
@@ -12,7 +12,7 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-    <PackageReference Include="PShivaraman.AviationCalcUtilNet" Version="1.2.0" />
+    <PackageReference Include="PShivaraman.AviationCalcUtilNet" Version="2.12.1" />
     <PackageReference Include="CaspianMerlin.FsdConnectorNet" Version="0.2.26" />
   </ItemGroup>
   <ItemGroup>
@@ -21,13 +21,9 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="JsonSchemas\" />
-    <ProjectReference Include="..\NavData-Interface\NavData-Interface\NavData-Interface.csproj" />
     <Folder Include="Simulator\Aircraft\FMS\NavDisplay\" />
   </ItemGroup>
   <ItemGroup>
-    <None Remove="Data\NavData\" />
-  </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Data\NavData\" />
+    <ProjectReference Include="..\NavData-Interface\NavData-Interface.csproj" />
   </ItemGroup>
 </Project>

@@ -1,19 +1,28 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using AviationCalcUtilNet.Atmos.Grib;
+using AviationCalcUtilNet.Geo;
 using AviationCalcUtilNet.GeoTools;
+using AviationCalcUtilNet.Magnetic;
+using AviationCalcUtilNet.Units;
 using FsdConnectorNet;
-using NavData_Interface.Objects.Fix;
+using NavData_Interface.Objects;
+using NavData_Interface.Objects.Fixes;
 using SaunaSim.Core.Simulator.Aircraft;
 using SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller;
 using SaunaSim.Core.Simulator.Aircraft.FMS;
 using SaunaSim.Core.Simulator.Aircraft.FMS.Legs;
 using SaunaSim.Core.Simulator.Aircraft.Performance;
+using SaunaSim.Core.Simulator.Commands;
 
 namespace SaunaSim.Core.Data.Loaders
 {
 	public class AircraftBuilder
 	{
+		public MagneticTileManager MagTileManager { get; private set; }
+		public GribTileManager GribTileManager { get; private set; }
+		public CommandHandler CommandHandler { get; private set; }
 		public string Callsign { get; set; }
 		public string Cid { get; set; }
 		public string Password { get; set; }
@@ -27,7 +36,7 @@ namespace SaunaSim.Core.Data.Loaders
         public Action<string> LogError { get; set; }
         public string AircraftType { get; set; } = "A320";
 		public ProtocolRevision Protocol { get; set; } = ProtocolRevision.Classic;
-		public double HeadingMag { get; set; } = 360;
+		public Bearing HeadingMag { get; set; } = Bearing.FromDegrees(0);
 		public double Speed { get; set; } = 250;
 		public bool IsSpeedMach { get; set; } = false;
 		public TransponderModeType XpdrMode { get; set; } = TransponderModeType.ModeC;
@@ -36,13 +45,16 @@ namespace SaunaSim.Core.Data.Loaders
 		public int RequestedAlt { get; set; } = -1;
 		public List<FactoryFmsWaypoint> FmsWaypoints { get; set; } = new List<FactoryFmsWaypoint>();
 
-		internal AircraftBuilder() {
+		internal AircraftBuilder(MagneticTileManager magTileMgr, GribTileManager gribTileMgr, CommandHandler commandHandler) {
+			MagTileManager = magTileMgr;
+			GribTileManager = gribTileMgr;
+			CommandHandler = commandHandler;
 			LogInfo = (string msg) => { Console.WriteLine($"{Callsign}: [INFO] {msg}"); };
             LogWarn = (string msg) => { Console.WriteLine($"{Callsign}: [WARN] {msg}"); };
             LogError = (string msg) => { Console.WriteLine($"{Callsign}: [ERROR] {msg}"); };
         }
 
-		public AircraftBuilder(string callsign, string cid, string password, string server, int port) : this()
+		public AircraftBuilder(string callsign, string cid, string password, string server, int port, MagneticTileManager magTileMgr, GribTileManager gribTileMgr, CommandHandler commandHandler) : this(magTileMgr, gribTileMgr, commandHandler)
 		{
 			Callsign = callsign;
 			Cid = cid;
@@ -51,7 +63,7 @@ namespace SaunaSim.Core.Data.Loaders
 			Password = password;
 		}
 
-		public SimAircraft Push(ClientInfo clientInfo)
+		public SimAircraft Create(ClientInfo clientInfo)
 		{
 			SimAircraft aircraft = new SimAircraft(
 				Callsign,
@@ -67,6 +79,9 @@ namespace SaunaSim.Core.Data.Loaders
 				Position.Lon,
 				Position.Alt,
 				HeadingMag,
+				MagTileManager,
+				GribTileManager,
+				CommandHandler,
 				DelayMs)
 			{
                 LogInfo = LogInfo,
@@ -85,9 +100,9 @@ namespace SaunaSim.Core.Data.Loaders
 			{
 				aircraft.Position.OnGround = true;
 				aircraft.Position.TrueAltitude = closestAirport.Elevation;
-				aircraft.Position.GroundSpeed = 0;
-				aircraft.Position.Pitch = 0;
-				aircraft.Position.Bank = 0;
+				aircraft.Position.GroundSpeed = Velocity.FromMetersPerSecond(0);
+				aircraft.Position.Pitch = Angle.FromRadians(0);
+				aircraft.Position.Bank = Angle.FromRadians(0);
 
                 aircraft.FlightPhase = FlightPhaseType.ON_GROUND;
 			}
@@ -101,7 +116,7 @@ namespace SaunaSim.Core.Data.Loaders
                 }
                 else
                 {
-                    aircraft.Position.IndicatedAirSpeed = Speed;
+                    aircraft.Position.IndicatedAirSpeed = Velocity.FromKnots(Speed);
                 }
             }
 
@@ -132,7 +147,7 @@ namespace SaunaSim.Core.Data.Loaders
 
 			foreach (FactoryFmsWaypoint waypoint in FmsWaypoints)
 			{
-                Fix nextWp = DataHandler.GetClosestWaypointByIdentifier(waypoint.Identifier, aircraft.Position.Latitude, aircraft.Position.Longitude);
+                Fix nextWp = DataHandler.GetClosestWaypointByIdentifier(waypoint.Identifier, aircraft.Position.PositionGeoPoint);
 
                 if (nextWp != null)
                 {
@@ -157,12 +172,12 @@ namespace SaunaSim.Core.Data.Loaders
 
 					if (waypoint.ShouldHold)
 					{
-                        PublishedHold pubHold = DataHandler.GetPublishedHold(fmsPt.Point.PointName, fmsPt.Point.PointPosition.Lat, fmsPt.Point.PointPosition.Lon);
+                        PublishedHold pubHold = DataHandler.GetPublishedHold(fmsPt.Point.PointName, fmsPt.Point.PointPosition);
 
                         if (pubHold != null)
                         {
                             fmsPt.PointType = RoutePointTypeEnum.FLY_OVER;
-                            HoldToManualLeg leg = new HoldToManualLeg(lastPoint, BearingTypeEnum.MAGNETIC, pubHold.InboundCourse, pubHold.TurnDirection, pubHold.LegLengthType, pubHold.LegLength);
+                            HoldToManualLeg leg = new HoldToManualLeg(lastPoint, BearingTypeEnum.MAGNETIC, pubHold.InboundCourse, pubHold.TurnDirection, pubHold.LegLengthType, pubHold.LegLength, MagTileManager);
                             legs.Add(leg);
                             lastPoint = leg.EndPoint;
                         }
@@ -180,9 +195,6 @@ namespace SaunaSim.Core.Data.Loaders
                 aircraft.Fms.ActivateDirectTo(legs[0].StartPoint.Point);
                 aircraft.Autopilot.AddArmedLateralMode(LateralModeType.LNAV);
             }
-
-            SimAircraftHandler.AddAircraft(aircraft);
-            aircraft.Start();
 
 			return aircraft;
         }

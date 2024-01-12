@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using SaunaSim.Core.Simulator.Aircraft;
 using SaunaSim.Core.Simulator.Aircraft.Autopilot;
 using SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller;
+using AviationCalcUtilNet.Units;
 
 namespace SaunaSim.Core.Simulator.Commands
 {
@@ -27,7 +28,7 @@ namespace SaunaSim.Core.Simulator.Commands
         {
             Aircraft = aircraft;
             Logger = logger;
-            hdg = (int)Math.Round(GeoUtil.NormalizeHeading(Aircraft.Position.Heading_Mag + degsToTurn), MidpointRounding.AwayFromZero);
+            hdg = (int)Math.Round((Aircraft.Position.Heading_Mag + Angle.FromDegrees(degsToTurn)).Degrees, MidpointRounding.AwayFromZero);
 
             Logger?.Invoke($"{Aircraft.Callsign} turning right heading {hdg:000} degrees.");
             return true;
@@ -50,7 +51,7 @@ namespace SaunaSim.Core.Simulator.Commands
             {
                 // Parse heading
                 int degTurn = Convert.ToInt32(headingString);
-                hdg = (int)Math.Round(GeoUtil.NormalizeHeading(Aircraft.Position.Heading_Mag + degTurn), MidpointRounding.AwayFromZero);
+                hdg = (int)Math.Round((Aircraft.Position.Heading_Mag + Angle.FromDegrees(degTurn)).Degrees, MidpointRounding.AwayFromZero);
 
                 Logger?.Invoke($"{Aircraft.Callsign} turning right heading {hdg:000} degrees.");
             }

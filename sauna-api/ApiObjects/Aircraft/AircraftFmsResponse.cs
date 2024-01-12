@@ -1,4 +1,4 @@
-using NavData_Interface.Objects.Fix;
+using NavData_Interface.Objects.Fixes;
 using SaunaSim.Core.Data;
 using System.Collections.Generic;
 using System.Text;
@@ -41,10 +41,10 @@ namespace SaunaSim.Api.ApiObjects.Aircraft
             ActiveLeg = fms.ActiveLeg;
             RouteLegs = new List<object>();
             FmsLines = new List<object>();
-            AlongTrackDistance_m = fms.AlongTrackDistance_m;
-            CrossTrackDistance_m = fms.CrossTrackDistance_m;
-            RequiredTrueCourse = fms.RequiredTrueCourse;
-            TurnRadius_m = fms.TurnRadius_m;
+            AlongTrackDistance_m = fms.AlongTrackDistance.Meters;
+            CrossTrackDistance_m = fms.CrossTrackDistance.Meters;
+            RequiredTrueCourse = fms.RequiredTrueCourse == null ? -1 : fms.RequiredTrueCourse.Degrees;
+            TurnRadius_m = fms.TurnRadius.Meters;
 
             StringBuilder sb = new StringBuilder();
             if (fms.ActiveLeg != null)

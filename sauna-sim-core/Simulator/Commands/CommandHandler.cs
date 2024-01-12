@@ -9,13 +9,22 @@ using System.Threading.Tasks;
 
 namespace SaunaSim.Core.Simulator.Commands
 {
-    public static class CommandHandler
+    public class CommandHandler
     {
-        private static Queue<IAircraftCommand> commandQueue = new Queue<IAircraftCommand>();
-        private static object commandQueueLock = new object();
-        private static bool processingCommand = false;
+        private Queue<IAircraftCommand> commandQueue;
+        private object commandQueueLock;
+        private bool processingCommand;
+        private SimAircraftHandler _handler;
 
-        private static void ProcessNextCommand()
+        public CommandHandler(SimAircraftHandler handler)
+        {
+            commandQueue = new Queue<IAircraftCommand>();
+            processingCommand = false;
+            commandQueueLock = new object();
+            _handler = handler;
+        }
+
+        private void ProcessNextCommand()
         {
             if (processingCommand)
             {
@@ -40,7 +49,7 @@ namespace SaunaSim.Core.Simulator.Commands
             processingCommand = false;
         }
 
-        public static bool QueueCommand(IAircraftCommand command)
+        public bool QueueCommand(IAircraftCommand command)
         {
             if (command != null)
             {
@@ -58,7 +67,7 @@ namespace SaunaSim.Core.Simulator.Commands
             return false;
         }
 
-        public static List<string> HandleCommand(string commandName, SimAircraft aircraft, List<string> args, Action<string> logger)
+        public List<string> HandleCommand(string commandName, SimAircraft aircraft, List<string> args, Action<string> logger)
         {
             string cmdNameNormalized = commandName.ToLower();
             IAircraftCommand cmd = null;
@@ -68,12 +77,12 @@ namespace SaunaSim.Core.Simulator.Commands
             {
                 case "pauseall":
                 case "pall":
-                    SimAircraftHandler.AllPaused = true;
+                    _handler.AllPaused = true;
                     logger("All Aircraft Paused");
                     break;
                 case "unpauseall":
                 case "upall":
-                    SimAircraftHandler.AllPaused = false;
+                    _handler.AllPaused = false;
                     logger("All Aircraft Unpaused");
                     break;
                 case "pause":
@@ -92,7 +101,7 @@ namespace SaunaSim.Core.Simulator.Commands
                     logger($"Removing {aircraft.Callsign}");
                     Task.Run(() =>
                     {
-                        SimAircraftHandler.RemoveAircraftByCallsign(aircraft.Callsign);
+                        _handler.RemoveAircraftByCallsign(aircraft.Callsign);
                     });
                     break;
                 case "fh":
@@ -125,16 +134,20 @@ namespace SaunaSim.Core.Simulator.Commands
                 case "loc":
                 case "fac":
                 case "fat":
-                    cmd = new LocCommand();
+                    cmd = new LocCommand(_handler.MagTileManager);
                     break;
                 case "ils":
                 case "app":
                 case "apch":
-                    cmd = new IlsCommand();
+                    cmd = new IlsCommand(_handler.MagTileManager);
                     break;
                 case "to":
                 case "takeoff":
-                    cmd = new TakeOffCommand();
+                    cmd = new TakeOffCommand(_handler.MagTileManager);
+                    break;
+                case "ga":
+                case "goaround":
+                    cmd = new GoAround();
                     break;
                 case "int":
                 case "intercept":

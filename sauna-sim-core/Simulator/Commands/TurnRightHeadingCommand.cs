@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using SaunaSim.Core.Simulator.Aircraft;
 using SaunaSim.Core.Simulator.Aircraft.Autopilot;
 using SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller;
+using AviationCalcUtilNet.Geo;
 
 namespace SaunaSim.Core.Simulator.Commands
 {
@@ -33,7 +34,7 @@ namespace SaunaSim.Core.Simulator.Commands
             Logger?.Invoke($"{Aircraft.Callsign} turning right heading {hdg} degrees.");
 
             // Check > 180 deg
-            if (GeoUtil.CalculateTurnAmount(Aircraft.Position.Heading_Mag, Hdg) < 0)
+            if ((Bearing.FromDegrees(Hdg) - Aircraft.Position.Heading_Mag).Value() < 0)
             {
                 Logger?.Invoke($"WARNING: {Aircraft.Callsign} right turn exceeds 180 degrees!!");
             }
@@ -61,7 +62,7 @@ namespace SaunaSim.Core.Simulator.Commands
                 Logger?.Invoke($"{Aircraft.Callsign} turning right heading {headingString} degrees.");
 
                 // Check > 180 deg
-                if (GeoUtil.CalculateTurnAmount(Aircraft.Position.Heading_Mag, Hdg) < 0)
+                if ((Bearing.FromDegrees(Hdg) - Aircraft.Position.Heading_Mag).Value() < 0)
                 {
                     Logger?.Invoke($"WARNING: {Aircraft.Callsign} right turn exceeds 180 degrees!!");
                 }

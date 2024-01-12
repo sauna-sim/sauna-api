@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using AviationCalcUtilNet.Geo;
 using AviationCalcUtilNet.GeoTools;
+using AviationCalcUtilNet.Units;
 using SaunaSim.Core.Simulator.Aircraft.FMS.NavDisplay;
 
 namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
@@ -57,19 +59,19 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
         FmsPoint EndPoint { get; }
 
         /// <summary>
-        /// Gets the initial true course for this leg. If there is none, -1 is returned.
+        /// Gets the initial true course for this leg. If there is none, null is returned.
         /// </summary>
-        double InitialTrueCourse { get; }
+        Bearing InitialTrueCourse { get; }
 
         /// <summary>
-        /// Gets the final true course for this leg. If there is none, -1 is returned.
+        /// Gets the final true course for this leg. If there is none, null is returned.
         /// </summary>
-        double FinalTrueCourse { get; }
+        Bearing FinalTrueCourse { get; }
 
         /// <summary>
         /// Gets the total leg length. 0 for none.
         /// </summary>
-        double LegLength { get; }
+        Length LegLength { get; }
 
         /// <summary>
         /// Route Leg Type
@@ -103,8 +105,8 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
         /// Obtains course info for LNAV Autopilot guidance.
         /// </summary>
         /// <param name="aircraft">The current aircraft.</param>
-        /// <returns><c>(double, double, double, double)</c> Required True Course (m), Cross Track Error (m), Along Track Distance (m), Turn Radius (m) (0 if N/A, -ive for left, +ive for right)</returns>
-        (double requiredTrueCourse, double crossTrackError, double alongTrackDistance, double turnRadius) GetCourseInterceptInfo(SimAircraft aircraft);
+        /// <returns><c>(Bearing, Length, Length, Length)</c> Required True Course, Cross Track Error, Along Track Distance, Turn Radius (0 if N/A, -ive for left, +ive for right)</returns>
+        (Bearing requiredTrueCourse, Length crossTrackError, Length alongTrackDistance, Length turnRadius) GetCourseInterceptInfo(SimAircraft aircraft);
 
         /// <summary>
         /// Determines whether or not the current leg should be activated

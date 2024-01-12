@@ -7,6 +7,8 @@ using System.Text;
 using System.Threading.Tasks;
 using SaunaSim.Core.Simulator.Aircraft;
 using SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller;
+using AviationCalcUtilNet.Atmos;
+using AviationCalcUtilNet.Units;
 
 namespace SaunaSim.Core.Simulator.Commands
 {
@@ -16,39 +18,28 @@ namespace SaunaSim.Core.Simulator.Commands
         public Action<string> Logger { get; set; }
         private int alt = 0;
         private bool isFlightLevel = false;
-        private double altimSetting = -1;
+        private Pressure altimSetting = null;
 
         public void ExecuteCommand()
         {
-            if (isFlightLevel && Aircraft.Position.AltimeterSetting_hPa != AtmosUtil.ISA_STD_PRES_hPa)
+            if (isFlightLevel && Aircraft.Position.AltimeterSetting != AtmosUtil.ISA_STD_PRES)
             {
-                Aircraft.Position.AltimeterSetting_hPa = AtmosUtil.ISA_STD_PRES_hPa;
+                Aircraft.Position.AltimeterSetting = AtmosUtil.ISA_STD_PRES;
             }
             else if (!isFlightLevel)
             {
-                if (altimSetting >= 0)
+                if (altimSetting != null)
                 {
-                    Aircraft.Position.AltimeterSetting_hPa = altimSetting;
+                    Aircraft.Position.AltimeterSetting = altimSetting;
                 }
                 else
                 {
-                    Aircraft.Position.AltimeterSetting_hPa = Aircraft.Position.SurfacePressure_hPa;
+                    Aircraft.Position.AltimeterSetting = Aircraft.Position.SurfacePressure;
                 }
             }
 
             Aircraft.Autopilot.SelectedAltitude = alt;
             Aircraft.Autopilot.CurrentVerticalMode = VerticalModeType.FLCH;
-
-            /*int vs = 0;
-            if (alt < Aircraft.Position.IndicatedAltitude)
-            {
-                vs = -1800;
-            } else if (alt > Aircraft.Position.IndicatedAltitude)
-            {
-                vs = 2500;
-            }
-            Aircraft.Control.CurrentVerticalInstruction = new VerticalSpeedInstruction(vs);
-            Aircraft.Control.AddArmedVerticalInstruction(new AltitudeHoldInstruction(alt));*/
         }
 
         public bool HandleCommand(SimAircraft aircraft, Action<string> logger, int alt, bool isFlightLevel, double altimSetting, bool pressureInHg)
@@ -57,10 +48,13 @@ namespace SaunaSim.Core.Simulator.Commands
             Logger = logger;
             this.alt = alt;
             this.isFlightLevel = isFlightLevel;
-            this.altimSetting = altimSetting;
+            
             if (pressureInHg)
             {
-                this.altimSetting = MathUtil.ConvertInhgToHpa(this.altimSetting);
+                this.altimSetting = Pressure.FromInchesOfMercury(altimSetting);
+            } else
+            {
+                this.altimSetting = Pressure.FromHectopascals(altimSetting);
             }
 
             Logger?.Invoke($"{Aircraft.Callsign} maintaining {alt:00000}.");
@@ -118,7 +112,7 @@ namespace SaunaSim.Core.Simulator.Commands
                         args.RemoveAt(0);
                         args.RemoveAt(0);
 
-                        altimSetting = Convert.ToDouble(qnhStr);
+                        altimSetting = Pressure.FromHectopascals(Convert.ToDouble(qnhStr));
 
                         Logger?.Invoke($"{Aircraft.Callsign} pressure set to {qnhStr}hPa.");
                     }
@@ -135,7 +129,7 @@ namespace SaunaSim.Core.Simulator.Commands
                             inHg /= 100;
                         }
 
-                        altimSetting = MathUtil.ConvertInhgToHpa(inHg);
+                        altimSetting = Pressure.FromInchesOfMercury(inHg);
 
 
                         Logger?.Invoke($"{Aircraft.Callsign} pressure set to {inHg.ToString("00.00")}inHg.");

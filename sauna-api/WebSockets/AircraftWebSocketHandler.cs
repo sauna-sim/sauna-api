@@ -14,15 +14,18 @@ namespace SaunaSim.Api.WebSockets
         private string _callsign;
         private SemaphoreSlim _clientsLock;
         private List<ClientStream> _clients;
+        private SimAircraftHandler _handler;
 
-        public AircraftWebSocketHandler(string callsign)
+        public AircraftWebSocketHandler(string callsign, SimAircraftHandler handler)
         {
             _callsign = callsign;
             _clientsLock = new SemaphoreSlim(1);
             _clients = new List<ClientStream>();
 
+            _handler = handler;
+
             // Register event handlers
-            var aircraft = SimAircraftHandler.GetAircraftByCallsign(callsign);
+            var aircraft = handler.GetAircraftByCallsign(callsign);
 
             if (aircraft != null)
             {
@@ -62,7 +65,7 @@ namespace SaunaSim.Api.WebSockets
             client.StartSend();
 
             // Send first position
-            var pilot = SimAircraftHandler.GetAircraftByCallsign(_callsign);
+            var pilot = _handler.GetAircraftByCallsign(_callsign);
             if (pilot != null)
             {
                 await client.QueueMessage(new SocketAircraftUpdateData(new AircraftEventPosition(pilot.Callsign, DateTime.UtcNow, new AircraftResponse(pilot, true))));

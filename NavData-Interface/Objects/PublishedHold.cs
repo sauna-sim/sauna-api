@@ -1,12 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
-using NavData_Interface.Objects.Fix;
-using SaunaSim.Core.Simulator.Aircraft;
+using AviationCalcUtilNet.Geo;
+using AviationCalcUtilNet.Units;
+using NavData_Interface.Objects.Fixes;
 
-namespace SaunaSim.Core.Data
+namespace NavData_Interface.Objects
 {
     public enum HoldLegLengthTypeEnum
     {
@@ -21,15 +20,16 @@ namespace SaunaSim.Core.Data
         RIGHT = 1
     }
 
+
     public class PublishedHold
     {
         private Fix _wp;
-        private double _inboundCourse;
+        private Bearing _inboundCourse;
         private HoldTurnDirectionEnum _turnDirection;
         private HoldLegLengthTypeEnum _lengthType;
         private double _legLength;
 
-        public PublishedHold(Fix wp, double inboundCourse, HoldTurnDirectionEnum turnDirection, HoldLegLengthTypeEnum legLengthType, double legLength)
+        public PublishedHold(Fix wp, Bearing inboundCourse, HoldTurnDirectionEnum turnDirection, HoldLegLengthTypeEnum legLengthType, double legLength)
         {
             _wp = wp;
             _inboundCourse = inboundCourse;
@@ -38,21 +38,21 @@ namespace SaunaSim.Core.Data
             _legLength = legLength;
         }
 
-        public PublishedHold(Fix wp, double inboundCourse, HoldTurnDirectionEnum turnDirection) :
+        public PublishedHold(Fix wp, Bearing inboundCourse, HoldTurnDirectionEnum turnDirection) :
             this(wp, inboundCourse, turnDirection, HoldLegLengthTypeEnum.DEFAULT, -1)
         { }
 
-        public PublishedHold(Fix wp, double inboundCourse, HoldLegLengthTypeEnum legLengthType, double legLength) :
+        public PublishedHold(Fix wp, Bearing inboundCourse, HoldLegLengthTypeEnum legLengthType, double legLength) :
             this(wp, inboundCourse, HoldTurnDirectionEnum.RIGHT, legLengthType, legLength)
         { }
 
-        public PublishedHold(Fix wp, double inboundCourse) :
+        public PublishedHold(Fix wp, Bearing inboundCourse) :
             this(wp, inboundCourse, HoldTurnDirectionEnum.RIGHT, HoldLegLengthTypeEnum.DEFAULT, -1)
         { }
 
         public Fix Waypoint => _wp;
 
-        public double InboundCourse => _inboundCourse;
+        public Bearing InboundCourse => _inboundCourse;
 
         public HoldTurnDirectionEnum TurnDirection => _turnDirection;
 

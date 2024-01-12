@@ -1,252 +1,159 @@
-﻿using AviationCalcUtilNet.GeoTools;
+﻿using AviationCalcUtilNet.Geo;
+using AviationCalcUtilNet.GeoTools;
+using AviationCalcUtilNet.Units;
 using NavData_Interface;
 using NavData_Interface.DataSources;
 using NavData_Interface.Objects;
-using NavData_Interface.Objects.Fix;
-using SaunaSim.Core.Data.NavData;
+using NavData_Interface.Objects.Fixes;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices.ComTypes;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace SaunaSim.Core.Data
 {
     public static class DataHandler
     {
-        private static NavDataInterface _navigraphInterface;
-        private static string _uuid;
-        private static object _navigraphInterfaceLock = new object();
-
-        private static List<NavDataInterface> _sctFileInterfaces = new List<NavDataInterface>();
-        private static object _sctFileInterfacesLock = new object();
-
-        private static NavDataInterface _customDataInterface = new NavDataInterface(new CustomNavDataSource());
-        private static object _customDataLock = new object();
+        private static CombinedSource _navdataSource;
+        private static Mutex _navdataMutex;
 
         public static readonly string FAKE_AIRPORT_NAME = "_FAKE_AIRPORT";
 
+        private static readonly int NAVIGRAPH_PRIORITY = 0;
+        private static readonly int SCT_PRIORITY = 1;
+        private static readonly int MEM_PRIORITY = 2;
+
+        static DataHandler()
+        {
+            _navdataMutex = new Mutex();
+            _navdataSource = new CombinedSource("_combined_source_sauna_api");
+            _navdataSource.AddSource(new InMemorySource("sauna_api_in_memory_navdata_source"), MEM_PRIORITY);
+        }
+
         public static bool HasNavigraphDataLoaded()
         {
-            lock (_navigraphInterfaceLock)
-            {
-                return _navigraphInterface != null;
-            }
+            _navdataMutex.WaitOne();
+            var hasNavigraph = _navdataSource.HasSourceType<DFDSource>();
+            _navdataMutex.ReleaseMutex();
+            return hasNavigraph;
         }
 
         public static string GetNavigraphFileUuid()
         {
-            lock (_navigraphInterfaceLock)
+            _navdataMutex.WaitOne();
+
+            // Find DFD Source
+            foreach (KeyValuePair<int, DataSource> pair in _navdataSource)
             {
-                return _uuid;
+                if (pair.Value is DFDSource dfdSource)
+                {
+                    _navdataMutex.ReleaseMutex();
+                    return dfdSource.GetId();
+                }
             }
+
+            _navdataMutex.ReleaseMutex();
+            return "";
         }
 
         public static List<string> GetSectorFilesLoaded()
         {
             List<string> retList = new List<string>();
-            lock (_sctFileInterfacesLock)
+
+            _navdataMutex.WaitOne();
+
+            foreach (KeyValuePair<int, DataSource> pair in _navdataSource)
             {
-                foreach (NavDataInterface navdataInterface in _sctFileInterfaces)
+                if (pair.Value is SCTSource sctSource)
                 {
-                    if (navdataInterface.Data_source is SCTSource sctSource)
-                    {
-                        retList.Add(sctSource.FileName);
-                    }
+                    retList.Add(sctSource.FileName);
                 }
             }
+
+            _navdataMutex.ReleaseMutex();
 
             return retList;
         }
 
         public static void LoadSectorFile(string filename)
         {
-            lock (_sctFileInterfacesLock)
-            {
-                foreach (NavDataInterface navdataInterface in _sctFileInterfaces)
-                {
-                    if (navdataInterface.Data_source is SCTSource sctSource)
-                    {
-                        if (sctSource.FileName == filename)
-                        {
-                            return;
-                        }
-                    }
-                }
-                _sctFileInterfaces.Add(new NavDataInterface(new SCTSource(filename)));
-            }
+            _navdataMutex.WaitOne();
+            _navdataSource.AddSource(new SCTSource(filename), SCT_PRIORITY);
+            _navdataMutex.ReleaseMutex();
         }
 
         public static void LoadNavigraphDataFile(string fileName, string uuid)
         {
-            lock (_navigraphInterfaceLock)
-            {
-                _navigraphInterface = new NavDataInterface(new DFDSource(fileName));
-                _uuid = uuid;
-            }
+            _navdataMutex.WaitOne();
+            _navdataSource.AddSource(new DFDSource(fileName, uuid), NAVIGRAPH_PRIORITY);
+            _navdataMutex.ReleaseMutex();
         }
 
         public static void AddAirport(Airport airport)
         {
-            lock (_customDataLock)
-            {
-                if (_customDataInterface.Data_source is CustomNavDataSource customSource)
-                {
-                    customSource.AddAirport(airport);
-                }
-            }
+            _navdataMutex.WaitOne();
+            _navdataSource.GetSourceType<InMemorySource>()?.AddAirport(airport);
+            _navdataMutex.ReleaseMutex();
         }
 
         public static void AddPublishedHold(PublishedHold hold)
         {
-            lock (_customDataLock)
-            {
-                if (_customDataInterface.Data_source is CustomNavDataSource customSource)
-                {
-                    customSource.AddPublishedHold(hold);
-                }
-            }
+            _navdataMutex.WaitOne();
+            _navdataSource.GetSourceType<InMemorySource>()?.AddPublishedHold(hold);
+            _navdataMutex.ReleaseMutex();
         }
 
-        public static PublishedHold GetPublishedHold(string wp, double lat, double lon)
+        public static PublishedHold GetPublishedHold(string wp, GeoPoint point)
         {
-            Fix fix = GetClosestWaypointByIdentifier(wp, lat, lon);
+            _navdataMutex.WaitOne();
+            Fix fix = _navdataSource.GetClosestFixByIdentifier(point, wp);
 
-            lock (_customDataLock)
+            if (fix != null)
             {
-                if (fix != null && _customDataInterface.Data_source is CustomNavDataSource customSource)
-                {
-                    return customSource.GetPublishedHold(fix);
-                }
+                var hold = _navdataSource.GetSourceType<InMemorySource>()?.GetPublishedHold(fix);
+                _navdataMutex.ReleaseMutex();
+                return hold;
             }
 
+            _navdataMutex.ReleaseMutex();
             return null;
         }
 
         public static void AddLocalizer(Localizer wp)
         {
-            lock (_customDataLock)
-            {
-                if (_customDataInterface.Data_source is CustomNavDataSource customSource)
-                {
-                    customSource.AddLocalizer(wp);
-                }
-            }
+            _navdataMutex.WaitOne();
+            _navdataSource.GetSourceType<InMemorySource>()?.AddLocalizer(wp);
+            _navdataMutex.ReleaseMutex();
         }
 
         public static Airport GetAirportByIdentifier(string airportIdent)
         {
-            if (HasNavigraphDataLoaded())
-            {
-                lock (_navigraphInterfaceLock)
-                {
-                    if (_navigraphInterface.Data_source is DFDSource dfdSource)
-                    {
-                        Airport airport = dfdSource.GetAirportByIdentifier(airportIdent.ToUpper());
-                        if (airport != null)
-                        {
-                            return airport;
-                        }
-                    }
-                }
-            }
+            _navdataMutex.WaitOne();
+            var airport = _navdataSource.GetAirportByIdentifier(airportIdent.ToUpper());
+            _navdataMutex.ReleaseMutex();
 
-            lock (_customDataLock)
-            {
-                if (_customDataInterface.Data_source is CustomNavDataSource customSource)
-                {
-                    return customSource.GetAirportByIdentifier(airportIdent.ToUpper());
-                }
-            }
-
-            return null;
+            return airport;
         }
 
         public static Localizer GetLocalizer(string airportIdent, string rwyIdent)
         {
-            if (HasNavigraphDataLoaded())
-            {
-                lock (_navigraphInterfaceLock)
-                {
-                    Localizer navigraphFix = _navigraphInterface.Data_source.GetLocalizerFromAirportRunway(airportIdent.ToUpper(), rwyIdent.ToUpper());
-                    if (navigraphFix != null)
-                    {
-                        return navigraphFix;
-                    }
-                }
-            }
+            _navdataMutex.WaitOne();
+            var airport = _navdataSource.GetLocalizerFromAirportRunway(airportIdent.ToUpper(), rwyIdent.ToUpper());
+            _navdataMutex.ReleaseMutex();
 
-            lock (_sctFileInterfacesLock)
-            {
-                foreach (NavDataInterface navdataInterface in _sctFileInterfaces)
-                {
-                    Localizer sctFix = navdataInterface.Data_source.GetLocalizerFromAirportRunway(airportIdent.ToUpper(), rwyIdent.ToUpper());
-                    if (sctFix != null)
-                    {
-                        return sctFix;
-                    }
-                }
-            }
-
-            lock (_customDataLock)
-            {
-                return _customDataInterface.Data_source.GetLocalizerFromAirportRunway(airportIdent.ToUpper(), rwyIdent.ToUpper());
-            }
+            return airport;
         }
 
-        public static Fix GetClosestWaypointByIdentifier(string wpId, double lat, double lon)
+        public static Fix GetClosestWaypointByIdentifier(string wpId, GeoPoint point)
         {
-            Fix closestFix = null;
-            double closestDistance = double.MaxValue;
+            _navdataMutex.WaitOne();
+            var airport = _navdataSource.GetClosestFixByIdentifier(point, wpId);
+            _navdataMutex.ReleaseMutex();
 
-            if (HasNavigraphDataLoaded())
-            {
-                lock (_navigraphInterfaceLock)
-                {
-                    Fix navigraphFix = _navigraphInterface.GetClosestFixByIdentifier(new GeoPoint(lat, lon), wpId.ToUpper());
-                    if (navigraphFix != null)
-                    {
-                        closestFix = navigraphFix;
-                        closestDistance = GeoPoint.DistanceM(new GeoPoint(lat, lon), closestFix.Location);
-                    }
-                }
-            }
-
-            lock (_sctFileInterfacesLock)
-            {
-                foreach (NavDataInterface navdataInterface in _sctFileInterfaces)
-                {
-                    Fix sctFix = navdataInterface.GetClosestFixByIdentifier(new GeoPoint(lat, lon), wpId.ToUpper());
-                    if (sctFix != null)
-                    {
-                        double distance = GeoPoint.DistanceM(new GeoPoint(lat, lon), sctFix.Location);
-
-                        if (distance < closestDistance - 1000)
-                        {
-                            closestFix = sctFix;
-                            closestDistance = distance;
-                        }
-                    }
-                }
-            }
-
-            lock (_customDataLock)
-            {
-                Fix customFix = _customDataInterface.GetClosestFixByIdentifier(new GeoPoint(lat, lon), wpId.ToUpper());
-                if (customFix != null)
-                {
-                    double distance = GeoPoint.DistanceM(new GeoPoint(lat, lon), customFix.Location);
-
-                    if (distance < closestDistance - 1000)
-                    {
-                        closestFix = customFix;
-                        closestDistance = distance;
-                    }
-                }
-            }
-
-            return closestFix;
+            return airport;
         }
     }
 }

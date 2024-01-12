@@ -57,6 +57,22 @@ namespace SaunaSim.Core.Simulator.Aircraft
             }
         }
 
+        //private bool _gearPos { get; set; }
+        //private bool GearPos
+        //{
+        //    get
+        //    {
+        //        return _gearPos;
+        //    }
+        //    set
+        //    {
+        //        if(value != _gearPos)
+        //        {
+        //            _parentAircraft.Connection.SetGearDown(value);
+        //        }
+        //        _gearPos = value;
+        //    }
+        //}
         private double _spdBrakePos = 0;
         public double SpeedBrakePos
         {
