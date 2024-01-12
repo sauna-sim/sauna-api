@@ -109,9 +109,9 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot
                     _parentAircraft.Data.ThrustLeverPos,
                     zeroAccelThrust * 100.0,
                     (thrust) =>
-                        PerfDataHandler.CalculatePerformance(_parentAircraft.PerformanceData, _parentAircraft.Position.Pitch.Degrees, thrust / 100.0,
+                        Acceleration.FromKnotsPerSecond(PerfDataHandler.CalculatePerformance(_parentAircraft.PerformanceData, _parentAircraft.Position.Pitch.Degrees, thrust / 100.0,
                             _parentAircraft.Position.IndicatedAirSpeed.Knots, _parentAircraft.Position.DensityAltitude.Feet, _parentAircraft.Data.Mass_kg, _parentAircraft.Data.SpeedBrakePos,
-                            _parentAircraft.Data.Config).accelFwd,
+                            _parentAircraft.Data.Config).accelFwd),
                     intervalMs
                 );
                 _parentAircraft.Data.ThrustLeverVel = AutopilotUtil.CalculateThrustRate(_targetThrust, _parentAircraft.Data.ThrustLeverPos, intervalMs);

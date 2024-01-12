@@ -285,7 +285,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
             ).demandedInput;
         }
 
-        public static double CalculateDemandedThrottleForSpeed(Velocity speedDelta, double curThrottle, double thrustForZeroAccel, Func<double, double> thrustToSpeedAccelFunction, int intervalMs)
+        public static double CalculateDemandedThrottleForSpeed(Velocity speedDelta, double curThrottle, double thrustForZeroAccel, Func<double, Acceleration> thrustToSpeedAccelFunction, int intervalMs)
         {
             return CalculateDemandedInput(
                 (double)-speedDelta,
@@ -293,7 +293,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
                 100,
                 0,
                 (demandedThrottle, measuredThrottle) => CalculateThrustRate(demandedThrottle, measuredThrottle, intervalMs),
-                thrustToSpeedAccelFunction,
+                (thrust) => thrustToSpeedAccelFunction(thrust).MetersPerSecondSquared,
                 thrustForZeroAccel,
                 THRUST_TIME_BUFFER
             ).demandedInput;
