@@ -80,7 +80,9 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
 
             turnLeadDist *= 1.2;
 
-            return (GeoPoint.FlatDistance(aircraft.Position.PositionGeoPoint, intersection) < turnLeadDist);
+            var intersectionDist = GeoPoint.FlatDistance(aircraft.Position.PositionGeoPoint, intersection);
+
+            return (intersectionDist < turnLeadDist);
             //double requestedTurnDelta = GeoUtil.CalculateTurnAmount(demandedTrack, aircraft.Position.Track_True);
             //return (trackDelta > 0 && requestedTurnDelta > 0 || trackDelta < 0 && requestedTurnDelta < 0);
 

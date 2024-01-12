@@ -1,4 +1,4 @@
-﻿using AviationCalcUtilNet.GeoTools.MagneticTools;
+﻿
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;

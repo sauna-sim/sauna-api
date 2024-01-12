@@ -463,9 +463,9 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot
                 maxPitch,
                 minPitch,
                 (pitch) =>
-                    PerfDataHandler.CalculatePerformance(_parentAircraft.PerformanceData, pitch.Degrees, _parentAircraft.Data.ThrustLeverPos / 100.0,
+                    Acceleration.FromKnotsPerSecond(PerfDataHandler.CalculatePerformance(_parentAircraft.PerformanceData, pitch.Degrees, _parentAircraft.Data.ThrustLeverPos / 100.0,
                         _parentAircraft.Position.IndicatedAirSpeed.Knots, _parentAircraft.Position.DensityAltitude.Feet, _parentAircraft.Data.Mass_kg, _parentAircraft.Data.SpeedBrakePos,
-                        _parentAircraft.Data.Config).accelFwd,
+                        _parentAircraft.Data.Config).accelFwd),
                 intervalMs
             );
             _parentAircraft.Position.PitchRate = AutopilotUtil.CalculatePitchRate(_targetPitch, _parentAircraft.Position.Pitch, intervalMs);
