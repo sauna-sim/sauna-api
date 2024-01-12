@@ -146,7 +146,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot
                     _curVertMode = VerticalModeType.ALT;
                 }
                 // Check if we're off altitude by more than 200ft
-                Length altDelta = _parentAircraft.Position.IndicatedAltitude - _selAlt;
+                Length altDelta = _parentAircraft.Position.IndicatedAltitude - Length.FromFeet(_selAlt);
                 if (Math.Abs(altDelta.Feet) > 200)
                 {
                     PitchHandleFlch(intervalMs);
@@ -172,7 +172,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot
                 }
 
                 // Check if we're at altitude
-                Length altDelta = _parentAircraft.Position.IndicatedAltitude - _selAlt;
+                Length altDelta = _parentAircraft.Position.IndicatedAltitude - Length.FromFeet(_selAlt);
                 if (Math.Abs(_parentAircraft.Position.VerticalSpeed.FeetPerMinute) < 50 && Math.Abs(altDelta.Feet) < 1)
                 {
                     _curVertMode = _curVertMode == VerticalModeType.ASEL ? VerticalModeType.ALT : VerticalModeType.VALT;
@@ -206,8 +206,6 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot
                 {
                     // Set thrust mode to speed
                     _curThrustMode = ThrustModeType.SPEED;
-
-
                 }
             } else if (_curVertMode == VerticalModeType.APCH)
             {

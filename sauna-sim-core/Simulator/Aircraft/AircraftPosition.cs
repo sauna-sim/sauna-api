@@ -357,7 +357,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
                     SurfacePressure = AtmosUtil.ISA_STD_PRES;
 
                     // Calculate True Track
-                    Angle wca = (double)TrueAirSpeed == 0 ? (Angle)0 : (Angle)Math.Acos((double) (WindXComp / TrueAirSpeed));
+                    Angle wca = (double)_tas == 0 ? (Angle)0 : (Angle)Math.Atan2((double)WindXComp, (double)_tas);
                     _trueTrack = _trueHdg + wca;
 
                     // Calculate TAS
@@ -379,7 +379,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
                         WindSpeed = wind.windSpd;
 
                         // Calculate True Track
-                        Angle wca = (double)TrueAirSpeed == 0 ? (Angle)0 : (Angle)Math.Acos((double) WindXComp / (double) TrueAirSpeed);
+                        Angle wca = (double)_tas == 0 ? (Angle)0 : (Angle)Math.Atan2((double)WindXComp, (double)_tas);
                         _trueTrack = _trueHdg + wca;
                     }
 
