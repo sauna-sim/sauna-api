@@ -21,9 +21,6 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
 
         // LNAV
         public readonly static Angle MAX_INTC_ANGLE = Angle.FromDegrees(45);
-        public readonly static Length MIN_XTK_M = Length.FromMeters(3);
-        public readonly static Angle MAX_CRS_DEV = Angle.FromDegrees(0.1);
-        public readonly static Length MAX_INTC_XTK_M = Length.FromMeters(1852.0);
         public const double RADIUS_BUFFER_MULT = 1.1;
 
         public readonly static Angle LNAV_MAX_COMPUTE_BANK = Angle.FromDegrees(25);
@@ -109,15 +106,32 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
         }
 
         /// <summary>
-        /// Calculates pitch rate.
+        /// Calculates pitch rate. Limited by G-Limit and maximum absolute pitch rate.
         /// </summary>
-        /// <param name="demandedPitchAngle">Demanded Pitch Angle (degrees)</param>
-        /// <param name="measuredPitchAngle">Measured Pitch Angle (degrees)</param>
+        /// <param name="demandedPitchAngle">Demanded Pitch Angle</param>
+        /// <param name="measuredPitchAngle">Measured Pitch Angle</param>
+        /// <param name="pitchToVsFunc">Function to convert pitch to vertical speed</param>
         /// <param name="intervalMs">Update Interval Time (ms)</param>
-        /// <returns>Pitch Rate (degrees/sec)</returns>
-        public static AngularVelocity CalculatePitchRate(Angle demandedPitchAngle, Angle measuredPitchAngle, int intervalMs)
+        /// <returns>Pitch Rate</returns>
+        public static AngularVelocity CalculatePitchRate(Angle demandedPitchAngle, Angle measuredPitchAngle, Func<Angle, Velocity> pitchToVsFunc, int intervalMs)
         {
-            return (AngularVelocity)CalculateRate((double)demandedPitchAngle, (double)measuredPitchAngle, PITCH_TIME, (double)PITCH_RATE_NORM_MAX, intervalMs);
+            var maxPitchRate = PITCH_RATE_NORM_MAX;
+
+            var demandedVs = pitchToVsFunc(demandedPitchAngle);
+            var measuredVs = pitchToVsFunc(measuredPitchAngle);
+
+            var maxVsChange = GeoUtil.EARTH_GRAVITY * Math.Abs(1.0 - PITCH_NORM_G_LIMIT);
+
+            // Convert vertical acceleration to pitch rate
+            var maxPitchChange = maxVsChange.MetersPerSecondSquared * Math.Abs(demandedPitchAngle.Radians - measuredPitchAngle.Radians) / Math.Abs(demandedVs.MetersPerSecond - measuredVs.MetersPerSecond);
+
+            // Check for inifinity or Nan
+            if (maxPitchChange != double.PositiveInfinity && maxPitchChange != double.NaN && maxPitchChange < maxPitchRate.RadiansPerSecond)
+            {
+                maxPitchRate = AngularVelocity.FromRadiansPerSecond(maxPitchChange);
+            }
+
+            return (AngularVelocity)CalculateRate((double)demandedPitchAngle, (double)measuredPitchAngle, PITCH_TIME, maxPitchRate.RadiansPerSecond, intervalMs);
         }
 
         /// <summary>
@@ -300,7 +314,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
         }        
 
         public static Angle CalculateDemandedPitchForSpeed(Velocity speedDelta, Angle curPitch, Angle pitchForZeroAccel, Angle maxPitch, Angle minPitch, Func<Angle, Acceleration> pitchToSpeedAccelFunction,
-            int intervalMs)
+            Func<Angle, Velocity> pitchToVsFunc, int intervalMs)
         {
             double inputToTargetRateFunc(double pitch) => -pitchToSpeedAccelFunction((Angle)pitch).MetersPerSecondSquared;
             return (Angle)CalculateDemandedInput(
@@ -308,7 +322,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
                 (double)curPitch,
                 (double)maxPitch,
                 (double)minPitch,
-                (demandedPitch, measuredPitch) => (double)CalculatePitchRate((Angle)demandedPitch, (Angle)measuredPitch, intervalMs),
+                (demandedPitch, measuredPitch) => (double)CalculatePitchRate((Angle)demandedPitch, (Angle)measuredPitch, pitchToVsFunc, intervalMs),
                 inputToTargetRateFunc,
                 (double)pitchForZeroAccel,
                 PITCH_TIME_BUFFER
@@ -322,7 +336,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
                 (double)curPitch,
                 (double)pitchMax,
                 (double)pitchIdle,
-                (demandedPitch, measuredPitch) => (double)CalculatePitchRate((Angle)demandedPitch, (Angle)measuredPitch, intervalMs),
+                (demandedPitch, measuredPitch) => (double)CalculatePitchRate((Angle)demandedPitch, (Angle)measuredPitch, pitchToVsFunction,  intervalMs),
                 (double pitch) => (double) pitchToVsFunction((Angle) pitch),
                 (double)pitchForZeroVs,
                 PITCH_TIME_BUFFER
@@ -393,7 +407,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
             return (CalculateDemandedRollForTurn(turnAmt, curRoll, groundSpeed, intervalMs), demandedTrack);
         }
 
-        public static (Angle demandedPitch, Angle demandedFpa) CalculateDemandedPitchForVnav(Length vTk_m, Angle curFpa, Angle reqFpa, PerfData perfData, Velocity ias_kts, Length dens_alt_ft, double mass_kg, double spdBrakePos, int config, Velocity gs_kts, int intervalMs)
+        public static (Angle demandedPitch, Angle demandedFpa) CalculateDemandedPitchForVnav(Length vTk_m, Angle curFpa, Angle reqFpa, PerfData perfData, Velocity ias_kts, Length dens_alt_ft, double mass_kg, double spdBrakePos, int config, Velocity gs_kts, double thrustLeverPos, int intervalMs)
         {
             // Get max and min Fpa
             Angle maxFpa = Angle.FromDegrees(0);
@@ -411,7 +425,9 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller
 
                     Angle endPitch = Angle.FromDegrees(PerfDataHandler.GetRequiredPitchForVs(perfData, AviationUtil.CalculateVerticalSpeed(gs_kts, (Angle)endFpa).FeetPerMinute, ias_kts.Knots, dens_alt_ft.Feet, mass_kg, spdBrakePos, config));
 
-                    AngularVelocity pitchRate = CalculatePitchRate(endPitch, startPitch, intervalMs);
+                    AngularVelocity pitchRate = CalculatePitchRate(endPitch, startPitch, 
+                        (pitchAngle) => Velocity.FromFeetPerMinute(PerfDataHandler.CalculatePerformance(perfData, pitchAngle.Degrees, thrustLeverPos, ias_kts.Knots, dens_alt_ft.Feet, mass_kg, spdBrakePos, config).vs),
+                        intervalMs);
 
                     if (endPitch.Radians - startPitch.Radians == 0)
                     {
