@@ -5,8 +5,10 @@ using NavData_Interface;
 using NavData_Interface.DataSources;
 using NavData_Interface.Objects;
 using NavData_Interface.Objects.Fixes;
+using NavData_Interface.Objects.LegCollections.Procedures;
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 using System.Runtime.InteropServices.ComTypes;
 using System.Text;
@@ -154,6 +156,15 @@ namespace SaunaSim.Core.Data
             _navdataMutex.ReleaseMutex();
 
             return airport;
+        }
+
+        public static Sid GetSidByAirportAndIdentifier(string aiportIdentifier, string sidIdentifier)
+        {
+            _navdataMutex.WaitOne();
+            var sid = _navdataSource.GetSidByAirportAndIdentifier(aiportIdentifier, sidIdentifier);
+            _navdataMutex.ReleaseMutex();
+
+            return sid;
         }
     }
 }
