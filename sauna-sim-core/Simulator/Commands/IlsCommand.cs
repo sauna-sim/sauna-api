@@ -42,7 +42,7 @@ namespace SaunaSim.Core.Simulator.Commands
             {
                 LowerAltitudeConstraint = (int)(_loc.Glideslope.Gs_elevation + Length.FromFeet(50)).Feet,
                 UpperAltitudeConstraint = (int)(_loc.Glideslope.Gs_elevation + Length.FromFeet(50)).Feet,
-                AngleConstraint = (int)_loc.Glideslope.Gs_angle
+                AngleConstraint = (int)_loc.Glideslope.Gs_angle.Degrees
             };
             CourseToFixLeg locLeg = new CourseToFixLeg(locFmsPoint, BearingTypeEnum.MAGNETIC, _loc.Loc_bearing, _magTileMgr);
 

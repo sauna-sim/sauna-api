@@ -25,8 +25,8 @@ namespace SaunaSim.Core.Simulator.Aircraft
         private Bearing _magneticHdg;
         private Bearing _trueHdg;
         private Bearing _trueTrack;
-        private Pressure _altSetting = AtmosUtil.ISA_STD_PRES;
-        private Pressure _sfcPress = AtmosUtil.ISA_STD_PRES;
+        private Pressure _altSetting;
+        private Pressure _sfcPress;
         private Velocity _ias;
         private Acceleration _fwdAccel;
         private Velocity _tas;
@@ -47,10 +47,33 @@ namespace SaunaSim.Core.Simulator.Aircraft
         public AircraftPosition(Latitude lat, Longitude lon, Length indAlt, SimAircraft parentAircraft, MagneticTileManager magneticTileManager)
         {
             _parentAircraft = parentAircraft;
+
+            _magneticHdg = (Bearing)0;
+            _trueHdg = (Bearing)0;
+            _trueTrack = (Bearing)0;
+            _altSetting = AtmosUtil.ISA_STD_PRES;
+            _sfcPress = AtmosUtil.ISA_STD_PRES;
+            _ias = (Velocity)0;
+            _fwdAccel = (Acceleration)0;
+            _tas = (Velocity)0;
+            _gs = (Velocity)0;
+            _mach = 0;
+            _gribPoint = null;
+            _bank = (Angle)0;
+            _pitch = (Angle)0;
+            _bankRate = (AngularVelocity)0;
+            _pitchRate = (AngularVelocity)0;
+            _yawRate = (AngularVelocity)0;
+            _verticalSpeed = (Velocity)0;
+            _windDirection = (Bearing)0;
+            _windSpeed = (Velocity)0;
+            _onGround = false;
+
+            _magTileMgr = magneticTileManager;
+
             _lat = lat;
             _lon = lon;
-            IndicatedAltitude = indAlt;
-            _magTileMgr = magneticTileManager;
+            IndicatedAltitude = indAlt;            
         }
 
         // Position
@@ -129,7 +152,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
                 if (!_onGround)
                 {
                     // Calculate True Track
-                    Angle wca = (double)_tas == 0 ? (Angle)0 : (Angle)Math.Acos((double)WindXComp / (double)_tas);
+                    Angle wca = (double)_tas == 0 ? (Angle)0 : (Angle)Math.Atan2((double)WindXComp, (double)_tas);
                     _trueTrack = _trueHdg + wca;
                 }
             }
@@ -149,7 +172,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
                 if (!_onGround)
                 {
                     // Calculate True Track
-                    var wca = (double)_tas == 0 ? (Angle)0 : (Angle)Math.Acos((double)WindXComp / (double)_tas);
+                    var wca = (double)_tas == 0 ? (Angle)0 : (Angle)Math.Atan2((double)WindXComp, (double)_tas);
                     _trueTrack = _trueHdg + wca;
                 }
             }
@@ -166,7 +189,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
                 if (!_onGround)
                 {
                     // Calculate True Heading
-                    var wca = (double)_tas == 0 ? (Angle)0 : (Angle)Math.Acos((double)WindXComp / (double)_tas);
+                    var wca = (double)_tas == 0 ? (Angle)0 : (Angle)Math.Atan2((double)WindXComp, (double)_tas);
                     _trueHdg = _trueTrack - wca;
 
                     // Set Magnetic Heading
@@ -225,7 +248,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
                 }
                 else
                 {
-                    (this._ias, this._mach) = AtmosUtil.ConvertIasToTas(_tas, AtmosUtil.ISA_STD_PRES, _altTrue, (Length)0, AtmosUtil.ISA_STD_TEMP);
+                    (this._ias, this._mach) = AtmosUtil.ConvertTasToIas(_tas, AtmosUtil.ISA_STD_PRES, _altTrue, (Length)0, AtmosUtil.ISA_STD_TEMP);
                 }
             }
         }
@@ -334,7 +357,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
                     SurfacePressure = AtmosUtil.ISA_STD_PRES;
 
                     // Calculate True Track
-                    Angle wca = (double)TrueAirSpeed == 0 ? (Angle)0 : (Angle)Math.Acos((double) (WindXComp / TrueAirSpeed));
+                    Angle wca = (double)_tas == 0 ? (Angle)0 : (Angle)Math.Atan2((double)WindXComp, (double)_tas);
                     _trueTrack = _trueHdg + wca;
 
                     // Calculate TAS
@@ -356,7 +379,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
                         WindSpeed = wind.windSpd;
 
                         // Calculate True Track
-                        Angle wca = (double)TrueAirSpeed == 0 ? (Angle)0 : (Angle)Math.Acos((double) WindXComp / (double) TrueAirSpeed);
+                        Angle wca = (double)_tas == 0 ? (Angle)0 : (Angle)Math.Atan2((double)WindXComp, (double)_tas);
                         _trueTrack = _trueHdg + wca;
                     }
 

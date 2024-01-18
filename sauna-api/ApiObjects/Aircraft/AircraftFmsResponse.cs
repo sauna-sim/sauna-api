@@ -43,7 +43,7 @@ namespace SaunaSim.Api.ApiObjects.Aircraft
             FmsLines = new List<object>();
             AlongTrackDistance_m = fms.AlongTrackDistance.Meters;
             CrossTrackDistance_m = fms.CrossTrackDistance.Meters;
-            RequiredTrueCourse = fms.RequiredTrueCourse.Degrees;
+            RequiredTrueCourse = fms.RequiredTrueCourse == null ? -1 : fms.RequiredTrueCourse.Degrees;
             TurnRadius_m = fms.TurnRadius.Meters;
 
             StringBuilder sb = new StringBuilder();

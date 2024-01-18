@@ -104,16 +104,18 @@ namespace SaunaSim.Core.Simulator.Aircraft
             }
         }
 
-        public bool AllPaused {
+        public bool AllPaused
+        {
             get => _allPaused;
-            set {
+            set
+            {
                 _allPaused = value;
                 _aircraftsLock.WaitOne();
 
-                    foreach (SimAircraft aircraft in _aircrafts)
-                    {
-                        aircraft.Paused = _allPaused;
-                    }
+                foreach (SimAircraft aircraft in _aircrafts)
+                {
+                    aircraft.Paused = _allPaused;
+                }
                 _aircraftsLock.ReleaseMutex();
                 Task.Run(() => GlobalSimStateChanged?.Invoke(null, new SimStateChangedEventArgs(value, SimRate)));
             }
@@ -124,16 +126,16 @@ namespace SaunaSim.Core.Simulator.Aircraft
             SimAircraft foundAcft = null;
             _aircraftsLock.WaitOne();
 
-                foreach (SimAircraft aircraft in _aircrafts)
+            foreach (SimAircraft aircraft in _aircrafts)
+            {
+                if (aircraft.Callsign.Equals(callsign))
                 {
-                    if (aircraft.Callsign.Equals(callsign))
-                    {
-                        foundAcft = aircraft;
-                        _aircrafts.Remove(aircraft);
-                        Task.Run(() => AircraftDeleted?.Invoke(null, new AircraftDeletedEventArgs(foundAcft.Callsign)));
-                        break;
-                    }
+                    foundAcft = aircraft;
+                    _aircrafts.Remove(aircraft);
+                    Task.Run(() => AircraftDeleted?.Invoke(null, new AircraftDeletedEventArgs(foundAcft.Callsign)));
+                    break;
                 }
+            }
             _aircraftsLock.ReleaseMutex();
 
             foundAcft?.Dispose();
@@ -144,28 +146,30 @@ namespace SaunaSim.Core.Simulator.Aircraft
             _aircraftsLock.WaitOne();
             List<int> deletionList = new List<int>();
 
-                for (int i = _aircrafts.Count - 1; i >= 0; i--)
+            for (int i = _aircrafts.Count - 1; i >= 0; i--)
+            {
+                SimAircraft c = _aircrafts[i];
+                if (c.ConnectionStatus == ConnectionStatusType.DISCONNECTED || (c.Callsign.Equals(aircraft.Callsign) && c.ConnectionStatus == ConnectionStatusType.WAITING))
                 {
-                    SimAircraft c = _aircrafts[i];
-                    if (c.ConnectionStatus == ConnectionStatusType.DISCONNECTED || (c.Callsign.Equals(aircraft.Callsign) && c.ConnectionStatus == ConnectionStatusType.WAITING))
-                    {
-                        Task.Run(() => AircraftDeleted?.Invoke(null, new AircraftDeletedEventArgs(_aircrafts[i].Callsign)));
-                        _aircrafts[i].Dispose();
-                        _aircrafts.RemoveAt(i);
-                    } else if (c.Callsign.Equals(aircraft.Callsign))
-                    {
-                        return false;
-                    }
+                    Task.Run(() => AircraftDeleted?.Invoke(null, new AircraftDeletedEventArgs(_aircrafts[i].Callsign)));
+                    _aircrafts[i].Dispose();
+                    _aircrafts.RemoveAt(i);
+                } else if (c.Callsign.Equals(aircraft.Callsign))
+                {
+                    _aircraftsLock.ReleaseMutex();
+                    return false;
                 }
+            }
 
-                aircraft.Paused = _allPaused;
-                aircraft.SimRate = _simRate;
-                aircraft.ConnectionStatusChanged += Aircraft_ConnectionStatusChanged;
-                aircraft.PositionUpdated += Aircraft_PositionUpdated;
-                aircraft.SimStateChanged += Aircraft_SimStateChanged;
-                _aircrafts.Add(aircraft);
-                Task.Run(() => AircraftCreated?.Invoke(null, new AircraftPositionUpdateEventArgs(DateTime.UtcNow, aircraft)));
+            aircraft.Paused = _allPaused;
+            aircraft.SimRate = _simRate;
+            aircraft.ConnectionStatusChanged += Aircraft_ConnectionStatusChanged;
+            aircraft.PositionUpdated += Aircraft_PositionUpdated;
+            aircraft.SimStateChanged += Aircraft_SimStateChanged;
+            _aircrafts.Add(aircraft);
+
             _aircraftsLock.ReleaseMutex();
+            Task.Run(() => AircraftCreated?.Invoke(null, new AircraftPositionUpdateEventArgs(DateTime.UtcNow, aircraft)));
             return true;
         }
 
@@ -187,13 +191,15 @@ namespace SaunaSim.Core.Simulator.Aircraft
         public SimAircraft GetAircraftWhichContainsCallsign(string callsignMatch)
         {
             _aircraftsLock.WaitOne();
-                foreach (SimAircraft aircraft in _aircrafts)
+            foreach (SimAircraft aircraft in _aircrafts)
+            {
+                if (aircraft.Callsign.ToLower().Contains(callsignMatch.ToLower()))
                 {
-                    if (aircraft.Callsign.ToLower().Contains(callsignMatch.ToLower()))
-                    {
-                        return aircraft;
-                    }
+
+                    _aircraftsLock.ReleaseMutex();
+                    return aircraft;
                 }
+            }
             _aircraftsLock.ReleaseMutex();
 
             return null;
@@ -203,12 +209,14 @@ namespace SaunaSim.Core.Simulator.Aircraft
         {
             _aircraftsLock.WaitOne();
             foreach (SimAircraft aircraft in _aircrafts)
+            {
+                if (aircraft.Callsign.ToLower().Equals(callsign.ToLower()))
                 {
-                    if (aircraft.Callsign.ToLower().Equals(callsign.ToLower()))
-                    {
-                        return aircraft;
-                    }
+
+                    _aircraftsLock.ReleaseMutex();
+                    return aircraft;
                 }
+            }
             _aircraftsLock.ReleaseMutex();
 
             return null;
@@ -217,12 +225,12 @@ namespace SaunaSim.Core.Simulator.Aircraft
         public void DeleteAllAircraft()
         {
             _aircraftsLock.WaitOne();
-                foreach (SimAircraft aircraft in _aircrafts)
-                {
-                    Task.Run(() => AircraftDeleted?.Invoke(null, new AircraftDeletedEventArgs(aircraft.Callsign)));
-                    aircraft.Dispose();
-                }
-                _aircrafts.Clear();
+            foreach (SimAircraft aircraft in _aircrafts)
+            {
+                Task.Run(() => AircraftDeleted?.Invoke(null, new AircraftDeletedEventArgs(aircraft.Callsign)));
+                aircraft.Dispose();
+            }
+            _aircrafts.Clear();
             _aircraftsLock.ReleaseMutex();
         }
 

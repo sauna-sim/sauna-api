@@ -55,7 +55,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
         public bool HasLegTerminated(SimAircraft aircraft)
         {
             // Leg terminates when aircraft passes abeam/over terminating point
-            (_, _, Length alongTrackDistance) = AviationUtil.CalculateLinearCourseIntercept(aircraft.Position.PositionGeoPoint, _endPoint.Point.PointPosition, _trueCourse);
+            (_, Length alongTrackDistance, _) = AviationUtil.CalculateLinearCourseIntercept(aircraft.Position.PositionGeoPoint, _endPoint.Point.PointPosition, _trueCourse);
 
             return alongTrackDistance <= (Length) 0;
         }

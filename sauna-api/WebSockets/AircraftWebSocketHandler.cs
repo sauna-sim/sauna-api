@@ -22,6 +22,8 @@ namespace SaunaSim.Api.WebSockets
             _clientsLock = new SemaphoreSlim(1);
             _clients = new List<ClientStream>();
 
+            _handler = handler;
+
             // Register event handlers
             var aircraft = handler.GetAircraftByCallsign(callsign);
 
