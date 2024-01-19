@@ -1,4 +1,8 @@
-﻿namespace SaunaSim.Core.Simulator.Aircraft.FMS
+﻿using AviationCalcUtilNet.Atmos.Grib;
+using AviationCalcUtilNet.Units;
+using System.Collections.Generic;
+
+namespace SaunaSim.Core.Simulator.Aircraft.FMS
 {
     public enum RoutePointTypeEnum
     {
@@ -15,11 +19,14 @@
         {
             _point = point;
             _routePointType = type;
+            GribPoints = new Dictionary<Length, GribDataPoint>();
         }
 
         public IRoutePoint Point => _point;
 
         public RoutePointTypeEnum PointType { get => _routePointType; set => _routePointType = value; }
+
+        public Dictionary<Length, GribDataPoint> GribPoints { get; private set; }
 
         public int LowerAltitudeConstraint { get; set; }
 

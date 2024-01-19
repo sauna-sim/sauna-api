@@ -41,7 +41,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
         private static Velocity MIN_GS_DIFF = Velocity.FromKnots(10);
         private Velocity _lastGs = (Velocity) 0;
         private bool _wpEvtTriggered = false;
-        private MagneticTileManager _magTileMgr;
+        private readonly MagneticTileManager _magTileMgr;
 
         // Fms Values
         private Length _xTk;
@@ -75,7 +75,22 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
             _suspended = false;
 
             PhaseType = FmsPhaseType.CRUISE;
+
+            // PERF INIT
+            PerfInit = new PerfInit()
+            {
+                ClimbKias = _parentAircraft.PerformanceData.Climb_KIAS,
+                ClimbMach = (int)(_parentAircraft.PerformanceData.Climb_Mach * 100),
+                CruiseKias = _parentAircraft.PerformanceData.Cruise_KIAS,
+                CruiseMach = (int)(_parentAircraft.PerformanceData.Cruise_Mach * 100),
+                DescentKias = _parentAircraft.PerformanceData.Descent_KIAS,
+                DescentMach = (int)(_parentAircraft.PerformanceData.Descent_Mach * 100),
+                DescentAngle = 30
+            };
         }
+
+        // PERF INIT
+        public PerfInit PerfInit { get; set; }
 
         public Length AlongTrackDistance => _aTk;
 
@@ -92,6 +107,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
         public FmsPhaseType PhaseType { get; set; }
         public McpSpeedUnitsType FmsSpeedUnits => _spdUnits;
         public int FmsSpeedValue => _selSpd;
+
 
 
         public bool Suspended
