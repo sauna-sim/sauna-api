@@ -85,8 +85,9 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
                 CruiseMach = (int)(_parentAircraft.PerformanceData.Cruise_Mach * 100),
                 DescentKias = _parentAircraft.PerformanceData.Descent_KIAS,
                 DescentMach = (int)(_parentAircraft.PerformanceData.Descent_Mach * 100),
-                DescentAngle = 30
-            };
+                DescentAngle = 30,
+                CruiseAlt = (int)(_parentAircraft.FlightPlan != null ? _parentAircraft.FlightPlan.Value.cruiseLevel : 0);
+        };
         }
 
         // PERF INIT
@@ -108,19 +109,13 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
         public McpSpeedUnitsType FmsSpeedUnits => _spdUnits;
         public int FmsSpeedValue => _selSpd;
 
-
-
         public bool Suspended
         {
             get => _suspended;
             set => _suspended = value;
         }
 
-        public int CruiseAltitude
-        {
-            get => (int)(_parentAircraft.FlightPlan != null ? _parentAircraft.FlightPlan.Value.cruiseLevel:0);
-            // set => _cruiseAlt = value;
-        }
+        public int CruiseAltitude => PerfInit.CruiseAlt;
 
         private string _depIcao;
         private Fix _depArpt;
