@@ -86,8 +86,14 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
                 DescentKias = _parentAircraft.PerformanceData.Descent_KIAS,
                 DescentMach = (int)(_parentAircraft.PerformanceData.Descent_Mach * 100),
                 DescentAngle = 30,
-                CruiseAlt = (int)(_parentAircraft.FlightPlan != null ? _parentAircraft.FlightPlan.Value.cruiseLevel : 0);
-        };
+                CruiseAlt = (int)(_parentAircraft.FlightPlan != null ? _parentAircraft.FlightPlan.Value.cruiseLevel : 0),
+                LimitAlt = 10000,
+                LimitSpeed = 250,
+
+                // TODO: Change to be based on Departure/Arrival airport
+                TransitionAlt = 18000,
+                TransitionLevel = 18000
+            };
         }
 
         // PERF INIT
