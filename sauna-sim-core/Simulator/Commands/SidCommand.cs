@@ -10,7 +10,7 @@ using System.Text;
 
 namespace SaunaSim.Core.Simulator.Commands
 {
-    internal class SidCommand : IAircraftCommand
+    public class SidCommand : IAircraftCommand
     {
         public SimAircraft Aircraft { get; set; }
         public Action<string> Logger { get; set; }
@@ -30,7 +30,7 @@ namespace SaunaSim.Core.Simulator.Commands
                 var sid = args[1];
                 var transition = args[2];
 
-                var airport = "EGAA";
+                var airport = Aircraft.Fms.DepartureAirport;
 
                 var foundSid = DataHandler.GetSidByAirportAndIdentifier(airport, sid);
                 

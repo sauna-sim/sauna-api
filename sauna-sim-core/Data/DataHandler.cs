@@ -166,5 +166,14 @@ namespace SaunaSim.Core.Data
 
             return sid;
         }
+
+        public static Sid GetSidByAirportAndIdentifier(Fix airport, string sidIdentifier)
+        {
+            _navdataMutex.WaitOne();
+            var sid = _navdataSource.GetSidByAirportAndIdentifier(airport, sidIdentifier);
+            _navdataMutex.ReleaseMutex();
+
+            return sid;
+        }
     }
 }
