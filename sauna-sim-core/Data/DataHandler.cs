@@ -170,7 +170,7 @@ namespace SaunaSim.Core.Data
         public static Sid GetSidByAirportAndIdentifier(Fix airport, string sidIdentifier)
         {
             _navdataMutex.WaitOne();
-            var sid = _navdataSource.GetSidByAirportAndIdentifier(airport, sidIdentifier);
+            var sid = _navdataSource.GetSidByAirportAndIdentifier(airport.Identifier, sidIdentifier);
             _navdataMutex.ReleaseMutex();
 
             return sid;

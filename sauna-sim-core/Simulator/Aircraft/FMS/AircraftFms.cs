@@ -19,6 +19,7 @@ using SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller;
 using SaunaSim.Core.Simulator.Aircraft.FMS.Legs;
 using AviationCalcUtilNet.Atmos;
 using System.Numerics;
+using NavData_Interface.Objects.LegCollections.Procedures;
 
 namespace SaunaSim.Core.Simulator.Aircraft.FMS
 {
@@ -312,6 +313,11 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
 
                 RecalculateVnavPath();
             }
+        }
+
+        public bool AddSid(Sid sid)
+        {
+
         }
 
         public bool AddHold(IRoutePoint rp, Bearing magCourse, HoldTurnDirectionEnum turnDir, HoldLegLengthTypeEnum legLengthType, double legLength)

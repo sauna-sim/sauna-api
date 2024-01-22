@@ -1,4 +1,6 @@
-﻿namespace SaunaSim.Core.Simulator.Aircraft.FMS
+﻿using AviationCalcUtilNet.Units;
+
+namespace SaunaSim.Core.Simulator.Aircraft.FMS
 {
     public enum RoutePointTypeEnum
     {
@@ -21,17 +23,17 @@
 
         public RoutePointTypeEnum PointType { get => _routePointType; set => _routePointType = value; }
 
-        public int LowerAltitudeConstraint { get; set; }
+        public Length LowerAltitudeConstraint { get; set; }
 
-        public int UpperAltitudeConstraint { get; set; }
+        public Length UpperAltitudeConstraint { get; set; }
 
-        public double AngleConstraint { get; set; } = -1;
+        public Angle AngleConstraint { get; set; }
 
-        public double VnavTargetAltitude { get; internal set; } = -1;
+        public Length VnavTargetAltitude { get; internal set; }
 
         public ConstraintType SpeedConstraintType { get; set; } = ConstraintType.FREE;
 
-        public double SpeedConstraint { get; set; }
+        public Velocity SpeedConstraint { get; set; }
 
         public override string ToString()
         {
