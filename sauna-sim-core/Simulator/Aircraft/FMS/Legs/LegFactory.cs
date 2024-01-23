@@ -1,6 +1,8 @@
 ﻿using AviationCalcUtilNet.Aviation;
 using AviationCalcUtilNet.Geo;
 using AviationCalcUtilNet.Magnetic;
+using AviationCalcUtilNet.Units;
+using NavData_Interface.Objects;
 using NavData_Interface.Objects.Fixes;
 using NavData_Interface.Objects.LegCollections.Legs;
 using System;
@@ -12,17 +14,15 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
 {
     internal static class LegFactory
     {
-        internal static IList<IRouteLeg> RouteLegsFromNavDataLegs(IList<Leg> leg, MagneticTileManager mcManager)
+        internal static IList<IRouteLeg> RouteLegsFromNavDataLegs(IEnumerator<Leg> legsEnumerator, MagneticTileManager mcManager)
         {
             List<IRouteLeg> routeLegs = new List<IRouteLeg>();
 
-            IEnumerator<Leg> enumerator = leg.GetEnumerator();
-
             Leg previousLeg = null;
 
-            while (enumerator.MoveNext())
+            while (legsEnumerator.MoveNext())
             {
-                Leg currentLeg = enumerator.Current;
+                Leg currentLeg = legsEnumerator.Current;
 
                 switch (currentLeg.Type)
                 {
@@ -49,7 +49,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
                         {
                             FmsPoint directPoint = FmsPointFromNavDataLeg(currentLeg);
 
-                            routeLegs.Add(new DirectToFixLeg(directPoint)); // compile error - awaiting DF refactor
+                            routeLegs.Add(new DirectToFixLeg(directPoint));
                             break;
                         }
                     case LegType.FIX_TO_ALT:
@@ -155,13 +155,32 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
                         }
                     case LegType.HOLD_TO_MANUAL:
                         {
-                            new HoldToManualLeg()
+                            double holdLegLength = currentLeg.LegLength.Value;
+                            HoldLegLengthTypeEnum holdLegLengthType = currentLeg.LegLengthType ?? HoldLegLengthTypeEnum.TIME;
+
+                            FmsPoint point1 = FmsPointFromNavDataLeg(currentLeg);
+
+                            HoldTurnDirectionEnum turnDirection = HoldTurnDirectionEnum.LEFT;
+
+                            if (currentLeg.RequiredTurnDirection.Value == RequiredTurnDirectionType.RIGHT)
+                            {
+                                turnDirection = HoldTurnDirectionEnum.RIGHT;
+                            }
+
+                            routeLegs.Add(new HoldToManualLeg(point1, BearingTypeEnum.MAGNETIC, currentLeg.OutboundMagneticCourse + Angle.FromDegrees(180), turnDirection, holdLegLengthType, holdLegLength, mcManager));
                             break;
                         }
                 }
 
                 previousLeg = currentLeg;
             }
+
+            return routeLegs;
+        }
+
+        internal static IList<IRouteLeg> RouteLegsFromNavDataLegs(IList<Leg> leg, MagneticTileManager mcManager)
+        {
+            return RouteLegsFromNavDataLegs(leg.GetEnumerator(), mcManager);
         }
 
         internal static FmsPoint FmsPointFromNavDataLeg(Leg leg)

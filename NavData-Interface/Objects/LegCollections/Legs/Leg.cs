@@ -80,6 +80,10 @@ namespace NavData_Interface.Objects.LegCollections.Legs
 
         public Length ArcRadius { get; }
 
+        public HoldLegLengthTypeEnum? LegLengthType { get; }
+
+        public double? LegLength { get; }
+
         public static LegType parseLegType(string legType)
         {
             switch (legType)
@@ -148,7 +152,9 @@ namespace NavData_Interface.Objects.LegCollections.Legs
                     Bearing theta,
                     Bearing outboundMagneticCourse,
                     RequiredTurnDirectionType? requiredTurnDirection,
-                    Length arcRadius)
+                    Length arcRadius,
+                    HoldLegLengthTypeEnum? legLengthType,
+                    double? legLength)
         {
             Type = type;
             SpeedRestriction = speedRestriction;
@@ -162,6 +168,8 @@ namespace NavData_Interface.Objects.LegCollections.Legs
             OutboundMagneticCourse = outboundMagneticCourse;
             RequiredTurnDirection = requiredTurnDirection;
             ArcRadius = arcRadius;
+            LegLengthType = legLengthType ;
+            LegLength = legLength;
         }
 
         public override string ToString()

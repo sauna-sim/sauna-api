@@ -20,6 +20,7 @@ using SaunaSim.Core.Simulator.Aircraft.FMS.Legs;
 using AviationCalcUtilNet.Atmos;
 using System.Numerics;
 using NavData_Interface.Objects.LegCollections.Procedures;
+using NavData_Interface.Objects.LegCollections.Legs;
 
 namespace SaunaSim.Core.Simulator.Aircraft.FMS
 {
@@ -53,6 +54,8 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
         private Angle _requiredFpa;
         private McpSpeedUnitsType _spdUnits;
         private int _selSpd;
+
+        private int _routeStartIndex = 0;
 
         public EventHandler<WaypointPassedEventArgs> WaypointPassed;
 
@@ -315,9 +318,45 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
             }
         }
 
+        /// <summary>
+        /// Adds a whole SID to the FMS
+        /// </summary>
+        /// <param name="sid">The SID to add. Relevant transition and runway transition MUST be selected beforehand.</param>
+        /// <returns></returns>
         public bool AddSid(Sid sid)
         {
+            lock (_routeLegsLock)
+            {
+                if (_routeStartIndex != 0)
+                {
+                    RemoveSid();
+                }
 
+                try
+                {
+                    foreach (var leg in LegFactory.RouteLegsFromNavDataLegs(sid.GetEnumerator(), _magTileMgr))
+                    {
+                        InsertAtIndex(leg, _routeStartIndex);
+                        _routeStartIndex++;
+                    }
+
+                } catch (Exception ex)
+                {
+                    return false;
+                }
+                
+            }
+
+            return true;
+        }
+
+        public void RemoveSid()
+        {
+            while (_routeStartIndex > 0)
+            {
+                RemoveFirstLeg();
+                _routeStartIndex--;
+            }
         }
 
         public bool AddHold(IRoutePoint rp, Bearing magCourse, HoldTurnDirectionEnum turnDir, HoldLegLengthTypeEnum legLengthType, double legLength)
@@ -690,19 +729,19 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
 
         private (Angle requiredFpa, Length vTk_m) GetPitchInterceptInfoForCurrentLeg()
         {
-            if (_activeLeg.EndPoint == null || _activeLeg.EndPoint.VnavTargetAltitude < 0 || _activeLeg.EndPoint.AngleConstraint < 0)
+            if (_activeLeg.EndPoint == null || _activeLeg.EndPoint.VnavTargetAltitude < new Length(0) || _activeLeg.EndPoint.AngleConstraint < new Angle(0))
             {
                 return ((Angle)0, (Length)0);
             }
 
             // TODO: Change this to actually figure out the angle
-            Angle requiredFpa = Angle.FromDegrees(_activeLeg.EndPoint.AngleConstraint);
+            Angle requiredFpa = _activeLeg.EndPoint.AngleConstraint;
 
             // Calculate how much altitude we still need to climb/descend from here to the EndPoint
             Length deltaAlt_m = Length.FromMeters(Math.Tan(requiredFpa.Radians) * _aTk.Meters);
 
             // Add to Vnav target alt
-            Length altTarget_m = deltaAlt_m + Length.FromFeet(_activeLeg.EndPoint.VnavTargetAltitude);
+            Length altTarget_m = deltaAlt_m + _activeLeg.EndPoint.VnavTargetAltitude;
 
             Length vTk_m = _parentAircraft.Position.TrueAltitude - altTarget_m;
 

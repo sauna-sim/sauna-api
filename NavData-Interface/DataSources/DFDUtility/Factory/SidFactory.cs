@@ -1,6 +1,7 @@
 ﻿using AviationCalcUtilNet.Geo;
 using AviationCalcUtilNet.GeoTools;
 using AviationCalcUtilNet.Units;
+using NavData_Interface.Objects;
 using NavData_Interface.Objects.Fixes;
 using NavData_Interface.Objects.Fixes.Navaids;
 using NavData_Interface.Objects.Fixes.Waypoints;
@@ -288,6 +289,26 @@ namespace NavData_Interface.DataSources.DFDUtility.Factory
                 Waypoint centerPoint = new Waypoint(centerWaypointIdent, centerWaypointLocation);
             }
 
+            double? legLength = null;
+            HoldLegLengthTypeEnum? legLengthType = null;
+
+            var legLengthRaw = reader["route_distance_holding_distance_time"].ToString();
+            var legLengthTypeRaw = reader["distance_time"].ToString();
+
+
+            if (legLengthRaw != "")
+            {
+                legLength = Double.Parse(legLengthRaw);
+                
+                if (legLengthTypeRaw == "D")
+                {
+                    legLengthType = HoldLegLengthTypeEnum.DISTANCE;
+                } else
+                {
+                    legLengthType = HoldLegLengthTypeEnum.TIME;
+                }
+            }
+
             return new Leg(
                 legType,
                 speedLimit,
@@ -301,7 +322,9 @@ namespace NavData_Interface.DataSources.DFDUtility.Factory
                 theta,
                 outBoundMagneticCourse,
                 turnDirection,
-                arcRadius
+                arcRadius,
+                legLengthType,
+                legLength
                 );
         }
     }

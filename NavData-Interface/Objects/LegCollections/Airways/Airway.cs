@@ -98,6 +98,8 @@ namespace NavData_Interface.Objects.LegCollections.Airways
                         null,
                         null,
                         null,
+                        null,
+                        null,
                         null
                         ));
             }
