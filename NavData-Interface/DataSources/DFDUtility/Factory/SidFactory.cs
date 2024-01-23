@@ -135,6 +135,7 @@ namespace NavData_Interface.DataSources.DFDUtility.Factory
             var legType = Leg.parseLegType(reader["path_termination"].ToString());
 
             Navaid recommendedNavaid = null;
+            Bearing theta = null;
 
             if (reader["recommanded_navaid"].ToString() != "")
             {
@@ -174,6 +175,9 @@ namespace NavData_Interface.DataSources.DFDUtility.Factory
                     GeoPoint location = SQLHelper.locationFromColumns(reader, "recommanded_navaid_latitude", "recommanded_navaid_longitude");
 
                     recommendedNavaid = new VhfNavaid(location, "", "", "", navaidIdentifier, navaidIdentifier, 199.998, "", null, Length.FromNauticalMiles(200));
+                } finally
+                {
+                    theta = Bearing.FromDegrees(Double.Parse(reader["theta"].ToString()));
                 }
             }
 
@@ -294,6 +298,7 @@ namespace NavData_Interface.DataSources.DFDUtility.Factory
                 waypointDescription,
                 centerFix,
                 recommendedNavaid,
+                theta,
                 outBoundMagneticCourse,
                 turnDirection,
                 arcRadius

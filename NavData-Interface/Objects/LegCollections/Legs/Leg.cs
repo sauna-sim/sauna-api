@@ -72,6 +72,8 @@ namespace NavData_Interface.Objects.LegCollections.Legs
 
         public bool IsFinalLeg => EndPointDescription.IsEndOfRoute;
 
+        public Bearing Theta { get; }
+
         public Bearing OutboundMagneticCourse { get; }
 
         public RequiredTurnDirectionType? RequiredTurnDirection { get; }
@@ -143,6 +145,7 @@ namespace NavData_Interface.Objects.LegCollections.Legs
                     WaypointDescription endPointDescription,
                     Fix centerPoint,
                     Navaid recommendedNavaid,
+                    Bearing theta,
                     Bearing outboundMagneticCourse,
                     RequiredTurnDirectionType? requiredTurnDirection,
                     Length arcRadius)
