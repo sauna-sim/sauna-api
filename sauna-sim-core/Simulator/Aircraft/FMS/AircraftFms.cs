@@ -291,7 +291,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
                 }
 
                 // Create direct leg
-                IRouteLeg dtoLeg = new DirectToFixLeg(point, _parentAircraft.Position.PositionGeoPoint, _parentAircraft.Position.Track_True, _parentAircraft.Position.GroundSpeed);
+                IRouteLeg dtoLeg = new DirectToFixLeg(point);
 
                 if (course != null)
                 {
