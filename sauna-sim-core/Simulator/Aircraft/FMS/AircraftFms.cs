@@ -729,19 +729,19 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
 
         private (Angle requiredFpa, Length vTk_m) GetPitchInterceptInfoForCurrentLeg()
         {
-            if (_activeLeg.EndPoint == null || _activeLeg.EndPoint.VnavTargetAltitude < new Length(0) || _activeLeg.EndPoint.AngleConstraint < new Angle(0))
+            if (_activeLeg.EndPoint == null || _activeLeg.EndPoint.VnavTargetAltitude < 0 || _activeLeg.EndPoint.AngleConstraint < 0)
             {
                 return ((Angle)0, (Length)0);
             }
 
             // TODO: Change this to actually figure out the angle
-            Angle requiredFpa = _activeLeg.EndPoint.AngleConstraint;
+            Angle requiredFpa = Angle.FromDegrees(_activeLeg.EndPoint.AngleConstraint);
 
             // Calculate how much altitude we still need to climb/descend from here to the EndPoint
             Length deltaAlt_m = Length.FromMeters(Math.Tan(requiredFpa.Radians) * _aTk.Meters);
 
             // Add to Vnav target alt
-            Length altTarget_m = deltaAlt_m + _activeLeg.EndPoint.VnavTargetAltitude;
+            Length altTarget_m = deltaAlt_m + Length.FromFeet(_activeLeg.EndPoint.VnavTargetAltitude);
 
             Length vTk_m = _parentAircraft.Position.TrueAltitude - altTarget_m;
 

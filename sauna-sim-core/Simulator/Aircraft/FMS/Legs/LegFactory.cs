@@ -189,12 +189,12 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
                 leg.EndPointDescription.IsFlyOver ? RoutePointTypeEnum.FLY_OVER : RoutePointTypeEnum.FLY_BY
                 );
 
-            point.LowerAltitudeConstraint = leg.LowerAltitudeConstraint;
-            point.UpperAltitudeConstraint = leg.UpperAltitudeConstraint;
+            point.LowerAltitudeConstraint = (int)leg.LowerAltitudeConstraint.Feet;
+            point.UpperAltitudeConstraint = (int)leg.UpperAltitudeConstraint.Feet;
 
             if (leg.SpeedType != null)
             {
-                point.SpeedConstraint = leg.SpeedRestriction;
+                point.SpeedConstraint = (int)leg.SpeedRestriction.Knots;
                 switch (leg.SpeedType)
                 {
                     case SpeedRestrictionType.BELOW:
