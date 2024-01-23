@@ -3,6 +3,7 @@ using AviationCalcUtilNet.Units;
 using NavData_Interface.Objects;
 using NavData_Interface.Objects.Fixes;
 using NavData_Interface.Objects.LegCollections.Airways;
+using NavData_Interface.Objects.LegCollections.Procedures;
 using System.Collections;
 using System.Collections.Generic;
 
@@ -260,6 +261,21 @@ namespace NavData_Interface.DataSources
             foreach (var source in _sources.Values)
             {
                 var airport = source.GetAirportByIdentifier(airportIdentifier);
+
+                if (airport != null)
+                {
+                    return airport;
+                }
+            }
+
+            return null;
+        }
+
+        public override Sid GetSidByAirportAndIdentifier(string airportIdentifier, string sidIdentifier)
+        {
+            foreach (var source in _sources.Values)
+            {
+                var airport = source.GetSidByAirportAndIdentifier(airportIdentifier, sidIdentifier);
 
                 if (airport != null)
                 {

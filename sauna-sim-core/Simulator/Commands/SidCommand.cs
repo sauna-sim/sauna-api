@@ -19,7 +19,8 @@ namespace SaunaSim.Core.Simulator.Commands
 
         public void ExecuteCommand()
         {
-            
+            Aircraft.Fms.AddSid(_selectedSid);
+            Aircraft.Fms.ActivateNextLeg();
         }
 
         public bool HandleCommand(ref List<string> args)
@@ -30,7 +31,16 @@ namespace SaunaSim.Core.Simulator.Commands
                 var sid = args[1];
                 var transition = args[2];
 
+                args.RemoveAt(0);
+                args.RemoveAt(0);
+                args.RemoveAt(0);
+
                 var airport = Aircraft.Fms.DepartureAirport;
+
+                if (airport == null)
+                {
+                    Logger?.Invoke($"I don't have a flight plan filed! Cannot fly SID");
+                }
 
                 var foundSid = DataHandler.GetSidByAirportAndIdentifier(airport, sid);
                 
