@@ -42,6 +42,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
         private Velocity _lastGs = (Velocity) 0;
         private bool _wpEvtTriggered = false;
         private readonly MagneticTileManager _magTileMgr;
+        private bool _recalculatingPerf = false;
 
         // Fms Values
         private Length _xTk;
@@ -298,7 +299,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
                 }
 
                 // Create direct leg
-                IRouteLeg dtoLeg = new DirectToFixLeg(point, _parentAircraft.Position.PositionGeoPoint, _parentAircraft.Position.Track_True, _parentAircraft.Position.GroundSpeed);
+                IRouteLeg dtoLeg = new DirectToFixLeg(point);
 
                 if (course != null)
                 {
