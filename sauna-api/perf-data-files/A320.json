@@ -42,14 +42,14 @@
       "max_kias": 200,
       "min_kias": 140,
       "norm_kias": 160,
-      "vs_penalty": -800,
+      "vs_penalty": -600,
       "pitch_change": -9.5
     },
     {
       "max_kias": 180,
       "min_kias": 110,
       "norm_kias": 140,
-      "vs_penalty": -1000,
+      "vs_penalty": -1600,
       "pitch_change": -15
     }
   ],
@@ -58,7 +58,7 @@
     "data_point_delta_mass_kg": 74400,
     "delta_mass_vs_penalty": -900,
     "speed_brake_vs_penalty": -800,
-    "gear_vs_penalty": 0,
+    "gear_vs_penalty": -1000,
     "data_points": [
       {
         "altitude": 1000,
