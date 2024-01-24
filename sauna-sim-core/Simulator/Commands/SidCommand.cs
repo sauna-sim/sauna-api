@@ -46,11 +46,11 @@ namespace SaunaSim.Core.Simulator.Commands
                 
                 if (runway != "-")
                 {
-                    foundSid.selectRunwayTransition(runway);
+                    foundSid.selectFirstTransition(runway);
                 }
                 if (transition != "-") 
                 {
-                    foundSid.selectTransition(transition);
+                    foundSid.selectSecondTransition(transition);
                 }
                 _selectedSid = foundSid;
 

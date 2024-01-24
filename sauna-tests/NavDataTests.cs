@@ -33,8 +33,8 @@ namespace sauna_tests
             Console.WriteLine(sid);
 
             sid = navDataInterface.GetSidByAirportAndIdentifier("KIAD", "JCOBY4");
-            sid.selectRunwayTransition("01R");
-            sid.selectTransition("AGARD");
+            sid.selectFirstTransition("01R");
+            sid.selectSecondTransition("AGARD");
 
             Console.WriteLine(sid);
 
