@@ -19,30 +19,23 @@ using SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller;
 using SaunaSim.Core.Simulator.Aircraft.FMS.Legs;
 using AviationCalcUtilNet.Atmos;
 using System.Numerics;
+using AviationCalcUtilNet.Atmos.Grib;
+using SaunaSim.Core.Simulator.Aircraft.Performance;
 
 namespace SaunaSim.Core.Simulator.Aircraft.FMS
 {
-    public enum FmsPhaseType
-    {
-        CLIMB,
-        CRUISE,
-        DESCENT,
-        APPROACH,
-        GO_AROUND
-    }
     public class AircraftFms
     {
         private SimAircraft _parentAircraft;
         // private int _cruiseAlt;
         private IRouteLeg _activeLeg;
         private List<IRouteLeg> _routeLegs;
-        private object _routeLegsLock;
+        private readonly object _routeLegsLock;
         private bool _suspended;
-        private static Velocity MIN_GS_DIFF = Velocity.FromKnots(10);
+        private static readonly Velocity MIN_GS_DIFF = Velocity.FromKnots(10);
         private Velocity _lastGs = (Velocity) 0;
         private bool _wpEvtTriggered = false;
         private readonly MagneticTileManager _magTileMgr;
-        private bool _recalculatingPerf = false;
 
         // Fms Values
         private Length _xTk;
@@ -100,6 +93,10 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
         // PERF INIT
         public PerfInit PerfInit { get; set; }
 
+        // DEP ARR
+        public FmsDeparture Dep { get; set; }
+        public FmsArrival Arr { get; set; }
+
         public Length AlongTrackDistance => _aTk;
 
         public Length CrossTrackDistance => _xTk;
@@ -125,8 +122,8 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
         public int CruiseAltitude => PerfInit.CruiseAlt;
 
         private string _depIcao;
-        private Fix _depArpt;
-        public Fix DepartureAirport
+        private Airport _depArpt;
+        public Airport DepartureAirport
         {
             get
             {
@@ -149,12 +146,11 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
                     _parentAircraft.FlightPlan = fp;
                 }
             }
-
         }
 
         private string _arrIcao;
-        private Fix _arrArpt;
-        public Fix ArrivalAirport
+        private Airport _arrArpt;
+        public Airport ArrivalAirport
         {
             get
             {
@@ -668,6 +664,8 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
                 if (_routeLegs != null)
                 {
                     // Go through route legs in reverse
+                    double lastTargetAlt = -1;
+                    Length distanceToRwy = Length.FromMeters(0);
                     for (int i = _routeLegs.Count - 1; i >= 0; i--)
                     {
                         var leg = _routeLegs[i];
@@ -678,8 +676,34 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
                         // Update VNAV info
                         if (leg.EndPoint != null)
                         {
-                            // TODO: Change this to actually calculate VNAV paths
-                            leg.EndPoint.VnavTargetAltitude = leg.EndPoint.LowerAltitudeConstraint;
+                            // Set last target alt if it's not already set
+                            if (lastTargetAlt < 0)
+                            {
+                                if (leg.EndPoint.LowerAltitudeConstraint < 0)
+                                {
+                                    lastTargetAlt = _arrArpt != null ? _arrArpt.Elevation.Feet : 0.0;
+                                } else
+                                {
+                                    lastTargetAlt = leg.EndPoint.LowerAltitudeConstraint;
+                                }
+
+                                leg.EndPoint.VnavTargetAltitude = lastTargetAlt;
+                            } else {
+                                double targetAngle = leg.EndPoint.AngleConstraint;
+
+                                if (targetAngle < 0)
+                                {
+                                    // Calculate idle descent angle
+                                    double idlePitch = PerfDataHandler.GetRequiredPitchForThrust(_parentAircraft.PerformanceData, 0, 0, )
+                                }
+                                // Calculate angle if there isn't a target angle
+                                leg.EndPoint.Angle
+                                // TODO: Change this to actually calculate VNAV paths
+                                leg.EndPoint.VnavTargetAltitude = leg.EndPoint.LowerAltitudeConstraint;
+                            }
+
+                            // Update distance to runway
+                            distanceToRwy += leg.LegLength;
                         }
                     }
                 }
