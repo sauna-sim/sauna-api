@@ -185,9 +185,12 @@ namespace NavData_Interface.Objects.LegCollections.Legs
                    $"{(CenterPoint != null ? $"Center: {CenterPoint.Identifier}" : "No Center")} | " +
                    $"{(RecommendedNavaid != null ? $"Navaid: {RecommendedNavaid.Identifier}" : "No Navaid")} | " +
                    $"{EndPointDescription} | " +
-                   $"Course: {OutboundMagneticCourse?.Degrees} | " +
+                   $"Theta: {Theta?.Degrees:F0} | " +
+                   $"Course: {OutboundMagneticCourse?.Degrees:F0} | " +
                    $"{(RequiredTurnDirection.HasValue ? $"Turn: {Enum.GetName(typeof(RequiredTurnDirectionType), RequiredTurnDirection)}" : "No Turn")} | " +
-                   $"{(ArcRadius != null ? $"Arc Radius: {ArcRadius.NauticalMiles:F0}" : "No Arc Radius")} ";
+                   $"{(ArcRadius != null ? $"Arc Radius: {ArcRadius.NauticalMiles:F0}" : "No Arc Radius")} | " +
+                   $"{(LegLengthType.HasValue ? $"Leg Length Type: {Enum.GetName(typeof(HoldLegLengthTypeEnum), LegLengthType)}" : "No Leg Length Type")} | " +
+                   $"{(LegLength.HasValue ? $"Leg Length: {LegLength:F0}" : "No Leg Length")}";
         }
 
     }
