@@ -9,16 +9,15 @@
     "mfuel_kg": 23963
   },
   "perf_init": {
-    "climb_kias": 270,
-    "climb_mach": 0.73,
-    "cruise_kias": 290,
+    "climb_kias": 300,
+    "climb_mach": 0.78,
+    "cruise_kias": 300,
     "cruise_mach": 0.78,
-    "descent_kias": 290,
+    "descent_kias": 300,
     "descent_mach": 0.78
   },
   "configs": [
     {
-      "gear_down": false,
       "max_kias": 350,
       "min_kias": 180,
       "norm_kias": 250,
@@ -26,7 +25,6 @@
       "pitch_change": 0
     },
     {
-      "gear_down": false,
       "max_kias": 230,
       "min_kias": 160,
       "norm_kias": 210,
@@ -34,7 +32,6 @@
       "pitch_change": 0
     },
     {
-      "gear_down": false,
       "max_kias": 215,
       "min_kias": 150,
       "norm_kias": 180,
@@ -42,7 +39,6 @@
       "pitch_change": -4
     },
     {
-      "gear_down": true,
       "max_kias": 200,
       "min_kias": 140,
       "norm_kias": 160,
@@ -50,7 +46,6 @@
       "pitch_change": -9.5
     },
     {
-      "gear_down": true,
       "max_kias": 180,
       "min_kias": 110,
       "norm_kias": 140,
@@ -63,6 +58,7 @@
     "data_point_delta_mass_kg": 74400,
     "delta_mass_vs_penalty": -900,
     "speed_brake_vs_penalty": -800,
+    "gear_vs_penalty": 0,
     "data_points": [
       {
         "altitude": 1000,
