@@ -49,9 +49,6 @@
     <None Update="magnetic\WMM.COF">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Update="perf-data-files\A320.csv">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Services\" />
