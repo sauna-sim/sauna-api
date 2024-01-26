@@ -148,6 +148,8 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
             }
         }
 
+        public Length DepartureAirportElevation => _depArpt == null ? new Length(0) : _depArpt.Elevation;
+
         private string _arrIcao;
         private Airport _arrArpt;
         public Airport ArrivalAirport
@@ -174,6 +176,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
                 }
             }
         }
+        public Length ArrivalAirportElevation => _arrArpt == null ? new Length(0) : _arrArpt.Elevation;
 
         public IRouteLeg ActiveLeg
         {
@@ -450,11 +453,23 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
 
         public void OnPositionUpdate(int intervalMs)
         {
+            // Calculate distance to destination
+            var distanceToDest = AlongTrackDistance;
+            lock (_routeLegsLock) {
+                foreach (var leg in _routeLegs)
+                {
+                    if (leg.LegLength > (Length)0)
+                    {
+                        distanceToDest += leg.LegLength;
+                    }
+                }
+            }
+
             // Method to set FMS phase
             SetPhase();
 
             // Set FMS Speed
-            CalculateFmsSpeed();
+            (_spdUnits, _selSpd) = CalculateFmsSpeed(PhaseType, distanceToDest, _parentAircraft.Position.IndicatedAltitude);
 
             var position = _parentAircraft.Position;
 
@@ -545,95 +560,83 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
             }
         }
 
-        private void CalculateFmsSpeed()
+        private (McpSpeedUnitsType units, int selectedSpeed) CalculateFmsSpeed(FmsPhaseType fmsPhase, Length distanceToDest, Length indicatedAltitude)
         {
             if (PhaseType == FmsPhaseType.CLIMB)
             {
-                if (_parentAircraft.Position.IndicatedAltitude < _parentAircraft.RelaventAirport.Elevation + Length.FromFeet(1000))
+                if (indicatedAltitude < DepartureAirportElevation + Length.FromFeet(1000))
                 {
-                    _spdUnits = McpSpeedUnitsType.KNOTS;
-                    _selSpd = 180;
-                }
-                else if (_parentAircraft.Position.IndicatedAltitude < _parentAircraft.RelaventAirport.Elevation + Length.FromFeet(3000))
+                    return (McpSpeedUnitsType.KNOTS, _parentAircraft.PerformanceData.V2_KIAS);
+                } else if (indicatedAltitude < DepartureAirportElevation + Length.FromFeet(3000))
                 {
-                    _spdUnits = McpSpeedUnitsType.KNOTS;
-                    _selSpd = 210;
-                }                
-                else if (_parentAircraft.Position.IndicatedAltitude < _parentAircraft.RelaventAirport.Elevation + Length.FromFeet(10000))
+                    return (McpSpeedUnitsType.KNOTS, Math.Min(210, PerfInit.ClimbKias));
+                } else if (indicatedAltitude.Feet < PerfInit.LimitAlt)
                 {
-                    _spdUnits = McpSpeedUnitsType.KNOTS;
-                    _selSpd = 250;                    
-                }
-                else
+                    return (McpSpeedUnitsType.KNOTS, Math.Min(PerfInit.ClimbKias, PerfInit.LimitSpeed));
+                } else
                 {
-                    // spd 270/.76 
-                    var climbIas = _parentAircraft.PerformanceData.Climb_KIAS;
-                    var climbMach = _parentAircraft.PerformanceData.Climb_Mach;
+                    if (PerfInit.ClimbMach <= 0)
+                    {
+                        return (McpSpeedUnitsType.KNOTS, PerfInit.ClimbKias);
+                    }
 
-                    SetConversionSpeed(Velocity.FromKnots(climbIas), climbMach);
+                    return GetConversionSpeed(Velocity.FromKnots(PerfInit.ClimbKias), PerfInit.ClimbMach / 100.0);
                 }
-            }
-            else if (PhaseType == FmsPhaseType.CRUISE)
+            } else if (PhaseType == FmsPhaseType.CRUISE)
             {
-                if (_parentAircraft.Position.IndicatedAltitude < _parentAircraft.RelaventAirport.Elevation + Length.FromFeet(10000))
+                if (CruiseAltitude < PerfInit.LimitAlt)
                 {
-                    _spdUnits = McpSpeedUnitsType.KNOTS;
-                    _selSpd = 250;
-                }
-                else
+                    return (McpSpeedUnitsType.KNOTS, PerfInit.LimitSpeed);
+                } else
                 {
-                    // spd 270/.76 
-                    var cruiseIas = _parentAircraft.PerformanceData.Cruise_KIAS;
-                    var cruiseMach = _parentAircraft.PerformanceData.Cruise_Mach;
+                    if (PerfInit.CruiseMach <= 0)
+                    {
+                        return (McpSpeedUnitsType.KNOTS, PerfInit.CruiseKias);
+                    }
 
-                    SetConversionSpeed(Velocity.FromKnots(cruiseIas), cruiseMach);
+                    return GetConversionSpeed(Velocity.FromKnots(PerfInit.CruiseKias), PerfInit.CruiseMach / 100.0);
                 }
-            }
-            else if (PhaseType == FmsPhaseType.DESCENT)
+            } else if (PhaseType == FmsPhaseType.DESCENT)
             {
-                if (_parentAircraft.Position.IndicatedAltitude < _parentAircraft.RelaventAirport.Elevation + Length.FromFeet(10000))
+                if (indicatedAltitude.Feet < PerfInit.LimitAlt)
                 {
-                    _spdUnits = McpSpeedUnitsType.KNOTS;
-                    _selSpd = 250;
-                }
-                else
+                    return (McpSpeedUnitsType.KNOTS, Math.Min(PerfInit.DescentKias, PerfInit.LimitSpeed));
+                } else
                 {
-                    var descentIas = _parentAircraft.PerformanceData.Descent_KIAS;
-                    var descentMach = _parentAircraft.PerformanceData.Descent_Mach;
+                    if (PerfInit.DescentMach <= 0)
+                    {
+                        return (McpSpeedUnitsType.KNOTS, PerfInit.DescentKias);
+                    }
 
-                    SetConversionSpeed(Velocity.FromKnots(descentIas), descentMach);
+                    return GetConversionSpeed(Velocity.FromKnots(PerfInit.DescentKias), PerfInit.DescentMach / 100.0);
                 }
-            }
-            else if (PhaseType == FmsPhaseType.APPROACH)
+            } else if (PhaseType == FmsPhaseType.APPROACH)
             {
-                if (_parentAircraft.Position.IndicatedAltitude < _parentAircraft.RelaventAirport.Elevation + Length.FromFeet(1300))
+                var speedGates = _parentAircraft.PerformanceData.ApproachSpeedGates;
+                
+                if (speedGates == null || speedGates.Count <= 0)
                 {
-                    _spdUnits = McpSpeedUnitsType.KNOTS;
-                    _selSpd = 135;
+                    return (McpSpeedUnitsType.KNOTS, Math.Min(PerfInit.DescentKias, PerfInit.LimitSpeed));
                 }
-                else if (_parentAircraft.Position.IndicatedAltitude < _parentAircraft.RelaventAirport.Elevation + Length.FromFeet(2000))
+
+                // Use distance from threshold to determine approach speed
+                foreach ((int distance, int speed) in speedGates)
                 {
-                    _spdUnits = McpSpeedUnitsType.KNOTS;
-                    _selSpd = 160;
+                    if (distanceToDest.NauticalMiles <= distance)
+                    {
+                        return (McpSpeedUnitsType.KNOTS, speed);
+                    }
                 }
-                else if (_parentAircraft.Position.IndicatedAltitude < _parentAircraft.RelaventAirport.Elevation + Length.FromFeet(3000))
-                {
-                    _spdUnits = McpSpeedUnitsType.KNOTS;
-                    _selSpd = 180;
-                }
-                else
-                {
-                    _spdUnits = McpSpeedUnitsType.KNOTS;
-                    _selSpd = 210;
-                }
-            }
-            else if(PhaseType == FmsPhaseType.GO_AROUND)
+
+                return (McpSpeedUnitsType.KNOTS, speedGates[speedGates.Count - 1].Item2);
+            } else
             {
-                _spdUnits = McpSpeedUnitsType.KNOTS;
-                _selSpd = 135;
+                // Go Around
+                return (McpSpeedUnitsType.KNOTS, 135); // TODO: DEFINITELY CHANGE THIS!!!!!!!!!!!!!
             }
         }
-        private void SetConversionSpeed(Velocity ias, double mach)
+
+        private (McpSpeedUnitsType units, int selectedSpeed) GetConversionSpeed(Velocity ias, double mach)
         {
             double curIasMach;
             var gribPoint = _parentAircraft.Position.GribPoint;
@@ -648,15 +651,14 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
 
             if (curIasMach >= mach)
             {
-                _spdUnits = McpSpeedUnitsType.MACH;
-                _selSpd = (int)(mach * 100);
+                return (McpSpeedUnitsType.MACH, (int)(mach * 100));
             }
             else
             {
-                _spdUnits = McpSpeedUnitsType.KNOTS;
-                _selSpd = (int) ias.Knots;
+                return (McpSpeedUnitsType.KNOTS, (int) ias.Knots);
             }
         }
+
         private void RecalculateVnavPath()
         {
             lock (_routeLegsLock)
@@ -693,11 +695,13 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
 
                                 if (targetAngle < 0)
                                 {
+
                                     // Calculate idle descent angle
                                     double idlePitch = PerfDataHandler.GetRequiredPitchForThrust(_parentAircraft.PerformanceData, 0, 0, )
                                 }
                                 // Calculate angle if there isn't a target angle
-                                leg.EndPoint.Angle
+                                leg.EndPoint.Angle;
+
                                 // TODO: Change this to actually calculate VNAV paths
                                 leg.EndPoint.VnavTargetAltitude = leg.EndPoint.LowerAltitudeConstraint;
                             }
