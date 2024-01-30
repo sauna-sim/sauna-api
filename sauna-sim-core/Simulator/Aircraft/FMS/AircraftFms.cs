@@ -659,13 +659,37 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
             }
         }
 
+        private void CalculateVnavPathBetweenTwoPoints(FmsPoint end, FmsPoint start, IRouteLeg routeLeg, Length legLength, Length distanceToRunway)
+        {
+            // Add Decel Point(s) if required
+
+            // Calculate idle descent angle
+
+            // Calculate start target alt
+
+            // Adjust start target alt accounting for constraints and cruise altitude
+            
+            // If "Direct" angle between points is more than idle, set it to direct
+            // If "Direct" angle is less than idle and results in a level segment less than 2 nautical miles, set it to direct
+        }
+
         private void RecalculateVnavPath()
         {
             lock (_routeLegsLock)
             {
                 if (_routeLegs != null)
                 {
-                    // Go through route legs in reverse
+                    // Go through all legs and set target speed
+                    foreach (var routeLeg in _routeLegs)
+                    {
+
+                    }
+
+                    // Go through all route legs with end points in reverse
+                    // 
+
+
+
                     double lastTargetAlt = -1;
                     Length distanceToRwy = Length.FromMeters(0);
                     for (int i = _routeLegs.Count - 1; i >= 0; i--)
@@ -676,8 +700,13 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
                         leg.InitializeLeg(_parentAircraft);
 
                         // Update VNAV info
+
+
                         if (leg.EndPoint != null)
                         {
+                            // Calculate speed at end point
+                            var endSpeed = CalculateFmsSpeed(FmsPhaseType.DESCENT, distanceToRwy, )
+
                             // Set last target alt if it's not already set
                             if (lastTargetAlt < 0)
                             {
@@ -695,7 +724,6 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
 
                                 if (targetAngle < 0)
                                 {
-
                                     // Calculate idle descent angle
                                     double idlePitch = PerfDataHandler.GetRequiredPitchForThrust(_parentAircraft.PerformanceData, 0, 0, )
                                 }

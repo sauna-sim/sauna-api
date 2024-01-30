@@ -74,6 +74,11 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
         Length LegLength { get; }
 
         /// <summary>
+        /// List of Deceleration points. Length, speed
+        /// </summary>
+        List<(Length, int)> DecelPoints { get; }
+
+        /// <summary>
         /// Route Leg Type
         /// </summary>
         RouteLegTypeEnum LegType { get; }
