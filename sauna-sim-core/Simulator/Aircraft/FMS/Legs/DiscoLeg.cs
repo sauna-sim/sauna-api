@@ -56,8 +56,6 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
         {
             return "===(DISCO)===";
         }
-
-        public List<(Length, int)> DecelPoints => new List<(Length, int)>();
     }
 }
 

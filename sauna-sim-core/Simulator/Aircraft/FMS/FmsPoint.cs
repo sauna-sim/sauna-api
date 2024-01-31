@@ -34,12 +34,6 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
 
         public double AngleConstraint { get; set; } = -1;
 
-        public double VnavTargetAltitude { get; set; } = -1;
-
-        public double VnavTargetSpeed { get; set; } = -1;
-
-        public double VnavTargetAngle { get; set; } = -1;
-
         public ConstraintType SpeedConstraintType { get; set; } = ConstraintType.FREE;
 
         public double SpeedConstraint { get; set; }

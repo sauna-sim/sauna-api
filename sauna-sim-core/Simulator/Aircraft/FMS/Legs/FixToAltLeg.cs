@@ -103,7 +103,5 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
         }
 
         public List<NdLine> UiLines => new List<NdLine>();
-
-        public List<(Length, int)> DecelPoints => new List<(Length, int)>();
     }
 }

@@ -673,14 +673,44 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
             // If "Direct" angle is less than idle and results in a level segment less than 2 nautical miles, set it to direct
         }
 
+        private int BuildVnavClimb()
+        {
+            // Get current altitude
+            Length currentAlt = _parentAircraft.Position.IndicatedAltitude;
+
+            // Check current leg
+            if (_activeLeg != null && _activeLeg.EndPoint != null && _activeLeg.LegLength > new Length(0))
+            {
+
+            }
+
+            // Loop through legs
+            lock (_routeLegsLock)
+            {
+                if (_routeLegs != null)
+                {
+                    int i = 0;
+                    foreach (var routeLeg in _routeLegs)
+                    {
+                        if (routeLeg.EndPoint != null)
+                        {
+
+                        }
+                        i++;
+                    }
+                }
+            }
+        }
+
         private void RecalculateVnavPath()
         {
             lock (_routeLegsLock)
             {
                 if (_routeLegs != null)
                 {
-                    // Go through all legs and set target speed
-                    foreach (var routeLeg in _routeLegs)
+
+                    // Build VNAV Profile based on current phase
+                    if (PhaseType == FmsPhaseType.CLIMB)
                     {
 
                     }

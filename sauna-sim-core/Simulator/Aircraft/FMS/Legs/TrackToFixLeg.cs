@@ -110,7 +110,5 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
                 return retList;
             }
         }
-
-        public List<(Length, int)> DecelPoints => new List<(Length, int)>();
     }
 }
