@@ -7,7 +7,7 @@ using System.ComponentModel;
 using System.Data.SQLite;
 using System.Text;
 
-namespace NavData_Interface.DataSources.DFDUtility
+namespace NavData_Interface.DataSources.DFDUtility  
 {
     internal static class SQLHelper
     {
@@ -26,7 +26,7 @@ namespace NavData_Interface.DataSources.DFDUtility
 
         internal static WaypointDescription waypointDescriptionFromDescriptionString(string descriptionString)
         {
-            if (descriptionString.Length > 3)
+            if (descriptionString.Length > 4)
             {
                 throw new FormatException("The waypoint description is invalid because the description field isn't the right length");
             }

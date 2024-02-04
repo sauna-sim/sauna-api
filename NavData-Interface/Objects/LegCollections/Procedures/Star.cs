@@ -19,6 +19,26 @@ namespace NavData_Interface.Objects.LegCollections.Procedures
         
         protected override List<Transition> SecondTransitions { get { return _rwyTransitions; } }
         protected override Transition SelectedSecondTransition { get { return _selectedRwyTransition;} set { _selectedRwyTransition = value; } }
+        public void selectRunwayTransition(string runwayTransitionIdentifier)
+        {
+            try
+            {
+                selectSecondTransition(normaliseRwyTransitionId(runwayTransitionIdentifier));
+            }
+            catch (ArgumentException ex)
+            {
+                // Maybe we want, say 01L or R, but the transition is for both
+                // So try 01B
+                if (runwayTransitionIdentifier.EndsWith("R") || runwayTransitionIdentifier.EndsWith("L"))
+                {
+                    selectSecondTransition(normaliseRwyTransitionId(runwayTransitionIdentifier).Remove(4) + "B");
+                }
+            }
+        }
+
+        public void selectTransition(string transitionIdentifier) => selectFirstTransition(transitionIdentifier);
+
+
         public Star(string airportIdentifier, string routeIdentifier, List<Transition> transitions, List<Leg> commonLegs, List<Transition> rwyTransitions, Length transitionAltitude) : base(airportIdentifier, routeIdentifier, commonLegs, transitionAltitude)
         {
             _transitions = transitions;

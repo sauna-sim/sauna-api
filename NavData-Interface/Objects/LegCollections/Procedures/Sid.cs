@@ -16,6 +16,23 @@ namespace NavData_Interface.Objects.LegCollections.Procedures
         private List<Transition> _rwyTransitions = new List<Transition>();
         private Transition _selectedRwyTransition = null;
 
+        public void selectRunwayTransition(string runwayTransitionIdentifier)
+        {
+            try
+            {
+                selectFirstTransition(normaliseRwyTransitionId(runwayTransitionIdentifier));
+            } catch (ArgumentException ex)
+            {
+                // Maybe we want, say 01L or R, but the transition is for both
+                // So try 01B
+                if (runwayTransitionIdentifier.EndsWith("R") || runwayTransitionIdentifier.EndsWith ("L")) { 
+                    selectFirstTransition(normaliseRwyTransitionId(runwayTransitionIdentifier).Remove(4) + "B");
+                }
+            }
+        }
+
+        public void selectTransition(string transitionIdentifier) => selectSecondTransition(transitionIdentifier);
+
         protected override List<Transition> FirstTransitions { get { return _rwyTransitions; } }
         protected override Transition SelectedFirstTransition { get { return _selectedRwyTransition; } set { _selectedRwyTransition = value; } }
 

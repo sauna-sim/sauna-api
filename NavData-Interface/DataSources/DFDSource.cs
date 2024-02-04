@@ -437,5 +437,26 @@ namespace NavData_Interface.DataSources
 
             return sid;
         }
+
+        private SQLiteCommand StarLookupByAirportAndIdentifier(string airportIdentifier, string sidIdentifier)
+        {
+            SQLiteCommand command = new SQLiteCommand(_connection);
+
+            command.CommandText = $"SELECT * FROM tbl_stars WHERE airport_identifier == @airport AND procedure_identifier = @sid";
+
+            command.Parameters.AddWithValue("@airport", airportIdentifier);
+            command.Parameters.AddWithValue("@sid", sidIdentifier);
+
+            return command;
+        }
+
+        public override Star GetStarByAirportAndIdentifier(string airportIdentifier, string sidIdentifier)
+        {
+            var reader = StarLookupByAirportAndIdentifier(airportIdentifier, sidIdentifier).ExecuteReader();
+
+            var sid = StarFactory.Factory(reader, _connection);
+
+            return sid;
+        }
     }
 }

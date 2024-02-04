@@ -285,5 +285,20 @@ namespace NavData_Interface.DataSources
 
             return null;
         }
+
+        public override Star GetStarByAirportAndIdentifier(string airportIdentifier, string sidIdentifier)
+        {
+            foreach (var source in _sources.Values)
+            {
+                var airport = source.GetStarByAirportAndIdentifier(airportIdentifier, sidIdentifier);
+
+                if (airport != null)
+                {
+                    return airport;
+                }
+            }
+
+            return null;
+        }
     }
 }

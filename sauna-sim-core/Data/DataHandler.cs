@@ -179,5 +179,15 @@ namespace SaunaSim.Core.Data
                 return sid;
             }
         }
+
+        public static Star GetStarByAirportAndIdentifier(Fix airport, string sidIdentifier)
+        {
+            lock (_navdataMutex)
+            {
+                var sid = _navdataSource.GetStarByAirportAndIdentifier(airport.Identifier, sidIdentifier);
+
+                return sid;
+            }
+        }
     }
 }

@@ -37,6 +37,11 @@ namespace NavData_Interface.DataSources
             return null;
         }
 
+        public virtual Star GetStarByAirportAndIdentifier(string airportIdentifier, string sidIdentifier)
+        {
+            return null;
+        }
+
         public Fix GetClosestFixByIdentifier(GeoPoint point, string identifier)
         {
             var fixes = GetFixesByIdentifier(identifier);

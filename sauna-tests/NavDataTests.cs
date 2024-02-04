@@ -2,6 +2,7 @@
 using AviationCalcUtilNet.Units;
 using NavData_Interface.DataSources;
 using NavData_Interface.Objects.Fixes.Waypoints;
+using NavData_Interface.Objects.LegCollections.Procedures;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -19,9 +20,23 @@ namespace sauna_tests
         }
 
         [Test]
-        public void Test1()
+        public static void TestGetStarFromAirportIdentifier()
         {
-            Assert.Pass();
+            var navDataInterface = new DFDSource("e_dfd_2301.s3db");
+            var star = navDataInterface.GetStarByAirportAndIdentifier("EGKK", "KIDL1G");
+
+            Console.WriteLine(star);
+
+            star = navDataInterface.GetStarByAirportAndIdentifier("KIAD", "CAVLR4");
+            star.selectTransition("DORRN");
+            star.selectRunwayTransition("01R");
+
+            Console.WriteLine(star);
+
+            foreach (var leg in star)
+            {
+                Console.WriteLine(leg);
+            }
         }
 
         [Test]
@@ -33,8 +48,8 @@ namespace sauna_tests
             Console.WriteLine(sid);
 
             sid = navDataInterface.GetSidByAirportAndIdentifier("KIAD", "JCOBY4");
-            sid.selectFirstTransition("01R");
-            sid.selectSecondTransition("AGARD");
+            sid.selectRunwayTransition("01R");
+            sid.selectTransition("AGARD");
 
             Console.WriteLine(sid);
 
