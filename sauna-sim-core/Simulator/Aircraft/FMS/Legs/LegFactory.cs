@@ -32,6 +32,11 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
                     case LegType.TRACK_TO_FIX:
                         // We SHOULD have a previous leg.
                         {
+                            if (HandlePotentialDisco(previousLeg, currentLeg, routeLegs, mcManager))
+                            {
+                                break;
+                            }
+
                             FmsPoint point1 = FmsPointFromNavDataLeg(previousLeg);
                             FmsPoint point2 = FmsPointFromNavDataLeg(currentLeg);
 
@@ -97,6 +102,11 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
                         }
                     case LegType.RADIUS_TO_FIX:
                         {
+                            if (HandlePotentialDisco(previousLeg, currentLeg, routeLegs, mcManager))
+                            {
+                                break;
+                            }
+
                             FmsPoint startPoint = FmsPointFromNavDataLeg(previousLeg);
                             FmsPoint endPoint = FmsPointFromNavDataLeg(currentLeg);
                             Fix centerPoint = currentLeg.CenterPoint;
@@ -181,6 +191,30 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
         internal static IList<IRouteLeg> RouteLegsFromNavDataLegs(IList<Leg> leg, MagneticTileManager mcManager)
         {
             return RouteLegsFromNavDataLegs(leg.GetEnumerator(), mcManager);
+        }
+
+        internal static bool HandlePotentialDisco(Leg previousLeg, Leg currentLeg, IList<IRouteLeg> routeLegs, MagneticTileManager mcManager)
+        {
+            if (previousLeg.EndPoint == null)
+            {
+                // The previous leg doesn't have an EndPoint yet this is a TF leg
+                // This means that maybe we're sticking together transitions that don't
+                // connect, etc. Add a disco leg then direct to our EndPoint.
+
+                // If the previous leg has no EndPoint, there MUST be an OutboundMagneticCourse
+                // per ARINC 424. We don't handle the case where it doesn't have it
+                routeLegs.Add(
+                    new DiscoLeg(
+                        mcManager.MagneticToTrue(currentLeg.EndPoint.Location, DateTime.Now, previousLeg.OutboundMagneticCourse
+                        )));
+
+                FmsPoint direct = FmsPointFromNavDataLeg(currentLeg);
+
+                routeLegs.Add(new DirectToFixLeg(direct));
+                return true;
+            }
+
+            return false;
         }
 
         internal static FmsPoint FmsPointFromNavDataLeg(Leg leg)

@@ -30,11 +30,11 @@ namespace NavData_Interface.Objects.LegCollections.Procedures
         /// </summary>
         public string RouteIdentifier { get; }
 
-        protected abstract List<Transition> FirstTransitions { get; set; }
+        protected abstract List<Transition> FirstTransitions { get; }
 
         private List<Leg> _commonLegs;
 
-        protected abstract List<Transition> SecondTransitions { get; set; }
+        protected abstract List<Transition> SecondTransitions { get; }
 
         protected abstract Transition SelectedFirstTransition { get; set; }
 
@@ -62,14 +62,16 @@ namespace NavData_Interface.Objects.LegCollections.Procedures
             }
         }
 
+        protected string normaliseRwyTransitionId(string identifier)
+        {
+            return ("RW" + identifier.ToUpper()).PadRight(5);
+        }
+
         protected void selectFirstTransition(string identifier)
         {
-            identifier = ("RW" + identifier.ToUpper()).PadRight(5);
-
             foreach (var transition in FirstTransitions)
             {
-                if (transition.TransitionIdentifier == identifier ||
-                    transition.TransitionIdentifier.EndsWith("B") && identifier.Substring(0, 4) == transition.TransitionIdentifier.Substring(0, 4))
+                if (transition.TransitionIdentifier == identifier)
                 {
                     SelectedFirstTransition = transition;
                     return;
@@ -100,13 +102,11 @@ namespace NavData_Interface.Objects.LegCollections.Procedures
         }
 
 
-        public TerminalProcedure(string airportIdentifier, string routeIdentifier, List<Transition> firstTransitions, List<Leg> commonLegs, List<Transition> secondTransitions, Length transitionAltitude)
+        public TerminalProcedure(string airportIdentifier, string routeIdentifier, List<Leg> commonLegs, Length transitionAltitude)
         {
             AirportIdentifier = airportIdentifier;
             RouteIdentifier = routeIdentifier;
-            FirstTransitions = firstTransitions;
             _commonLegs = commonLegs;
-            SecondTransitions = secondTransitions;
             _transitionAltitude = transitionAltitude;
         }
 
@@ -211,9 +211,9 @@ namespace NavData_Interface.Objects.LegCollections.Procedures
             }
         }
 
-        protected abstract string FirstTransitionName { get; }
+        protected virtual string FirstTransitionName => SelectedFirstTransition?.TransitionIdentifier;
 
-        protected abstract string SecondTransitionName { get; }
+        protected virtual string SecondTransitionName => SelectedSecondTransition?.TransitionIdentifier;
 
         public override string ToString()
         {
