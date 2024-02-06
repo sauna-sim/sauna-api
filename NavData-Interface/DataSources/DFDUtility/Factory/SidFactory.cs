@@ -178,17 +178,18 @@ namespace NavData_Interface.DataSources.DFDUtility.Factory
                     recommendedNavaid = new VhfNavaid(location, "", "", "", navaidIdentifier, navaidIdentifier, 199.998, "", null, Length.FromNauticalMiles(200));
                 } finally
                 {
-                    theta = Bearing.FromDegrees(Double.Parse(reader["theta"].ToString()));
+                    if (reader["theta"].GetType() != typeof(DBNull))
+                    {
+                        theta = Bearing.FromDegrees((double)reader["theta"]);
+                    }
                 }
             }
 
-            var arcRadiusRaw = reader["arc_radius"]?.ToString();
-
             Length arcRadius = null;
 
-            if (arcRadiusRaw != "")
+            if (reader["arc_radius"].GetType() != typeof(DBNull))
             {
-                arcRadius = Length.FromFeet(Int32.Parse(arcRadiusRaw));
+                arcRadius = Length.FromNauticalMiles((double)reader["arc_radius"]);
             }
 
             var magneticCourseRaw = reader["magnetic_course"].ToString();

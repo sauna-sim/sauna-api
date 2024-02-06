@@ -38,16 +38,13 @@ namespace sauna_tests
 
             var query = new SQLiteCommand("SELECT DISTINCT airport_identifier, procedure_identifier FROM tbl_sids", connection);
             var reader = query.ExecuteReader();
+            var navDataInterface = new DFDSource("e_dfd_2301.s3db");
 
             reader.Read();
 
             while (reader.HasRows)
             {
-                var navDataInterface = new DFDSource("e_dfd_2301.s3db");
-
                 var sid = navDataInterface.GetSidByAirportAndIdentifier(reader["airport_identifier"].ToString(), reader["procedure_identifier"].ToString());
-
-                Console.WriteLine(sid);
 
                 reader.Read();
             }
