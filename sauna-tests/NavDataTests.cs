@@ -5,6 +5,8 @@ using NavData_Interface.Objects.Fixes.Waypoints;
 using NavData_Interface.Objects.LegCollections.Procedures;
 using System;
 using System.Collections.Generic;
+using System.Data.Common;
+using System.Data.SQLite;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -17,6 +19,38 @@ namespace sauna_tests
         [SetUp]
         public void Setup()
         {
+        }
+
+        [Test]
+        public static void TestLoadAllSids()
+        {
+            var filePath = "e_dfd_2301.s3db";
+            var connectionString = new SQLiteConnectionStringBuilder()
+            {
+                DataSource = filePath,
+                Version = 3,
+                ReadOnly = true
+            }.ToString();
+
+            var connection = new SQLiteConnection(connectionString);
+
+            connection.Open();
+
+            var query = new SQLiteCommand("SELECT DISTINCT airport_identifier, procedure_identifier FROM tbl_sids", connection);
+            var reader = query.ExecuteReader();
+
+            reader.Read();
+
+            while (reader.HasRows)
+            {
+                var navDataInterface = new DFDSource("e_dfd_2301.s3db");
+
+                var sid = navDataInterface.GetSidByAirportAndIdentifier(reader["airport_identifier"].ToString(), reader["procedure_identifier"].ToString());
+
+                Console.WriteLine(sid);
+
+                reader.Read();
+            }
         }
 
         [Test]
