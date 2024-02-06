@@ -316,6 +316,7 @@ namespace NavData_Interface.DataSources
                     var obj = objectFactory(reader);
                     objects.Add(obj);
                 }
+                reader.Close();
             }
 
             return objects;

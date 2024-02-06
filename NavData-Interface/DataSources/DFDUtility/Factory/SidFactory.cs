@@ -90,6 +90,8 @@ namespace NavData_Interface.DataSources.DFDUtility.Factory
                 }
             }
 
+            reader.Close();
+
             return new Sid(airportIdentifier, routeIdentifier, runwayTransitions, commonLegs, transitions, transitionAltitude);
         }
 
