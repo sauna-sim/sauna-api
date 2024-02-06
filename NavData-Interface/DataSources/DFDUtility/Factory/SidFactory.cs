@@ -46,11 +46,14 @@ namespace NavData_Interface.DataSources.DFDUtility.Factory
                         }
                     case "5":
                         // This leg is for the common portion. Read just this leg and add it
-                        if (runwayTransitions.Count == 0 && reader["transition_altitude"].ToString() != "")
+                        if (runwayTransitions.Count == 0)
                         {
-                            // When there are no runway transitions, the first leg of the common part will have
-                            // A non-null transition_altitude, which is the transition altitude for this SID.
-                            transitionAltitude = Length.FromFeet(Int32.Parse(reader["transition_altitude"].ToString()));
+                            // There are no transitions, so get the transition altitude from the first common leg
+                            // If null, we'll keep transitionAltitude null, because this means it's determined by ATC
+                            if (reader["transition_altitude"].GetType() != typeof(DBNull))
+                            {
+                                transitionAltitude = Length.FromFeet((long)reader["transition_altitude"]);
+                            }
                         }
                         commonLegs.Add(ReadLeg(reader, connection));
                         reader.Read();
@@ -93,7 +96,13 @@ namespace NavData_Interface.DataSources.DFDUtility.Factory
         private static Transition ReadTransition(SQLiteDataReader reader, SQLiteConnection connection, string transitionIdentifier)
         {
             // The transition altitude for this SID is always on the first leg of each transition. Store it now
-            var transitionAltitude = Length.FromFeet(Double.Parse(reader["transition_altitude"].ToString()));
+            // This COULD be null if it's determined by ATC
+            Length transitionAltitude = null;
+
+            if (reader["transition_altitude"].GetType() != typeof(DBNull))
+            {
+                transitionAltitude = Length.FromFeet((long)reader["transition_altitude"]);
+            }
 
             var legs = new List<Leg>();
 
@@ -287,7 +296,7 @@ namespace NavData_Interface.DataSources.DFDUtility.Factory
             {
                 GeoPoint centerWaypointLocation = SQLHelper.locationFromColumns(reader, "center_waypoint_latitude", "center_waypoint_longitude");
 
-                Waypoint centerPoint = new Waypoint(centerWaypointIdent, centerWaypointLocation);
+                centerFix = new Waypoint(centerWaypointIdent, centerWaypointLocation);
             }
 
             double? legLength = null;

@@ -1,5 +1,6 @@
 ﻿using AviationCalcUtilNet.GeoTools;
 using AviationCalcUtilNet.Units;
+using FsdConnectorNet;
 using NavData_Interface.DataSources;
 using NavData_Interface.Objects.Fixes.Waypoints;
 using NavData_Interface.Objects.LegCollections.Procedures;
@@ -7,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Data.Common;
 using System.Data.SQLite;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -19,6 +21,69 @@ namespace sauna_tests
         [SetUp]
         public void Setup()
         {
+        }
+
+        [Test]
+        public void TestReader() 
+        {
+            var filePath = "e_dfd_2301.s3db";
+            var connectionString = new SQLiteConnectionStringBuilder()
+            {
+                DataSource = filePath,
+                Version = 3,
+                ReadOnly = true
+            }.ToString();
+
+            var connection = new SQLiteConnection(connectionString);
+            connection.Open();
+
+            SQLiteCommand command = new SQLiteCommand(connection);
+
+            command.CommandText = $"SELECT * FROM tbl_sids WHERE airport_identifier == @airport AND procedure_identifier = @sid";
+
+            command.Parameters.AddWithValue("@airport", "EGKK");
+            command.Parameters.AddWithValue("@sid", "LAM6M");
+
+            var reader = command.ExecuteReader();
+
+            int i = 0;
+
+            Stopwatch stopwatch = new Stopwatch();
+            stopwatch.Start();
+
+            while (reader.Read()) { i++; }
+            stopwatch.Stop();
+
+            Console.WriteLine(stopwatch.Elapsed / i);
+        }
+
+        [Test]
+        public void TestReader2()
+        {
+            var filePath = "e_dfd_2301.s3db";
+            var connectionString = new SQLiteConnectionStringBuilder()
+            {
+                DataSource = filePath,
+                Version = 3,
+                ReadOnly = true
+            }.ToString();
+
+            var connection = new SQLiteConnection(connectionString);
+            connection.Open();
+
+            SQLiteCommand command = new SQLiteCommand("SELECT * FROM tbl_sids", connection);
+
+            var reader = command.ExecuteReader();
+
+            int i = 0;
+            Stopwatch stopwatch = new Stopwatch();
+            stopwatch.Start();
+
+            while (reader.Read()) { i++; }
+
+            stopwatch.Stop();
+
+            Console.WriteLine(stopwatch.Elapsed/i);
         }
 
         [Test]
@@ -74,13 +139,19 @@ namespace sauna_tests
         public static void TestGetSidFromAirportIdentifier()
         {
             var navDataInterface = new DFDSource("e_dfd_2301.s3db");
+
             var sid = navDataInterface.GetSidByAirportAndIdentifier("EGKK", "LAM6M");
 
             Console.WriteLine(sid);
 
+            var stopwatch = new Stopwatch();
+            stopwatch.Start();
+
             sid = navDataInterface.GetSidByAirportAndIdentifier("KIAD", "JCOBY4");
             sid.selectRunwayTransition("01R");
             sid.selectTransition("AGARD");
+
+            stopwatch.Stop();
 
             Console.WriteLine(sid);
 
@@ -88,6 +159,8 @@ namespace sauna_tests
             {
                 Console.WriteLine(leg);
             }
+
+            Console.WriteLine($"JCOBY time {stopwatch.Elapsed}");
         }
 
         [Test]
