@@ -1,6 +1,7 @@
 ﻿using AviationCalcUtilNet.GeoTools;
 using AviationCalcUtilNet.Units;
 using FsdConnectorNet;
+using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using NavData_Interface.DataSources;
 using NavData_Interface.Objects.Fixes.Waypoints;
 using NavData_Interface.Objects.LegCollections.Procedures;
@@ -10,6 +11,7 @@ using System.Data.Common;
 using System.Data.SQLite;
 using System.Diagnostics;
 using System.Linq;
+using System.Net.Security;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -110,6 +112,35 @@ namespace sauna_tests
             while (reader.HasRows)
             {
                 var sid = navDataInterface.GetSidByAirportAndIdentifier(reader["airport_identifier"].ToString(), reader["procedure_identifier"].ToString());
+
+                reader.Read();
+            }
+        }
+
+        [Test]
+        public static void TestLoadAllStars()
+        {
+            var filePath = "e_dfd_2301.s3db";
+            var connectionString = new SQLiteConnectionStringBuilder()
+            {
+                DataSource = filePath,
+                Version = 3,
+                ReadOnly = true
+            }.ToString();
+
+            var connection = new SQLiteConnection(connectionString);
+
+            connection.Open();
+
+            var query = new SQLiteCommand("SELECT DISTINCT airport_identifier, procedure_identifier FROM tbl_stars", connection);
+            var reader = query.ExecuteReader();
+            var navDataInterface = new DFDSource("e_dfd_2301.s3db");
+
+            reader.Read();
+
+            while (reader.HasRows) 
+            {
+                var sid = navDataInterface.GetStarByAirportAndIdentifier(reader["airport_identifier"].ToString(), reader["procedure_identifier"].ToString());
 
                 reader.Read();
             }
