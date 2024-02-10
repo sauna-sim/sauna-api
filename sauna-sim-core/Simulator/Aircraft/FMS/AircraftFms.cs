@@ -673,15 +673,40 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
             // If "Direct" angle is less than idle and results in a level segment less than 2 nautical miles, set it to direct
         }
 
+        private double GetKnotsSpeed(McpSpeedUnitsType units, int speed, Length altitude, GribDataPoint gribPoint)
+        {
+            if (units == McpSpeedUnitsType.MACH)
+            {
+                Temperature t0 = gribPoint != null ? gribPoint.Temp : AtmosUtil.ISA_STD_TEMP;
+                Length h0 = gribPoint != null ? gribPoint.GeoPotentialHeight : Length.FromMeters(0);
+                Pressure p0 = gribPoint != null ? gribPoint.LevelPressure : AtmosUtil.ISA_STD_PRES;
+                Temperature t = AtmosUtil.CalculateTempAtAlt(altitude, h0, t0);
+                
+                Velocity tas = AtmosUtil.ConvertMachToTas(speed / 100.0, t);
+                return AtmosUtil.ConvertTasToIas(tas, p0, altitude, h0, t0).ias.Knots;
+            }
+
+            return speed;
+        }
+
         private int BuildVnavClimb()
         {
-            // Get current altitude
+            // Get current altitude and cruise alt
             Length currentAlt = _parentAircraft.Position.IndicatedAltitude;
+            Length cruiseAlt = Length.FromFeet(CruiseAltitude);
 
             // Check current leg
             if (_activeLeg != null && _activeLeg.EndPoint != null && _activeLeg.LegLength > new Length(0))
             {
+                // Calculate max climb rate
+                (McpSpeedUnitsType speedUnits, int speed) = CalculateFmsSpeed(FmsPhaseType.CLIMB, Length.FromMeters(0), currentAlt);
 
+                if (speedUnits == McpSpeedUnitsType.MACH)
+                {
+
+                }
+
+                PerfDataHandler.GetRequiredPitchForThrust(_parentAircraft.PerformanceData, 1, 0, 
             }
 
             // Loop through legs

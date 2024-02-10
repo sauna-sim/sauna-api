@@ -20,6 +20,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
             _point = point;
             _routePointType = type;
             GribPoints = new Dictionary<Length, GribDataPoint>();
+            VnavPoints = new List<FmsVnavPoint>();
         }
 
         public IRoutePoint Point => _point;
@@ -33,6 +34,8 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
         public int UpperAltitudeConstraint { get; set; }
 
         public double AngleConstraint { get; set; } = -1;
+
+        public List<FmsVnavPoint> VnavPoints { get; set; }
 
         public ConstraintType SpeedConstraintType { get; set; } = ConstraintType.FREE;
 
