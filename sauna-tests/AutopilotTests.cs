@@ -38,7 +38,16 @@ namespace sauna_tests
             Angle minPitch = AutopilotUtil.PITCH_LIMIT_MIN;
             double zeroVsPitch = PerfDataHandler.GetRequiredPitchForVs(_perfData, 0, targetSpd + speedDelta, densAlt, massKg, 0, 0);
             double zeroAccelPitch = PerfDataHandler.GetRequiredPitchForThrust(_perfData, 0, 0, targetSpd, densAlt, massKg, 0, 0);
-            Angle demandedPitch = AutopilotUtil.CalculateDemandedPitchForSpeed(Velocity.FromKnots(speedDelta), Angle.FromDegrees(10), Angle.FromDegrees(zeroAccelPitch), maxPitch, minPitch, (Angle pitch) => Acceleration.FromKnotsPerSecond(PerfDataHandler.CalculatePerformance(_perfData, pitch.Degrees, 0, targetSpd + speedDelta, densAlt, massKg, 0, 0).accelFwd), 100);
+            var pitchToVsFunc = (Angle pitch) => Velocity.FromFeetPerMinute(PerfDataHandler.CalculatePerformance(
+                _perfData,
+                pitch.Degrees,
+                0,
+                targetSpd + speedDelta,
+                densAlt,
+                massKg,
+                0,
+                0).vs);
+            Angle demandedPitch = AutopilotUtil.CalculateDemandedPitchForSpeed(Velocity.FromKnots(speedDelta), Angle.FromDegrees(10), Angle.FromDegrees(zeroAccelPitch), maxPitch, minPitch, (Angle pitch) => Acceleration.FromKnotsPerSecond(PerfDataHandler.CalculatePerformance(_perfData, pitch.Degrees, 0, targetSpd + speedDelta, densAlt, massKg, 0, 0).accelFwd), pitchToVsFunc, 10);
             Assert.That(demandedPitch.Degrees, Is.EqualTo(zeroAccelPitch));
         }
 
