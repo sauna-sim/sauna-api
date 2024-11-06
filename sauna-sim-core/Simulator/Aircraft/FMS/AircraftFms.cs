@@ -682,10 +682,24 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
             RecalculateVnavPath();
         }
 
+        private FmsPoint GetBottomOfDescentPoint()
+        {
+            if (_routeLegs.Count == 0)
+            {
+                return _activeLeg?.EndPoint;
+            }
+
+            return _routeLegs[_routeLegs.Count - 1].EndPoint;
+        }
+
         private void RecalculateVnavPath()
         {
-            // Calculate VNAV Descent
+            lock (_routeLegsLock) {
+                FmsPoint cruiseTod;
+                FmsPoint bod = GetBottomOfDescentPoint();
 
+            // Start with approach to 15nmi
+            }
         }
 
         private (Angle requiredFpa, Length vTk_m) GetPitchInterceptInfoForCurrentLeg()
