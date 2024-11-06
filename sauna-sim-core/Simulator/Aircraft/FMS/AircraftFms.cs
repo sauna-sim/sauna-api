@@ -203,7 +203,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
                     {
                         _routeLegs.Insert(1, new DiscoLeg(Bearing.FromDegrees(0)));
                     }
-                    RecalculateVnavPath();
+                    RecalculatePerformance();
                 }
                 catch (ArgumentOutOfRangeException ex) { }
             }
@@ -214,7 +214,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
             lock (_routeLegsLock)
             {
                 _routeLegs.Add(routeLeg);
-                RecalculateVnavPath();
+                RecalculatePerformance();
             }
         }
 
@@ -227,7 +227,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
                     _activeLeg = _routeLegs[0];
                     _wpEvtTriggered = false;
                     _routeLegs.RemoveAt(0);
-                    RecalculateVnavPath();
+                    RecalculatePerformance();
                 }
             }
 
@@ -318,7 +318,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
                     _routeLegs.Insert(0, new DiscoLeg(dtoLeg.FinalTrueCourse));
                 }
 
-                RecalculateVnavPath();
+                RecalculatePerformance();
             }
         }
 
@@ -357,7 +357,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
 
                     // Add leg
                     _routeLegs.Insert(index, holdLeg);
-                    RecalculateVnavPath();
+                    RecalculatePerformance();
                     return true;
                 }
             }
@@ -385,7 +385,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
                 {
                     _routeLegs.RemoveAt(0);
 
-                    RecalculateVnavPath();
+                    RecalculatePerformance();
                 }
             }
         }
@@ -659,19 +659,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
             }
         }
 
-        private void CalculateVnavPathBetweenTwoPoints(FmsPoint end, FmsPoint start, IRouteLeg routeLeg, Length legLength, Length distanceToRunway)
-        {
-            // Add Decel Point(s) if required
-
-            // Calculate idle descent angle
-
-            // Calculate start target alt
-
-            // Adjust start target alt accounting for constraints and cruise altitude
-            
-            // If "Direct" angle between points is more than idle, set it to direct
-            // If "Direct" angle is less than idle and results in a level segment less than 2 nautical miles, set it to direct
-        }
+        
 
         private double GetKnotsSpeed(McpSpeedUnitsType units, int speed, Length altitude, GribDataPoint gribPoint)
         {
@@ -689,117 +677,15 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
             return speed;
         }
 
-        private int BuildVnavClimb()
+        public void RecalculatePerformance()
         {
-            // Get current altitude and cruise alt
-            Length currentAlt = _parentAircraft.Position.IndicatedAltitude;
-            Length cruiseAlt = Length.FromFeet(CruiseAltitude);
-
-            // Check current leg
-            if (_activeLeg != null && _activeLeg.EndPoint != null && _activeLeg.LegLength > new Length(0))
-            {
-                // Calculate max climb rate
-                (McpSpeedUnitsType speedUnits, int speed) = CalculateFmsSpeed(FmsPhaseType.CLIMB, Length.FromMeters(0), currentAlt);
-
-                if (speedUnits == McpSpeedUnitsType.MACH)
-                {
-
-                }
-
-                PerfDataHandler.GetRequiredPitchForThrust(_parentAircraft.PerformanceData, 1, 0, 
-            }
-
-            // Loop through legs
-            lock (_routeLegsLock)
-            {
-                if (_routeLegs != null)
-                {
-                    int i = 0;
-                    foreach (var routeLeg in _routeLegs)
-                    {
-                        if (routeLeg.EndPoint != null)
-                        {
-
-                        }
-                        i++;
-                    }
-                }
-            }
+            RecalculateVnavPath();
         }
 
         private void RecalculateVnavPath()
         {
-            lock (_routeLegsLock)
-            {
-                if (_routeLegs != null)
-                {
+            // Calculate VNAV Descent
 
-                    // Build VNAV Profile based on current phase
-                    if (PhaseType == FmsPhaseType.CLIMB)
-                    {
-
-                    }
-
-                    // Go through all route legs with end points in reverse
-                    // 
-
-
-
-                    double lastTargetAlt = -1;
-                    Length distanceToRwy = Length.FromMeters(0);
-                    for (int i = _routeLegs.Count - 1; i >= 0; i--)
-                    {
-                        var leg = _routeLegs[i];
-
-                        // Update leg dimensions
-                        leg.InitializeLeg(_parentAircraft);
-
-                        // Update VNAV info
-
-
-                        if (leg.EndPoint != null)
-                        {
-                            // Calculate speed at end point
-                            var endSpeed = CalculateFmsSpeed(FmsPhaseType.DESCENT, distanceToRwy, )
-
-                            // Set last target alt if it's not already set
-                            if (lastTargetAlt < 0)
-                            {
-                                if (leg.EndPoint.LowerAltitudeConstraint < 0)
-                                {
-                                    lastTargetAlt = _arrArpt != null ? _arrArpt.Elevation.Feet : 0.0;
-                                } else
-                                {
-                                    lastTargetAlt = leg.EndPoint.LowerAltitudeConstraint;
-                                }
-
-                                leg.EndPoint.VnavTargetAltitude = lastTargetAlt;
-                            } else {
-                                double targetAngle = leg.EndPoint.AngleConstraint;
-
-                                if (targetAngle < 0)
-                                {
-                                    // Calculate idle descent angle
-                                    double idlePitch = PerfDataHandler.GetRequiredPitchForThrust(_parentAircraft.PerformanceData, 0, 0, )
-                                }
-                                // Calculate angle if there isn't a target angle
-                                leg.EndPoint.Angle;
-
-                                // TODO: Change this to actually calculate VNAV paths
-                                leg.EndPoint.VnavTargetAltitude = leg.EndPoint.LowerAltitudeConstraint;
-                            }
-
-                            // Update distance to runway
-                            distanceToRwy += leg.LegLength;
-                        }
-                    }
-                }
-                if (_activeLeg != null && _activeLeg.EndPoint != null)
-                {
-                    // TODO: Change this to actually calculate VNAV paths
-                    _activeLeg.EndPoint.VnavTargetAltitude = _activeLeg.EndPoint.LowerAltitudeConstraint;
-                }
-            }
         }
 
         private (Angle requiredFpa, Length vTk_m) GetPitchInterceptInfoForCurrentLeg()
