@@ -25,6 +25,7 @@ using NavData_Interface.Objects.Fixes;
 using SaunaSim.Api.Services;
 using AviationCalcUtilNet.Geo;
 using AviationCalcUtilNet.Units;
+using NavData_Interface.Objects.LegCollections.Legs;
 
 namespace SaunaSim.Api.Controllers
 {
@@ -255,15 +256,22 @@ namespace SaunaSim.Api.Controllers
                         {
                             string[] waypoints = items[1].Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
 
-                            AircraftBuilder.FactoryFmsWaypoint lastPoint = null;
+                            Leg lastLeg = null;
+
+                            bool canBeAirway = false;
 
                             for (int i = 0; i < waypoints.Length; i++)
                             {
                                 if (waypoints[i].ToLower() == "hold" && lastPoint != null)
                                 {
-                                    lastPoint.ShouldHold = true;
+                                    HoldToManualLeg hold = new HoldToManualLeg(lastPoint, bea)
                                 } else
                                 {
+                                    if (canBeAirway && lastPoint != null)
+                                    {
+                                        
+                                    }
+
                                     int altRestr = -1;
                                     if (waypoints[i].Contains("/"))
                                     {
@@ -287,6 +295,8 @@ namespace SaunaSim.Api.Controllers
                                             Console.Error.WriteLine($"Invalid waypoint name {waypoints[i]}");
                                         }
                                     }
+
+                                    TrackToFixLeg newLeg = new TrackToFixLeg(, );
 
                                     lastPoint = new AircraftBuilder.FactoryFmsWaypoint(waypoints[i]);
 

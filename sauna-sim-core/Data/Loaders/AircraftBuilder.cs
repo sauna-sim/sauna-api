@@ -45,7 +45,9 @@ namespace SaunaSim.Core.Data.Loaders
 		public int RequestedAlt { get; set; } = -1;
 		public List<FactoryFmsWaypoint> FmsWaypoints { get; set; } = new List<FactoryFmsWaypoint>();
 
-		internal AircraftBuilder(MagneticTileManager magTileMgr, GribTileManager gribTileMgr, CommandHandler commandHandler) {
+		List<IRouteLeg> Legs { get; set; } = new List<IRouteLeg>();
+
+        internal AircraftBuilder(MagneticTileManager magTileMgr, GribTileManager gribTileMgr, CommandHandler commandHandler) {
 			MagTileManager = magTileMgr;
 			GribTileManager = gribTileMgr;
 			CommandHandler = commandHandler;
@@ -140,46 +142,54 @@ namespace SaunaSim.Core.Data.Loaders
                 aircraft.Autopilot.CurrentVerticalMode = VerticalModeType.FLCH;
 			}
 
+            List<IRouteLeg> legs;
+
             // Route
-            List<IRouteLeg> legs = new List<IRouteLeg>();
-
-            FmsPoint lastPoint = null;
-
-			foreach (FactoryFmsWaypoint waypoint in FmsWaypoints)
+            if (Legs.Count > 0)
 			{
-                Fix nextWp = DataHandler.GetClosestWaypointByIdentifier(waypoint.Identifier, aircraft.Position.PositionGeoPoint);
+                legs = Legs;
+            } else
+			{
+                legs = new List<IRouteLeg>();
 
-                if (nextWp != null)
+                FmsPoint lastPoint = null;
+
+                foreach (FactoryFmsWaypoint waypoint in FmsWaypoints)
                 {
-                    FmsPoint fmsPt = new FmsPoint(new RouteWaypoint(nextWp), RoutePointTypeEnum.FLY_BY)
-					{
-                        UpperAltitudeConstraint = waypoint.UpperAltitudeConstraint,
-                        LowerAltitudeConstraint = waypoint.LowerAltitudeConstraint,
-                        SpeedConstraintType = waypoint.SpeedConstratintType,
-                        SpeedConstraint = waypoint.SpeedConstraint,
+                    Fix nextWp = DataHandler.GetClosestWaypointByIdentifier(waypoint.Identifier, aircraft.Position.PositionGeoPoint);
 
-                    };
-
-                    if (lastPoint == null)
+                    if (nextWp != null)
                     {
-                        lastPoint = fmsPt;
-                    }
-                    else
-                    {
-                        legs.Add(new TrackToFixLeg(lastPoint, fmsPt));
-                        lastPoint = fmsPt;
-                    }
-
-					if (waypoint.ShouldHold)
-					{
-                        PublishedHold pubHold = DataHandler.GetPublishedHold(fmsPt.Point.PointName, fmsPt.Point.PointPosition);
-
-                        if (pubHold != null)
+                        FmsPoint fmsPt = new FmsPoint(new RouteWaypoint(nextWp), RoutePointTypeEnum.FLY_BY)
                         {
-                            fmsPt.PointType = RoutePointTypeEnum.FLY_OVER;
-                            HoldToManualLeg leg = new HoldToManualLeg(lastPoint, BearingTypeEnum.MAGNETIC, pubHold.InboundCourse, pubHold.TurnDirection, pubHold.LegLengthType, pubHold.LegLength, MagTileManager);
-                            legs.Add(leg);
-                            lastPoint = leg.EndPoint;
+                            UpperAltitudeConstraint = waypoint.UpperAltitudeConstraint,
+                            LowerAltitudeConstraint = waypoint.LowerAltitudeConstraint,
+                            SpeedConstraintType = waypoint.SpeedConstratintType,
+                            SpeedConstraint = waypoint.SpeedConstraint,
+
+                        };
+
+                        if (lastPoint == null)
+                        {
+                            lastPoint = fmsPt;
+                        }
+                        else
+                        {
+                            legs.Add(new TrackToFixLeg(lastPoint, fmsPt));
+                            lastPoint = fmsPt;
+                        }
+
+                        if (waypoint.ShouldHold)
+                        {
+                            PublishedHold pubHold = DataHandler.GetPublishedHold(fmsPt.Point.PointName, fmsPt.Point.PointPosition);
+
+                            if (pubHold != null)
+                            {
+                                fmsPt.PointType = RoutePointTypeEnum.FLY_OVER;
+                                HoldToManualLeg leg = new HoldToManualLeg(lastPoint, BearingTypeEnum.MAGNETIC, pubHold.InboundCourse, pubHold.TurnDirection, pubHold.LegLengthType, pubHold.LegLength, MagTileManager);
+                                legs.Add(leg);
+                                lastPoint = leg.EndPoint;
+                            }
                         }
                     }
                 }
