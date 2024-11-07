@@ -3,6 +3,7 @@ using AviationCalcUtilNet.Units;
 using FsdConnectorNet;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using NavData_Interface.DataSources;
+using NavData_Interface.Objects.Fixes;
 using NavData_Interface.Objects.Fixes.Waypoints;
 using NavData_Interface.Objects.LegCollections.Procedures;
 using System;
@@ -259,5 +260,38 @@ namespace sauna_tests
             weirdPointResults = navdataInterface.GetFixesByIdentifier("NOEXIST");
             Assert.That(weirdPointResults[0] == weirdPoint2 && weirdPointResults.Count == 1);
         }
+
+        [Test]
+        public static void TestGetAirwayFromIdentifierAndFixes()
+        {
+            // Arrange
+            var navDataInterface = new DFDSource("e_dfd_2301.s3db"); // Adjust the data file path as necessary
+            var startFix = new Waypoint("SANBA", new GeoPoint(52.356701, -1.663610)); // Replace with actual start fix identifier
+            var endFix = new Waypoint("HON", new GeoPoint(52.356701, -1.663610));     // Replace with actual end fix identifier
+
+            // Act
+            var airway = navDataInterface.GetAirwayFromIdentifierAndFixes("N859", startFix, endFix);
+
+            // Print or Assert outputs to validate results
+            Console.WriteLine(airway);
+
+            // Optionally measure execution time
+            var stopwatch = new Stopwatch();
+            stopwatch.Start();
+
+            airway.SelectSection(startFix, endFix);
+
+            stopwatch.Stop();
+            Console.WriteLine($"Execution time: {stopwatch.Elapsed}");
+
+            // Iterate through airway sections, if necessary
+            foreach (var section in airway) // Assuming airway has sections
+            {
+                Console.WriteLine(section);
+            }
+
+            // Additional assertions can be added here to validate the result
+        }
+
     }
 }
