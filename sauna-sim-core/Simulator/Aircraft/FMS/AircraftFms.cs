@@ -79,7 +79,6 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
                 CruiseMach = (int)(_parentAircraft.PerformanceData.Cruise_Mach * 100),
                 DescentKias = _parentAircraft.PerformanceData.Descent_KIAS,
                 DescentMach = (int)(_parentAircraft.PerformanceData.Descent_Mach * 100),
-                DescentAngle = 30,
                 CruiseAlt = (int)(_parentAircraft.FlightPlan != null ? _parentAircraft.FlightPlan.Value.cruiseLevel : 0),
                 LimitAlt = 10000,
                 LimitSpeed = 250,
@@ -698,7 +697,15 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
                 FmsPoint cruiseTod;
                 FmsPoint bod = GetBottomOfDescentPoint();
 
-            // Start with approach to 15nmi
+                int legIndex = _routeLegs.Count - 1;
+                double apchAngle = bod.AngleConstraint > 0 ? bod.AngleConstraint : 3.0;
+                double distanceToRwy = 0.0;
+
+                // Loop through legs backwards
+                while (legIndex >= -1)
+                {
+                    IRouteLeg curLeg = legIndex >= 0 ? _routeLegs[legIndex] : _activeLeg;
+                }
             }
         }
 

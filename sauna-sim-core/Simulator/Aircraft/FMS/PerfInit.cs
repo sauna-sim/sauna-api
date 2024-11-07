@@ -12,7 +12,6 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
         public int CruiseMach { get; set; }
         public int DescentKias { get; set; }
         public int DescentMach { get; set; }
-        public int DescentAngle { get; set; }
         public int CruiseAlt { get; set; }
         public int LimitSpeed { get; set; }
         public int LimitAlt { get; set; }
