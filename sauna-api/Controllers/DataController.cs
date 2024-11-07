@@ -265,6 +265,13 @@ namespace SaunaSim.Api.Controllers
                                 } else
                                 {
                                     int altRestr = -1;
+
+                                    if (i < waypoints.Length - 1 && lastPoint != null)
+                                    {
+                                        // This could be an airway
+                                        var airway = DataHandler.GetAirwayFromIdentifierAndFixes(waypoints[i], );
+                                    }
+
                                     if (waypoints[i].Contains("/"))
                                     {
                                         var splitWp = waypoints[i].Split("/");
