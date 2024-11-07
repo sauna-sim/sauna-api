@@ -681,30 +681,35 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
             RecalculateVnavPath();
         }
 
-        private FmsPoint GetBottomOfDescentPoint()
-        {
-            if (_routeLegs.Count == 0)
-            {
-                return _activeLeg?.EndPoint;
-            }
-
-            return _routeLegs[_routeLegs.Count - 1].EndPoint;
-        }
-
         private void RecalculateVnavPath()
         {
             lock (_routeLegsLock) {
-                FmsPoint cruiseTod;
-                FmsPoint bod = GetBottomOfDescentPoint();
-
                 int legIndex = _routeLegs.Count - 1;
-                double apchAngle = bod.AngleConstraint > 0 ? bod.AngleConstraint : 3.0;
+                double apchAngle = -1;
                 double distanceToRwy = 0.0;
+                double lastAlt = -1;
 
                 // Loop through legs backwards
                 while (legIndex >= -1)
                 {
                     IRouteLeg curLeg = legIndex >= 0 ? _routeLegs[legIndex] : _activeLeg;
+
+                    // Get approach angle
+                    if (apchAngle < 0)
+                    {
+                        apchAngle = curLeg.EndPoint.AngleConstraint > 0 ? curLeg.EndPoint.AngleConstraint : 3.0;
+                    }
+
+                    // Target Angle (for idle descent)
+                    double targetAngle = 0;
+                    if (distanceToRwy < 15)
+                    {
+                        targetAngle = apchAngle;
+                    } else
+                    {
+                        // Calculate idle descent angle
+
+                    }
                 }
             }
         }
