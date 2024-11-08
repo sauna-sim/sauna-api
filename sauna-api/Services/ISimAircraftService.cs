@@ -18,6 +18,9 @@ namespace SaunaSim.Api.Services
 		public List<SimAircraft> AircraftList { get; }
 
         public WebSocketHandler WebSocketHandler { get; }
+
+        public List<string> CommandsBuffer { get; }
+        public Mutex CommandsBufferLock { get; }
     }
 }
 

@@ -12,9 +12,9 @@ namespace SaunaSim.Api.Services
 {
 	public class SimAircraftService : ISimAircraftService
 	{
-        private readonly ILogger<DataController> _logger;
+		private readonly ILogger<DataController> _logger;
 
-        public SimAircraftHandler Handler { get; private set; }
+		public SimAircraftHandler Handler { get; private set; }
 
 		public CommandHandler CommandHandler { get; private set; }
 
@@ -23,6 +23,10 @@ namespace SaunaSim.Api.Services
 		public Mutex AircraftListLock => Handler.SimAircraftListLock;
 
 		public List<SimAircraft> AircraftList => Handler.SimAircraftList;
+
+		public List<string> CommandsBuffer { get; private set; }
+
+        public Mutex CommandsBufferLock { get; private set; }
 
         public SimAircraftService(ILogger<DataController> logger)
 		{
@@ -34,6 +38,8 @@ namespace SaunaSim.Api.Services
 			);
 			CommandHandler = new CommandHandler(Handler);
 			WebSocketHandler = new WebSocketHandler(Handler);
+			CommandsBuffer = new List<string>();
+			CommandsBufferLock = new Mutex();
 		}
 
 		private void LogFunc(string msg, int priority)
