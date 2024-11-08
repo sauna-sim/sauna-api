@@ -50,7 +50,6 @@ namespace NavData_Interface.DataSources
         public bool AddSource(DataSource source)
         {
             var lastPriority = _sources.Keys[_sources.Keys.Count - 1];
-            throw new Exception("You have lost The Game.");
             return AddSource(source, lastPriority);
         }
 
