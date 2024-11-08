@@ -712,6 +712,25 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
                     }
                 }
             }
+
+
+            // Psuedo Code:
+            // Loop through legs from last to first ending either when first leg is reached or cruise alt is reached
+            // Each iteration:
+            //      Use altitude last waypoint was crossed at
+            //      Calculate idle/approach descent angle
+            //      Figure out what start point altitude should be
+            //          Respecting "further up the road" constraint
+            //      Insert VNAV Point at the end point
+            //      If necessary:
+            //          Insert VNAV Point for decel to comply with speed restriction.
+            //          If there was a "further up the road" speed constraint, then the decel should be from that speed to the new constraint at end point
+            //              e.g.: 220kts from SOFEE -> 210kt at GOSHI
+            //          else assume Perf Init speeds
+            //              e.g.: 290kts -> 260kts at ROBUC
+            //      If speed/altitude restriction is discovered that the current path will violate
+            //          Return to the index where newly discovered constraint is still met
+            //              e.g.: If we get to GOSHI and realize we are too high, return to WINNI and build a level off point
         }
 
         private (Angle requiredFpa, Length vTk_m) GetPitchInterceptInfoForCurrentLeg()
