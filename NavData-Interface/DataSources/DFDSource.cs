@@ -400,7 +400,7 @@ namespace NavData_Interface.DataSources
         {
             SQLiteCommand command = new SQLiteCommand(_connection);
 
-            command.CommandText = $"SELECT * FROM tbl_airways WHERE airway_identifier == @airway";
+            command.CommandText = $"SELECT * FROM tbl_enroute_airways WHERE route_identifier == @airway";
 
             command.Parameters.AddWithValue("@airway", airwayIdentifier);
 

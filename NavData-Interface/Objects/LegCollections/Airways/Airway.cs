@@ -79,7 +79,7 @@ namespace NavData_Interface.Objects.LegCollections.Airways
             {
                 var legEndPoint = _points[i];
 
-                if (legEndPoint.Description.IsEndOfRoute && i != _selectedEndPointIndex)
+                if (forwards && (legEndPoint.Description.IsEndOfRoute && i != _selectedEndPointIndex) || !forwards && (legEndPoint.Description.IsEndOfRoute && i != _selectedStartPointIndex))
                 {
                     throw new ArgumentException("There is a discontinuity in the airway between these points");
                 }
@@ -109,7 +109,7 @@ namespace NavData_Interface.Objects.LegCollections.Airways
 
         internal Airway(List<AirwayPoint> points) : base()
         {
-            if (_points.Count < 2)
+            if (points.Count < 2)
             {
                 throw new ArgumentException("This airway has too few points!");
             }

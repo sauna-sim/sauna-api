@@ -5,6 +5,7 @@ using NavData_Interface;
 using NavData_Interface.DataSources;
 using NavData_Interface.Objects;
 using NavData_Interface.Objects.Fixes;
+using NavData_Interface.Objects.LegCollections.Airways;
 using NavData_Interface.Objects.LegCollections.Procedures;
 using System;
 using System.Collections.Generic;
@@ -177,6 +178,16 @@ namespace SaunaSim.Core.Data
                 var sid = _navdataSource.GetSidByAirportAndIdentifier(airport.Identifier, sidIdentifier);
 
                 return sid;
+            }
+        }
+
+        public static Airway GetAirwayFromIdentifierAndFixes(string airwayIdentifier, Fix startFix, Fix endFix)
+        {
+            lock (_navdataMutex)
+            {
+                var airway = _navdataSource.GetAirwayFromIdentifierAndFixes(airwayIdentifier, startFix, endFix);
+
+                return airway;
             }
         }
 
