@@ -10,7 +10,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
         public Length Alt { get; set; }
         public int Speed { get; set; }
         public McpSpeedUnitsType SpeedUnits { get; set; }
-        public double Angle { get; set; }
+        public Angle Angle { get; set; }
     }
 }
 

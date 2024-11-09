@@ -684,41 +684,61 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
         private void RecalculateVnavPath()
         {
             lock (_routeLegsLock) {
-                int legIndex = _routeLegs.Count - 1;
-                double apchAngle = -1;
-                double distanceToRwy = 0.0;
-                double lastAlt = -1;
+                int legIndex = _routeLegs.Count - 1; // Start at last leg
+                Angle apchAngle = null; // Approach angle (Only used in the approach phase)
+                Length distanceToRwy = Length.FromMeters(0); // Distance to the runway threshold
+                Length lastAlt = null; // Altitude last waypoint was crossed at
 
-                // Loop through legs backwards
+                // Constraints to follow from earlier on the arrival
+                Length earlyUpperAlt = null;
+                Length earlyLowerAlt = null;
+                int earlySpeed = -1;
+                McpSpeedUnitsType earlySpeedType = McpSpeedUnitsType.KNOTS;
+
+                // Loop through legs from last to first ending either when first leg is reached or cruise alt is reached
                 while (legIndex >= -1)
                 {
                     IRouteLeg curLeg = legIndex >= 0 ? _routeLegs[legIndex] : _activeLeg;
 
-                    // Get approach angle
-                    if (apchAngle < 0)
-                    {
-                        apchAngle = curLeg.EndPoint.AngleConstraint > 0 ? curLeg.EndPoint.AngleConstraint : 3.0;
+                    // Ensure current leg has an endpoint and a leg length
+                    if (curLeg.EndPoint == null || curLeg.LegLength <= Length.FromMeters(0)){
+                        // Skip this leg
+                        continue;
                     }
-
-                    // Target Angle (for idle descent)
-                    double targetAngle = 0;
-                    if (distanceToRwy < 15)
+                    
+                    // Calculate idle/approach descent angle
+                    Angle targetAngle = Angle.FromDegrees(0);
+                    if (distanceToRwy < Length.FromNauticalMiles(15))
                     {
+                        // Calculate approach angle if it's not set
+                        if (apchAngle == null){
+                            apchAngle = curLeg.EndPoint.AngleConstraint > 0 ? Angle.FromDegrees(curLeg.EndPoint.AngleConstraint) : Angle.FromDegrees(3.0);
+                        }
+
                         targetAngle = apchAngle;
                     } else
                     {
                         // Calculate idle descent angle
-
+                        targetAngle = Angle.FromDegrees(3.0); // TODO: Actually calculate this based off performance
                     }
-                }
-            }
 
+                    // If it's the first leg, set Vnav point
+                    if (lastAlt == null){
+                        lastAlt = curLeg.EndPoint.LowerAltitudeConstraint > 0 ? Length.FromFeet(curLeg.EndPoint.LowerAltitudeConstraint) : Length.FromMeters(0);
 
-            // Psuedo Code:
-            // Loop through legs from last to first ending either when first leg is reached or cruise alt is reached
-            // Each iteration:
-            //      Use altitude last waypoint was crossed at
-            //      Calculate idle/approach descent angle
+                        (var targetSpeedUnits, var targetSpeed) = CalculateFmsSpeed(FmsPhaseType.APPROACH, Length.FromMeters(0), lastAlt);
+
+                        curLeg.EndPoint.VnavPoints.Add(
+                            new FmsVnavPoint() {
+                                AlongTrackDistance = Length.FromMeters(0),
+                                Alt = lastAlt,
+                                Angle = targetAngle,
+                                Speed = targetSpeed,
+                                SpeedUnits = targetSpeedUnits
+                            }
+                        );
+                    }
+
             //      Figure out what start point altitude should be
             //          Respecting "further up the road" constraint
             //      Insert VNAV Point at the end point
@@ -731,6 +751,9 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
             //      If speed/altitude restriction is discovered that the current path will violate
             //          Return to the index where newly discovered constraint is still met
             //              e.g.: If we get to GOSHI and realize we are too high, return to WINNI and build a level off point
+                    
+                }
+            }
         }
 
         private (Angle requiredFpa, Length vTk_m) GetPitchInterceptInfoForCurrentLeg()
