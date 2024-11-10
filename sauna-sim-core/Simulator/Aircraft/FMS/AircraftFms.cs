@@ -739,6 +739,9 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
                         );
                     }
 
+                    // Figure out if decel point is required
+                    
+
             //      Figure out what start point altitude should be
             //          Respecting "further up the road" constraint
             //      Insert VNAV Point at the end point
