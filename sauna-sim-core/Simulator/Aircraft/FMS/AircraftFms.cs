@@ -686,14 +686,16 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
             lock (_routeLegsLock) {
                 int legIndex = _routeLegs.Count - 1; // Start at last leg
                 Angle apchAngle = null; // Approach angle (Only used in the approach phase)
-                Length distanceToRwy = Length.FromMeters(0); // Distance to the runway threshold
+                Length distanceToRwy = null; // Distance to the runway threshold
                 Length lastAlt = null; // Altitude last waypoint was crossed at
 
                 // Constraints to follow from earlier on the arrival
                 Length earlyUpperAlt = null;
                 Length earlyLowerAlt = null;
                 int earlySpeed = -1;
-                McpSpeedUnitsType earlySpeedType = McpSpeedUnitsType.KNOTS;
+                // Constraints from later on the arrival
+                Length laterDecelLength = null;
+                int laterDecelSpeed = -1;
 
                 // Loop through legs from last to first ending either when first leg is reached or cruise alt is reached
                 while (legIndex >= -1)
@@ -722,11 +724,14 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
                         targetAngle = Angle.FromDegrees(3.0); // TODO: Actually calculate this based off performance
                     }
 
+                    McpSpeedUnitsType targetSpeedUnits;
+                    int targetSpeed;
+
                     // If it's the first leg, set Vnav point
                     if (lastAlt == null){
                         lastAlt = curLeg.EndPoint.LowerAltitudeConstraint > 0 ? Length.FromFeet(curLeg.EndPoint.LowerAltitudeConstraint) : Length.FromMeters(0);
-
-                        (var targetSpeedUnits, var targetSpeed) = CalculateFmsSpeed(FmsPhaseType.APPROACH, Length.FromMeters(0), lastAlt);
+                        distanceToRwy = Length.FromMeters(0);
+                        (targetSpeedUnits, targetSpeed) = CalculateFmsSpeed(FmsPhaseType.APPROACH, Length.FromMeters(0), lastAlt);
 
                         curLeg.EndPoint.VnavPoints.Add(
                             new FmsVnavPoint() {
@@ -739,7 +744,28 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
                         );
                     }
 
+                    // Calculate current speed
+                    if (distanceToRwy < Length.FromNauticalMiles(15)){
+                        (targetSpeedUnits, targetSpeed) = CalculateFmsSpeed(FmsPhaseType.APPROACH, distanceToRwy, lastAlt);
+                    } else {
+                        (targetSpeedUnits, targetSpeed) = CalculateFmsSpeed(FmsPhaseType.DESCENT, distanceToRwy, lastAlt);
+                    }
+
+                    int targetSpeedKts = targetSpeedUnits == McpSpeedUnitsType.KNOTS ? targetSpeed : GetConversionSpeed()
+
+                    // Check if prior restriction is less than target speed
+                    if (earlySpeed > 0 && earlySpeed < )
+
                     // Figure out if decel point is required
+                    var speedConstraint = curLeg.EndPoint.SpeedConstraint;
+                    var speedConstraintType = curLeg.EndPoint.SpeedConstraintType;
+                    if (speedConstraint > 0) {
+                        int curSpeed;
+                        
+                        if ((speedConstraintType == ConstraintType.EXACT || speedConstraintType == ConstraintType.LESS) && 
+                        speedConstraint < ) {
+                        
+                    }
                     
 
             //      Figure out what start point altitude should be
