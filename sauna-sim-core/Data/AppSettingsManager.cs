@@ -12,7 +12,7 @@ namespace SaunaSim.Core.Data
     }
     public static class AppSettingsManager
     {
-        private static int _posCalcRate = 25;
+        private static int _posCalcRate = 100;
 
         public static AppSettings Settings { get; set; } = new AppSettings();
         public static (ushort, ushort) CommandFrequency { get => Settings.CommandFrequency; set => Settings.CommandFrequency = value; }
