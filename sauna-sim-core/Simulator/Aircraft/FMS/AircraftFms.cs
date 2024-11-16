@@ -751,10 +751,13 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
                         (targetSpeedUnits, targetSpeed) = CalculateFmsSpeed(FmsPhaseType.DESCENT, distanceToRwy, lastAlt);
                     }
 
-                    int targetSpeedKts = targetSpeedUnits == McpSpeedUnitsType.KNOTS ? targetSpeed : GetConversionSpeed()
+                    // Convert mach to knots if required
+                    int targetSpeedKts = (int) GetKnotsSpeed(targetSpeedUnits, targetSpeed, lastAlt, _parentAircraft.Position.GribPoint);
 
                     // Check if prior restriction is less than target speed
-                    if (earlySpeed > 0 && earlySpeed < )
+                    if (earlySpeed > 0 && earlySpeed < targetSpeedKts){
+                        
+                    }
 
                     // Figure out if decel point is required
                     var speedConstraint = curLeg.EndPoint.SpeedConstraint;
