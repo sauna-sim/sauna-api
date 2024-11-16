@@ -764,10 +764,30 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
                     var speedConstraintType = curLeg.EndPoint.SpeedConstraintType;
                     if (speedConstraint > 0) {
                         int curSpeed;
-                        
-                        if ((speedConstraintType == ConstraintType.EXACT || speedConstraintType == ConstraintType.LESS) && 
-                        speedConstraint < ) {
-                        
+
+                        if ((speedConstraintType == ConstraintType.EXACT || speedConstraintType == ConstraintType.LESS) && speedConstraint < targetSpeed)
+                        {
+                            //Calculate deceleration distance
+                            laterDecelSpeed = Convert.ToInt32(speedConstraint);
+                            laterDecelLength = Length.FromNauticalMiles((targetSpeed - speedConstraint) / 10.0); // Add actual DecelRate based on ACFT perf
+
+                            // Check if deceleration point fits within the current leg
+                            if (laterDecelLength <= curLeg.LegLength)
+                            {
+                                curLeg.EndPoint.VnavPoints.Add(new FmsVnavPoint
+                                {
+                                    AlongTrackDistance = curLeg.LegLength - laterDecelLength,
+                                    Alt = lastAlt,
+                                    Angle = targetAngle,
+                                    Speed = laterDecelSpeed,
+                                    SpeedUnits = targetSpeedUnits
+                                });
+
+                                //Adjust target speed
+                                targetSpeed = Convert.ToInt32(speedConstraint);
+                            }
+                            // If its greater than curLeg.Len do nothing, move onto the next leg that will handle it.
+                        }
                     }
                     
 
