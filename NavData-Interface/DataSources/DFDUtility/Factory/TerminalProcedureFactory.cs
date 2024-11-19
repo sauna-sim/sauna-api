@@ -128,10 +128,10 @@ namespace NavData_Interface.DataSources.DFDUtility.Factory
 
             var legs = new List<Leg>();
 
-            while (_reader.Read() && _reader["transition_identifier"].ToString() == transitionIdentifier)
+            do
             {
                 legs.Add(ReadLeg());
-            }
+            } while (_reader.Read() && _reader["transition_identifier"].ToString() == transitionIdentifier);
 
             return new Transition(legs, transitionIdentifier, transitionAltitude);
         }
