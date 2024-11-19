@@ -125,10 +125,13 @@ namespace SaunaSim.Core.Data.Loaders
 
             // Flightplan
             FlightPlan flightPlan;
+            string[] waypoints = new string[0];
+
             try
             {
                 flightPlan = FlightPlan.ParseFromEsScenarioFile(EsFlightPlanStr);
                 aircraft.FlightPlan = flightPlan;
+                waypoints = flightPlan.route?.Split(' ', '.') ?? new string[0];
             }
             catch (FlightPlanException e)
             {
@@ -145,8 +148,6 @@ namespace SaunaSim.Core.Data.Loaders
 
             // Route
             List<Leg> NavDataFormatLegs = new List<Leg>();
-
-            string[] waypoints = aircraft.FlightPlan?.route.Split(' ', '.');
 
             if (waypoints.Length > 0)
             {
@@ -222,6 +223,39 @@ namespace SaunaSim.Core.Data.Loaders
                     // So, waypoints[i] could be an airway, a Fix to go direct to, or a DCT meaning we go direct to waypoints[i+1]
                     // DCT is ALWAYS interpreted as direct, then we try to interpret as airway, otherwise as a Fix to go direct to
 
+                    // If this is the last point on the route it may be a STAR. If that is the case, try to use the previous point as transition
+                    // Otherwise go to the last waypoint and then DCT DEST
+
+                    if (i == waypoints.Length - 1)
+                    {
+                        string destAptIdentifier = aircraft.FlightPlan?.destination;
+
+                        Airport dest = DataHandler.GetAirportByIdentifier(destAptIdentifier);
+
+                        if (dest != null)
+                        {
+                            Star potentialStar = DataHandler.GetStarByAirportAndIdentifier(dest, waypoints[i]);
+
+                            if (potentialStar != null)
+                            {
+                                // Is the previous point a transition?
+                                try
+                                {
+                                    potentialStar.selectTransition(waypoints[i - 1]);
+                                }
+                                catch (ArgumentException ex)
+                                {
+                                    // Not a transition. Load the STAR without a transition
+                                }
+
+                                foreach (Leg l in potentialStar)
+                                {
+                                    NavDataFormatLegs.Add(l);
+                                }
+                            }
+                        }
+                    }
+
                     if (waypoints[i] == "DCT")
                     {
                         if (i == waypoints.Length - 1)
@@ -291,47 +325,6 @@ namespace SaunaSim.Core.Data.Loaders
 
             IList<IRouteLeg> legs = LegFactory.RouteLegsFromNavDataLegs(NavDataFormatLegs, MagTileManager);
             
-            /*
-            foreach (FactoryFmsWaypoint waypoint in FmsWaypoints)
-            {
-                Fix nextWp = DataHandler.GetClosestWaypointByIdentifier(waypoint.Identifier, aircraft.Position.PositionGeoPoint);
-
-                if (nextWp != null)
-                {
-                    FmsPoint fmsPt = new FmsPoint(new RouteWaypoint(nextWp), RoutePointTypeEnum.FLY_BY)
-                    {
-                        UpperAltitudeConstraint = waypoint.UpperAltitudeConstraint,
-                        LowerAltitudeConstraint = waypoint.LowerAltitudeConstraint,
-                        SpeedConstraintType = waypoint.SpeedConstratintType,
-                        SpeedConstraint = waypoint.SpeedConstraint,
-
-                    };
-
-                    if (lastPoint == null)
-                    {
-                        lastPoint = fmsPt;
-                    }
-                    else
-                    {
-                        legs.Add(new TrackToFixLeg(lastPoint, fmsPt));
-                        lastPoint = fmsPt;
-                    }
-
-                    if (waypoint.ShouldHold)
-                    {
-                        PublishedHold pubHold = DataHandler.GetPublishedHold(fmsPt.Point.PointName, fmsPt.Point.PointPosition);
-
-                        if (pubHold != null)
-                        {
-                            fmsPt.PointType = RoutePointTypeEnum.FLY_OVER;
-                            HoldToManualLeg leg = new HoldToManualLeg(lastPoint, BearingTypeEnum.MAGNETIC, pubHold.InboundCourse, pubHold.TurnDirection, pubHold.LegLengthType, pubHold.LegLength, MagTileManager);
-                            legs.Add(leg);
-                            lastPoint = leg.EndPoint;
-                        }
-                    }
-                }
-            }
-            */
             foreach (IRouteLeg leg in legs)
             {
                 aircraft.Fms.AddRouteLeg(leg);
