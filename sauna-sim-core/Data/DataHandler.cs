@@ -191,6 +191,16 @@ namespace SaunaSim.Core.Data
             }
         }
 
+        public static bool IsValidAirwayIdentifier(string airwayIdentifier)
+        {
+            lock (_navdataMutex)
+            {
+                var result = _navdataSource.IsValidAirwayIdentifier(airwayIdentifier);
+
+                return result;
+            }
+        }
+
         public static Star GetStarByAirportAndIdentifier(Fix airport, string sidIdentifier)
         {
             lock (_navdataMutex)
