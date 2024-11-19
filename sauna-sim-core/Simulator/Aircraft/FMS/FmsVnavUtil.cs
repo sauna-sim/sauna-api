@@ -388,7 +388,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
             if (iterator.AlongTrackDistance >= leg.LegLength)
             {
                 // Increment to next leg, but check alt constraints
-                if (iterator.LastAlt > iterator.EarlyUpperAlt)
+                if (iterator.EarlyUpperAlt != null && iterator.LastAlt > iterator.EarlyUpperAlt)
                 {
                     iterator.LastAlt = iterator.EarlyUpperAlt;
 
@@ -405,7 +405,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
                         Speed = targetSpeed,
                         SpeedUnits = targetSpeedUnits
                     });
-                } else if (iterator.LastAlt < iterator.EarlyLowerAlt)
+                } else if (iterator.EarlyLowerAlt != null && iterator.LastAlt < iterator.EarlyLowerAlt)
                 {
                     iterator.LastAlt = iterator.EarlyLowerAlt;
 
