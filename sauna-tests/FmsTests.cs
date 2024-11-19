@@ -35,7 +35,7 @@ namespace sauna_tests
             var navDataInterface = new DFDSource("e_dfd_2411.s3db");
             var star = navDataInterface.GetStarByAirportAndIdentifier("KBOS", "ROBUC3");
             star.selectTransition("JFK");
-            star.selectRunwayTransition("RW04R");
+            star.selectRunwayTransition("04R");
 
             IList<IRouteLeg> legs = LegFactory.RouteLegsFromNavDataLegs(star.GetEnumerator(), _magTileManager);
 
