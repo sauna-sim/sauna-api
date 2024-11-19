@@ -21,6 +21,8 @@ using AviationCalcUtilNet.Atmos;
 using System.Numerics;
 using AviationCalcUtilNet.Atmos.Grib;
 using SaunaSim.Core.Simulator.Aircraft.Performance;
+using AviationCalcUtilNet.Physics;
+using AviationCalcUtilNet.Math;
 
 namespace SaunaSim.Core.Simulator.Aircraft.FMS
 {
@@ -33,7 +35,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
         private readonly object _routeLegsLock;
         private bool _suspended;
         private static readonly Velocity MIN_GS_DIFF = Velocity.FromKnots(10);
-        private Velocity _lastGs = (Velocity) 0;
+        private Velocity _lastGs = (Velocity)0;
         private bool _wpEvtTriggered = false;
         private readonly MagneticTileManager _magTileMgr;
 
@@ -203,8 +205,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
                         _routeLegs.Insert(1, new DiscoLeg(Bearing.FromDegrees(0)));
                     }
                     RecalculatePerformance();
-                }
-                catch (ArgumentOutOfRangeException ex) { }
+                } catch (ArgumentOutOfRangeException ex) { }
             }
         }
 
@@ -266,13 +267,11 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
                     point = _activeLeg.StartPoint;
                     _routeLegs.Insert(0, _activeLeg);
                     index = 0;
-                }
-                else if (_activeLeg != null && _activeLeg.EndPoint != null && _activeLeg.EndPoint.Point.Equals(routePoint))
+                } else if (_activeLeg != null && _activeLeg.EndPoint != null && _activeLeg.EndPoint.Point.Equals(routePoint))
                 {
                     point = _activeLeg.EndPoint;
                     index = 0;
-                }
-                else
+                } else
                 {
                     foreach (IRouteLeg leg in _routeLegs)
                     {
@@ -281,8 +280,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
                             index = _routeLegs.IndexOf(leg);
                             point = leg.StartPoint;
                             break;
-                        }
-                        else if (leg.EndPoint != null && leg.EndPoint.Point.Equals(routePoint))
+                        } else if (leg.EndPoint != null && leg.EndPoint.Point.Equals(routePoint))
                         {
                             index = _routeLegs.IndexOf(leg) + 1;
                             point = leg.EndPoint;
@@ -311,8 +309,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
                 {
                     // Remove everything before index
                     _routeLegs.RemoveRange(0, index);
-                }
-                else
+                } else
                 {
                     _routeLegs.Insert(0, new DiscoLeg(dtoLeg.FinalTrueCourse));
                 }
@@ -332,8 +329,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
                 {
                     index = 0;
                     point = _activeLeg.EndPoint;
-                }
-                else
+                } else
                 {
                     foreach (IRouteLeg leg in _routeLegs)
                     {
@@ -454,7 +450,8 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
         {
             // Calculate distance to destination
             var distanceToDest = AlongTrackDistance;
-            lock (_routeLegsLock) {
+            lock (_routeLegsLock)
+            {
                 foreach (var leg in _routeLegs)
                 {
                     if (leg.LegLength > (Length)0)
@@ -513,8 +510,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
                 {
                     // Activate next leg on termination
                     ActivateNextLeg();
-                }
-                else if (ShouldStartTurnToNextLeg(intervalMs))
+                } else if (ShouldStartTurnToNextLeg(intervalMs))
                 {
                     // Begin turn to next leg, but do not activate
                     nextLeg.ProcessLeg(_parentAircraft, intervalMs);
@@ -529,7 +525,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
             // Check if we need to recalculate remaining legs and VNAV crossing altitudes
             if (Math.Abs((_lastGs - position.GroundSpeed).MetersPerSecond) > MIN_GS_DIFF.MetersPerSecond)
             {
-                RecalculateVnavPath();
+                //RecalculateVnavPath();
                 _lastGs = position.GroundSpeed;
             }
 
@@ -542,18 +538,16 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
             if (PhaseType == FmsPhaseType.CLIMB && Math.Abs(_parentAircraft.Position.IndicatedAltitude.Feet - CruiseAltitude) < 50)
             {
                 PhaseType = FmsPhaseType.CRUISE;
-            }
-            else if (PhaseType == FmsPhaseType.CRUISE && _parentAircraft.Autopilot.SelectedAltitude < CruiseAltitude - 100 &&
-                (_parentAircraft.Autopilot.CurrentVerticalMode != VerticalModeType.ALT || _parentAircraft.Autopilot.CurrentVerticalMode != VerticalModeType.VALT))
+            } else if (PhaseType == FmsPhaseType.CRUISE && _parentAircraft.Autopilot.SelectedAltitude < CruiseAltitude - 100 &&
+                  (_parentAircraft.Autopilot.CurrentVerticalMode != VerticalModeType.ALT || _parentAircraft.Autopilot.CurrentVerticalMode != VerticalModeType.VALT))
             {
                 PhaseType = FmsPhaseType.DESCENT;
             }
-            // TODO: Need to implement Airport Distance
-            else if (PhaseType == FmsPhaseType.DESCENT && _parentAircraft.Position.IndicatedAltitude < _parentAircraft.RelaventAirport.Elevation + Length.FromFeet(5000))
+              // TODO: Need to implement Airport Distance
+              else if (PhaseType == FmsPhaseType.DESCENT && _parentAircraft.Position.IndicatedAltitude < _parentAircraft.RelaventAirport.Elevation + Length.FromFeet(5000))
             {
                 PhaseType = FmsPhaseType.APPROACH;
-            }
-            else if (PhaseType == FmsPhaseType.GO_AROUND && _parentAircraft.Position.IndicatedAltitude > _parentAircraft.RelaventAirport.Elevation + Length.FromFeet(1300))
+            } else if (PhaseType == FmsPhaseType.GO_AROUND && _parentAircraft.Position.IndicatedAltitude > _parentAircraft.RelaventAirport.Elevation + Length.FromFeet(1300))
             {
                 PhaseType = FmsPhaseType.APPROACH;
             }
@@ -612,7 +606,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
             } else if (PhaseType == FmsPhaseType.APPROACH)
             {
                 var speedGates = _parentAircraft.PerformanceData.ApproachSpeedGates;
-                
+
                 if (speedGates == null || speedGates.Count <= 0)
                 {
                     return (McpSpeedUnitsType.KNOTS, Math.Min(PerfInit.DescentKias, PerfInit.LimitSpeed));
@@ -642,23 +636,21 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
             if (gribPoint != null)
             {
                 (_, curIasMach) = AtmosUtil.ConvertIasToTas(ias, gribPoint.LevelPressure, _parentAircraft.Position.TrueAltitude, gribPoint.GeoPotentialHeight, gribPoint.Temp);
-            }
-            else
+            } else
             {
-                (_, curIasMach) = AtmosUtil.ConvertIasToTas(ias, AtmosUtil.ISA_STD_PRES, _parentAircraft.Position.TrueAltitude, (Length) 0, AtmosUtil.ISA_STD_TEMP);
+                (_, curIasMach) = AtmosUtil.ConvertIasToTas(ias, AtmosUtil.ISA_STD_PRES, _parentAircraft.Position.TrueAltitude, (Length)0, AtmosUtil.ISA_STD_TEMP);
             }
 
             if (curIasMach >= mach)
             {
                 return (McpSpeedUnitsType.MACH, (int)(mach * 100));
-            }
-            else
+            } else
             {
-                return (McpSpeedUnitsType.KNOTS, (int) ias.Knots);
+                return (McpSpeedUnitsType.KNOTS, (int)ias.Knots);
             }
         }
 
-        
+
 
         private double GetKnotsSpeed(McpSpeedUnitsType units, int speed, Length altitude, GribDataPoint gribPoint)
         {
@@ -668,7 +660,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
                 Length h0 = gribPoint != null ? gribPoint.GeoPotentialHeight : Length.FromMeters(0);
                 Pressure p0 = gribPoint != null ? gribPoint.LevelPressure : AtmosUtil.ISA_STD_PRES;
                 Temperature t = AtmosUtil.CalculateTempAtAlt(altitude, h0, t0);
-                
+
                 Velocity tas = AtmosUtil.ConvertMachToTas(speed / 100.0, t);
                 return AtmosUtil.ConvertTasToIas(tas, p0, altitude, h0, t0).ias.Knots;
             }
@@ -681,148 +673,274 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
             RecalculateVnavPath();
         }
 
+        public FmsVnavLegIterator ProcessLegForVnav(IRouteLeg leg, FmsVnavLegIterator iterator)
+        {
+            // Ensure current leg has an endpoint and a leg length
+            if (leg.EndPoint == null || leg.LegLength <= Length.FromMeters(0))
+            {
+                // Skip this leg
+                if (iterator.ShouldRewind)
+                {
+                    iterator.Index++;
+                } else
+                {
+                    iterator.Index--;
+                }
+
+                return iterator;
+            }
+
+            FmsPoint endPoint = leg.EndPoint;
+            McpSpeedUnitsType targetSpeedUnits;
+            int targetSpeed;
+
+            // If it's the first leg, set Vnav point
+            if (iterator.LastAlt == null)
+            {
+                iterator.LastAlt = endPoint.LowerAltitudeConstraint > 0 ? Length.FromFeet(endPoint.LowerAltitudeConstraint) : Length.FromMeters(0);
+                iterator.DistanceToRwy = Length.FromMeters(0);
+                (targetSpeedUnits, targetSpeed) = CalculateFmsSpeed(FmsPhaseType.APPROACH, Length.FromMeters(0), iterator.LastAlt);
+                iterator.LastSpeed = targetSpeed;
+
+                // Calculate approach angle if it's not set
+                if (iterator.ApchAngle == null)
+                {
+                    iterator.ApchAngle = endPoint.AngleConstraint > 0 ? Angle.FromDegrees(endPoint.AngleConstraint) : Angle.FromDegrees(3.0);
+                }
+
+                endPoint.VnavPoints.Add(
+                    new FmsVnavPoint()
+                    {
+                        AlongTrackDistance = Length.FromMeters(0),
+                        Alt = iterator.LastAlt,
+                        Angle = iterator.ApchAngle,
+                        Speed = targetSpeed,
+                        SpeedUnits = targetSpeedUnits
+                    }
+                );
+            }
+
+            // Check if we are rewinding
+            if (iterator.ShouldRewind && !FmsVnavUtil.DoesPointMeetConstraints(endPoint, iterator.EarlyUpperAlt, iterator.EarlyLowerAlt, iterator.EarlySpeed))
+            {
+                iterator.Index++;
+                iterator.DistanceToRwy -= leg.LegLength;
+                return iterator;
+            }
+
+            // Not rewinding
+            iterator.ShouldRewind = false;
+
+            // Clear early restrictions if we're at earlyIndex
+            if (iterator.Index == iterator.EarlySpeedI)
+            {
+                iterator.EarlySpeedI = -2;
+                iterator.EarlySpeed = -1;
+            }
+
+            if (iterator.Index == iterator.EarlyLowerAltI)
+            {
+                iterator.EarlyLowerAltI = -2;
+                iterator.EarlyLowerAlt = null;
+            }
+
+            if (iterator.Index == iterator.EarlyUpperAltI)
+            {
+                iterator.EarlyUpperAltI = -2;
+                iterator.EarlyUpperAlt = null;
+            }
+
+            // Determine if constraints at end point are met
+            if (endPoint.SpeedConstraint > 0 && (endPoint.SpeedConstraintType == ConstraintType.LESS || endPoint.SpeedConstraintType == ConstraintType.EXACT) && iterator.LastSpeed > endPoint.SpeedConstraint)
+            {
+                iterator.EarlySpeed = (int)endPoint.SpeedConstraint;
+                iterator.EarlySpeedI = iterator.Index;
+
+                iterator.ShouldRewind = true;
+                iterator.Index++;
+                iterator.DistanceToRwy -= leg.LegLength;
+                return iterator;
+            }
+
+            if (endPoint.UpperAltitudeConstraint > 0 && iterator.LastAlt.Feet > endPoint.UpperAltitudeConstraint)
+            {
+                iterator.EarlyUpperAlt = Length.FromFeet(endPoint.UpperAltitudeConstraint);
+                iterator.EarlyUpperAltI = iterator.Index;
+
+                iterator.ShouldRewind = true;
+                iterator.Index++;
+                iterator.DistanceToRwy -= leg.LegLength;
+                return iterator;
+            }
+
+            if (endPoint.LowerAltitudeConstraint > 0 && iterator.LastAlt.Feet < endPoint.LowerAltitudeConstraint)
+            {
+                iterator.EarlyLowerAlt = Length.FromFeet(endPoint.LowerAltitudeConstraint);
+                iterator.EarlyLowerAltI = iterator.Index;
+
+                iterator.ShouldRewind = true;
+                iterator.Index++;
+                iterator.DistanceToRwy -= leg.LegLength;
+                return iterator;
+            }
+
+            endPoint.VnavPoints = new List<FmsVnavPoint>(); // Clear VNAV Points
+
+            // Calculate idle/approach descent angle
+            Angle targetAngle = Angle.FromDegrees(0);
+            if (iterator.DistanceToRwy < Length.FromNauticalMiles(15))
+            {
+                targetAngle = iterator.ApchAngle;
+            } else
+            {
+                // Calculate idle descent angle
+                targetAngle = Angle.FromDegrees(3.0); // TODO: Actually calculate this based off performance
+            }
+
+            // Get grib point for current position
+            var gribPoint = _parentAircraft.Position.GribPoint; // TODO: Change to actually use wind-uplink.
+
+            // Calculate density altitude
+            var temp = AtmosUtil.CalculateTempAtAlt(iterator.LastAlt, gribPoint.GeoPotentialHeight, gribPoint.Temp);
+            var pressure = AtmosUtil.CalculatePressureAtAlt(iterator.LastAlt, gribPoint.GeoPotentialHeight, gribPoint.LevelPressure, temp);
+            var densAlt = AtmosUtil.CalculateDensityAltitude(pressure, temp);
+
+            // Calculate current speed
+            if (iterator.DistanceToRwy < Length.FromNauticalMiles(15))
+            {
+                (targetSpeedUnits, targetSpeed) = CalculateFmsSpeed(FmsPhaseType.APPROACH, iterator.DistanceToRwy, iterator.LastAlt);
+            } else
+            {
+                (targetSpeedUnits, targetSpeed) = CalculateFmsSpeed(FmsPhaseType.DESCENT, iterator.DistanceToRwy, iterator.LastAlt);
+            }
+
+            // Convert mach to knots if required
+            int targetSpeedKts = (int)GetKnotsSpeed(targetSpeedUnits, targetSpeed, iterator.LastAlt, gribPoint);
+
+            // Check if prior restriction is less than target speed
+            if (iterator.EarlySpeed > 0 && iterator.EarlySpeed < targetSpeedKts)
+            {
+                targetSpeedKts = iterator.EarlySpeed;
+                targetSpeed = targetSpeedKts;
+                targetSpeedUnits = McpSpeedUnitsType.KNOTS;
+            }
+
+            // Figure out if decel point is required
+            var speedConstraint = leg.EndPoint.SpeedConstraint;
+            var speedConstraintType = leg.EndPoint.SpeedConstraintType;
+            if (speedConstraint > 0)
+            {
+                if ((speedConstraintType == ConstraintType.EXACT || speedConstraintType == ConstraintType.LESS) && speedConstraint < targetSpeedKts)
+                {
+                    // Calculate deceleration distance
+                    iterator.LastSpeed = Convert.ToInt32(speedConstraint);
+                    iterator.LaterDecelLength = FmsVnavUtil.CalculateDecelLength(iterator.LastSpeed, targetSpeedKts, iterator.LastAlt, densAlt, _parentAircraft.Data.Mass_kg, leg.FinalTrueCourse, _parentAircraft.PerformanceData, gribPoint);
+                }
+            }
+
+            // Check for previous decel point
+            if (iterator.LaterDecelLength != null)
+            {
+                // Add initial point
+                leg.EndPoint.VnavPoints.Add(new FmsVnavPoint
+                {
+                    AlongTrackDistance = Length.FromMeters(0),
+                    Alt = iterator.LastAlt,
+                    Angle = Angle.FromRadians(0),
+                    Speed = iterator.LastSpeed,
+                    SpeedUnits = McpSpeedUnitsType.KNOTS
+                });
+
+                // Check if deceleration point fits within the current leg
+                if (iterator.LaterDecelLength <= leg.LegLength)
+                {
+                    leg.EndPoint.VnavPoints.Add(new FmsVnavPoint
+                    {
+                        AlongTrackDistance = iterator.LaterDecelLength,
+                        Alt = iterator.LastAlt,
+                        Angle = targetAngle,
+                        Speed = iterator.LastSpeed,
+                        SpeedUnits = McpSpeedUnitsType.KNOTS
+                    });
+                    iterator.LaterDecelLength = null;
+                } else
+                {
+                    iterator.LaterDecelLength -= leg.LegLength;
+                }
+            } else
+            {
+
+            }
+
+            // Decrement index
+            iterator.Index--;
+            iterator.DistanceToRwy += leg.LegLength;
+
+            return iterator;
+        }
+
         private void RecalculateVnavPath()
         {
-            lock (_routeLegsLock) {
-                int legIndex = _routeLegs.Count - 1; // Start at last leg
-                Angle apchAngle = null; // Approach angle (Only used in the approach phase)
-                Length distanceToRwy = null; // Distance to the runway threshold
-                Length lastAlt = null; // Altitude last waypoint was crossed at
+            lock (_routeLegsLock)
+            {
+                var iterator = new FmsVnavLegIterator
+                {
+                    Index = _routeLegs.Count - 1, // Start at last leg
+                    ApchAngle = null, // Approach angle (Only used in the approach phase)
+                    DistanceToRwy = null, // Distance to the runway threshold
+                    ShouldRewind = false,
 
-                // Constraints to follow from earlier on the arrival
-                Length earlyUpperAlt = null;
-                Length earlyLowerAlt = null;
-                int earlySpeed = -1;
-                // Constraints from later on the arrival
-                Length laterDecelLength = null;
-                int laterDecelSpeed = -1;
+                    // Information from last iteration
+                    LastAlt = null, // Altitude last waypoint was crossed at
+                    LastSpeed = -1, // Target speed last waypoint was crossed at
+                    LaterDecelLength = null, // Decel length left
+
+                    // Constraints from earlier (further up the arrival)
+                    EarlyUpperAlt = null,
+                    EarlyLowerAlt = null,
+                    EarlySpeed = -1,
+
+                    // Index where constraints were detected
+                    EarlySpeedI = -2,
+                    EarlyUpperAltI = -2,
+                    EarlyLowerAltI = -2,
+                };
 
                 // Loop through legs from last to first ending either when first leg is reached or cruise alt is reached
-                while (legIndex >= -1)
+                while (iterator.Index >= -1)
                 {
-                    IRouteLeg curLeg = legIndex >= 0 ? _routeLegs[legIndex] : _activeLeg;
+                    // Get current leg
+                    IRouteLeg curLeg = iterator.Index >= 0 ? _routeLegs[iterator.Index] : _activeLeg;
 
-                    // Ensure current leg has an endpoint and a leg length
-                    if (curLeg.EndPoint == null || curLeg.LegLength <= Length.FromMeters(0)){
-                        // Skip this leg
-                        continue;
-                    }
-                    
-                    // Calculate idle/approach descent angle
-                    Angle targetAngle = Angle.FromDegrees(0);
-                    if (distanceToRwy < Length.FromNauticalMiles(15))
-                    {
-                        // Calculate approach angle if it's not set
-                        if (apchAngle == null){
-                            apchAngle = curLeg.EndPoint.AngleConstraint > 0 ? Angle.FromDegrees(curLeg.EndPoint.AngleConstraint) : Angle.FromDegrees(3.0);
-                        }
-
-                        targetAngle = apchAngle;
-                    } else
-                    {
-                        // Calculate idle descent angle
-                        targetAngle = Angle.FromDegrees(3.0); // TODO: Actually calculate this based off performance
-                    }
-
-                    McpSpeedUnitsType targetSpeedUnits;
-                    int targetSpeed;
-
-                    // If it's the first leg, set Vnav point
-                    if (lastAlt == null){
-                        lastAlt = curLeg.EndPoint.LowerAltitudeConstraint > 0 ? Length.FromFeet(curLeg.EndPoint.LowerAltitudeConstraint) : Length.FromMeters(0);
-                        distanceToRwy = Length.FromMeters(0);
-                        (targetSpeedUnits, targetSpeed) = CalculateFmsSpeed(FmsPhaseType.APPROACH, Length.FromMeters(0), lastAlt);
-
-                        curLeg.EndPoint.VnavPoints.Add(
-                            new FmsVnavPoint() {
-                                AlongTrackDistance = Length.FromMeters(0),
-                                Alt = lastAlt,
-                                Angle = targetAngle,
-                                Speed = targetSpeed,
-                                SpeedUnits = targetSpeedUnits
-                            }
-                        );
-                    }
-
-                    // Calculate current speed
-                    if (distanceToRwy < Length.FromNauticalMiles(15)){
-                        (targetSpeedUnits, targetSpeed) = CalculateFmsSpeed(FmsPhaseType.APPROACH, distanceToRwy, lastAlt);
-                    } else {
-                        (targetSpeedUnits, targetSpeed) = CalculateFmsSpeed(FmsPhaseType.DESCENT, distanceToRwy, lastAlt);
-                    }
-
-                    // Convert mach to knots if required
-                    int targetSpeedKts = (int) GetKnotsSpeed(targetSpeedUnits, targetSpeed, lastAlt, _parentAircraft.Position.GribPoint);
-
-                    // Check if prior restriction is less than target speed
-                    if (earlySpeed > 0 && earlySpeed < targetSpeedKts){
-                        
-                    }
-
-                    // Figure out if decel point is required
-                    var speedConstraint = curLeg.EndPoint.SpeedConstraint;
-                    var speedConstraintType = curLeg.EndPoint.SpeedConstraintType;
-                    if (speedConstraint > 0) {
-                        int curSpeed;
-
-                        if ((speedConstraintType == ConstraintType.EXACT || speedConstraintType == ConstraintType.LESS) && speedConstraint < targetSpeed)
-                        {
-                            //Calculate deceleration distance
-                            laterDecelSpeed = Convert.ToInt32(speedConstraint);
-                            laterDecelLength = Length.FromNauticalMiles((targetSpeed - speedConstraint) / 10.0); // Add actual DecelRate based on ACFT perf
-
-                            // Check if deceleration point fits within the current leg
-                            if (laterDecelLength <= curLeg.LegLength)
-                            {
-                                curLeg.EndPoint.VnavPoints.Add(new FmsVnavPoint
-                                {
-                                    AlongTrackDistance = curLeg.LegLength - laterDecelLength,
-                                    Alt = lastAlt,
-                                    Angle = targetAngle,
-                                    Speed = laterDecelSpeed,
-                                    SpeedUnits = targetSpeedUnits
-                                });
-
-                                //Adjust target speed
-                                targetSpeed = Convert.ToInt32(speedConstraint);
-                            }
-                            // If its greater than curLeg.Len do nothing, move onto the next leg that will handle it.
-                        }
-                    }
-                    
-
-            //      Figure out what start point altitude should be
-            //          Respecting "further up the road" constraint
-            //      Insert VNAV Point at the end point
-            //      If necessary:
-            //          Insert VNAV Point for decel to comply with speed restriction.
-            //          If there was a "further up the road" speed constraint, then the decel should be from that speed to the new constraint at end point
-            //              e.g.: 220kts from SOFEE -> 210kt at GOSHI
-            //          else assume Perf Init speeds
-            //              e.g.: 290kts -> 260kts at ROBUC
-            //      If speed/altitude restriction is discovered that the current path will violate
-            //          Return to the index where newly discovered constraint is still met
-            //              e.g.: If we get to GOSHI and realize we are too high, return to WINNI and build a level off point
-                    
+                    iterator = ProcessLegForVnav(curLeg, iterator);                    
                 }
+
             }
         }
 
         private (Angle requiredFpa, Length vTk_m) GetPitchInterceptInfoForCurrentLeg()
         {
-            if (_activeLeg.EndPoint == null || _activeLeg.EndPoint.VnavTargetAltitude < 0 || _activeLeg.EndPoint.AngleConstraint < 0)
+            if (_activeLeg.EndPoint == null || _activeLeg.EndPoint.VnavPoints == null || _activeLeg.EndPoint.VnavPoints.Count == 0)
             {
                 return ((Angle)0, (Length)0);
             }
 
-            // TODO: Change this to actually figure out the angle
-            Angle requiredFpa = Angle.FromDegrees(_activeLeg.EndPoint.AngleConstraint);
+            int i = _activeLeg.EndPoint.VnavPoints.Count - 1;
+            FmsVnavPoint targetPoint = _activeLeg.EndPoint.VnavPoints[i];
+
+            while (i > 0 && _aTk > targetPoint.AlongTrackDistance)
+            {
+                i++;
+                targetPoint = _activeLeg.EndPoint.VnavPoints[i];
+            }
+
+            Angle requiredFpa = targetPoint.Angle;
 
             // Calculate how much altitude we still need to climb/descend from here to the EndPoint
-            Length deltaAlt_m = Length.FromMeters(Math.Tan(requiredFpa.Radians) * _aTk.Meters);
+            Length deltaAlt_m = Length.FromMeters(Math.Tan(requiredFpa.Radians) * (_aTk.Meters - targetPoint.AlongTrackDistance.Meters));
 
             // Add to Vnav target alt
-            Length altTarget_m = deltaAlt_m + Length.FromFeet(_activeLeg.EndPoint.VnavTargetAltitude);
+            Length altTarget_m = deltaAlt_m + targetPoint.Alt;
 
             Length vTk_m = _parentAircraft.Position.TrueAltitude - altTarget_m;
 
