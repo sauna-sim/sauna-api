@@ -49,7 +49,7 @@ namespace NavData_Interface.Objects.LegCollections.Airways
                 
                 if (_points[i].Point.Identifier == endFix.Identifier)
                 {
-                    if (_selectedStartPointIndex != -1)
+                    if (_selectedEndPointIndex != -1)
                     {
                         var currentDistance = GeoPoint.FlatDistance(endFix.Location, _points[_selectedEndPointIndex].Point.Location);
                         var newDistance = GeoPoint.FlatDistance(endFix.Location, _points[i].Point.Location);

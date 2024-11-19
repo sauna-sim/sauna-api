@@ -12,8 +12,15 @@ namespace NavData_Interface.DataSources.DFDUtility.Factory
         {
             var factory = new StarFactory(reader, connection);
 
-            var data = factory.GatherData();
-            return new Star(data.airportIdentifier, data.routeIdentifier, data.firstTransitions, data.commonLegs, data.secondTransitions, data.transitionAltitude);
+            try
+            {
+                var data = factory.GatherData();
+                return new Star(data.airportIdentifier, data.routeIdentifier, data.firstTransitions, data.commonLegs, data.secondTransitions, data.transitionAltitude);
+            } catch (Exception ex)
+            {
+                return null;
+            }
+            
         }
 
         private StarFactory(SQLiteDataReader reader, SQLiteConnection connection) : base(reader, connection) { }

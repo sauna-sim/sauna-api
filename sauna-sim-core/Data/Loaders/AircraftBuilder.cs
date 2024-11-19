@@ -98,7 +98,6 @@ namespace SaunaSim.Core.Data.Loaders
             //if airplane alt is <= 500ft afe = onground
             var closestAirport = DataHandler.GetAirportByIdentifier(DataHandler.FAKE_AIRPORT_NAME);
 
-
             if (closestAirport != null && aircraft.Position.TrueAltitude < closestAirport.Elevation + 500)
             {
                 aircraft.Position.OnGround = true;
@@ -125,116 +124,96 @@ namespace SaunaSim.Core.Data.Loaders
 
             // Flightplan
             FlightPlan flightPlan;
-            string[] waypoints = new string[0];
 
             try
             {
                 flightPlan = FlightPlan.ParseFromEsScenarioFile(EsFlightPlanStr);
                 aircraft.FlightPlan = flightPlan;
-                waypoints = flightPlan.route?.Split(' ', '.') ?? new string[0];
-            }
-            catch (FlightPlanException e)
-            {
-                LogWarn("Error parsing flight plan");
-                LogWarn(e.Message);
-            }
+                string[] waypoints = flightPlan.route?.Split(' ', '.') ?? new string[0];
+                List<Leg> NavDataFormatLegs = new List<Leg>();
 
-            // Requested Alt
-            if (RequestedAlt >= 0)
-            {
-                aircraft.Autopilot.SelectedAltitude = RequestedAlt;
-                aircraft.Autopilot.CurrentVerticalMode = VerticalModeType.FLCH;
-            }
-
-            // Route
-            List<Leg> NavDataFormatLegs = new List<Leg>();
-
-            if (waypoints.Length > 0)
-            {
-                // Is the first point a SID?
-
-                bool foundSid = false;
-
-                string rawSidName = waypoints[0];
-
-                rawSidName = System.Text.RegularExpressions.Regex.Replace(rawSidName, @"\d", "#");
-
-                for (int j = 9; j > 0; j--)
+                if (waypoints.Length > 0)
                 {
-                    Sid potentialSid = DataHandler.GetSidByAirportAndIdentifier(closestAirport, rawSidName.Replace('#', (char)(j+64)));
+                    // Is the first point a SID?
 
-                    if (potentialSid != null)
+                    bool foundSid = false;
+                    string rawSidName = waypoints[0];
+
+                    rawSidName = System.Text.RegularExpressions.Regex.Replace(rawSidName, @"\d", "#");
+
+                    for (int j = 9; j > 0; j--)
                     {
-                        // TODO: Handle runway transition and SID transition. This just loads the 'central' part of the SID
-                        foreach (Leg l in potentialSid)
-                        {
-                            NavDataFormatLegs.Add(l);
-                        }
+                        Sid potentialSid = DataHandler.GetSidByAirportAndIdentifier(flightPlan.origin, rawSidName.Replace('#', (char)(j + 48)));
 
-                        // Our last point of the SID should now match with the following FP route point. If not, TF there
-                        if (waypoints.Length > 1)
+                        if (potentialSid != null)
                         {
-                            Leg prevLeg = NavDataFormatLegs[NavDataFormatLegs.Count - 1];
-                            if (NavDataFormatLegs[NavDataFormatLegs.Count - 1].EndPoint.Identifier != waypoints[1])
+                            // TODO: Handle runway transition and SID transition. This just loads the 'central' part of the SID
+                            foreach (Leg l in potentialSid)
                             {
-                                Fix nextWp = DataHandler.GetClosestWaypointByIdentifier(waypoints[1], prevLeg.EndPoint.Location);
+                                NavDataFormatLegs.Add(l);
+                            }
 
-                                if (nextWp != null)
+                            // Our last point of the SID should now match with the following FP route point. If not, TF there
+                            if (waypoints.Length > 1)
+                            {
+                                Leg prevLeg = NavDataFormatLegs[NavDataFormatLegs.Count - 1];
+                                if (NavDataFormatLegs[NavDataFormatLegs.Count - 1].EndPoint.Identifier != waypoints[1])
                                 {
-                                    Leg tfLeg = new Leg(LegType.TRACK_TO_FIX, null, null, null, null, nextWp, null, null, null, null, null, null, null, null, null);
-                                    NavDataFormatLegs.Add(tfLeg);
+                                    Fix nextWp = DataHandler.GetClosestWaypointByIdentifier(waypoints[1], prevLeg.EndPoint.Location);
+
+                                    if (nextWp != null)
+                                    {
+                                        Leg tfLeg = new Leg(LegType.TRACK_TO_FIX, null, null, null, null, nextWp, null, null, null, null, null, null, null, null, null);
+                                        NavDataFormatLegs.Add(tfLeg);
+                                    }
                                 }
                             }
+
+                            foundSid = true;
+                            break;
                         }
-
-                        foundSid = true;
-                        break;
                     }
-                }
-
-                int i = 0;
-
-                if (!foundSid)
-                {
-                    // DF to first FP waypoint.
                     
-                    for (bool foundValidWp = false; !foundValidWp; i++)
-                    {
-                        Fix firstWp = DataHandler.GetClosestWaypointByIdentifier(waypoints[i], aircraft.Position.PositionGeoPoint);
 
-                        if (firstWp == null)
+                    int i = 0;
+
+                    if (!foundSid)
+                    {
+                        // DF to first FP waypoint.
+
+                        for (bool foundValidWp = false; !foundValidWp; i++)
                         {
-                            continue;
-                        } else
-                        {
-                            Leg dfLeg = new Leg(LegType.DIRECT_TO_FIX, null, null, null, null, firstWp, null, null, null, null, null, null, null, null, null);
-                            NavDataFormatLegs.Add(dfLeg);
-                            foundValidWp = true;
+                            Fix firstWp = DataHandler.GetClosestWaypointByIdentifier(waypoints[i], aircraft.Position.PositionGeoPoint);
+
+                            if (firstWp == null)
+                            {
+                                continue;
+                            }
+                            else
+                            {
+                                Leg dfLeg = new Leg(LegType.DIRECT_TO_FIX, null, null, null, null, firstWp, new NavData_Interface.Objects.Fixes.Waypoints.WaypointDescription(false, true, false), null, null, null, null, null, null, null, null);
+                                NavDataFormatLegs.Add(dfLeg);
+                                foundValidWp = true;
+                            }
                         }
                     }
-                } else
-                {
-                    i = 2;   
-                }
-
-                for (; i < waypoints.Length; i++)
-                {
-                    // On each iteration of this function we are 'elegible' to start an airway.
-                    // So, waypoints[i] could be an airway, a Fix to go direct to, or a DCT meaning we go direct to waypoints[i+1]
-                    // DCT is ALWAYS interpreted as direct, then we try to interpret as airway, otherwise as a Fix to go direct to
-
-                    // If this is the last point on the route it may be a STAR. If that is the case, try to use the previous point as transition
-                    // Otherwise go to the last waypoint and then DCT DEST
-
-                    if (i == waypoints.Length - 1)
+                    else
                     {
-                        string destAptIdentifier = aircraft.FlightPlan?.destination;
+                        i = 2;
+                    }
 
-                        Airport dest = DataHandler.GetAirportByIdentifier(destAptIdentifier);
+                    for (; i < waypoints.Length; i++)
+                    {
+                        // On each iteration of this function we are 'elegible' to start an airway.
+                        // So, waypoints[i] could be an airway, a Fix to go direct to, or a DCT meaning we go direct to waypoints[i+1]
+                        // DCT is ALWAYS interpreted as direct, then we try to interpret as airway, otherwise as a Fix to go direct to
 
-                        if (dest != null)
+                        // If this is the last point on the route it may be a STAR. If that is the case, try to use the previous point as transition
+                        // Otherwise go to the last waypoint and then DCT DEST
+
+                        if (i == waypoints.Length - 1)
                         {
-                            Star potentialStar = DataHandler.GetStarByAirportAndIdentifier(dest, waypoints[i]);
+                            Star potentialStar = DataHandler.GetStarByAirportAndIdentifier(flightPlan.destination, waypoints[i]);
 
                             if (potentialStar != null)
                             {
@@ -252,89 +231,112 @@ namespace SaunaSim.Core.Data.Loaders
                                 {
                                     NavDataFormatLegs.Add(l);
                                 }
-                            }
-                        }
-                    }
-
-                    if (waypoints[i] == "DCT")
-                    {
-                        if (i == waypoints.Length - 1)
-                        {
-                            // DCT is end of the route. go DCT destination
-                            string destAptIdentifier = aircraft.FlightPlan?.destination;
-                            
-                            Airport dest = DataHandler.GetAirportByIdentifier(destAptIdentifier);
-
-                            if (dest != null )
+                            } else
                             {
-                                Leg tfLeg = new Leg(LegType.TRACK_TO_FIX, null, null, null, null, dest, null, null, null, null, null, null, null, null, null);
-                                NavDataFormatLegs.Add(tfLeg);
-                            }
-                        } else
-                        {
-                            // Just ignore the DCT, we'll create the leg in the next iteration
-                            continue;
-                        }
-                    }
-
-                    if (DataHandler.IsValidAirwayIdentifier(waypoints[i]) && i != waypoints.Length - 1) 
-                    {
-                        // This is an airway! If we can process it, and select the previous and following waypoint, we'll accept it and add all legs.
-                        // Otherwise try to process as waypoint anyways
-
-                        Fix prevWp = NavDataFormatLegs[NavDataFormatLegs.Count - 1].EndPoint;
-                        string airwayIdentifier = waypoints[i];
-                        
-                        // In case there's a duplicate waypoint, use the one closest to the starting waypoint
-                        // What if we have a really long airway?
-                        // nats moment
-                        Fix nextWp = DataHandler.GetClosestWaypointByIdentifier(waypoints[i + 1], prevWp.Location);
-
-                        if (nextWp != null)
-                        {
-                            try
-                            {
-                                Airway airway = DataHandler.GetAirwayFromIdentifierAndFixes(airwayIdentifier, prevWp, nextWp);
-
-                                foreach (Leg l in airway)
+                                // Go to this non-STAR waypoint, if it's not DCT, then DCT dest.
+                                if (waypoints[i] != "DCT")
                                 {
-                                    NavDataFormatLegs.Add(l);
+                                    Fix finalWp = DataHandler.GetClosestWaypointByIdentifier(waypoints[i], NavDataFormatLegs[NavDataFormatLegs.Count - 1].EndPoint.Location);
+
+                                    if (finalWp != null)
+                                    {
+                                        Leg tfLeg = new Leg(LegType.TRACK_TO_FIX, null, null, null, null, finalWp, new NavData_Interface.Objects.Fixes.Waypoints.WaypointDescription(false, true, false), null, null, null, null, null, null, null, null);
+                                        NavDataFormatLegs.Add(tfLeg);
+                                    }
                                 }
 
-                                // All legs added, also, we now have a leg to the next waypoint. So skip that one.
-                                i++;
-                                continue;
-                            } catch (ArgumentException e)
-                            {
-                                // Airway not valid between those points. We'll try to handle the airway name as a waypoint
-                                // So nothing to do here, continue down
+                                string destAptIdentifier = flightPlan.destination;
+
+                                Airport dest = DataHandler.GetAirportByIdentifier(destAptIdentifier);
+
+                                if (dest != null)
+                                {
+                                    Leg tfLeg = new Leg(LegType.TRACK_TO_FIX, null, null, null, null, dest, new NavData_Interface.Objects.Fixes.Waypoints.WaypointDescription(true, true, false), null, null, null, null, null, null, null, null);
+                                    NavDataFormatLegs.Add(tfLeg);
+                                }
                             }
                         }
-                    }
-                    
-                    Fix dctWp = DataHandler.GetClosestWaypointByIdentifier(waypoints[i], NavDataFormatLegs[NavDataFormatLegs.Count - 1].EndPoint.Location);
 
-                    if (dctWp != null)
-                    {
-                        Leg tfLeg = new Leg(LegType.TRACK_TO_FIX, null, null, null, null, dctWp, null, null, null, null, null, null, null, null, null);
-                        NavDataFormatLegs.Add(tfLeg);
+                        if (waypoints[i] == "DCT")
+                        {
+                            continue;
+                        }
+
+                        if (DataHandler.IsValidAirwayIdentifier(waypoints[i]) && i != waypoints.Length - 1)
+                        {
+                            // This is an airway! If we can process it, and select the previous and following waypoint, we'll accept it and add all legs.
+                            // Otherwise try to process as waypoint anyways
+
+                            Fix prevWp = NavDataFormatLegs[NavDataFormatLegs.Count - 1].EndPoint;
+                            string airwayIdentifier = waypoints[i];
+
+                            // In case there's a duplicate waypoint, use the one closest to the starting waypoint
+                            // What if we have a really long airway?
+                            // nats moment
+                            Fix nextWp = DataHandler.GetClosestWaypointByIdentifier(waypoints[i + 1], prevWp.Location);
+
+                            if (nextWp != null)
+                            {
+                                try
+                                {
+                                    Airway airway = DataHandler.GetAirwayFromIdentifierAndFixes(airwayIdentifier, prevWp, nextWp);
+
+                                    foreach (Leg l in airway)
+                                    {
+                                        NavDataFormatLegs.Add(l);
+                                    }
+
+                                    // All legs added, also, we now have a leg to the next waypoint. So skip that one.
+                                    i++;
+                                    continue;
+                                }
+                                catch (ArgumentException e)
+                                {
+                                    // Airway not valid between those points. We'll try to handle the airway name as a waypoint
+                                    // So nothing to do here, continue down
+                                }
+                            }
+                        }
+
+                        Fix dctWp = DataHandler.GetClosestWaypointByIdentifier(waypoints[i], NavDataFormatLegs[NavDataFormatLegs.Count - 1].EndPoint.Location);
+
+                        if (dctWp != null)
+                        {
+                            Leg tfLeg = new Leg(LegType.TRACK_TO_FIX, null, null, null, null, dctWp, new NavData_Interface.Objects.Fixes.Waypoints.WaypointDescription(false, true, false), null, null, null, null, null, null, null, null);
+                            NavDataFormatLegs.Add(tfLeg);
+                        }
                     }
                 }
+
+
+                IList<IRouteLeg> legs = LegFactory.RouteLegsFromNavDataLegs(NavDataFormatLegs, MagTileManager);
+
+                foreach (IRouteLeg leg in legs)
+                {
+                    aircraft.Fms.AddRouteLeg(leg);
+                }
+
+                if (legs.Count > 0)
+                {
+                    // Not needed anymore because we'll add a DF leg above
+                    // aircraft.Fms.ActivateDirectTo(legs[0].StartPoint.Point);
+
+                    aircraft.Autopilot.AddArmedLateralMode(LateralModeType.LNAV);
+                }
             }
-
-
-            IList<IRouteLeg> legs = LegFactory.RouteLegsFromNavDataLegs(NavDataFormatLegs, MagTileManager);
-            
-            foreach (IRouteLeg leg in legs)
+            catch (FlightPlanException e)
             {
-                aircraft.Fms.AddRouteLeg(leg);
+                LogWarn("Error parsing flight plan");
+                LogWarn(e.Message);
             }
 
-            if (legs.Count > 0)
+            // Requested Alt
+            if (RequestedAlt >= 0)
             {
-                aircraft.Fms.ActivateDirectTo(legs[0].StartPoint.Point);
-                aircraft.Autopilot.AddArmedLateralMode(LateralModeType.LNAV);
+                aircraft.Autopilot.SelectedAltitude = RequestedAlt;
+                aircraft.Autopilot.CurrentVerticalMode = VerticalModeType.FLCH;
             }
+
 
             return aircraft;
         }

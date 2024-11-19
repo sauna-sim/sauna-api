@@ -12,6 +12,7 @@ using NavData_Interface.Objects.LegCollections.Legs;
 using NavData_Interface.Objects.LegCollections.Procedures;
 using SaunaSim.Api.Utilities;
 using SaunaSim.Api.WebSockets;
+using SaunaSim.Core.Data;
 using SaunaSim.Core.Data.Loaders;
 using SaunaSim.Core.Simulator.Aircraft;
 using SaunaSim.Core.Simulator.Commands;
@@ -161,7 +162,7 @@ namespace sauna_tests
         public static void TestGetStarFromAirportIdentifier()
         {
             var navDataInterface = new DFDSource("e_dfd_2301.s3db");
-            var star = navDataInterface.GetStarByAirportAndIdentifier("EGKK", "KIDL1G");
+            var star = navDataInterface.GetStarByAirportAndIdentifier("EGKK", "FAIL");
 
             Console.WriteLine(star);
 
@@ -306,6 +307,8 @@ namespace sauna_tests
         [Test]
         public static void TestFlightPlanParser()
         {
+            DataHandler.LoadNavigraphDataFile("e_dfd_2301.s3db", "aaa");
+
             var Handler = new SimAircraftHandler(
                 Path.Join(AppDomain.CurrentDomain.BaseDirectory, "magnetic", "WMM.COF"),
                 Path.Join(Path.GetTempPath(), "sauna-api", "grib-tiles"),
@@ -317,7 +320,7 @@ namespace sauna_tests
             var pilot = new AircraftBuilder("RYR36CU", "1", "pass", "127.0.0.1", 6809, Handler.MagTileManager, Handler.GribTileManager, cmdHandler)
             {
                 Protocol = ProtocolRevision.Classic,
-                Position = new GeoPoint(0, 0, 0),
+                Position = new GeoPoint(0, 0, 5000),
                 HeadingMag = Bearing.FromDegrees(0),
                 LogInfo = (string msg) =>
                 {
@@ -339,7 +342,9 @@ namespace sauna_tests
 
             var aircraft = pilot.Create(PrivateInfoLoader.GetClientInfo(_ => { }));
 
-            foreach (Leg l in aircraft.Fms.GetRouteLegs())
+            Console.WriteLine($"Route is WAL2T WAL M146 IPSET P6 BELZU");
+
+            foreach (var l in aircraft.Fms.GetRouteLegs())
             {
                 Console.WriteLine(l);
             }

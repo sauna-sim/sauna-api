@@ -12,11 +12,16 @@ namespace NavData_Interface.DataSources.DFDUtility.Factory
         public static Sid Factory(SQLiteDataReader reader, SQLiteConnection connection)
         {
             var factory = new SidFactory(reader, connection);
-
-            var data = factory.GatherData();
-            return new Sid(data.airportIdentifier, data.routeIdentifier, data.firstTransitions, data.commonLegs, data.secondTransitions, data.transitionAltitude);
+            try
+            {
+                var data = factory.GatherData();
+                return new Sid(data.airportIdentifier, data.routeIdentifier, data.firstTransitions, data.commonLegs, data.secondTransitions, data.transitionAltitude);
+            }
+            catch (Exception ex)
+            {
+                return null;
+            }
         }
-
         private SidFactory(SQLiteDataReader reader, SQLiteConnection connection) : base(reader, connection) { }
     }
 }

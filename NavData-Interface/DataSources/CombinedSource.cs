@@ -114,6 +114,19 @@ namespace NavData_Interface.DataSources
             return false;
         }
 
+        public override bool IsValidAirwayIdentifier(string airwayIdentifier)
+        {
+            foreach (var source in _sources)
+            {
+                if (source.Value.IsValidAirwayIdentifier(airwayIdentifier))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         public override List<Fix> GetFixesByIdentifier(string identifier)
         {
             var fixes = new List<Fix>();
