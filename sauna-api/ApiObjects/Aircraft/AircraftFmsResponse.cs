@@ -34,40 +34,43 @@ namespace SaunaSim.Api.ApiObjects.Aircraft
 
         public AircraftFmsResponse(AircraftFms fms)
         {
-            Suspended = fms.Suspended;
-            CruiseAltitude = fms.CruiseAltitude;
-            DepartureAirport = fms.DepartureAirport;
-            ArrivalAirport = fms.ArrivalAirport;
-            ActiveLeg = fms.ActiveLeg;
-            RouteLegs = new List<object>();
-            FmsLines = new List<object>();
-            AlongTrackDistance_m = fms.AlongTrackDistance.Meters;
-            CrossTrackDistance_m = fms.CrossTrackDistance.Meters;
-            RequiredTrueCourse = fms.RequiredTrueCourse == null ? -1 : fms.RequiredTrueCourse.Degrees;
-            TurnRadius_m = fms.TurnRadius.Meters;
-
-            StringBuilder sb = new StringBuilder();
-            if (fms.ActiveLeg != null)
+            if (fms != null)
             {
-                sb.Append(fms.ActiveLeg.ToString());
-                sb.Append("; ");
-                foreach (NdLine line in fms.ActiveLeg.UiLines)
-                {
-                    FmsLines.Add(line);
-                }
-            }
+                Suspended = fms.Suspended;
+                CruiseAltitude = fms.CruiseAltitude;
+                DepartureAirport = fms.DepartureAirport;
+                ArrivalAirport = fms.ArrivalAirport;
+                ActiveLeg = fms.ActiveLeg;
+                RouteLegs = new List<object>();
+                FmsLines = new List<object>();
+                AlongTrackDistance_m = fms.AlongTrackDistance.Meters;
+                CrossTrackDistance_m = fms.CrossTrackDistance.Meters;
+                RequiredTrueCourse = fms.RequiredTrueCourse == null ? -1 : fms.RequiredTrueCourse.Degrees;
+                TurnRadius_m = fms.TurnRadius.Meters;
 
-            foreach (var leg in fms.GetRouteLegs())
-            {
-                sb.Append(leg.ToString());
-                sb.Append("; ");
-                foreach (NdLine line in leg.UiLines)
+                StringBuilder sb = new StringBuilder();
+                if (fms.ActiveLeg != null)
                 {
-                    FmsLines.Add(line);
+                    sb.Append(fms.ActiveLeg.ToString());
+                    sb.Append("; ");
+                    foreach (NdLine line in fms.ActiveLeg.UiLines)
+                    {
+                        FmsLines.Add(line);
+                    }
                 }
-                RouteLegs.Add(leg);
+
+                foreach (var leg in fms.GetRouteLegs())
+                {
+                    sb.Append(leg.ToString());
+                    sb.Append("; ");
+                    foreach (NdLine line in leg.UiLines)
+                    {
+                        FmsLines.Add(line);
+                    }
+                    RouteLegs.Add(leg);
+                }
+                AsString = sb.ToString();
             }
-            AsString = sb.ToString();
         }
     }
 }

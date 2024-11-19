@@ -202,7 +202,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
         private FlightPlan? _flightPlan;
         public FlightPlan? FlightPlan
         {
-            get => Connection.CurrentFlightPlan;
+            get => Connection?.CurrentFlightPlan;
             set
             {
                 if (ConnectionStatus == ConnectionStatusType.CONNECTED)
