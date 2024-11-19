@@ -217,7 +217,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
             return false;
         }
 
-        internal static FmsPoint FmsPointFromNavDataLeg(Leg leg)
+        public static FmsPoint FmsPointFromNavDataLeg(Leg leg)
         {
             FmsPoint point = new FmsPoint(new RouteWaypoint(leg.EndPoint),
                 leg.EndPointDescription.IsFlyOver ? RoutePointTypeEnum.FLY_OVER : RoutePointTypeEnum.FLY_BY

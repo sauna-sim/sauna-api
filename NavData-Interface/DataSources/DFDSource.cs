@@ -418,6 +418,13 @@ namespace NavData_Interface.DataSources
             return airway;
         }
 
+        public override bool IsValidAirwayIdentifier(string airwayIdentifier)
+        {
+            var reader = AirwayLookupByIdentifier(airwayIdentifier).ExecuteReader();
+
+            return reader.HasRows;
+        }
+
         private SQLiteCommand SidLookupByAirportAndIdentifier(string airportIdentifier, string sidIdentifier)
         {
             SQLiteCommand command = new SQLiteCommand(_connection);

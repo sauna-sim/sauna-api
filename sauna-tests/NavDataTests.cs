@@ -1,11 +1,21 @@
-﻿using AviationCalcUtilNet.GeoTools;
+﻿using AviationCalcUtilNet.Atmos.Grib;
+using AviationCalcUtilNet.Geo;
+using AviationCalcUtilNet.GeoTools;
+using AviationCalcUtilNet.Magnetic;
 using AviationCalcUtilNet.Units;
 using FsdConnectorNet;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using NavData_Interface.DataSources;
 using NavData_Interface.Objects.Fixes;
 using NavData_Interface.Objects.Fixes.Waypoints;
+using NavData_Interface.Objects.LegCollections.Legs;
 using NavData_Interface.Objects.LegCollections.Procedures;
+using SaunaSim.Api.Utilities;
+using SaunaSim.Api.WebSockets;
+using SaunaSim.Core.Data;
+using SaunaSim.Core.Data.Loaders;
+using SaunaSim.Core.Simulator.Aircraft;
+using SaunaSim.Core.Simulator.Commands;
 using System;
 using System.Collections.Generic;
 using System.Data.Common;
@@ -13,6 +23,7 @@ using System.Data.SQLite;
 using System.Diagnostics;
 using System.Linq;
 using System.Net.Security;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -151,7 +162,7 @@ namespace sauna_tests
         public static void TestGetStarFromAirportIdentifier()
         {
             var navDataInterface = new DFDSource("e_dfd_2301.s3db");
-            var star = navDataInterface.GetStarByAirportAndIdentifier("EGKK", "KIDL1G");
+            var star = navDataInterface.GetStarByAirportAndIdentifier("EGKK", "FAIL");
 
             Console.WriteLine(star);
 
@@ -293,5 +304,50 @@ namespace sauna_tests
             // Additional assertions can be added here to validate the result
         }
 
+        [Test]
+        public static void TestFlightPlanParser()
+        {
+            DataHandler.LoadNavigraphDataFile("e_dfd_2301.s3db", "aaa");
+
+            var Handler = new SimAircraftHandler(
+                Path.Join(AppDomain.CurrentDomain.BaseDirectory, "magnetic", "WMM.COF"),
+                Path.Join(Path.GetTempPath(), "sauna-api", "grib-tiles"),
+                (s, i) => { }
+            );
+            var cmdHandler = new CommandHandler(Handler);
+            var webSocketHandler = new WebSocketHandler(Handler);
+
+            var pilot = new AircraftBuilder("RYR36CU", "1", "pass", "127.0.0.1", 6809, Handler.MagTileManager, Handler.GribTileManager, cmdHandler)
+            {
+                Protocol = ProtocolRevision.Classic,
+                Position = new GeoPoint(0, 0, 5000),
+                HeadingMag = Bearing.FromDegrees(0),
+                LogInfo = (string msg) =>
+                {
+                    
+                },
+                LogWarn = (string msg) =>
+                {
+                    
+                },
+                LogError = (string msg) =>
+                {
+                    
+                },
+                XpdrMode = TransponderModeType.ModeC,
+                Squawk = 1200
+            };
+
+            pilot.EsFlightPlanStr = "$FPEZY938K:*A:I:A320:420:EGGP:::28000:EGAA:00:00:0:0:::WAL2T WAL M146 IPSET P6 BELZU";
+
+            var aircraft = pilot.Create(PrivateInfoLoader.GetClientInfo(_ => { }));
+
+            Console.WriteLine($"Route is WAL2T WAL M146 IPSET P6 BELZU");
+
+            foreach (var l in aircraft.Fms.GetRouteLegs())
+            {
+                Console.WriteLine(l);
+            }
+        }
     }
 }

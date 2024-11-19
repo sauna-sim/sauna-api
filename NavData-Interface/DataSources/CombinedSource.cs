@@ -50,7 +50,6 @@ namespace NavData_Interface.DataSources
         public bool AddSource(DataSource source)
         {
             var lastPriority = _sources.Keys[_sources.Keys.Count - 1];
-
             return AddSource(source, lastPriority);
         }
 
@@ -108,6 +107,19 @@ namespace NavData_Interface.DataSources
 
                     _sources.Add(newPriority, source.Value);
 
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        public override bool IsValidAirwayIdentifier(string airwayIdentifier)
+        {
+            foreach (var source in _sources)
+            {
+                if (source.Value.IsValidAirwayIdentifier(airwayIdentifier))
+                {
                     return true;
                 }
             }
