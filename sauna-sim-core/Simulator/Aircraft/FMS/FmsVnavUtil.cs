@@ -22,6 +22,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
         public Angle ApchAngle { get; set; } // Approach angle (Only used in the approach phase)
         public Length DistanceToRwy { get; set; } // Distance to the runway threshold
         public bool ShouldRewind { get; set; }
+        public Length AlongTrackDistance { get; set; }
 
         // Information from last iteration
         public Length LastAlt { get; set; } // Altitude last waypoint was crossed at
@@ -37,8 +38,8 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
         public int EarlySpeedI { get; set; }
         public int EarlyUpperAltI { get; set; }
         public int EarlyLowerAltI { get; set; }
-
     }
+
     public static class FmsVnavUtil
     {
         public static bool DoesPointMeetConstraints(FmsPoint point, Length upperAlt, Length lowerAlt, int speedKts)
@@ -49,7 +50,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
             // Check upper alt
             if (upperAlt != null && point.VnavPoints[0].Alt > upperAlt) return false;
 
-            // Check lower Alt
+            // Check lower alt
             if (lowerAlt != null && point.VnavPoints[0].Alt < lowerAlt) return false;
 
             // Check speed
@@ -82,6 +83,18 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
         public static Length CalculateStartAltitude(Length endAlt, Length legLength, Angle angle)
         {
             return endAlt + (legLength * Math.Tan(angle.Radians));
+        }
+
+        public static Length CalculateDistanceForAltitude(Length endAlt, Length startAlt, Angle angle)
+        {
+            return (startAlt - endAlt) / Math.Tan(angle.Radians);
+        }
+
+        public static Length CalculateDensityAltitude(Length alt, GribDataPoint gribPoint)
+        {
+            var temp = AtmosUtil.CalculateTempAtAlt(alt, gribPoint.GeoPotentialHeight, gribPoint.Temp);
+            var pressure = AtmosUtil.CalculatePressureAtAlt(alt, gribPoint.GeoPotentialHeight, gribPoint.LevelPressure, temp);
+            return  AtmosUtil.CalculateDensityAltitude(pressure, temp);
         }
     }
 }
