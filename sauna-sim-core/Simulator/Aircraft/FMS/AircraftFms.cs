@@ -19,6 +19,8 @@ using SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller;
 using SaunaSim.Core.Simulator.Aircraft.FMS.Legs;
 using AviationCalcUtilNet.Atmos;
 using System.Numerics;
+using NavData_Interface.Objects.LegCollections.Procedures;
+using NavData_Interface.Objects.LegCollections.Legs;
 using AviationCalcUtilNet.Atmos.Grib;
 using SaunaSim.Core.Simulator.Aircraft.Performance;
 using AviationCalcUtilNet.Physics;
@@ -48,6 +50,8 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
         private Angle _requiredFpa;
         private McpSpeedUnitsType _spdUnits;
         private int _selSpd;
+
+        private int _routeStartIndex = 0;
 
         public EventHandler<WaypointPassedEventArgs> WaypointPassed;
 
@@ -218,6 +222,15 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
             }
         }
 
+        public void AddAllLegs(IList<IRouteLeg> routeLegs)
+        {
+            lock (_routeLegsLock)
+            {
+                _routeLegs.AddRange(routeLegs);
+                RecalculateVnavPath();
+            }
+        }
+
         public IRouteLeg ActivateNextLeg()
         {
             lock (_routeLegsLock)
@@ -315,6 +328,47 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
                 }
 
                 RecalculatePerformance();
+            }
+        }
+
+        /// <summary>
+        /// Adds a whole SID to the FMS
+        /// </summary>
+        /// <param name="sid">The SID to add. Relevant transition and runway transition MUST be selected beforehand.</param>
+        /// <returns></returns>
+        public bool AddSid(Sid sid)
+        {
+            lock (_routeLegsLock)
+            {
+                if (_routeStartIndex != 0)
+                {
+                    RemoveSid();
+                }
+
+                try
+                {
+                    foreach (var leg in LegFactory.RouteLegsFromNavDataLegs(sid.GetEnumerator(), _magTileMgr))
+                    {
+                        InsertAtIndex(leg, _routeStartIndex);
+                        _routeStartIndex++;
+                    }
+
+                } catch (Exception ex)
+                {
+                    return false;
+                }
+                
+            }
+
+            return true;
+        }
+
+        public void RemoveSid()
+        {
+            while (_routeStartIndex > 0)
+            {
+                RemoveFirstLeg();
+                _routeStartIndex--;
             }
         }
 

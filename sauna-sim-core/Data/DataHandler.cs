@@ -5,8 +5,11 @@ using NavData_Interface;
 using NavData_Interface.DataSources;
 using NavData_Interface.Objects;
 using NavData_Interface.Objects.Fixes;
+using NavData_Interface.Objects.LegCollections.Airways;
+using NavData_Interface.Objects.LegCollections.Procedures;
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 using System.Runtime.InteropServices.ComTypes;
 using System.Text;
@@ -18,7 +21,7 @@ namespace SaunaSim.Core.Data
     public static class DataHandler
     {
         private static CombinedSource _navdataSource;
-        private static Mutex _navdataMutex;
+        private static readonly object _navdataMutex = new object();
 
         public static readonly string FAKE_AIRPORT_NAME = "_FAKE_AIRPORT";
 
@@ -28,132 +31,174 @@ namespace SaunaSim.Core.Data
 
         static DataHandler()
         {
-            _navdataMutex = new Mutex();
             _navdataSource = new CombinedSource("_combined_source_sauna_api");
             _navdataSource.AddSource(new InMemorySource("sauna_api_in_memory_navdata_source"), MEM_PRIORITY);
         }
 
         public static bool HasNavigraphDataLoaded()
         {
-            _navdataMutex.WaitOne();
-            var hasNavigraph = _navdataSource.HasSourceType<DFDSource>();
-            _navdataMutex.ReleaseMutex();
-            return hasNavigraph;
+            lock (_navdataMutex)
+            {
+                return _navdataSource.HasSourceType<DFDSource>();
+            }
         }
 
         public static string GetNavigraphFileUuid()
         {
-            _navdataMutex.WaitOne();
-
-            // Find DFD Source
-            foreach (KeyValuePair<int, DataSource> pair in _navdataSource)
+            lock (_navdataMutex)
             {
-                if (pair.Value is DFDSource dfdSource)
+                // Find DFD Source
+                foreach (KeyValuePair<int, DataSource> pair in _navdataSource)
                 {
-                    _navdataMutex.ReleaseMutex();
-                    return dfdSource.GetId();
+                    if (pair.Value is DFDSource dfdSource)
+                    {
+                        return dfdSource.GetId();
+                    }
                 }
+                return "";
             }
-
-            _navdataMutex.ReleaseMutex();
-            return "";
         }
 
         public static List<string> GetSectorFilesLoaded()
         {
             List<string> retList = new List<string>();
 
-            _navdataMutex.WaitOne();
-
-            foreach (KeyValuePair<int, DataSource> pair in _navdataSource)
+            lock (_navdataMutex)
             {
-                if (pair.Value is SCTSource sctSource)
+                foreach (KeyValuePair<int, DataSource> pair in _navdataSource)
                 {
-                    retList.Add(sctSource.FileName);
+                    if (pair.Value is SCTSource sctSource)
+                    {
+                        retList.Add(sctSource.FileName);
+                    }
                 }
+
+                return retList;
             }
-
-            _navdataMutex.ReleaseMutex();
-
-            return retList;
         }
 
         public static void LoadSectorFile(string filename)
         {
-            _navdataMutex.WaitOne();
-            _navdataSource.AddSource(new SCTSource(filename), SCT_PRIORITY);
-            _navdataMutex.ReleaseMutex();
+            lock (_navdataMutex)
+            {
+                _navdataSource.AddSource(new SCTSource(filename), SCT_PRIORITY);
+            }
         }
 
         public static void LoadNavigraphDataFile(string fileName, string uuid)
         {
-            _navdataMutex.WaitOne();
-            _navdataSource.AddSource(new DFDSource(fileName, uuid), NAVIGRAPH_PRIORITY);
-            _navdataMutex.ReleaseMutex();
+            lock (_navdataMutex)
+            {
+                _navdataSource.AddSource(new DFDSource(fileName, uuid), NAVIGRAPH_PRIORITY);
+
+            }
         }
 
         public static void AddAirport(Airport airport)
         {
-            _navdataMutex.WaitOne();
-            _navdataSource.GetSourceType<InMemorySource>()?.AddAirport(airport);
-            _navdataMutex.ReleaseMutex();
+            lock (_navdataMutex)
+            {
+                _navdataSource.GetSourceType<InMemorySource>()?.AddAirport(airport);
+            }
         }
 
         public static void AddPublishedHold(PublishedHold hold)
         {
-            _navdataMutex.WaitOne();
-            _navdataSource.GetSourceType<InMemorySource>()?.AddPublishedHold(hold);
-            _navdataMutex.ReleaseMutex();
+            lock (_navdataMutex)
+            {
+                _navdataSource.GetSourceType<InMemorySource>()?.AddPublishedHold(hold);
+            }
         }
 
         public static PublishedHold GetPublishedHold(string wp, GeoPoint point)
         {
-            _navdataMutex.WaitOne();
-            Fix fix = _navdataSource.GetClosestFixByIdentifier(point, wp);
-
-            if (fix != null)
+            lock (_navdataMutex)
             {
-                var hold = _navdataSource.GetSourceType<InMemorySource>()?.GetPublishedHold(fix);
-                _navdataMutex.ReleaseMutex();
-                return hold;
-            }
+                Fix fix = _navdataSource.GetClosestFixByIdentifier(point, wp);
 
-            _navdataMutex.ReleaseMutex();
-            return null;
+                if (fix != null)
+                {
+                    var hold = _navdataSource.GetSourceType<InMemorySource>()?.GetPublishedHold(fix);
+                    return hold;
+                }
+
+                return null;
+            }
         }
 
         public static void AddLocalizer(Localizer wp)
         {
-            _navdataMutex.WaitOne();
-            _navdataSource.GetSourceType<InMemorySource>()?.AddLocalizer(wp);
-            _navdataMutex.ReleaseMutex();
+            lock (_navdataMutex)
+            {
+                _navdataSource.GetSourceType<InMemorySource>()?.AddLocalizer(wp);
+            }
         }
 
         public static Airport GetAirportByIdentifier(string airportIdent)
         {
-            _navdataMutex.WaitOne();
-            var airport = _navdataSource.GetAirportByIdentifier(airportIdent.ToUpper());
-            _navdataMutex.ReleaseMutex();
-
-            return airport;
+            lock (_navdataMutex)
+            {
+                var airport = _navdataSource.GetAirportByIdentifier(airportIdent.ToUpper());
+                return airport;
+            }
         }
 
         public static Localizer GetLocalizer(string airportIdent, string rwyIdent)
         {
-            _navdataMutex.WaitOne();
-            var airport = _navdataSource.GetLocalizerFromAirportRunway(airportIdent.ToUpper(), rwyIdent.ToUpper());
-            _navdataMutex.ReleaseMutex();
-
-            return airport;
+            lock (_navdataMutex)
+            {
+                var airport = _navdataSource.GetLocalizerFromAirportRunway(airportIdent.ToUpper(), rwyIdent.ToUpper());
+                return airport;
+            }
         }
 
         public static Fix GetClosestWaypointByIdentifier(string wpId, GeoPoint point)
         {
-            _navdataMutex.WaitOne();
-            var airport = _navdataSource.GetClosestFixByIdentifier(point, wpId);
-            _navdataMutex.ReleaseMutex();
+            lock (_navdataMutex)
+            {
+                var airport = _navdataSource.GetClosestFixByIdentifier(point, wpId);
+                return airport;
+            }
+        }
 
-            return airport;
+        public static Sid GetSidByAirportAndIdentifier(string aiportIdentifier, string sidIdentifier)
+        {
+            lock (_navdataMutex)
+            {
+                var sid = _navdataSource.GetSidByAirportAndIdentifier(aiportIdentifier, sidIdentifier);
+
+                return sid;
+            }
+        }
+
+        public static Sid GetSidByAirportAndIdentifier(Fix airport, string sidIdentifier)
+        {
+            lock (_navdataMutex)
+            {
+                var sid = _navdataSource.GetSidByAirportAndIdentifier(airport.Identifier, sidIdentifier);
+
+                return sid;
+            }
+        }
+
+        public static Airway GetAirwayFromIdentifierAndFixes(string airwayIdentifier, Fix startFix, Fix endFix)
+        {
+            lock (_navdataMutex)
+            {
+                var airway = _navdataSource.GetAirwayFromIdentifierAndFixes(airwayIdentifier, startFix, endFix);
+
+                return airway;
+            }
+        }
+
+        public static Star GetStarByAirportAndIdentifier(Fix airport, string sidIdentifier)
+        {
+            lock (_navdataMutex)
+            {
+                var sid = _navdataSource.GetStarByAirportAndIdentifier(airport.Identifier, sidIdentifier);
+
+                return sid;
+            }
         }
     }
 }

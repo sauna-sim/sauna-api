@@ -23,7 +23,7 @@ namespace NavData_Interface.DataSources.DFDUtility.Factory
                         "waypoint_latitude",
                         "waypoint_longitude"));
 
-                WaypointDescription description = SQLHelper.waypointDescriptionFromDescriptionString(reader["waypoint_description"].ToString());
+                WaypointDescription description = SQLHelper.waypointDescriptionFromDescriptionString(reader["waypoint_description_code"].ToString());
 
                 points.Add(new AirwayPoint(waypoint, description));
             }

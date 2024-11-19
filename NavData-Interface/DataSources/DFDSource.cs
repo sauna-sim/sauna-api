@@ -13,6 +13,7 @@ using NavData_Interface.Objects.Fixes.Waypoints;
 using NavData_Interface.Objects.LegCollections.Airways;
 using AviationCalcUtilNet.Units;
 using AviationCalcUtilNet.Geo;
+using NavData_Interface.Objects.LegCollections.Procedures;
 
 namespace NavData_Interface.DataSources
 {
@@ -27,6 +28,11 @@ namespace NavData_Interface.DataSources
         public override string GetId()
         {
             return Uuid;
+        }
+
+        public DFDSource(string filePath) : this(filePath, "")
+        {
+
         }
 
         /// <summary>
@@ -80,8 +86,7 @@ namespace NavData_Interface.DataSources
             }
         }
 
-        override
-        public Localizer GetLocalizerFromAirportRunway(string airportIdentifier, string runwayIdentifier)
+        public override Localizer GetLocalizerFromAirportRunway(string airportIdentifier, string runwayIdentifier)
         {
             var foundLocs = GetObjectsWithQuery<Localizer>(LocalizerLookupByAirportRunway(airportIdentifier, runwayIdentifier), reader => LocalizerFactory.Factory(reader));
 
@@ -311,6 +316,7 @@ namespace NavData_Interface.DataSources
                     var obj = objectFactory(reader);
                     objects.Add(obj);
                 }
+                reader.Close();
             }
 
             return objects;
@@ -366,7 +372,7 @@ namespace NavData_Interface.DataSources
 
         private SQLiteCommand RunwayLookupByAirportIdentifier(string airportIdentifier, string runwayIdentifier)
         {
-            SQLiteCommand command = new SQLiteCommand();
+            SQLiteCommand command = new SQLiteCommand(_connection);
 
             command.CommandText = $"SELECT * FROM tbl_runways WHERE airport_identifier == @airport AND runway_identifier == RW@runway";
 
@@ -392,9 +398,9 @@ namespace NavData_Interface.DataSources
 
         private SQLiteCommand AirwayLookupByIdentifier(string airwayIdentifier)
         {
-            SQLiteCommand command = new SQLiteCommand();
+            SQLiteCommand command = new SQLiteCommand(_connection);
 
-            command.CommandText = $"SELECT * FROM tbl_airways WHERE airway_identifier == @airway";
+            command.CommandText = $"SELECT * FROM tbl_enroute_airways WHERE route_identifier == @airway";
 
             command.Parameters.AddWithValue("@airway", airwayIdentifier);
 
@@ -410,6 +416,48 @@ namespace NavData_Interface.DataSources
             airway.SelectSection(startFix, endFix);
 
             return airway;
+        }
+
+        private SQLiteCommand SidLookupByAirportAndIdentifier(string airportIdentifier, string sidIdentifier)
+        {
+            SQLiteCommand command = new SQLiteCommand(_connection);
+
+            command.CommandText = $"SELECT * FROM tbl_sids WHERE airport_identifier == @airport AND procedure_identifier = @sid";
+
+            command.Parameters.AddWithValue("@airport", airportIdentifier);
+            command.Parameters.AddWithValue("@sid", sidIdentifier);
+
+            return command;
+        }
+
+        public override Sid GetSidByAirportAndIdentifier(string airportIdentifier, string sidIdentifier)
+        {
+            var reader = SidLookupByAirportAndIdentifier(airportIdentifier, sidIdentifier).ExecuteReader();
+
+            var sid = SidFactory.Factory(reader, _connection);
+
+            return sid;
+        }
+
+        private SQLiteCommand StarLookupByAirportAndIdentifier(string airportIdentifier, string sidIdentifier)
+        {
+            SQLiteCommand command = new SQLiteCommand(_connection);
+
+            command.CommandText = $"SELECT * FROM tbl_stars WHERE airport_identifier == @airport AND procedure_identifier = @sid";
+
+            command.Parameters.AddWithValue("@airport", airportIdentifier);
+            command.Parameters.AddWithValue("@sid", sidIdentifier);
+
+            return command;
+        }
+
+        public override Star GetStarByAirportAndIdentifier(string airportIdentifier, string sidIdentifier)
+        {
+            var reader = StarLookupByAirportAndIdentifier(airportIdentifier, sidIdentifier).ExecuteReader();
+
+            var sid = StarFactory.Factory(reader, _connection);
+
+            return sid;
         }
     }
 }

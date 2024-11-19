@@ -3,6 +3,7 @@ using AviationCalcUtilNet.Units;
 using NavData_Interface.Objects;
 using NavData_Interface.Objects.Fixes;
 using NavData_Interface.Objects.LegCollections.Airways;
+using NavData_Interface.Objects.LegCollections.Procedures;
 using System;
 using System.Collections.Generic;
 using System.Security.Cryptography;
@@ -25,6 +26,23 @@ namespace NavData_Interface.DataSources
         public abstract Runway GetRunwayFromAirportRunwayIdentifier(string airportIdentifier, string runwayIdentifier);
 
         public abstract Airway GetAirwayFromIdentifierAndFixes(string airwayIdentifier, Fix startFix, Fix endFix);
+
+        public abstract bool IsValidAirwayIdentifier(string airwayIdentifier);
+
+        public virtual Sid GetSidByAirportAndIdentifier(Fix airport, string sidIdentifier)
+        {
+            return GetSidByAirportAndIdentifier(airport.Identifier, sidIdentifier);
+        }
+
+        public virtual Sid GetSidByAirportAndIdentifier(string airportIdentifier, string sidIdentifier)
+        {
+            return null;
+        }
+
+        public virtual Star GetStarByAirportAndIdentifier(string airportIdentifier, string sidIdentifier)
+        {
+            return null;
+        }
 
         public Fix GetClosestFixByIdentifier(GeoPoint point, string identifier)
         {
