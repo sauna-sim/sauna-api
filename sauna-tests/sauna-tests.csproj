@@ -28,4 +28,9 @@
     <None Remove="Microsoft.AspNetCore.TestHost" />
     <None Remove="Microsoft.AspNetCore.Mvc.Testing" />
   </ItemGroup>
+  <ItemGroup>
+    <None Update="WMM.COF">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
 </Project>
