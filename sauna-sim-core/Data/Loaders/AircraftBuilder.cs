@@ -132,7 +132,7 @@ namespace SaunaSim.Core.Data.Loaders
                 string[] waypoints = flightPlan.route?.Split(' ', '.') ?? new string[0];
                 List<Leg> NavDataFormatLegs = new List<Leg>();
 
-                if (waypoints.Length > 0)
+                if (waypoints.Length > 0 && waypoints[0] != "")
                 {
                     // Is the first point a SID?
 

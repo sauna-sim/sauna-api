@@ -141,7 +141,7 @@ namespace SaunaSim.Api.Controllers
         [HttpPost("loadEuroscopeScenario")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public ActionResult LoadEuroscopeScenario(LoadScenarioFileRequest request)
+        public async Task<ActionResult> LoadEuroscopeScenario(LoadScenarioFileRequest request)
         {
             try
             {
@@ -334,12 +334,21 @@ namespace SaunaSim.Api.Controllers
                     }
                 }
 
+                List<Task> tasks = new();
+
                 foreach (AircraftBuilder pilot in pilots)
                 {
-                    var aircraft = pilot.Create(PrivateInfoLoader.GetClientInfo((string msg) => { _logger.LogWarning($"{pilot.Callsign}: {msg}"); }));
-                    _aircraftService.Handler.AddAircraft(aircraft);
-                    aircraft.Start();
+                    tasks.Add(Task.Factory.StartNew(() =>
+                    {
+                        DateTime start = DateTime.UtcNow;
+                        var aircraft = pilot.Create(PrivateInfoLoader.GetClientInfo((string msg) => { _logger.LogWarning($"{pilot.Callsign}: {msg}"); }));
+                        _aircraftService.Handler.AddAircraft(aircraft);
+                        aircraft.Start();
+                        _logger.LogInformation($"{pilot.Callsign} created in {(DateTime.UtcNow - start).TotalMilliseconds}ms");
+                    }));
                 }
+
+                await Task.WhenAll(tasks);
             } catch (Exception ex)
             {
                 return BadRequest(ex.StackTrace);
