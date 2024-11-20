@@ -655,13 +655,13 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
 
                     // Constraints from earlier (further up the arrival)
                     EarlyUpperAlt = null,
-                    EarlyLowerAlt = null,
+                    //EarlyLowerAlt = null,
                     EarlySpeed = -1,
 
                     // Index where constraints were detected
                     EarlySpeedI = -2,
                     EarlyUpperAltI = -2,
-                    EarlyLowerAltI = -2,
+                    //EarlyLowerAltI = -2,
                 };
 
                 // Loop through legs from last to first ending either when first leg is reached or cruise alt is reached
