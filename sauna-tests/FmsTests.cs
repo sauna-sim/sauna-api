@@ -8,6 +8,7 @@ using NavData_Interface.Objects.Fixes;
 using NavData_Interface.Objects.Fixes.Waypoints;
 using SaunaSim.Core.Simulator.Aircraft.FMS;
 using SaunaSim.Core.Simulator.Aircraft.FMS.Legs;
+using SaunaSim.Core.Simulator.Aircraft.FMS.VNAV;
 using SaunaSim.Core.Simulator.Aircraft.Performance;
 using System;
 using System.Collections.Generic;

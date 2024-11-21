@@ -1,5 +1,6 @@
 ﻿using AviationCalcUtilNet.Atmos.Grib;
 using AviationCalcUtilNet.Units;
+using SaunaSim.Core.Simulator.Aircraft.FMS.VNAV;
 using System.Collections.Generic;
 
 namespace SaunaSim.Core.Simulator.Aircraft.FMS

@@ -9,9 +9,10 @@ using SaunaSim.Core.Simulator.Aircraft.FMS.Legs;
 using SaunaSim.Core.Simulator.Aircraft.Performance;
 using System;
 using System.Collections.Generic;
+using System.Net;
 using System.Text;
 
-namespace SaunaSim.Core.Simulator.Aircraft.FMS
+namespace SaunaSim.Core.Simulator.Aircraft.FMS.VNAV
 {
     public struct FmsVnavLegIterator
     {
@@ -19,27 +20,69 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
         /// Leg Index
         /// </summary>
         public int Index { get; set; }
-        public Angle ApchAngle { get; set; } // Approach angle (Only used in the approach phase)
-        public Length DistanceToRwy { get; set; } // Distance to the runway threshold
-        public bool ShouldRewind { get; set; }
+
+        /// <summary>
+        /// Along Track Distance
+        /// </summary>
         public Length AlongTrackDistance { get; set; }
-        public bool LimitCrossed { get; set; }
 
-        // Information from last iteration
-        public Length LastAlt { get; set; } // Altitude last waypoint was crossed at
-        public int LastSpeed { get; set; } // Target speed last waypoint was crossed at
-        public Length LaterDecelLength { get; set; } // Decel length left
-        public int LaterDecelSpeed { get; set; }
+        /// <summary>
+        /// Cumulative distance to destination runway. 
+        /// Measured to the end of the current leg
+        /// </summary>
+        public Length DistanceToRwy { get; set; }
 
-        // Constraints from earlier (further up the arrival)
-        public Length EarlyUpperAlt { get; set; }
-        //public Length EarlyLowerAlt { get; set; }
+        /// <summary>
+        /// Approach Angle (Only used in the approach phase)
+        /// </summary>
+        public Angle ApchAngle { get; set; }
+
+        /// <summary>
+        /// Deceleration distance.
+        /// Used to figure out how much level off distance is left for a speed constraint
+        /// </summary>
+        public Length DecelDist { get; set; }
+
+        /// <summary>
+        /// Deceleration speed.
+        /// Used to indicated to the current iteration that a speed constraint will follow.
+        /// Assumed to be in knots (kts)
+        /// </summary>
+        public int DecelSpeed { get; set; }
+
+        /// <summary>
+        /// A Constraint from earlier on the route
+        /// </summary>
         public int EarlySpeed { get; set; }
 
-        // Index where constraints were detected
-        public int EarlySpeedI { get; set; }
-        public int EarlyUpperAltI { get; set; }
-        //public int EarlyLowerAltI { get; set; }
+        /// <summary>
+        /// Index where earlier speed constraint was encountered
+        /// </summary>
+        public int EarlySpeedIndex { get; set; }
+
+        /// <summary>
+        /// Indicates whether a new constraint was encountered and
+        /// that retracing should occur to find when the constraint
+        /// was last complied with.
+        /// </summary>
+        public bool EarlySpeedSearch { get; set; }
+
+        /// <summary>
+        /// A Constraint from earlier on the route
+        /// </summary>
+        public Length EarlyUpperAlt { get; set; }
+
+        /// <summary>
+        /// Index where earlier upper altitude constraint was encountered
+        /// </summary>
+        public int EarlyUpperAltIndex { get; set; }
+
+        /// <summary>
+        /// Indicates whether a new constraint was encountered and
+        /// that retracing should occur to find when the constraint
+        /// was last complied with.
+        /// </summary>
+        public bool EarlyUpperAltSearch { get; set; }
     }
 
     public static class FmsVnavUtil
@@ -58,33 +101,16 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
             // Check speed
             if (speedKts > 0)
             {
-                if (point.VnavPoints[0].SpeedUnits != Autopilot.McpSpeedUnitsType.KNOTS) return false;
-                if (point.VnavPoints[0].Speed >  speedKts) return false;
+                if (point.VnavPoints[0].SpeedUnits != McpSpeedUnitsType.KNOTS) return false;
+                if (point.VnavPoints[0].Speed > speedKts) return false;
             }
 
             return true;
-        }
-
-        public static Length CalculateDecelLength(int targetIas_kts, int initialIas_kts, Length alt, Length densAlt, double acftMass_kg, Bearing finalTrueCourse, PerfData perfData, GribDataPoint gribPoint)
-        {
-            // Get deceleration at level flight at speedconstraint
-            var lvlPitch = PerfDataHandler.GetRequiredPitchForVs(perfData, 0, targetIas_kts, densAlt.Feet, acftMass_kg, 0, 0);
-            (var decelRate, _) = PerfDataHandler.CalculatePerformance(perfData, lvlPitch, 0, targetIas_kts, densAlt.Feet, acftMass_kg, 0, 0);
-
-            // Calculate initial and final velocities
-            var (initialVelocity, _) = AtmosUtil.ConvertIasToTas(Velocity.FromKnots(initialIas_kts), gribPoint.LevelPressure, alt, gribPoint.GeoPotentialHeight, gribPoint.Temp);
-            var (finalVelocity, _) = AtmosUtil.ConvertIasToTas(Velocity.FromKnots(targetIas_kts), gribPoint.LevelPressure, alt, gribPoint.GeoPotentialHeight, gribPoint.Temp);
-            var (windDir, windSpd) = gribPoint.Wind;
-            var headWind = AviationUtil.GetHeadwindComponent(windDir, windSpd, finalTrueCourse);
-            initialVelocity += headWind;
-            finalVelocity += headWind;
-
-            return Length.FromMeters((Math.Pow(finalVelocity.MetersPerSecond, 2) - Math.Pow(initialVelocity.MetersPerSecond, 2)) / (double)(Acceleration.FromKnotsPerSecond(decelRate * 2))); // Vf^2 - Vi^2 / (2a)
-        }
+        }        
 
         public static Length CalculateStartAltitude(Length endAlt, Length legLength, Angle angle)
         {
-            return endAlt + (legLength * Math.Tan(angle.Radians));
+            return endAlt + legLength * Math.Tan(angle.Radians);
         }
 
         public static Length CalculateDistanceForAltitude(Length endAlt, Length startAlt, Angle angle)
@@ -96,10 +122,10 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
         {
             var temp = AtmosUtil.CalculateTempAtAlt(alt, gribPoint.GeoPotentialHeight, gribPoint.Temp);
             var pressure = AtmosUtil.CalculatePressureAtAlt(alt, gribPoint.GeoPotentialHeight, gribPoint.LevelPressure, temp);
-            return  AtmosUtil.CalculateDensityAltitude(pressure, temp);
+            return AtmosUtil.CalculateDensityAltitude(pressure, temp);
         }
 
-        private static double GetKnotsSpeed(McpSpeedUnitsType units, int speed, Length altitude, GribDataPoint gribPoint)
+        public static double GetKnotsSpeed(McpSpeedUnitsType units, int speed, Length altitude, GribDataPoint gribPoint)
         {
             if (units == McpSpeedUnitsType.MACH)
             {
@@ -121,7 +147,8 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
             if (gribPoint != null)
             {
                 (_, curIasMach) = AtmosUtil.ConvertIasToTas(ias, gribPoint.LevelPressure, altitude, gribPoint.GeoPotentialHeight, gribPoint.Temp);
-            } else
+            }
+            else
             {
                 (_, curIasMach) = AtmosUtil.ConvertIasToTas(ias, AtmosUtil.ISA_STD_PRES, altitude, (Length)0, AtmosUtil.ISA_STD_TEMP);
             }
@@ -129,7 +156,8 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
             if (curIasMach >= mach)
             {
                 return (McpSpeedUnitsType.MACH, (int)(mach * 100));
-            } else
+            }
+            else
             {
                 return (McpSpeedUnitsType.KNOTS, (int)ias.Knots);
             }
@@ -142,13 +170,16 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
                 if (indicatedAltitude < departureAirportElevation + Length.FromFeet(1000))
                 {
                     return (McpSpeedUnitsType.KNOTS, perfData.V2_KIAS);
-                } else if (indicatedAltitude < departureAirportElevation + Length.FromFeet(3000))
+                }
+                else if (indicatedAltitude < departureAirportElevation + Length.FromFeet(3000))
                 {
                     return (McpSpeedUnitsType.KNOTS, Math.Min(210, perfInit.ClimbKias));
-                } else if (indicatedAltitude.Feet < perfInit.LimitAlt)
+                }
+                else if (indicatedAltitude.Feet < perfInit.LimitAlt)
                 {
                     return (McpSpeedUnitsType.KNOTS, Math.Min(perfInit.ClimbKias, perfInit.LimitSpeed));
-                } else
+                }
+                else
                 {
                     if (perfInit.ClimbMach <= 0)
                     {
@@ -157,12 +188,14 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
 
                     return GetConversionSpeed(Velocity.FromKnots(perfInit.ClimbKias), perfInit.ClimbMach / 100.0, indicatedAltitude, gribPoint);
                 }
-            } else if (fmsPhase == FmsPhaseType.CRUISE)
+            }
+            else if (fmsPhase == FmsPhaseType.CRUISE)
             {
                 if (perfInit.CruiseAlt < perfInit.LimitAlt)
                 {
                     return (McpSpeedUnitsType.KNOTS, perfInit.LimitSpeed);
-                } else
+                }
+                else
                 {
                     if (perfInit.CruiseMach <= 0)
                     {
@@ -171,12 +204,14 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
 
                     return GetConversionSpeed(Velocity.FromKnots(perfInit.CruiseKias), perfInit.CruiseMach / 100.0, indicatedAltitude, gribPoint);
                 }
-            } else if (fmsPhase == FmsPhaseType.DESCENT)
+            }
+            else if (fmsPhase == FmsPhaseType.DESCENT)
             {
                 if (indicatedAltitude.Feet < perfInit.LimitAlt)
                 {
                     return (McpSpeedUnitsType.KNOTS, Math.Min(perfInit.DescentKias, perfInit.LimitSpeed));
-                } else
+                }
+                else
                 {
                     if (perfInit.DescentMach <= 0)
                     {
@@ -185,7 +220,8 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
 
                     return GetConversionSpeed(Velocity.FromKnots(perfInit.DescentKias), perfInit.DescentMach / 100.0, indicatedAltitude, gribPoint);
                 }
-            } else if (fmsPhase == FmsPhaseType.APPROACH)
+            }
+            else if (fmsPhase == FmsPhaseType.APPROACH)
             {
                 var speedGates = perfData.ApproachSpeedGates;
 
@@ -204,11 +240,17 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
                 }
 
                 return (McpSpeedUnitsType.KNOTS, speedGates[speedGates.Count - 1].Item2);
-            } else
+            }
+            else
             {
                 // Go Around
                 return (McpSpeedUnitsType.KNOTS, 135); // TODO: DEFINITELY CHANGE THIS!!!!!!!!!!!!!
             }
+        }
+
+        public static GribDataPoint GetGribPointForLeg(IRouteLeg curLeg, Length alt)
+        {
+            return new GribDataPoint(curLeg.EndPoint.Point.PointPosition.Lat, curLeg.EndPoint.Point.PointPosition.Lon, AtmosUtil.ISA_STD_PRES); // TODO: Change to actually use wind-uplink.
         }
 
         public static FmsVnavLegIterator ProcessLegForVnav(IRouteLeg leg, FmsVnavLegIterator iterator, PerfData perfData, double mass_kg, PerfInit perfInit, Length depArptElev)
@@ -220,7 +262,8 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
                 if (iterator.ShouldRewind)
                 {
                     iterator.Index++;
-                } else
+                }
+                else
                 {
                     iterator.Index--;
                 }
@@ -263,7 +306,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
             if (iterator.AlongTrackDistance <= Length.FromMeters(0))
             {
                 // Check if we are rewinding
-                if (iterator.ShouldRewind && !FmsVnavUtil.DoesPointMeetConstraints(endPoint, iterator.EarlyUpperAlt, iterator.EarlySpeed))
+                if (iterator.ShouldRewind && !DoesPointMeetConstraints(endPoint, iterator.EarlyUpperAlt, iterator.EarlySpeed))
                 {
                     iterator.Index++;
                     iterator.DistanceToRwy -= leg.LegLength;
@@ -346,7 +389,8 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
             if (iterator.DistanceToRwy < Length.FromNauticalMiles(15))
             {
                 targetAngle = iterator.ApchAngle;
-            } else
+            }
+            else
             {
                 // Calculate idle descent angle
                 targetAngle = Angle.FromDegrees(3.0); // TODO: Actually calculate this based off performance
@@ -356,13 +400,14 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
             var gribPoint = new GribDataPoint(endPoint.Point.PointPosition.Lat, endPoint.Point.PointPosition.Lon, AtmosUtil.ISA_STD_PRES); // TODO: Change to actually use wind-uplink.
 
             // Calculate density altitude
-            var densAlt = FmsVnavUtil.CalculateDensityAltitude(iterator.LastAlt, gribPoint);
+            var densAlt = CalculateDensityAltitude(iterator.LastAlt, gribPoint);
 
             // Calculate current speed
             if (iterator.DistanceToRwy < Length.FromNauticalMiles(15))
             {
                 (targetSpeedUnits, targetSpeed) = CalculateFmsSpeed(FmsPhaseType.APPROACH, iterator.DistanceToRwy, iterator.LastAlt, perfData, depArptElev, perfInit, gribPoint);
-            } else
+            }
+            else
             {
                 (targetSpeedUnits, targetSpeed) = CalculateFmsSpeed(FmsPhaseType.DESCENT, iterator.DistanceToRwy, iterator.LastAlt, perfData, depArptElev, perfInit, gribPoint);
             }
@@ -390,7 +435,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
                         // Calculate deceleration distance
                         iterator.LastSpeed = Convert.ToInt32(speedConstraint);
                         iterator.LaterDecelSpeed = Convert.ToInt32(speedConstraint);
-                        iterator.LaterDecelLength = FmsVnavUtil.CalculateDecelLength(iterator.LastSpeed, targetSpeedKts, iterator.LastAlt, densAlt, mass_kg, leg.FinalTrueCourse, perfData, gribPoint);
+                        iterator.LaterDecelLength = CalculateDecelLength(iterator.LastSpeed, targetSpeedKts, iterator.LastAlt, densAlt, mass_kg, leg.FinalTrueCourse, perfData, gribPoint);
                     }
                 }
             }
@@ -404,7 +449,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
                     // Add level off fix
                     var lastVnav = endPoint.VnavPoints[endPoint.VnavPoints.Count - 1];
 
-                    var levelOffDist = FmsVnavUtil.CalculateDistanceForAltitude(lastVnav.Alt, iterator.EarlyUpperAlt, lastVnav.Angle) + lastVnav.AlongTrackDistance;
+                    var levelOffDist = CalculateDistanceForAltitude(lastVnav.Alt, iterator.EarlyUpperAlt, lastVnav.Angle) + lastVnav.AlongTrackDistance;
 
                     endPoint.VnavPoints.Add(new FmsVnavPoint
                     {
@@ -414,12 +459,12 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
                         Speed = targetSpeed,
                         SpeedUnits = targetSpeedUnits
                     });
-                } 
+                }
                 //else if (iterator.EarlyLowerAlt != null && iterator.LastAlt < iterator.EarlyLowerAlt)
                 else if (leg.StartPoint != null && leg.StartPoint.LowerAltitudeConstraint > 0 && iterator.LastAlt < Length.FromFeet(leg.StartPoint.LowerAltitudeConstraint))
                 {
-                        //iterator.LastAlt = iterator.EarlyLowerAlt;
-                        iterator.LastAlt = Length.FromFeet(leg.StartPoint.LowerAltitudeConstraint);
+                    //iterator.LastAlt = iterator.EarlyLowerAlt;
+                    iterator.LastAlt = Length.FromFeet(leg.StartPoint.LowerAltitudeConstraint);
 
                     // Modify last VNAV angle to force it to meet constraint
                     var lastVnav = endPoint.VnavPoints[endPoint.VnavPoints.Count - 1];
@@ -449,7 +494,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
                 // Check if deceleration point doesn't fit within the current leg
                 if (iterator.LaterDecelLength + iterator.AlongTrackDistance > leg.LegLength)
                 {
-                    iterator.LaterDecelLength -= (leg.LegLength - iterator.AlongTrackDistance);
+                    iterator.LaterDecelLength -= leg.LegLength - iterator.AlongTrackDistance;
                     iterator.AlongTrackDistance = leg.LegLength;
                     return iterator;
                 }
@@ -460,7 +505,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
             }
 
             // Calculate new last alt
-            var newLastAlt = FmsVnavUtil.CalculateStartAltitude(iterator.LastAlt, leg.LegLength - iterator.AlongTrackDistance, targetAngle);
+            var newLastAlt = CalculateStartAltitude(iterator.LastAlt, leg.LegLength - iterator.AlongTrackDistance, targetAngle);
 
             // Check limit alt
             Length limitAlt = Length.FromFeet(perfInit.LimitAlt);
@@ -482,14 +527,14 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
                 // If there is a speed difference crossing the limit alt, create slow down point
                 if (perfInit.LimitSpeed < aboveLimitSpeedKts)
                 {
-                    var todDist = FmsVnavUtil.CalculateDistanceForAltitude(iterator.LastAlt, limitAlt, targetAngle);
+                    var todDist = CalculateDistanceForAltitude(iterator.LastAlt, limitAlt, targetAngle);
 
                     iterator.AlongTrackDistance += todDist;
                     iterator.LastSpeed = perfInit.LimitSpeed;
                     iterator.LaterDecelSpeed = perfInit.LimitSpeed;
 
-                    densAlt = FmsVnavUtil.CalculateDensityAltitude(limitAlt, gribPoint);
-                    var decelDist = FmsVnavUtil.CalculateDecelLength(perfInit.LimitSpeed, aboveLimitSpeedKts, limitAlt, densAlt, mass_kg, leg.FinalTrueCourse, perfData, gribPoint);
+                    densAlt = CalculateDensityAltitude(limitAlt, gribPoint);
+                    var decelDist = CalculateDecelLength(perfInit.LimitSpeed, aboveLimitSpeedKts, limitAlt, densAlt, mass_kg, leg.FinalTrueCourse, perfData, gribPoint);
                     iterator.LaterDecelLength = decelDist;
 
                     return iterator;

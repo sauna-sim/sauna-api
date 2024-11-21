@@ -26,6 +26,7 @@ using SaunaSim.Core.Simulator.Aircraft.Performance;
 using AviationCalcUtilNet.Physics;
 using AviationCalcUtilNet.Math;
 using Newtonsoft.Json.Linq;
+using SaunaSim.Core.Simulator.Aircraft.FMS.VNAV;
 
 namespace SaunaSim.Core.Simulator.Aircraft.FMS
 {
@@ -641,11 +642,14 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
             {
                 var iterator = new FmsVnavLegIterator
                 {
-                    Index = _routeLegs.Count - 1, // Start at last leg
+                    // Keep track of where we are
+                    Index = _routeLegs.Count - 1,
+                    AlongTrackDistance = Length.FromMeters(0),
+
+
                     ApchAngle = null, // Approach angle (Only used in the approach phase)
                     DistanceToRwy = null, // Distance to the runway threshold
                     ShouldRewind = false,
-                    AlongTrackDistance = Length.FromMeters(0),
                     LimitCrossed = false,
 
                     // Information from last iteration
