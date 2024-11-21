@@ -392,7 +392,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
             }
 
             _dep = new FmsDeparture();
-              
+
             RecalculatePerformance();
         }
 
@@ -634,49 +634,83 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
         public void RecalculatePerformance()
         {
             RecalculateVnavPath();
-        }        
+        }
+
+        private IRouteLeg GetVnavLeg(int index)
+        {
+            if (index == -1) return _activeLeg;
+            if (index >= 0 && index < _routeLegs.Count) return _routeLegs[index];
+            return null;
+        }
+
+        private (IRouteLeg curLeg, int curLegIndex, IRouteLeg nextLeg, int nextLegIndex) IterateVnav(int lastIndex, int curLegIndex, int nextLegIndex)
+        {
+            if (curLegIndex > lastIndex)
+            {
+                var newCurLeg = GetVnavLeg(nextLegIndex) ?? throw new IndexOutOfRangeException("Cannot go forward one leg!");
+                var newCurIndex = nextLegIndex;
+                var newNextIndex = nextLegIndex + 1;
+                var newNextLeg = GetVnavLeg(nextLegIndex);
+
+                while (newNextLeg != null || newNextLeg.EndPoint == null || newNextLeg.LegLength <= Length.FromMeters(0))
+                {
+                    newNextIndex++;
+                    newNextLeg = GetVnavLeg(nextLegIndex);
+                }
+
+                return (newCurLeg, newCurIndex, newNextLeg, newNextIndex);
+            }
+            if (curLegIndex < lastIndex)
+            {
+                var newNextIndex = curLegIndex;
+                var newNextLeg = GetVnavLeg(curLegIndex);
+                var newCurIndex = curLegIndex - 1;
+                var newCurLeg = GetVnavLeg(newCurIndex) ?? throw new IndexOutOfRangeException("Cannot go backward one leg!");
+
+                while (newCurLeg.EndPoint == null || newCurLeg.LegLength <= Length.FromMeters(0))
+                {
+                    newCurIndex--;
+                    newCurLeg = GetVnavLeg(newCurIndex) ?? throw new IndexOutOfRangeException("Cannot go backward one leg!");
+                }
+                return (newCurLeg, newCurIndex, newNextLeg, newNextIndex);
+            }
+            return (GetVnavLeg(curLegIndex), curLegIndex, GetVnavLeg(nextLegIndex), nextLegIndex);
+        }
 
         private void RecalculateVnavPath()
         {
             lock (_routeLegsLock)
             {
-                var iterator = new FmsVnavLegIterator
+                if (_routeLegs.Count > 0 || _activeLeg != null)
                 {
-                    // Keep track of where we are
-                    Index = _routeLegs.Count - 1,
-                    AlongTrackDistance = Length.FromMeters(0),
+                    var iterator = new FmsVnavLegIterator
+                    {
+                        Index = _routeLegs.Count - 1,
+                        AlongTrackDistance = Length.FromMeters(0),
+                        ApchAngle = null,
+                        DistanceToRwy = null,
+                        EarlyUpperAlt = null,
+                        EarlyUpperAltIndex = -1,
+                        EarlySpeedSearch = false,
+                        EarlySpeed = -1,
+                        EarlySpeedIndex = -1,
+                        EarlyUpperAltSearch = false,
+                        DecelDist = null,
+                        DecelSpeed = -1,
+                        Finished = false
+                    };
 
+                    // Loop through legs from last to first ending either when first leg is reached or cruise alt is reached
+                    int nextLegIndex = _routeLegs.Count;
+                    int lastIndex = iterator.Index;
+                    while (iterator.Index >= -1 && !iterator.Finished)
+                    {
+                        IRouteLeg curLeg, nextLeg;
+                        (curLeg, iterator.Index, nextLeg, nextLegIndex) = IterateVnav(lastIndex, iterator.Index, nextLegIndex);
 
-                    ApchAngle = null, // Approach angle (Only used in the approach phase)
-                    DistanceToRwy = null, // Distance to the runway threshold
-                    ShouldRewind = false,
-                    LimitCrossed = false,
-
-                    // Information from last iteration
-                    LastAlt = null, // Altitude last waypoint was crossed at
-                    LastSpeed = -1, // Target speed last waypoint was crossed at
-                    LaterDecelLength = null, // Decel length left
-
-                    // Constraints from earlier (further up the arrival)
-                    EarlyUpperAlt = null,
-                    //EarlyLowerAlt = null,
-                    EarlySpeed = -1,
-
-                    // Index where constraints were detected
-                    EarlySpeedI = -2,
-                    EarlyUpperAltI = -2,
-                    //EarlyLowerAltI = -2,
-                };
-
-                // Loop through legs from last to first ending either when first leg is reached or cruise alt is reached
-                while (iterator.Index >= -1)
-                {
-                    // Get current leg
-                    IRouteLeg curLeg = iterator.Index >= 0 ? _routeLegs[iterator.Index] : _activeLeg;
-
-                    iterator = FmsVnavUtil.ProcessLegForVnav(curLeg, iterator, _parentAircraft.PerformanceData, _parentAircraft.Data.Mass_kg, PerfInit, DepartureAirportElevation);
+                        iterator = VnavDescentUtil.ProcessLegForDescent(curLeg, nextLeg, iterator, _parentAircraft.PerformanceData, PerfInit, _parentAircraft.Data.Mass_kg, DepartureAirportElevation);
+                    }
                 }
-
             }
         }
 

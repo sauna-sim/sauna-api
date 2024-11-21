@@ -45,7 +45,12 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.VNAV
             if (curLeg.EndPoint.VnavPoints == null || curLeg.EndPoint.VnavPoints.Count < 1)
             {
                 throw new ArgumentException("curLeg's VnavPoints must have at least 1 point!");
-            }            
+            }
+
+            if (curLeg.EndPoint.VnavPoints.Count < 2 && (nextLeg == null || nextLeg.EndPoint.VnavPoints == null || nextLeg.EndPoint.VnavPoints.Count < 1))
+            {
+                throw new IndexOutOfRangeException("nextLeg did not have any VNAV Points or is not a valid leg!");
+            }
 
             // Clean up iterator
             iterator.DecelDist = null;
@@ -59,11 +64,6 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.VNAV
             {
                 iterator.AlongTrackDistance = curLeg.EndPoint.VnavPoints[curLeg.EndPoint.VnavPoints.Count - 1].AlongTrackDistance;
                 return iterator;
-            }
-
-            if (nextLeg == null || nextLeg.EndPoint.VnavPoints == null || nextLeg.EndPoint.VnavPoints.Count < 1)
-            {
-                throw new IndexOutOfRangeException("nextLeg did not have any VNAV Points or is not a valid leg!");
             }
 
             // Move to next leg
@@ -231,11 +231,11 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.VNAV
 
             // Calculate target speed
             (var targetSpeedUnits, var targetSpeed) = FmsVnavUtil.CalculateFmsSpeed(currentPhase, iterator.DistanceToRwy + iterator.AlongTrackDistance, curAlt, perfData, depArptElev, perfInit, gribPoint);
+            var targetSpeedInKts = FmsVnavUtil.GetKnotsSpeed(targetSpeedUnits, targetSpeed, curAlt, gribPoint);
 
             // Check for decel speed
             if (iterator.DecelSpeed > 0)
             {
-                var targetSpeedInKts = FmsVnavUtil.GetKnotsSpeed(targetSpeedUnits, targetSpeed, curAlt, gribPoint);
                 iterator.DecelDist = CalculateDecelLength(iterator.DecelSpeed, Convert.ToInt32(Math.Round(targetSpeedInKts, MidpointRounding.AwayFromZero)), curAlt, curDensAlt, mass_kg, curLeg.FinalTrueCourse, perfData, gribPoint);
                 targetSpeed = iterator.DecelSpeed;
                 targetSpeedUnits = Autopilot.McpSpeedUnitsType.KNOTS;
@@ -254,82 +254,135 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.VNAV
                     if (lastVnavPoint.CmdSpeedUnits == Autopilot.McpSpeedUnitsType.MACH || lastVnavPoint.CmdSpeed > curLeg.EndPoint.SpeedConstraint)
                     {
                         // Go back to last time speed constraint was followed
+                        iterator.EarlySpeed = Convert.ToInt32(Math.Round(curLeg.EndPoint.SpeedConstraint, MidpointRounding.AwayFromZero));
+                        iterator.EarlySpeedIndex = iterator.Index;
+                        iterator.EarlySpeedSearch = true;
                         try
                         {
                             return GoToNextVnavDescentLeg(curLeg, nextLeg, iterator);
                         } catch (IndexOutOfRangeException) {
-
+                            iterator.EarlySpeedSearch = false;
+                            iterator.EarlySpeed = -1;
+                            iterator.EarlySpeedIndex = -1;
+                            lastVnavPoint.CmdSpeed = iterator.EarlySpeed;
+                            lastVnavPoint.CmdSpeedUnits = Autopilot.McpSpeedUnitsType.KNOTS;
+                            lastVnavPoint.Speed = iterator.EarlySpeed;
+                            lastVnavPoint.SpeedUnits = Autopilot.McpSpeedUnitsType.KNOTS;
                         }
+                    }
+                    if (targetSpeedInKts > curLeg.EndPoint.SpeedConstraint)
+                    {
+                        // Calculate Decel Length
+                        iterator.DecelDist = CalculateDecelLength(
+                            Convert.ToInt32(Math.Round(curLeg.EndPoint.SpeedConstraint, MidpointRounding.AwayFromZero)), 
+                            Convert.ToInt32(Math.Round(targetSpeedInKts, MidpointRounding.AwayFromZero)), 
+                            curAlt, curDensAlt, mass_kg, curLeg.FinalTrueCourse, perfData, gribPoint);
+                        targetSpeed = Convert.ToInt32(Math.Round(curLeg.EndPoint.SpeedConstraint, MidpointRounding.AwayFromZero));
+                        targetSpeedUnits = Autopilot.McpSpeedUnitsType.KNOTS;
+                    }
+                }
+
+                // Does upper alt constraint exist
+                if (curLeg.EndPoint.UpperAltitudeConstraint > 0 && curAlt > Length.FromFeet(curLeg.EndPoint.UpperAltitudeConstraint))
+                {
+                    iterator.EarlyUpperAlt = Length.FromFeet(curLeg.EndPoint.UpperAltitudeConstraint);
+                    iterator.EarlyUpperAltIndex = iterator.Index;
+                    iterator.EarlyUpperAltSearch = true;
+                    try
+                    {
+                        return GoToNextVnavDescentLeg(curLeg, nextLeg, iterator);
+                    } catch (IndexOutOfRangeException)
+                    {
+                        iterator.EarlyUpperAlt = null;
+                        iterator.EarlyUpperAltIndex = -1;
+                        iterator.EarlyUpperAltSearch = false;
+                        lastVnavPoint.Alt = Length.FromFeet(curLeg.EndPoint.UpperAltitudeConstraint);
+                        curAlt = lastVnavPoint.Alt;
                     }
                 }
             }
 
-            /*
-             *  If AlongTrackDistance == 0
-		            // Handle Speed Constraint
-		            If Speed Constraint Exists And DistanceToRwy > 15
-			            If LastVnavPt Speed > Speed Constraint
-				            // Go back to last point speed constraint was met
-				            EarlySpeed = Speed Constraint
-				            EarlySpeedI = Index
-				            EarlySpeedSearch = True
-				            return GoBackOne(iterator)
-			            If TargetSpeed > SpeedConstraint
-				            // Calculate Decel length
-				            DecelDist = CalculateDecelDist
-				            TargetSpeed = Speed Constraint
-		            // Handle Upper Alt Constraint
-		            If UpperAltConstraint exists And CurAlt > UpperAltConstraint
-			            EarlyUpperAlt  = UpperAltConstraint
-			            EarlyUpperAltI = Index
-			            EarlyUpperAltSearch = True
-			            return GoBackOne(iterator)
+            targetSpeedInKts = FmsVnavUtil.GetKnotsSpeed(targetSpeedUnits, targetSpeed, curAlt, gribPoint);
 
-	            // Calculate Angle
-	            If DecelDist != null || EarlyUpperAlt >= CurAlt
-		            TargetAngle = 0
-	            Else If DistanceToRwy < 15
-		            TargetAngle = ApchAngle
-	            Else
-		            TargetAngle = Idle Des Angle
-		
-	            // Add Vnav point
-	            Add Vnav Point
-		            AlongTrackDistance = AlongTrackDistance
-		            Alt = CurAlt
-		            Speed = TargetSpeed
-		            SpeedUnits = TargetSpeedUnits
-		            CmdSpeed = DecelDist != null ? lastVnavPt.CmdSpeed : TargetSpeed
-		            CmdSpeedUnits = DecelDist != null ? lastVnavPt.CmdSpeedUnits : TargetSpeedUnits
-	
-	            // Adjust iterator
-	            NewAlongTrack = LegLength
-	
-	            If DecelDist != null
-		            If DecelDist + AlongTrackDistance < LegLength
-			            NewAlongTrack = AlongTrackDistance + DecelDist
-			            DecelDist = null
-		            Else
-			            DecelDist -= (LegLength - AlongTrackDistance)
-		
-	            Else If TargetAngle > 0
-		            // Calculate alt at start of leg
-		            StartAlt = CalculateStartAlt			
-		
-		            If StartAlt >= LimitAlt and CurAlt < LimitAlt and CurSpeed > LimitSpeed
-			            NewAlongTrack = Point where we reach LimitAlt
-			            DecelSpeed = LimitSpeed
-		            If StartAlt > EarlyUpperAlt And EarlyUpperAlt < LimitAlt
-			            NewAlongTrack = Point where we reach EarlyUpperAlt
-			
-		            AlongTrackDistance = NewAlongTrack
-		
-	            // Check for passing 15nmi
-	            If DistanceToRwy + AlongTrackDistance < 15 And DistanceToRwy + NewAlongTrack > 15
-		            AlongTrackDistance = 15nmi - DistanceToRwy
-		            DecelSpeed = TargetSpeed
-	            return iterator
-            */
+            // ---  Calculate Angle
+            Angle targetAngle = Angle.FromDegrees(3.0);
+            if (iterator.DecelDist != null || iterator.EarlyUpperAlt >= curAlt)
+            {
+                targetAngle = Angle.FromRadians(0);
+            } else if (currentPhase == FmsPhaseType.APPROACH)
+            {
+                targetAngle = iterator.ApchAngle;
+            } else
+            {
+                // Calculate idle descent angle
+                var pitch = PerfDataHandler.GetRequiredPitchForThrust(perfData, 0, 0, targetSpeedInKts, curDensAlt.Feet, mass_kg, 0, 0);
+                var vs = Velocity.FromFeetPerMinute(PerfDataHandler.CalculatePerformance(perfData, pitch, 0, targetSpeedInKts, curDensAlt.Feet, mass_kg, 0, 0).vs * 0.9);
+                var tas = AtmosUtil.ConvertIasToTas(Velocity.FromKnots(targetSpeedInKts), gribPoint.LevelPressure, curAlt, gribPoint.GeoPotentialHeight, gribPoint.Temp).tas;
+                var gs = tas + AviationUtil.GetHeadwindComponent(gribPoint.Wind.windDir, gribPoint.Wind.windSpd, curLeg.FinalTrueCourse);
+                targetAngle = AviationUtil.CalculateFlightPathAngle(gs, vs);
+            }
+
+            // ---  Add VNAV Point
+            if (curLeg.EndPoint.VnavPoints == null)
+            {
+                curLeg.EndPoint.VnavPoints = new List<FmsVnavPoint>();
+            }
+            curLeg.EndPoint.VnavPoints.Add(new FmsVnavPoint
+            {
+                AlongTrackDistance = iterator.AlongTrackDistance,
+                Alt = curAlt,
+                Speed = targetSpeed,
+                SpeedUnits = targetSpeedUnits,
+                CmdSpeed = iterator.DecelDist != null ? lastVnavPoint.CmdSpeed : targetSpeed,
+                CmdSpeedUnits = iterator.DecelDist != null ? lastVnavPoint.CmdSpeedUnits : targetSpeedUnits,
+            });
+
+            // ---  Adjust iterator
+            var newAlongTrack = curLeg.LegLength;
+
+            // Adjust decelDist
+            if (iterator.DecelDist != null)
+            {
+                if (iterator.DecelDist + iterator.AlongTrackDistance < curLeg.LegLength)
+                {
+                    newAlongTrack = iterator.AlongTrackDistance + iterator.DecelDist;
+                    iterator.DecelDist = null;
+                } else
+                {
+                    iterator.DecelDist -= (curLeg.LegLength - iterator.AlongTrackDistance);
+                }
+            } else if (targetAngle > Angle.FromRadians(0))
+            {                
+                var startAlt = FmsVnavUtil.CalculateStartAltitude(curAlt, newAlongTrack - iterator.AlongTrackDistance, targetAngle);
+                var limitAlt = Length.FromFeet(perfInit.LimitAlt);
+                var cruiseAlt = Length.FromFeet(perfInit.CruiseAlt);
+
+                // Check if cruise alt was reached
+                if (startAlt >= cruiseAlt && curAlt < cruiseAlt)
+                {
+                    iterator.Finished = true;
+                    return iterator;
+                }
+                // Check for limit alt crossing
+                if (startAlt >= limitAlt && curAlt < limitAlt && targetSpeedInKts > perfInit.LimitSpeed)
+                {
+                    newAlongTrack = FmsVnavUtil.CalculateDistanceForAltitude(curAlt, limitAlt, targetAngle);
+                }
+                if (iterator.EarlyUpperAlt != null && startAlt > iterator.EarlyUpperAlt && iterator.EarlyUpperAlt < limitAlt)
+                {
+                    newAlongTrack = FmsVnavUtil.CalculateDistanceForAltitude(curAlt, iterator.EarlyUpperAlt, targetAngle);
+                }
+            }
+
+            if (currentPhase == FmsPhaseType.APPROACH && iterator.DistanceToRwy + newAlongTrack > Length.FromNauticalMiles(15))
+            {
+                newAlongTrack = Length.FromNauticalMiles(15) - iterator.DistanceToRwy;
+                iterator.DecelSpeed = Convert.ToInt32(Math.Round(targetSpeedInKts, MidpointRounding.AwayFromZero));
+            }
+
+            iterator.AlongTrackDistance = newAlongTrack;
+
+            return iterator;
         }
     }
 }
