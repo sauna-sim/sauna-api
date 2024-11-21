@@ -641,41 +641,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
             if (index == -1) return _activeLeg;
             if (index >= 0 && index < _routeLegs.Count) return _routeLegs[index];
             return null;
-        }
-
-        private (IRouteLeg curLeg, int curLegIndex, IRouteLeg nextLeg, int nextLegIndex) IterateVnav(int lastIndex, int curLegIndex, int nextLegIndex)
-        {
-            if (curLegIndex > lastIndex)
-            {
-                var newCurLeg = GetVnavLeg(nextLegIndex) ?? throw new IndexOutOfRangeException("Cannot go forward one leg!");
-                var newCurIndex = nextLegIndex;
-                var newNextIndex = nextLegIndex + 1;
-                var newNextLeg = GetVnavLeg(nextLegIndex);
-
-                while (newNextLeg != null || newNextLeg.EndPoint == null || newNextLeg.LegLength <= Length.FromMeters(0))
-                {
-                    newNextIndex++;
-                    newNextLeg = GetVnavLeg(nextLegIndex);
-                }
-
-                return (newCurLeg, newCurIndex, newNextLeg, newNextIndex);
-            }
-            if (curLegIndex < lastIndex)
-            {
-                var newNextIndex = curLegIndex;
-                var newNextLeg = GetVnavLeg(curLegIndex);
-                var newCurIndex = curLegIndex - 1;
-                var newCurLeg = GetVnavLeg(newCurIndex) ?? throw new IndexOutOfRangeException("Cannot go backward one leg!");
-
-                while (newCurLeg.EndPoint == null || newCurLeg.LegLength <= Length.FromMeters(0))
-                {
-                    newCurIndex--;
-                    newCurLeg = GetVnavLeg(newCurIndex) ?? throw new IndexOutOfRangeException("Cannot go backward one leg!");
-                }
-                return (newCurLeg, newCurIndex, newNextLeg, newNextIndex);
-            }
-            return (GetVnavLeg(curLegIndex), curLegIndex, GetVnavLeg(nextLegIndex), nextLegIndex);
-        }
+        }        
 
         private void RecalculateVnavPath()
         {
@@ -686,6 +652,8 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
                     var iterator = new FmsVnavLegIterator
                     {
                         Index = _routeLegs.Count - 1,
+                        NextLegIndex = _routeLegs.Count,
+                        LastIterIndex = _routeLegs.Count - 1,
                         AlongTrackDistance = Length.FromMeters(0),
                         ApchAngle = null,
                         DistanceToRwy = null,
@@ -701,14 +669,9 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
                     };
 
                     // Loop through legs from last to first ending either when first leg is reached or cruise alt is reached
-                    int nextLegIndex = _routeLegs.Count;
-                    int lastIndex = iterator.Index;
                     while (iterator.Index >= -1 && !iterator.Finished)
                     {
-                        IRouteLeg curLeg, nextLeg;
-                        (curLeg, iterator.Index, nextLeg, nextLegIndex) = IterateVnav(lastIndex, iterator.Index, nextLegIndex);
-
-                        iterator = VnavDescentUtil.ProcessLegForDescent(curLeg, nextLeg, iterator, _parentAircraft.PerformanceData, PerfInit, _parentAircraft.Data.Mass_kg, DepartureAirportElevation);
+                        iterator = VnavDescentUtil.ProcessLegForDescent(iterator, GetVnavLeg, _parentAircraft.PerformanceData, PerfInit, _parentAircraft.Data.Mass_kg, DepartureAirportElevation);
                     }
                 }
             }

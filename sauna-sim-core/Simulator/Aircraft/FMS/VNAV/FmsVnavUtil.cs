@@ -22,6 +22,16 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.VNAV
         public int Index { get; set; }
 
         /// <summary>
+        /// Index of next leg
+        /// </summary>
+        public int NextLegIndex { get; set; }
+
+        /// <summary>
+        /// Index for last iteration
+        /// </summary>
+        public int LastIterIndex { get; set; }
+
+        /// <summary>
         /// Along Track Distance
         /// </summary>
         public Length AlongTrackDistance { get; set; }
@@ -89,26 +99,65 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.VNAV
 
     public static class FmsVnavUtil
     {
-        public static bool DoesPointMeetConstraints(FmsPoint point, Length upperAlt, int speedKts)
+        private static (IRouteLeg curLeg, int curLegIndex, IRouteLeg nextLeg, int nextLegIndex) GoForwardVnav(int nextLegIndex, Func<int, IRouteLeg> getLegFunc)
         {
-            // Check if VnavPoints is not empty
-            if (point.VnavPoints.Count == 0) return false;
+            var newCurLeg = getLegFunc(nextLegIndex) ?? throw new IndexOutOfRangeException("Cannot go forward one leg!");
+            var newCurIndex = nextLegIndex;
+            var newNextIndex = nextLegIndex + 1;
+            var newNextLeg = getLegFunc(nextLegIndex);
 
-            // Check upper alt
-            if (upperAlt != null && point.VnavPoints[0].Alt > upperAlt) return false;
-
-            // Check lower alt
-            //if (lowerAlt != null && point.VnavPoints[0].Alt < lowerAlt) return false;
-
-            // Check speed
-            if (speedKts > 0)
+            while (newNextLeg != null && (newNextLeg.EndPoint == null || newNextLeg.LegLength <= Length.FromMeters(0)))
             {
-                if (point.VnavPoints[0].SpeedUnits != McpSpeedUnitsType.KNOTS) return false;
-                if (point.VnavPoints[0].Speed > speedKts) return false;
+                newNextIndex++;
+                newNextLeg = getLegFunc(nextLegIndex);
             }
 
-            return true;
-        }        
+            return (newCurLeg, newCurIndex, newNextLeg, newNextIndex);
+        }
+
+        private static (IRouteLeg curLeg, int curLegIndex, IRouteLeg nextLeg, int nextLegIndex) GoBackwardVnav(int curLegIndex, Func<int, IRouteLeg> getLegFunc)
+        {
+            var newNextIndex = curLegIndex;
+            var newNextLeg = getLegFunc(curLegIndex);
+            var newCurIndex = curLegIndex - 1;
+            var newCurLeg = getLegFunc(newCurIndex) ?? throw new IndexOutOfRangeException("Cannot go backward one leg!");
+
+            while (newCurLeg.EndPoint == null || newCurLeg.LegLength <= Length.FromMeters(0))
+            {
+                newCurIndex--;
+                newCurLeg = getLegFunc(newCurIndex) ?? throw new IndexOutOfRangeException("Cannot go backward one leg!");
+            }
+            return (newCurLeg, newCurIndex, newNextLeg, newNextIndex);
+        }
+
+        public static (IRouteLeg curLeg, int curLegIndex, IRouteLeg nextLeg, int nextLegIndex) IterateVnav(int lastIndex, int curLegIndex, int nextLegIndex, Func<int, IRouteLeg> getLegFunc)
+        {
+            var curLeg = getLegFunc(curLegIndex) ?? throw new IndexOutOfRangeException("Cannot get current leg!");
+            var nextLeg = getLegFunc(nextLegIndex);
+
+            if (curLeg.EndPoint == null || curLeg.LegLength <= Length.FromMeters(0))
+            {
+                curLegIndex = GoBackwardVnav(curLegIndex, getLegFunc).curLegIndex;
+                return (getLegFunc(curLegIndex), curLegIndex, getLegFunc(nextLegIndex), nextLegIndex);
+            }
+
+            if (nextLeg != null && (nextLeg.EndPoint == null || nextLeg.LegLength <= Length.FromMeters(0)))
+            {
+                nextLegIndex = GoForwardVnav(nextLegIndex, getLegFunc).nextLegIndex;
+                return (getLegFunc(curLegIndex), curLegIndex, getLegFunc(nextLegIndex), nextLegIndex);
+            }
+
+            if (curLegIndex > lastIndex)
+            {
+                return GoForwardVnav(nextLegIndex, getLegFunc);
+            }
+            if (curLegIndex < lastIndex)
+            {
+                return GoBackwardVnav(curLegIndex, getLegFunc);
+            }
+
+            return (getLegFunc(curLegIndex), curLegIndex, getLegFunc(nextLegIndex), nextLegIndex);
+        }   
 
         public static Length CalculateStartAltitude(Length endAlt, Length legLength, Angle angle)
         {

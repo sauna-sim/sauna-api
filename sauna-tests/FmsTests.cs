@@ -61,36 +61,35 @@ namespace sauna_tests
 
             var iterator = new FmsVnavLegIterator
             {
-                Index = legs.Count - 1, // Start at last leg
-                ApchAngle = null, // Approach angle (Only used in the approach phase)
-                DistanceToRwy = null, // Distance to the runway threshold
-                ShouldRewind = false,
+                Index = legs.Count - 1,
+                NextLegIndex = legs.Count,
+                LastIterIndex = legs.Count - 1,
                 AlongTrackDistance = Length.FromMeters(0),
-                LimitCrossed = false,
-
-                // Information from last iteration
-                LastAlt = null, // Altitude last waypoint was crossed at
-                LastSpeed = -1, // Target speed last waypoint was crossed at
-                LaterDecelLength = null, // Decel length left
-
-                // Constraints from earlier (further up the arrival)
+                ApchAngle = null,
+                DistanceToRwy = null,
                 EarlyUpperAlt = null,
-                //EarlyLowerAlt = null,
+                EarlyUpperAltIndex = -1,
+                EarlySpeedSearch = false,
                 EarlySpeed = -1,
-
-                // Index where constraints were detected
-                EarlySpeedI = -2,
-                EarlyUpperAltI = -2,
-                //EarlyLowerAltI = -2,
+                EarlySpeedIndex = -1,
+                EarlyUpperAltSearch = false,
+                DecelDist = null,
+                DecelSpeed = -1,
+                Finished = false
             };
 
             // Loop through legs from last to first ending either when first leg is reached or cruise alt is reached
-            while (iterator.Index > -1)
+            while (iterator.Index > -1 && !iterator.Finished)
             {
-                // Get current leg
-                IRouteLeg curLeg = legs[iterator.Index];
-
-                iterator = FmsVnavUtil.ProcessLegForVnav(curLeg, iterator, perfData, perfData.MTOW_kg, init, Length.FromFeet(0));
+                var getLeg = (int index) =>
+                {
+                    if (index < 0 || index >= legs.Count)
+                    {
+                        return null;
+                    }
+                    return legs[index];
+                };
+                iterator = VnavDescentUtil.ProcessLegForDescent(iterator, getLeg, perfData, init, perfData.MTOW_kg, Length.FromFeet(0));
             }
 
             Console.WriteLine(legs);

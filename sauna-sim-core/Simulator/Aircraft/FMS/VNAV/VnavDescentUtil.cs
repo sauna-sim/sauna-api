@@ -123,23 +123,15 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.VNAV
         /// <summary>
         /// Completes an iteration for a leg for a VNAV descent calculation.
         /// </summary>
-        /// <param name="curLeg">Current Leg. Must contain an endpoint and a leg length.</param>
-        /// <param name="nextLeg">Next Leg (nullable). Must contain an endpoint and a leg length.</param>
         /// <param name="iterator">Iterator object</param>
+        /// <param name="getLegFunc">A Function that takes an index and returns an IRouteLeg</param>
         /// <returns>Modified iterator object</returns>
-        /// <exception cref="ArgumentException">If the provided legs are not valid VNAV-able legs</exception>
-        public static FmsVnavLegIterator ProcessLegForDescent(IRouteLeg curLeg, IRouteLeg nextLeg, FmsVnavLegIterator iterator, PerfData perfData, PerfInit perfInit, double mass_kg, Length depArptElev)
+        public static FmsVnavLegIterator ProcessLegForDescent(FmsVnavLegIterator iterator, Func<int, IRouteLeg> getLegFunc, PerfData perfData, PerfInit perfInit, double mass_kg, Length depArptElev)
         {
-            // ---  Input validation
-            if (curLeg == null || curLeg.EndPoint == null || curLeg.LegLength <= Length.FromMeters(0))
-            {
-                throw new ArgumentException("curLeg was not a valid VNAV leg!");
-            }
-
-            if (nextLeg != null && (nextLeg.EndPoint == null || nextLeg.LegLength <= Length.FromMeters(0)))
-            {
-                throw new ArgumentException("nextLeg was not a valid VNAV leg!");
-            }
+            // ---  Process iteration
+            IRouteLeg curLeg, nextLeg;
+            (curLeg, iterator.Index, nextLeg, iterator.NextLegIndex) = FmsVnavUtil.IterateVnav(iterator.LastIterIndex, iterator.Index, iterator.NextLegIndex, getLegFunc);
+            iterator.LastIterIndex = iterator.Index;
 
             // ---  Get Last VNAV Point
             FmsVnavPoint lastVnavPoint;
@@ -332,6 +324,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.VNAV
                 AlongTrackDistance = iterator.AlongTrackDistance,
                 Alt = curAlt,
                 Speed = targetSpeed,
+                Angle = targetAngle,
                 SpeedUnits = targetSpeedUnits,
                 CmdSpeed = iterator.DecelDist != null ? lastVnavPoint.CmdSpeed : targetSpeed,
                 CmdSpeedUnits = iterator.DecelDist != null ? lastVnavPoint.CmdSpeedUnits : targetSpeedUnits,
