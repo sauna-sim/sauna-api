@@ -27,9 +27,9 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.VNAV
         public int NextLegIndex { get; set; }
 
         /// <summary>
-        /// Index for last iteration
+        /// Which direction to move
         /// </summary>
-        public int LastIterIndex { get; set; }
+        public int MoveDir { get; set; }
 
         /// <summary>
         /// Along Track Distance
@@ -130,7 +130,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.VNAV
             return (newCurLeg, newCurIndex, newNextLeg, newNextIndex);
         }
 
-        public static (IRouteLeg curLeg, int curLegIndex, IRouteLeg nextLeg, int nextLegIndex) IterateVnav(int lastIndex, int curLegIndex, int nextLegIndex, Func<int, IRouteLeg> getLegFunc)
+        public static (IRouteLeg curLeg, int curLegIndex, IRouteLeg nextLeg, int nextLegIndex) IterateVnav(int moveDir, int curLegIndex, int nextLegIndex, Func<int, IRouteLeg> getLegFunc)
         {
             var curLeg = getLegFunc(curLegIndex) ?? throw new IndexOutOfRangeException("Cannot get current leg!");
             var nextLeg = getLegFunc(nextLegIndex);
@@ -147,11 +147,11 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.VNAV
                 return (getLegFunc(curLegIndex), curLegIndex, getLegFunc(nextLegIndex), nextLegIndex);
             }
 
-            if (curLegIndex > lastIndex)
+            if (moveDir > 0)
             {
                 return GoForwardVnav(nextLegIndex, getLegFunc);
             }
-            if (curLegIndex < lastIndex)
+            if (moveDir < 0)
             {
                 return GoBackwardVnav(curLegIndex, getLegFunc);
             }

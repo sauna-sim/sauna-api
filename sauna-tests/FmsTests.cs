@@ -63,7 +63,7 @@ namespace sauna_tests
             {
                 Index = legs.Count - 1,
                 NextLegIndex = legs.Count,
-                LastIterIndex = legs.Count - 1,
+                MoveDir = 0,
                 AlongTrackDistance = Length.FromMeters(0),
                 ApchAngle = null,
                 DistanceToRwy = null,
@@ -81,14 +81,14 @@ namespace sauna_tests
             // Loop through legs from last to first ending either when first leg is reached or cruise alt is reached
             while (iterator.Index > -1 && !iterator.Finished)
             {
-                var getLeg = (int index) =>
+                IRouteLeg? getLeg(int index)
                 {
                     if (index < 0 || index >= legs.Count)
                     {
                         return null;
                     }
                     return legs[index];
-                };
+                }
                 iterator = VnavDescentUtil.ProcessLegForDescent(iterator, getLeg, perfData, init, perfData.MTOW_kg, Length.FromFeet(0));
             }
 

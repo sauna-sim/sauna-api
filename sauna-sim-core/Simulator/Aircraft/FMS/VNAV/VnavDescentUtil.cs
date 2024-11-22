@@ -67,7 +67,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.VNAV
             }
 
             // Move to next leg
-            iterator.Index++;
+            iterator.MoveDir = 1;
             iterator.DistanceToRwy -= nextLeg.LegLength;
             iterator.AlongTrackDistance = nextLeg.EndPoint.VnavPoints[nextLeg.EndPoint.VnavPoints.Count - 1].AlongTrackDistance;
 
@@ -130,13 +130,21 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.VNAV
         {
             // ---  Process iteration
             IRouteLeg curLeg, nextLeg;
-            (curLeg, iterator.Index, nextLeg, iterator.NextLegIndex) = FmsVnavUtil.IterateVnav(iterator.LastIterIndex, iterator.Index, iterator.NextLegIndex, getLegFunc);
-            iterator.LastIterIndex = iterator.Index;
+            try
+            {
+                (curLeg, iterator.Index, nextLeg, iterator.NextLegIndex) = FmsVnavUtil.IterateVnav(iterator.MoveDir, iterator.Index, iterator.NextLegIndex, getLegFunc);
+            } catch (IndexOutOfRangeException)
+            {
+                iterator.Finished = true;
+                return iterator;
+            }
+            iterator.MoveDir = 0;
 
             // ---  Get Last VNAV Point
             FmsVnavPoint lastVnavPoint;
             Length lastVnavPointDist;
             (lastVnavPoint, iterator, lastVnavPointDist) = GetLastVnavDescentPoint(curLeg, nextLeg, iterator, perfData, perfInit, mass_kg, depArptElev);
+
 
             // ---  Check for constraint search
             var gribPoint = FmsVnavUtil.GetGribPointForLeg(curLeg, lastVnavPoint.Alt);
@@ -156,6 +164,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.VNAV
                 {
                     // Give up searching for speed and force last vnav point to speed
                     iterator.EarlySpeedSearch = false;
+                    iterator.MoveDir = 0;
                     lastVnavPoint.CmdSpeed = iterator.EarlySpeed;
                     lastVnavPoint.CmdSpeedUnits = Autopilot.McpSpeedUnitsType.KNOTS;
                     lastVnavPoint.Speed = iterator.EarlySpeed;
@@ -169,6 +178,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.VNAV
                 if (lastVnavPoint.Alt <= iterator.EarlyUpperAlt)
                 {
                     iterator.EarlyUpperAltSearch = false;
+                    iterator.MoveDir = 0;
                     return iterator;
                 }
                 try
@@ -178,6 +188,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.VNAV
                 {
                     // Give up searching for speed
                     iterator.EarlyUpperAltSearch = false;
+                    iterator.MoveDir = 0;
                     lastVnavPoint.Alt = iterator.EarlyUpperAlt;
                     return iterator;
                 }
@@ -202,7 +213,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.VNAV
             // ---  Move to previous leg
             if (iterator.AlongTrackDistance >= curLeg.LegLength)
             {
-                iterator.Index--;
+                iterator.MoveDir = -1;
                 iterator.AlongTrackDistance = Length.FromMeters(0);
                 iterator.DistanceToRwy += curLeg.LegLength;
                 return iterator;
@@ -211,7 +222,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.VNAV
             // ---  Calculate Parameters
             // Set current phase
             var currentPhase = FmsPhaseType.DESCENT;
-            if (iterator.DistanceToRwy + iterator.AlongTrackDistance <= Length.FromNauticalMiles(15))
+            if (iterator.DistanceToRwy + iterator.AlongTrackDistance < Length.FromNauticalMiles(15))
             {
                 currentPhase = FmsPhaseType.APPROACH;
             }
@@ -238,8 +249,8 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.VNAV
             if (iterator.AlongTrackDistance <= Length.FromMeters(0))
             {
                 // Does speed constraint exist
-                if (currentPhase == FmsPhaseType.DESCENT && 
-                    (curLeg.EndPoint.SpeedConstraintType == ConstraintType.LESS || curLeg.EndPoint.SpeedConstraintType == ConstraintType.EXACT) && 
+                if (currentPhase == FmsPhaseType.DESCENT &&
+                    (curLeg.EndPoint.SpeedConstraintType == ConstraintType.LESS || curLeg.EndPoint.SpeedConstraintType == ConstraintType.EXACT) &&
                     curLeg.EndPoint.SpeedConstraint > 0)
                 {
                     // Was speed constraint violated
@@ -252,10 +263,12 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.VNAV
                         try
                         {
                             return GoToNextVnavDescentLeg(curLeg, nextLeg, iterator);
-                        } catch (IndexOutOfRangeException) {
+                        } catch (IndexOutOfRangeException)
+                        {
                             iterator.EarlySpeedSearch = false;
                             iterator.EarlySpeed = -1;
                             iterator.EarlySpeedIndex = -1;
+                            iterator.MoveDir = 0;
                             lastVnavPoint.CmdSpeed = iterator.EarlySpeed;
                             lastVnavPoint.CmdSpeedUnits = Autopilot.McpSpeedUnitsType.KNOTS;
                             lastVnavPoint.Speed = iterator.EarlySpeed;
@@ -266,8 +279,8 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.VNAV
                     {
                         // Calculate Decel Length
                         iterator.DecelDist = CalculateDecelLength(
-                            Convert.ToInt32(Math.Round(curLeg.EndPoint.SpeedConstraint, MidpointRounding.AwayFromZero)), 
-                            Convert.ToInt32(Math.Round(targetSpeedInKts, MidpointRounding.AwayFromZero)), 
+                            Convert.ToInt32(Math.Round(curLeg.EndPoint.SpeedConstraint, MidpointRounding.AwayFromZero)),
+                            Convert.ToInt32(Math.Round(targetSpeedInKts, MidpointRounding.AwayFromZero)),
                             curAlt, curDensAlt, mass_kg, curLeg.FinalTrueCourse, perfData, gribPoint);
                         targetSpeed = Convert.ToInt32(Math.Round(curLeg.EndPoint.SpeedConstraint, MidpointRounding.AwayFromZero));
                         targetSpeedUnits = Autopilot.McpSpeedUnitsType.KNOTS;
@@ -288,6 +301,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.VNAV
                         iterator.EarlyUpperAlt = null;
                         iterator.EarlyUpperAltIndex = -1;
                         iterator.EarlyUpperAltSearch = false;
+                        iterator.MoveDir = 0;
                         lastVnavPoint.Alt = Length.FromFeet(curLeg.EndPoint.UpperAltitudeConstraint);
                         curAlt = lastVnavPoint.Alt;
                     }
@@ -311,7 +325,12 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.VNAV
                 var vs = Velocity.FromFeetPerMinute(PerfDataHandler.CalculatePerformance(perfData, pitch, 0, targetSpeedInKts, curDensAlt.Feet, mass_kg, 0, 0).vs * 0.9);
                 var tas = AtmosUtil.ConvertIasToTas(Velocity.FromKnots(targetSpeedInKts), gribPoint.LevelPressure, curAlt, gribPoint.GeoPotentialHeight, gribPoint.Temp).tas;
                 var gs = tas + AviationUtil.GetHeadwindComponent(gribPoint.Wind.windDir, gribPoint.Wind.windSpd, curLeg.FinalTrueCourse);
-                targetAngle = AviationUtil.CalculateFlightPathAngle(gs, vs);
+                targetAngle = -AviationUtil.CalculateFlightPathAngle(gs, vs);
+
+                if (targetAngle < Angle.FromRadians(0))
+                {
+                    targetAngle = Angle.FromRadians(0);
+                }
             }
 
             // ---  Add VNAV Point
@@ -345,7 +364,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.VNAV
                     iterator.DecelDist -= (curLeg.LegLength - iterator.AlongTrackDistance);
                 }
             } else if (targetAngle > Angle.FromRadians(0))
-            {                
+            {
                 var startAlt = FmsVnavUtil.CalculateStartAltitude(curAlt, newAlongTrack - iterator.AlongTrackDistance, targetAngle);
                 var limitAlt = Length.FromFeet(perfInit.LimitAlt);
                 var cruiseAlt = Length.FromFeet(perfInit.CruiseAlt);
@@ -367,7 +386,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.VNAV
                 }
             }
 
-            if (currentPhase == FmsPhaseType.APPROACH && iterator.DistanceToRwy + newAlongTrack > Length.FromNauticalMiles(15))
+            if (iterator.DistanceToRwy + iterator.AlongTrackDistance < Length.FromNauticalMiles(15) && iterator.DistanceToRwy + newAlongTrack > Length.FromNauticalMiles(15))
             {
                 newAlongTrack = Length.FromNauticalMiles(15) - iterator.DistanceToRwy;
                 iterator.DecelSpeed = Convert.ToInt32(Math.Round(targetSpeedInKts, MidpointRounding.AwayFromZero));

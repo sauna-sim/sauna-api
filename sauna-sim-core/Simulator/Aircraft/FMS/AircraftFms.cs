@@ -653,7 +653,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS
                     {
                         Index = _routeLegs.Count - 1,
                         NextLegIndex = _routeLegs.Count,
-                        LastIterIndex = _routeLegs.Count - 1,
+                        MoveDir = 0,
                         AlongTrackDistance = Length.FromMeters(0),
                         ApchAngle = null,
                         DistanceToRwy = null,
