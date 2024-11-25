@@ -12,6 +12,7 @@ using SaunaSim.Core.Simulator.Aircraft.FMS.VNAV;
 using SaunaSim.Core.Simulator.Aircraft.Performance;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -33,6 +34,7 @@ namespace sauna_tests
         [Test]
         public void TestVnav1()
         {
+            Console.WriteLine(Directory.GetCurrentDirectory());
             var navDataInterface = new DFDSource("e_dfd_2411.s3db");
             var star = navDataInterface.GetStarByAirportAndIdentifier("KBOS", "ROBUC3");
             star.selectTransition("JFK");

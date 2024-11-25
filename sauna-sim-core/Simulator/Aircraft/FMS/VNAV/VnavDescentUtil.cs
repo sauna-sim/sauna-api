@@ -334,11 +334,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.VNAV
             }
 
             // ---  Add VNAV Point
-            if (curLeg.EndPoint.VnavPoints == null)
-            {
-                curLeg.EndPoint.VnavPoints = new List<FmsVnavPoint>();
-            }
-            curLeg.EndPoint.VnavPoints.Add(new FmsVnavPoint
+            var newVnavPt = new FmsVnavPoint
             {
                 AlongTrackDistance = iterator.AlongTrackDistance,
                 Alt = curAlt,
@@ -347,7 +343,29 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.VNAV
                 SpeedUnits = targetSpeedUnits,
                 CmdSpeed = iterator.DecelDist != null ? lastVnavPoint.CmdSpeed : targetSpeed,
                 CmdSpeedUnits = iterator.DecelDist != null ? lastVnavPoint.CmdSpeedUnits : targetSpeedUnits,
-            });
+            };
+            if (curLeg.EndPoint.VnavPoints == null)
+            {
+                curLeg.EndPoint.VnavPoints = new List<FmsVnavPoint>();
+                curLeg.EndPoint.VnavPoints.Add(newVnavPt);
+            }
+            else
+            {
+                var foundVnavPt = false;
+                foreach (var vnavPt in curLeg.EndPoint.VnavPoints)
+                {
+                    if (vnavPt.AlongTrackDistance == iterator.AlongTrackDistance)
+                    {
+                        foundVnavPt = true;
+                        break;
+                    }
+                }
+
+                if (!foundVnavPt)
+                {
+                    curLeg.EndPoint.VnavPoints.Add(newVnavPt);
+                }
+            }
 
             // ---  Adjust iterator
             var newAlongTrack = curLeg.LegLength;
