@@ -19,13 +19,13 @@ using SaunaSim.Core.Simulator.Commands;
 using System;
 using System.Collections.Generic;
 using System.Data.Common;
-using System.Data.SQLite;
 using System.Diagnostics;
 using System.Linq;
 using System.Net.Security;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.Data.Sqlite;
 
 namespace sauna_tests
 {
@@ -41,19 +41,19 @@ namespace sauna_tests
         public void TestReader() 
         {
             var filePath = "e_dfd_2301.s3db";
-            var connectionString = new SQLiteConnectionStringBuilder()
+            var connectionString = new SqliteConnectionStringBuilder()
             {
                 DataSource = filePath,
-                Version = 3,
-                ReadOnly = true
+                Mode = SqliteOpenMode.ReadOnly,
             }.ToString();
 
-            var connection = new SQLiteConnection(connectionString);
+            var connection = new SqliteConnection(connectionString);
             connection.Open();
 
-            SQLiteCommand command = new SQLiteCommand(connection);
-
-            command.CommandText = $"SELECT * FROM tbl_sids WHERE airport_identifier == @airport AND procedure_identifier = @sid";
+            SqliteCommand command = new SqliteCommand(){
+                Connection = connection,
+                CommandText = $"SELECT * FROM tbl_sids WHERE airport_identifier == @airport AND procedure_identifier = @sid"
+            };
 
             command.Parameters.AddWithValue("@airport", "EGKK");
             command.Parameters.AddWithValue("@sid", "LAM6M");
@@ -75,17 +75,16 @@ namespace sauna_tests
         public void TestReader2()
         {
             var filePath = "e_dfd_2301.s3db";
-            var connectionString = new SQLiteConnectionStringBuilder()
+            var connectionString = new SqliteConnectionStringBuilder()
             {
                 DataSource = filePath,
-                Version = 3,
-                ReadOnly = true
+                Mode = SqliteOpenMode.ReadOnly,
             }.ToString();
 
-            var connection = new SQLiteConnection(connectionString);
+            var connection = new SqliteConnection(connectionString);
             connection.Open();
 
-            SQLiteCommand command = new SQLiteCommand("SELECT * FROM tbl_sids", connection);
+            SqliteCommand command = new SqliteCommand("SELECT * FROM tbl_sids", connection);
 
             var reader = command.ExecuteReader();
 
@@ -104,18 +103,16 @@ namespace sauna_tests
         public static void TestLoadAllSids()
         {
             var filePath = "e_dfd_2301.s3db";
-            var connectionString = new SQLiteConnectionStringBuilder()
+            var connectionString = new SqliteConnectionStringBuilder()
             {
                 DataSource = filePath,
-                Version = 3,
-                ReadOnly = true
+                Mode = SqliteOpenMode.ReadOnly,
             }.ToString();
 
-            var connection = new SQLiteConnection(connectionString);
-
+            var connection = new SqliteConnection(connectionString);
             connection.Open();
 
-            var query = new SQLiteCommand("SELECT DISTINCT airport_identifier, procedure_identifier FROM tbl_sids", connection);
+            var query = new SqliteCommand("SELECT DISTINCT airport_identifier, procedure_identifier FROM tbl_sids", connection);
             var reader = query.ExecuteReader();
             var navDataInterface = new DFDSource("e_dfd_2301.s3db");
 
@@ -133,18 +130,16 @@ namespace sauna_tests
         public static void TestLoadAllStars()
         {
             var filePath = "e_dfd_2301.s3db";
-            var connectionString = new SQLiteConnectionStringBuilder()
+            var connectionString = new SqliteConnectionStringBuilder()
             {
                 DataSource = filePath,
-                Version = 3,
-                ReadOnly = true
+                Mode = SqliteOpenMode.ReadOnly,
             }.ToString();
 
-            var connection = new SQLiteConnection(connectionString);
-
+            var connection = new SqliteConnection(connectionString);
             connection.Open();
 
-            var query = new SQLiteCommand("SELECT DISTINCT airport_identifier, procedure_identifier FROM tbl_stars", connection);
+            var query = new SqliteCommand("SELECT DISTINCT airport_identifier, procedure_identifier FROM tbl_stars", connection);
             var reader = query.ExecuteReader();
             var navDataInterface = new DFDSource("e_dfd_2301.s3db");
 

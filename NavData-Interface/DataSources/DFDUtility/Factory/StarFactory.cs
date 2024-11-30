@@ -1,14 +1,14 @@
 ﻿using NavData_Interface.Objects.LegCollections.Procedures;
 using System;
 using System.Collections.Generic;
-using System.Data.SQLite;
 using System.Text;
+using Microsoft.Data.Sqlite;
 
 namespace NavData_Interface.DataSources.DFDUtility.Factory
 {
     internal class StarFactory : TerminalProcedureFactory
     {
-        public static Star Factory(SQLiteDataReader reader, SQLiteConnection connection)
+        public static Star Factory(SqliteDataReader reader, SqliteConnection connection)
         {
             var factory = new StarFactory(reader, connection);
 
@@ -23,6 +23,6 @@ namespace NavData_Interface.DataSources.DFDUtility.Factory
             
         }
 
-        private StarFactory(SQLiteDataReader reader, SQLiteConnection connection) : base(reader, connection) { }
+        private StarFactory(SqliteDataReader reader, SqliteConnection connection) : base(reader, connection) { }
     }
 }

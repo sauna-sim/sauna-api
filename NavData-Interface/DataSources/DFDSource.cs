@@ -64,7 +64,11 @@ namespace NavData_Interface.DataSources
 
             try
             {
-                var cmd = new SqliteCommand("SELECT * FROM tbl_header", _connection);
+                var cmd = new SqliteCommand()
+                {
+                    Connection = _connection,
+                    CommandText = "SELECT * FROM tbl_header"
+                };
 
                 using (var reader = cmd.ExecuteReader())
                 {
@@ -98,9 +102,11 @@ namespace NavData_Interface.DataSources
         {
             runwayIdentifier = "RW" + runwayIdentifier;
 
-            var cmd = new SqliteCommand(
-                $"SELECT * from tbl_localizers_glideslopes WHERE airport_identifier = @airportIdentifier AND runway_identifier = @runwayIdentifier",
-                _connection);
+            var cmd = new SqliteCommand()
+            {
+                Connection = _connection,
+                CommandText = "SELECT * from tbl_localizers_glideslopes WHERE airport_identifier = @airportIdentifier AND runway_identifier = @runwayIdentifier"
+            };
 
             cmd.Parameters.AddWithValue("@airportIdentifier", airportIdentifier);
             cmd.Parameters.AddWithValue("@runwayIdentifier", runwayIdentifier);
@@ -110,8 +116,11 @@ namespace NavData_Interface.DataSources
 
         private SqliteCommand AirportLookupByIdentifier(string identifier)
         {
-            var cmd = new SqliteCommand($"SELECT * FROM tbl_airports WHERE airport_identifier = @identifier",
-                _connection);
+            var cmd = new SqliteCommand()
+            {
+                Connection = _connection,
+                CommandText = "SELECT * FROM tbl_airports WHERE airport_identifier = @identifier",
+            };
 
             cmd.Parameters.AddWithValue("@identifier", identifier);
 
@@ -137,7 +146,11 @@ namespace NavData_Interface.DataSources
         {
             var table = isTerminal ? "tbl_terminal_waypoints" : "tbl_enroute_waypoints";
 
-            var cmd = new SqliteCommand($"SELECT * FROM {table} WHERE waypoint_identifier = @identifier", _connection);
+            var cmd = new SqliteCommand()
+            {
+                Connection = _connection,
+                CommandText = $"SELECT * FROM {table} WHERE waypoint_identifier = @identifier"
+            };
 
             cmd.Parameters.AddWithValue("@identifier", identifier);
 
@@ -159,9 +172,11 @@ namespace NavData_Interface.DataSources
 
         private SqliteCommand VhfNavaidLookupByIdentifier(string identifier)
         {
-            var cmd = new SqliteCommand(
-                $"SELECT * from tbl_vhfnavaids WHERE vor_identifier = @identifier OR dme_ident = @identifier",
-                _connection);
+            var cmd = new SqliteCommand()
+            {
+                Connection = _connection,
+                CommandText = "SELECT * from tbl_vhfnavaids WHERE vor_identifier = @identifier OR dme_ident = @identifier"
+            };
             
             cmd.Parameters.AddWithValue("@identifier", identifier);
 
@@ -181,7 +196,10 @@ namespace NavData_Interface.DataSources
         {
             var table = isTerminal ? "tbl_terminal_ndbnavaids" : "tbl_enroute_ndbnavaids";
 
-            var cmd = new SqliteCommand($"SELECT * FROM {table} WHERE ndb_identifier = @identifier", _connection);
+            var cmd = new SqliteCommand(){
+                Connection = _connection,
+                CommandText = $"SELECT * FROM {table} WHERE ndb_identifier = @identifier"
+                };
 
             cmd.Parameters.AddWithValue("@identifier", identifier);
 
@@ -231,9 +249,11 @@ namespace NavData_Interface.DataSources
             if (rightLon <= leftLon)
             {
                 // SELECT * from (airports) WHERE ((latitude) BETWEEN bottomlat AND topLAT) AND (longitude >= leftlon OR longitude <= right)
-                var cmd = new SqliteCommand(_connection)
+                var cmd = new SqliteCommand()
                 {
-                    CommandText = $"SELECT * FROM tbl_airports WHERE (airport_ref_latitude BETWEEN @bottomLat AND @topLat) AND (airport_ref_longitude >= @leftLon OR airport_ref_longitude <= @rightLon)"
+                    Connection = _connection,
+                    CommandText =
+                        "SELECT * FROM tbl_airports WHERE (airport_ref_latitude BETWEEN @bottomLat AND @topLat) AND (airport_ref_longitude >= @leftLon OR airport_ref_longitude <= @rightLon)"
                 };
 
                 cmd.Parameters.AddWithValue("@bottomLat", bottomLat.Degrees);
@@ -246,9 +266,11 @@ namespace NavData_Interface.DataSources
             else
             {
                 // SELECT * FROM (airports) WHERE ((latitude) BETWEEN bottomlat AND topLAT) AND (longitude) BETWEEN leftlon AND rightlon)
-                var cmd = new SqliteCommand(_connection)
+                var cmd = new SqliteCommand()
                 {
-                    CommandText = $"SELECT * FROM tbl_airports WHERE (airport_ref_latitude BETWEEN @bottomLat AND @topLat) AND (airport_ref_longitude BETWEEN @leftLon AND @rightLon)"
+                    Connection = _connection,
+                    CommandText =
+                        "SELECT * FROM tbl_airports WHERE (airport_ref_latitude BETWEEN @bottomLat AND @topLat) AND (airport_ref_longitude BETWEEN @leftLon AND @rightLon)"
                 };
 
                 cmd.Parameters.AddWithValue("@bottomLat", bottomLat.Degrees);
@@ -292,7 +314,7 @@ namespace NavData_Interface.DataSources
             return navaids;
         }
 
-        internal List<T> GetObjectsWithQuery<T>(SqliteCommand cmd, Func<SQLiteDataReader, T> objectFactory)
+        internal List<T> GetObjectsWithQuery<T>(SqliteCommand cmd, Func<SqliteDataReader, T> objectFactory)
         {
             var objects = new List<T>();
 
@@ -358,9 +380,11 @@ namespace NavData_Interface.DataSources
 
         private SqliteCommand RunwayLookupByAirportIdentifier(string airportIdentifier, string runwayIdentifier)
         {
-            SqliteCommand command = new SqliteCommand(_connection);
-
-            command.CommandText = $"SELECT * FROM tbl_runways WHERE airport_identifier == @airport AND runway_identifier == RW@runway";
+            SqliteCommand command = new SqliteCommand()
+            {
+                Connection = _connection,
+                CommandText = $"SELECT * FROM tbl_runways WHERE airport_identifier == @airport AND runway_identifier == RW@runway"
+            };
 
             command.Parameters.AddWithValue("@airport", airportIdentifier);
             command.Parameters.AddWithValue("@runway", runwayIdentifier);
@@ -384,9 +408,11 @@ namespace NavData_Interface.DataSources
 
         private SqliteCommand AirwayLookupByIdentifier(string airwayIdentifier)
         {
-            SqliteCommand command = new SqliteCommand(_connection);
-
-            command.CommandText = $"SELECT * FROM tbl_airways WHERE airway_identifier == @airway";
+            SqliteCommand command = new SqliteCommand()
+            {
+                Connection = _connection,
+                CommandText = "SELECT * FROM tbl_airways WHERE airway_identifier == @airway"
+            };
 
             command.Parameters.AddWithValue("@airway", airwayIdentifier);
 
@@ -411,11 +437,13 @@ namespace NavData_Interface.DataSources
             return reader.HasRows;
         }
 
-        private SQLiteCommand SidLookupByAirportAndIdentifier(string airportIdentifier, string sidIdentifier)
+        private SqliteCommand SidLookupByAirportAndIdentifier(string airportIdentifier, string sidIdentifier)
         {
-            SQLiteCommand command = new SQLiteCommand(_connection);
-
-            command.CommandText = $"SELECT * FROM tbl_sids WHERE airport_identifier == @airport AND procedure_identifier = @sid";
+            SqliteCommand command = new SqliteCommand()
+            {
+                Connection = _connection,
+                CommandText = $"SELECT * FROM tbl_sids WHERE airport_identifier == @airport AND procedure_identifier = @sid"
+            };
 
             command.Parameters.AddWithValue("@airport", airportIdentifier);
             command.Parameters.AddWithValue("@sid", sidIdentifier);
@@ -432,11 +460,13 @@ namespace NavData_Interface.DataSources
             return sid;
         }
 
-        private SQLiteCommand StarLookupByAirportAndIdentifier(string airportIdentifier, string sidIdentifier)
+        private SqliteCommand StarLookupByAirportAndIdentifier(string airportIdentifier, string sidIdentifier)
         {
-            SQLiteCommand command = new SQLiteCommand(_connection);
-
-            command.CommandText = $"SELECT * FROM tbl_stars WHERE airport_identifier == @airport AND procedure_identifier = @sid";
+            SqliteCommand command = new SqliteCommand()
+            {
+                Connection = _connection,
+                CommandText = "SELECT * FROM tbl_stars WHERE airport_identifier == @airport AND procedure_identifier = @sid"
+            };
 
             command.Parameters.AddWithValue("@airport", airportIdentifier);
             command.Parameters.AddWithValue("@sid", sidIdentifier);
