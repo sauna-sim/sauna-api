@@ -7,7 +7,7 @@ using System.ComponentModel;
 using System.Data.SQLite;
 using System.Text;
 
-namespace NavData_Interface.DataSources.DFDUtility
+namespace NavData_Interface.DataSources.DFDUtility  
 {
     internal static class SQLHelper
     {
@@ -19,12 +19,19 @@ namespace NavData_Interface.DataSources.DFDUtility
                 );
         }
 
+        internal static GeoPoint locationFromColumns(SQLiteDataReader reader)
+        {
+            return locationFromColumns(reader, "waypoint_latitude", "waypoint_longitude");
+        }
+
         internal static WaypointDescription waypointDescriptionFromDescriptionString(string descriptionString)
         {
-            if (descriptionString.Length != 3)
+            if (descriptionString.Length > 4)
             {
                 throw new FormatException("The waypoint description is invalid because the description field isn't the right length");
             }
+
+            descriptionString = descriptionString.PadRight(3);
 
             bool isEndOfRoute = false;
             bool isFlyOver = false;
