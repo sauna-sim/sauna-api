@@ -272,7 +272,7 @@ namespace NavData_Interface.DataSources.DFDUtility.Factory
             {
                 // At or below. The altitude given is the upper restriction.
                 upperAlt = Length.FromFeet(altitude1);
-            } else if (altRestrictionType == null && _reader["altitude1"] != null)
+            } else if (String.IsNullOrEmpty(altRestrictionType) && !String.IsNullOrEmpty(_reader["altitude1"].ToString()))
             {
                 // If the restrictionType is null, and we have an altitude, it's an 'at' restriction
                 upperAlt = Length.FromFeet(altitude1);
