@@ -5,7 +5,7 @@
     <RootNamespace>sauna_tests</RootNamespace>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-
+    <Platforms>x64;x86;ARM64</Platforms>
     <IsPackable>false</IsPackable>
   </PropertyGroup>
 
