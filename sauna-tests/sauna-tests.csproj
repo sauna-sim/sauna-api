@@ -27,5 +27,8 @@
     <None Remove="PShivaraman.AviationCalcUtilNet" />
     <None Remove="Microsoft.AspNetCore.TestHost" />
     <None Remove="Microsoft.AspNetCore.Mvc.Testing" />
+    <None Update="e_dfd_2101.s3db">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 </Project>
