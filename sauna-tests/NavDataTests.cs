@@ -19,19 +19,21 @@ using SaunaSim.Core.Simulator.Commands;
 using System;
 using System.Collections.Generic;
 using System.Data.Common;
-using System.Data.SQLite;
 using System.Diagnostics;
 using System.Linq;
 using System.Net.Security;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.Data.Sqlite;
 
 namespace sauna_tests
 {
-    [Explicit]
     public class NavDataTests
     {
+        private const string DFD_FILE_PATH = "e_dfd_2101.s3db";
+        private const string DFD_FILE_PATH_1 = "e_dfd_2412.s3db";
+        
         [SetUp]
         public void Setup()
         {
@@ -40,23 +42,23 @@ namespace sauna_tests
         [Test]
         public void TestReader() 
         {
-            var filePath = "e_dfd_2301.s3db";
-            var connectionString = new SQLiteConnectionStringBuilder()
+            var filePath = DFD_FILE_PATH;
+            var connectionString = new SqliteConnectionStringBuilder()
             {
                 DataSource = filePath,
-                Version = 3,
-                ReadOnly = true
+                Mode = SqliteOpenMode.ReadOnly,
             }.ToString();
 
-            var connection = new SQLiteConnection(connectionString);
+            var connection = new SqliteConnection(connectionString);
             connection.Open();
 
-            SQLiteCommand command = new SQLiteCommand(connection);
+            SqliteCommand command = new SqliteCommand(){
+                Connection = connection,
+                CommandText = $"SELECT * FROM tbl_sids WHERE airport_identifier == @airport AND procedure_identifier = @sid"
+            };
 
-            command.CommandText = $"SELECT * FROM tbl_sids WHERE airport_identifier == @airport AND procedure_identifier = @sid";
-
-            command.Parameters.AddWithValue("@airport", "EGKK");
-            command.Parameters.AddWithValue("@sid", "LAM6M");
+            command.Parameters.AddWithValue("@airport", "MDPC");
+            command.Parameters.AddWithValue("@sid", "KATO2T");
 
             var reader = command.ExecuteReader();
 
@@ -69,23 +71,24 @@ namespace sauna_tests
             stopwatch.Stop();
 
             Console.WriteLine(stopwatch.Elapsed / i);
+            
+            Assert.That(i, Is.GreaterThan(0));
         }
 
         [Test]
         public void TestReader2()
         {
-            var filePath = "e_dfd_2301.s3db";
-            var connectionString = new SQLiteConnectionStringBuilder()
+            var filePath = DFD_FILE_PATH;
+            var connectionString = new SqliteConnectionStringBuilder()
             {
                 DataSource = filePath,
-                Version = 3,
-                ReadOnly = true
+                Mode = SqliteOpenMode.ReadOnly,
             }.ToString();
 
-            var connection = new SQLiteConnection(connectionString);
+            var connection = new SqliteConnection(connectionString);
             connection.Open();
 
-            SQLiteCommand command = new SQLiteCommand("SELECT * FROM tbl_sids", connection);
+            SqliteCommand command = new SqliteCommand("SELECT * FROM tbl_sids", connection);
 
             var reader = command.ExecuteReader();
 
@@ -98,77 +101,77 @@ namespace sauna_tests
             stopwatch.Stop();
 
             Console.WriteLine(stopwatch.Elapsed/i);
+            
+            Assert.That(i, Is.GreaterThan(0));
         }
 
         [Test]
         public static void TestLoadAllSids()
         {
-            var filePath = "e_dfd_2301.s3db";
-            var connectionString = new SQLiteConnectionStringBuilder()
+            var filePath = DFD_FILE_PATH;
+            var connectionString = new SqliteConnectionStringBuilder()
             {
                 DataSource = filePath,
-                Version = 3,
-                ReadOnly = true
+                Mode = SqliteOpenMode.ReadOnly,
             }.ToString();
 
-            var connection = new SQLiteConnection(connectionString);
-
+            var connection = new SqliteConnection(connectionString);
             connection.Open();
 
-            var query = new SQLiteCommand("SELECT DISTINCT airport_identifier, procedure_identifier FROM tbl_sids", connection);
+            var query = new SqliteCommand("SELECT DISTINCT airport_identifier, procedure_identifier FROM tbl_sids", connection);
             var reader = query.ExecuteReader();
-            var navDataInterface = new DFDSource("e_dfd_2301.s3db");
+            var navDataInterface = new DFDSource(DFD_FILE_PATH);
 
-            reader.Read();
 
-            while (reader.HasRows)
+            int i = 0;
+            while (reader.Read())
             {
                 var sid = navDataInterface.GetSidByAirportAndIdentifier(reader["airport_identifier"].ToString(), reader["procedure_identifier"].ToString());
-
-                reader.Read();
+                Assert.That(sid, Is.Not.Null);
+                //reader.Read();
+                i++;
             }
         }
 
         [Test]
         public static void TestLoadAllStars()
         {
-            var filePath = "e_dfd_2301.s3db";
-            var connectionString = new SQLiteConnectionStringBuilder()
+            var filePath = DFD_FILE_PATH;
+            var connectionString = new SqliteConnectionStringBuilder()
             {
                 DataSource = filePath,
-                Version = 3,
-                ReadOnly = true
+                Mode = SqliteOpenMode.ReadOnly,
             }.ToString();
 
-            var connection = new SQLiteConnection(connectionString);
-
+            var connection = new SqliteConnection(connectionString);
             connection.Open();
 
-            var query = new SQLiteCommand("SELECT DISTINCT airport_identifier, procedure_identifier FROM tbl_stars", connection);
+            var query = new SqliteCommand("SELECT DISTINCT airport_identifier, procedure_identifier FROM tbl_stars", connection);
             var reader = query.ExecuteReader();
-            var navDataInterface = new DFDSource("e_dfd_2301.s3db");
+            var navDataInterface = new DFDSource(DFD_FILE_PATH);
 
-            reader.Read();
+            //reader.Read();
 
-            while (reader.HasRows) 
+            while (reader.Read()) 
             {
                 var sid = navDataInterface.GetStarByAirportAndIdentifier(reader["airport_identifier"].ToString(), reader["procedure_identifier"].ToString());
-
-                reader.Read();
+                Assert.That(sid, Is.Not.Null);
+                //reader.Read();
             }
         }
 
         [Test]
         public static void TestGetStarFromAirportIdentifier()
         {
-            var navDataInterface = new DFDSource("e_dfd_2301.s3db");
-            var star = navDataInterface.GetStarByAirportAndIdentifier("EGKK", "FAIL");
+            var navDataInterface = new DFDSource(DFD_FILE_PATH);
+            var star = navDataInterface.GetStarByAirportAndIdentifier("MDPC", "FAIL");
 
+            Assert.That(star, Is.Null);
             Console.WriteLine(star);
 
-            star = navDataInterface.GetStarByAirportAndIdentifier("KIAD", "CAVLR4");
-            star.selectTransition("DORRN");
-            star.selectRunwayTransition("01R");
+            star = navDataInterface.GetStarByAirportAndIdentifier("MKJP", "ELSER5");
+            star.selectTransition("SAVEM");
+            star.selectRunwayTransition("12");
 
             Console.WriteLine(star);
 
@@ -179,9 +182,10 @@ namespace sauna_tests
         }
 
         [Test]
+        [Explicit]
         public static void TestGetSidFromAirportIdentifier()
         {
-            var navDataInterface = new DFDSource("e_dfd_2301.s3db");
+            var navDataInterface = new DFDSource(DFD_FILE_PATH_1);
 
             var sid = navDataInterface.GetSidByAirportAndIdentifier("EGKK", "LAM6M");
 
@@ -207,18 +211,20 @@ namespace sauna_tests
         }
 
         [Test]
+        [Explicit]
         public static void TestGetClosestAirportWithinRadius1()
         {
-            var navDataInterface = new DFDSource("e_dfd_2311.s3db");
+            var navDataInterface = new DFDSource(DFD_FILE_PATH_1);
             var westOfLoughNeagh = new GeoPoint(54.686784, -6.544965);
             var closestAirport = navDataInterface.GetClosestAirportWithinRadius(westOfLoughNeagh, Length.FromMeters(30_000));
             Assert.That(closestAirport.Identifier, Is.EqualTo("EGAL"));
         }
 
         [Test]
+        [Explicit]
         public static void TestGetClosestAirportWithinRadius2()
         {
-            var navDataInterface = new DFDSource("e_dfd_2311.s3db");
+            var navDataInterface = new DFDSource(DFD_FILE_PATH_1);
             var point = new GeoPoint(-17.953955, -179.99);
             var closestAirport = navDataInterface.GetClosestAirportWithinRadius(point, Length.FromMeters(100_000));
             Assert.That(closestAirport.Identifier, Is.EqualTo("NFMO"));
@@ -234,9 +240,10 @@ namespace sauna_tests
         //}
 
         [Test]
+        [Explicit]
         public static void TestGetClosestAirportWithinRadius4()
         {
-            var navDataInterface = new DFDSource("e_dfd_2311.s3db");
+            var navDataInterface = new DFDSource(DFD_FILE_PATH_1);
             var point = new GeoPoint(-27.058760, 83.227773);
             var closestAirport = navDataInterface.GetClosestAirportWithinRadius(point, Length.FromMeters(100_000));
             Assert.That(closestAirport, Is.Null);
@@ -245,13 +252,13 @@ namespace sauna_tests
         [Test]
         public static void TestCombinedSourcePriorities()
         {
-            var navigraphSource = new DFDSource("e_dfd_2301.s3db");
+            var navigraphSource = new DFDSource(DFD_FILE_PATH);
             var custom1 = new InMemorySource("custom1");
             var custom2 = new InMemorySource("custom2");
 
             var navdataInterface = new CombinedSource("test_sources", navigraphSource, custom1, custom2);
 
-            var badWillo = new Waypoint("WILLO", new GeoPoint(50.985, -0.1912));
+            var badWillo = new Waypoint("PALMA", new GeoPoint(50.985, -0.1912));
             custom1.AddFix(badWillo);
 
             var weirdPoint1 = new Waypoint("NOEXIST", new GeoPoint(0.001, 0.001));
@@ -261,7 +268,7 @@ namespace sauna_tests
 
             custom2.AddFix(weirdPoint2);
 
-            var willoResults = navdataInterface.GetFixesByIdentifier("WILLO");
+            var willoResults = navdataInterface.GetFixesByIdentifier("PALMA");
             Assert.That(willoResults[0] != badWillo && willoResults[0] != null);
 
             var weirdPointResults = navdataInterface.GetFixesByIdentifier("NOEXIST");
@@ -273,10 +280,11 @@ namespace sauna_tests
         }
 
         [Test]
+        [Explicit]
         public static void TestGetAirwayFromIdentifierAndFixes()
         {
             // Arrange
-            var navDataInterface = new DFDSource("e_dfd_2301.s3db"); // Adjust the data file path as necessary
+            var navDataInterface = new DFDSource(DFD_FILE_PATH_1); // Adjust the data file path as necessary
             var startFix = new Waypoint("SANBA", new GeoPoint(52.356701, -1.663610)); // Replace with actual start fix identifier
             var endFix = new Waypoint("HON", new GeoPoint(52.356701, -1.663610));     // Replace with actual end fix identifier
 
@@ -305,9 +313,10 @@ namespace sauna_tests
         }
 
         [Test]
+        [Explicit]
         public static void TestFlightPlanParser()
         {
-            DataHandler.LoadNavigraphDataFile("e_dfd_2301.s3db", "aaa");
+            DataHandler.LoadNavigraphDataFile(DFD_FILE_PATH_1, "aaa");
 
             var Handler = new SimAircraftHandler(
                 Path.Join(AppDomain.CurrentDomain.BaseDirectory, "magnetic", "WMM.COF"),

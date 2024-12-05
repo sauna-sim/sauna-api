@@ -9,7 +9,7 @@ using NavData_Interface.Objects.LegCollections.Legs;
 using NavData_Interface.Objects.LegCollections.Procedures;
 using System;
 using System.Collections.Generic;
-using System.Data.SQLite;
+using Microsoft.Data.Sqlite;
 
 namespace NavData_Interface.DataSources.DFDUtility.Factory
 {
@@ -18,11 +18,11 @@ namespace NavData_Interface.DataSources.DFDUtility.Factory
         protected List<Transition> _firstTransitions = new List<Transition>();
         protected List<Transition> _secondTransitions = new List<Transition>();
         protected List<Leg> _commonLegs = new List<Leg>();
-        protected SQLiteDataReader _reader = null;
-        protected SQLiteConnection _connection = null;
+        protected SqliteDataReader _reader = null;
+        protected SqliteConnection _connection = null;
         Length _transitionAltitude = null;
 
-        public TerminalProcedureFactory(SQLiteDataReader reader, SQLiteConnection connection)
+        public TerminalProcedureFactory(SqliteDataReader reader, SqliteConnection connection)
         {
             _reader = reader;
             _connection = connection;
@@ -94,7 +94,7 @@ namespace NavData_Interface.DataSources.DFDUtility.Factory
             var airportIdentifier = _reader["airport_identifier"].ToString();
             var routeIdentifier = _reader["procedure_identifier"].ToString();
 
-            while (_reader.HasRows)
+            while (_reader.Read())
             {
                 handleRow();
             }
@@ -180,8 +180,9 @@ namespace NavData_Interface.DataSources.DFDUtility.Factory
                     var table = fullId[0];
                     var id = fullId[1];
 
-                    var cmd = new SQLiteCommand(_connection)
+                    var cmd = new SqliteCommand()
                     {
+                        Connection = _connection,
                         CommandText = $"SELECT * FROM {table} WHERE id = @id"
                     };
 
