@@ -42,10 +42,10 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.VNAV
                 throw new ArgumentException("nextLeg was not a valid VNAV leg!");
             }
 
-            if (curLeg.EndPoint.VnavPoints == null || curLeg.EndPoint.VnavPoints.Count < 1)
-            {
-                throw new ArgumentException("curLeg's VnavPoints must have at least 1 point!");
-            }
+            // if (curLeg.EndPoint.VnavPoints == null || curLeg.EndPoint.VnavPoints.Count < 1)
+            // {
+            //     throw new ArgumentException("curLeg's VnavPoints must have at least 1 point!");
+            // }
 
             if (curLeg.EndPoint.VnavPoints.Count < 2 && (nextLeg == null || nextLeg.EndPoint.VnavPoints == null || nextLeg.EndPoint.VnavPoints.Count < 1))
             {
@@ -57,13 +57,16 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.VNAV
             iterator.DecelSpeed = -1;
 
             // Remove last VNAV point
-            curLeg.EndPoint.VnavPoints.RemoveAt(curLeg.EndPoint.VnavPoints.Count - 1);
-
-            // If current leg still has VNAV Points
-            if (curLeg.EndPoint.VnavPoints.Count > 0)
+            if (curLeg.EndPoint.VnavPoints != null && curLeg.EndPoint.VnavPoints.Count > 0)
             {
-                iterator.AlongTrackDistance = curLeg.EndPoint.VnavPoints[curLeg.EndPoint.VnavPoints.Count - 1].AlongTrackDistance;
-                return iterator;
+                curLeg.EndPoint.VnavPoints.RemoveAt(curLeg.EndPoint.VnavPoints.Count - 1);
+
+                // If current leg still has VNAV Points
+                if (curLeg.EndPoint.VnavPoints.Count > 0)
+                {
+                    iterator.AlongTrackDistance = curLeg.EndPoint.VnavPoints[curLeg.EndPoint.VnavPoints.Count - 1].AlongTrackDistance;
+                    return iterator;
+                }
             }
 
             // Move to next leg
@@ -144,7 +147,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.VNAV
             FmsVnavPoint lastVnavPoint;
             Length lastVnavPointDist;
             (lastVnavPoint, iterator, lastVnavPointDist) = GetLastVnavDescentPoint(curLeg, nextLeg, iterator, perfData, perfInit, mass_kg, depArptElev);
-
+            
 
             // ---  Check for constraint search
             var gribPoint = FmsVnavUtil.GetGribPointForLeg(curLeg, lastVnavPoint.Alt);

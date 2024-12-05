@@ -104,12 +104,12 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.VNAV
             var newCurLeg = getLegFunc(nextLegIndex) ?? throw new IndexOutOfRangeException("Cannot go forward one leg!");
             var newCurIndex = nextLegIndex;
             var newNextIndex = nextLegIndex + 1;
-            var newNextLeg = getLegFunc(nextLegIndex);
+            var newNextLeg = getLegFunc(newNextIndex);
 
             while (newNextLeg != null && (newNextLeg.EndPoint == null || newNextLeg.LegLength <= Length.FromMeters(0)))
             {
                 newNextIndex++;
-                newNextLeg = getLegFunc(nextLegIndex);
+                newNextLeg = getLegFunc(newNextIndex);
             }
 
             return (newCurLeg, newCurIndex, newNextLeg, newNextIndex);
