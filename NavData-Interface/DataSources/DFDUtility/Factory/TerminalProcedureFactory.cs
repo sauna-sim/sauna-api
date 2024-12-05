@@ -49,7 +49,7 @@ namespace NavData_Interface.DataSources.DFDUtility.Factory
                         _transitionAltitude = Length.FromFeet(Int32.Parse(_reader["transition_altitude"].ToString()));
                     }
                     _commonLegs.Add(ReadLeg());
-                    _reader.Read();
+                    //_reader.Read();
                     return;
                 case "6":
                     {
@@ -94,10 +94,10 @@ namespace NavData_Interface.DataSources.DFDUtility.Factory
             var airportIdentifier = _reader["airport_identifier"].ToString();
             var routeIdentifier = _reader["procedure_identifier"].ToString();
 
-            while (_reader.Read())
+            do
             {
                 handleRow();
-            }
+            } while (_reader.Read());
 
             _reader.Close();
 
