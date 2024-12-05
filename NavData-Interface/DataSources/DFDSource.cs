@@ -411,7 +411,7 @@ namespace NavData_Interface.DataSources
             SqliteCommand command = new SqliteCommand()
             {
                 Connection = _connection,
-                CommandText = "SELECT * FROM tbl_airways WHERE airway_identifier == @airway"
+                CommandText = "SELECT * FROM tbl_enroute_airways WHERE route_identifier == @airway"
             };
 
             command.Parameters.AddWithValue("@airway", airwayIdentifier);

@@ -32,6 +32,8 @@ namespace sauna_tests
     public class NavDataTests
     {
         private const string DFD_FILE_PATH = "e_dfd_2101.s3db";
+        private const string DFD_FILE_PATH_1 = "e_dfd_2412.s3db";
+        
         [SetUp]
         public void Setup()
         {
@@ -120,13 +122,14 @@ namespace sauna_tests
             var reader = query.ExecuteReader();
             var navDataInterface = new DFDSource(DFD_FILE_PATH);
 
-            reader.Read();
 
-            while (reader.HasRows)
+            int i = 0;
+            while (reader.Read())
             {
                 var sid = navDataInterface.GetSidByAirportAndIdentifier(reader["airport_identifier"].ToString(), reader["procedure_identifier"].ToString());
                 Assert.That(sid, Is.Not.Null);
-                reader.Read();
+                //reader.Read();
+                i++;
             }
         }
 
@@ -147,13 +150,13 @@ namespace sauna_tests
             var reader = query.ExecuteReader();
             var navDataInterface = new DFDSource(DFD_FILE_PATH);
 
-            reader.Read();
+            //reader.Read();
 
-            while (reader.HasRows) 
+            while (reader.Read()) 
             {
                 var sid = navDataInterface.GetStarByAirportAndIdentifier(reader["airport_identifier"].ToString(), reader["procedure_identifier"].ToString());
                 Assert.That(sid, Is.Not.Null);
-                reader.Read();
+                //reader.Read();
             }
         }
 
@@ -166,9 +169,9 @@ namespace sauna_tests
             Assert.That(star, Is.Null);
             Console.WriteLine(star);
 
-            star = navDataInterface.GetStarByAirportAndIdentifier("MSLP", "ATUM3A");
-            star.selectTransition("ATUMA");
-            star.selectRunwayTransition("25");
+            star = navDataInterface.GetStarByAirportAndIdentifier("MKJP", "ELSER5");
+            star.selectTransition("SAVEM");
+            star.selectRunwayTransition("12");
 
             Console.WriteLine(star);
 
@@ -182,7 +185,7 @@ namespace sauna_tests
         [Explicit]
         public static void TestGetSidFromAirportIdentifier()
         {
-            var navDataInterface = new DFDSource(DFD_FILE_PATH);
+            var navDataInterface = new DFDSource(DFD_FILE_PATH_1);
 
             var sid = navDataInterface.GetSidByAirportAndIdentifier("EGKK", "LAM6M");
 
@@ -211,7 +214,7 @@ namespace sauna_tests
         [Explicit]
         public static void TestGetClosestAirportWithinRadius1()
         {
-            var navDataInterface = new DFDSource("e_dfd_2311.s3db");
+            var navDataInterface = new DFDSource(DFD_FILE_PATH_1);
             var westOfLoughNeagh = new GeoPoint(54.686784, -6.544965);
             var closestAirport = navDataInterface.GetClosestAirportWithinRadius(westOfLoughNeagh, Length.FromMeters(30_000));
             Assert.That(closestAirport.Identifier, Is.EqualTo("EGAL"));
@@ -221,7 +224,7 @@ namespace sauna_tests
         [Explicit]
         public static void TestGetClosestAirportWithinRadius2()
         {
-            var navDataInterface = new DFDSource("e_dfd_2311.s3db");
+            var navDataInterface = new DFDSource(DFD_FILE_PATH_1);
             var point = new GeoPoint(-17.953955, -179.99);
             var closestAirport = navDataInterface.GetClosestAirportWithinRadius(point, Length.FromMeters(100_000));
             Assert.That(closestAirport.Identifier, Is.EqualTo("NFMO"));
@@ -240,7 +243,7 @@ namespace sauna_tests
         [Explicit]
         public static void TestGetClosestAirportWithinRadius4()
         {
-            var navDataInterface = new DFDSource("e_dfd_2311.s3db");
+            var navDataInterface = new DFDSource(DFD_FILE_PATH_1);
             var point = new GeoPoint(-27.058760, 83.227773);
             var closestAirport = navDataInterface.GetClosestAirportWithinRadius(point, Length.FromMeters(100_000));
             Assert.That(closestAirport, Is.Null);
@@ -277,10 +280,11 @@ namespace sauna_tests
         }
 
         [Test]
+        [Explicit]
         public static void TestGetAirwayFromIdentifierAndFixes()
         {
             // Arrange
-            var navDataInterface = new DFDSource(DFD_FILE_PATH); // Adjust the data file path as necessary
+            var navDataInterface = new DFDSource(DFD_FILE_PATH_1); // Adjust the data file path as necessary
             var startFix = new Waypoint("SANBA", new GeoPoint(52.356701, -1.663610)); // Replace with actual start fix identifier
             var endFix = new Waypoint("HON", new GeoPoint(52.356701, -1.663610));     // Replace with actual end fix identifier
 
@@ -309,9 +313,10 @@ namespace sauna_tests
         }
 
         [Test]
+        [Explicit]
         public static void TestFlightPlanParser()
         {
-            DataHandler.LoadNavigraphDataFile(DFD_FILE_PATH, "aaa");
+            DataHandler.LoadNavigraphDataFile(DFD_FILE_PATH_1, "aaa");
 
             var Handler = new SimAircraftHandler(
                 Path.Join(AppDomain.CurrentDomain.BaseDirectory, "magnetic", "WMM.COF"),

@@ -94,7 +94,7 @@ namespace NavData_Interface.DataSources.DFDUtility.Factory
             var airportIdentifier = _reader["airport_identifier"].ToString();
             var routeIdentifier = _reader["procedure_identifier"].ToString();
 
-            while (_reader.HasRows)
+            while (_reader.Read())
             {
                 handleRow();
             }
