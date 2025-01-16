@@ -16,6 +16,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Primitives;
 
 namespace sauna_tests
 {
@@ -91,6 +92,47 @@ namespace sauna_tests
                     }
                     return legs[index];
                 }
+
+                StringBuilder sb = new StringBuilder();
+                foreach (var leg in legs)
+                {
+                    if (leg.EndPoint == null || leg.LegLength <= Length.FromMeters(0))
+                    {
+                        continue;
+                    }
+
+                    if (leg.EndPoint.VnavPoints != null && leg.EndPoint.VnavPoints.Count > 0)
+                    {
+                        for (int i = leg.EndPoint.VnavPoints.Count - 1; i >= 0; i--)
+                        {
+                            var vnavPt = leg.EndPoint.VnavPoints[i];
+
+                            sb.Append("\t\t");
+
+                            if (vnavPt.Angle > Angle.FromRadians(0))
+                            {
+                                sb.Append($"{vnavPt.Angle.Degrees:N1} -> ");
+                            }
+
+                            sb.Append($"{vnavPt.Speed:N0}KT/{vnavPt.Alt.Feet:N0}ft ");
+                            
+                            if (vnavPt.AlongTrackDistance <= Length.FromMeters(0))
+                            {
+                                sb.Append($"X {leg.EndPoint.Point.PointName}");
+                            }
+                            else
+                            {
+                                sb.Append($"({vnavPt.AlongTrackDistance.NauticalMiles:N1}NM)");
+                            }
+                        }
+                    }
+                    else
+                    {
+                        sb.Append("\t\t");
+                        sb.Append(leg.EndPoint.Point.PointName);
+                    }
+                }
+                System.Diagnostics.Debug.WriteLine(sb.ToString());
                 iterator = VnavDescentUtil.ProcessLegForDescent(iterator, getLeg, perfData, init, perfData.MTOW_kg, Length.FromFeet(0));
             }
 

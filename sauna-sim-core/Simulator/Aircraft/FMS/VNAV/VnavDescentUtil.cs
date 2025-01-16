@@ -8,6 +8,7 @@ using SaunaSim.Core.Simulator.Aircraft.Performance;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using SaunaSim.Core.Simulator.Aircraft.Autopilot;
 
 namespace SaunaSim.Core.Simulator.Aircraft.FMS.VNAV
 {
@@ -154,7 +155,8 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.VNAV
 
             if (iterator.EarlySpeedSearch)
             {
-                if (FmsVnavUtil.GetKnotsSpeed(lastVnavPoint.CmdSpeedUnits, lastVnavPoint.CmdSpeed, lastVnavPoint.Alt, gribPoint) <= iterator.EarlySpeed)
+                if (FmsVnavUtil.GetKnotsSpeed(lastVnavPoint.CmdSpeedUnits, lastVnavPoint.CmdSpeed, lastVnavPoint.Alt, gribPoint) <= iterator.EarlySpeed
+                    && FmsVnavUtil.GetKnotsSpeed(lastVnavPoint.SpeedUnits, lastVnavPoint.Speed, lastVnavPoint.Alt, gribPoint) <= iterator.EarlySpeed)
                 {
                     iterator.EarlySpeedSearch = false;
                     return iterator;
@@ -238,6 +240,13 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.VNAV
             // Calculate target speed
             (var targetSpeedUnits, var targetSpeed) = FmsVnavUtil.CalculateFmsSpeed(currentPhase, iterator.DistanceToRwy + iterator.AlongTrackDistance, curAlt, perfData, depArptElev, perfInit, gribPoint);
             var targetSpeedInKts = FmsVnavUtil.GetKnotsSpeed(targetSpeedUnits, targetSpeed, curAlt, gribPoint);
+            
+            // Check for early speed
+            if (iterator.EarlySpeed > 0 && targetSpeedInKts > iterator.EarlySpeed)
+            {
+                (targetSpeedUnits, targetSpeed) = (McpSpeedUnitsType.KNOTS, iterator.EarlySpeed);
+                targetSpeedInKts = iterator.EarlySpeed;
+            }
 
             // Check for decel speed
             if (iterator.DecelSpeed > 0)
@@ -396,15 +405,16 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.VNAV
                     iterator.Finished = true;
                     return iterator;
                 }
+                if (iterator.EarlyUpperAlt != null && startAlt > iterator.EarlyUpperAlt && curAlt < iterator.EarlyUpperAlt)
+                {
+                    newAlongTrack = FmsVnavUtil.CalculateDistanceForAltitude(curAlt, iterator.EarlyUpperAlt, targetAngle);
+                }
                 // Check for limit alt crossing
                 if (startAlt >= limitAlt && curAlt < limitAlt && targetSpeedInKts > perfInit.LimitSpeed)
                 {
                     newAlongTrack = FmsVnavUtil.CalculateDistanceForAltitude(curAlt, limitAlt, targetAngle);
                 }
-                if (iterator.EarlyUpperAlt != null && startAlt > iterator.EarlyUpperAlt && iterator.EarlyUpperAlt < limitAlt)
-                {
-                    newAlongTrack = FmsVnavUtil.CalculateDistanceForAltitude(curAlt, iterator.EarlyUpperAlt, targetAngle);
-                }
+                
             }
 
             if (iterator.DistanceToRwy + iterator.AlongTrackDistance < Length.FromNauticalMiles(15) && iterator.DistanceToRwy + newAlongTrack > Length.FromNauticalMiles(15))
