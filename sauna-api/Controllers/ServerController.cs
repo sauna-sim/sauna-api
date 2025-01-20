@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using SaunaSim.Api.ApiObjects.Server;
+using SaunaSim.Api.Services;
 using SaunaSim.Api.WebSockets;
 using SaunaSim.Core.Simulator.Aircraft;
 using System;
@@ -18,11 +19,13 @@ namespace SaunaSim.Api.Controllers
     {
         private readonly ILogger<ServerController> _logger;
         private readonly IHostApplicationLifetime _appLifetime;
+        private readonly ISimAircraftService _aircraftService;
         
-        public ServerController(ILogger<ServerController> logger, IHostApplicationLifetime appLifetime)
+        public ServerController(ILogger<ServerController> logger, IHostApplicationLifetime appLifetime, ISimAircraftService aircraftService)
         {
             _appLifetime = appLifetime;
             _logger = logger;
+            _aircraftService = aircraftService;
         }
 
         [HttpGet("info")]
@@ -45,7 +48,7 @@ namespace SaunaSim.Api.Controllers
                 try
                 {
                     using var webSocket = await HttpContext.WebSockets.AcceptWebSocketAsync();
-                    await WebSocketHandler.HandleGeneralSocket(webSocket);
+                    await _aircraftService.WebSocketHandler.HandleGeneralSocket(webSocket);
                 } catch (Exception e)
                 {
                     _logger.LogWarning($"Websocket connection failed: {e.Message}");

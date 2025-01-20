@@ -21,46 +21,27 @@ using SaunaSim.Api.WebSockets.RequestData;
 
 namespace SaunaSim.Api.WebSockets
 {
-    public static class WebSocketHandler
+    public class WebSocketHandler
     {
-        private static List<ClientStream> _generalClients = new();
-        private static SemaphoreSlim _generalClientsLock = new(1);
-        private static Dictionary<string, AircraftWebSocketHandler> _aircraftClientsMap = new();
-        //private static Task _acftPosUpdateWorker;
-        //private static bool _acftPosUpdate = false;
+        private List<ClientStream> _generalClients;
+        private SemaphoreSlim _generalClientsLock;
+        private Dictionary<string, AircraftWebSocketHandler> _aircraftClientsMap;
+        private SimAircraftHandler _simAircraftHandler;
 
-        static WebSocketHandler()
+        public WebSocketHandler(SimAircraftHandler handler)
         {
+            _generalClients = new();
+            _generalClientsLock = new(1);
+            _aircraftClientsMap = new();
+            _simAircraftHandler = handler;
+
             // Register event handlers
-            SimAircraftHandler.GlobalSimStateChanged += OnSimStateChange;
-            SimAircraftHandler.AircraftCreated += SimAircraftHandler_AircraftCreated;
-            SimAircraftHandler.AircraftDeleted += SimAircraftHandler_AircraftDeleted;
+            _simAircraftHandler.GlobalSimStateChanged += OnSimStateChange;
+            _simAircraftHandler.AircraftCreated += SimAircraftHandler_AircraftCreated;
+            _simAircraftHandler.AircraftDeleted += SimAircraftHandler_AircraftDeleted;
         }
 
-
-        //private static void SimAircraftHandler_AircraftSimStateChanged(object sender, AircraftSimStateChangedEventArgs e)
-        //{
-        //    var data = new AircraftEventSimState(e.Callsign, new AircraftStateRequestResponse()
-        //    {
-        //        Paused = e.Paused,
-        //        SimRate = e.SimRate
-        //    });
-        //    SendForAll(new SocketAircraftUpdateData(data)).ConfigureAwait(false);
-        //}
-
-        //private static void SimAircraftHandler_AircraftConnectionStatusChanged(object sender, AircraftConnectionStatusChangedEventArgs e)
-        //{
-        //    var data = new AircraftEventFsd(e.Callsign, e.ConnectionStatus);
-        //    SendForAll(new SocketAircraftUpdateData(data)).ConfigureAwait(false);
-        //}
-
-        //private static void SimAircraftHandler_AircraftPositionChanged(object sender, AircraftPositionUpdateEventArgs e)
-        //{
-        //    var data = new AircraftEventPosition(e.Aircraft.Callsign, e.TimeStamp, new AircraftResponse(e.Aircraft, true));
-        //    SendForAll(new SocketAircraftUpdateData(data)).ConfigureAwait(false);
-        //}
-
-        private static void SimAircraftHandler_AircraftDeleted(object sender, AircraftDeletedEventArgs e)
+        private void SimAircraftHandler_AircraftDeleted(object sender, AircraftDeletedEventArgs e)
         {
             var data = new AircraftEventDeleted(e.Callsign);
             SendForAllGeneral(new SocketAircraftUpdateData(data)).ConfigureAwait(false);
@@ -78,7 +59,7 @@ namespace SaunaSim.Api.WebSockets
             });
         }
 
-        private static void SimAircraftHandler_AircraftCreated(object sender, AircraftPositionUpdateEventArgs e)
+        private void SimAircraftHandler_AircraftCreated(object sender, AircraftPositionUpdateEventArgs e)
         {
             var data = new AircraftEventCreated(e.Aircraft.Callsign, new AircraftResponse(e.Aircraft, true));
             SendForAllGeneral(new SocketAircraftUpdateData(data)).ConfigureAwait(false);
@@ -94,11 +75,11 @@ namespace SaunaSim.Api.WebSockets
                     _aircraftClientsMap.Remove(e.Aircraft.Callsign);
                 }
 
-                _aircraftClientsMap.Add(e.Aircraft.Callsign, new AircraftWebSocketHandler(e.Aircraft.Callsign));
+                _aircraftClientsMap.Add(e.Aircraft.Callsign, new AircraftWebSocketHandler(e.Aircraft.Callsign, _simAircraftHandler));
             });
         }
 
-        private static async Task AddGeneralClient(ClientStream client)
+        private async Task AddGeneralClient(ClientStream client)
         {
             await _generalClientsLock.WaitAsync();
             _generalClients.Add(client);
@@ -116,30 +97,25 @@ namespace SaunaSim.Api.WebSockets
             // Send initial sim state
             await client.QueueMessage(new SocketSimStateData(new AircraftStateRequestResponse()
             {
-                Paused = SimAircraftHandler.AllPaused,
-                SimRate = SimAircraftHandler.SimRate
+                Paused = _simAircraftHandler.AllPaused,
+                SimRate = _simAircraftHandler.SimRate
             }));
 
             // Send initial position calcluation rate
             await client.QueueMessage(new SocketPosCalcUpdateData(AppSettingsManager.PosCalcRate));
 
             // Send all aircraft initially
-            SimAircraftHandler.PerformOnAircraft(async (List<SimAircraft> aircraft) =>
-            {
-                foreach (SimAircraft pilot in aircraft)
-                {
-                    await client.QueueMessage(new SocketAircraftUpdateData(new AircraftEventCreated(pilot.Callsign, new AircraftResponse(pilot, true))));
-                }
-            });
+            _simAircraftHandler.SimAircraftListLock.WaitOne();
 
-            //if (!_acftPosUpdate)
-            //{
-            //    _acftPosUpdate = true;
-            //    _acftPosUpdateWorker = Task.Run(AircraftPositionWorker);
-            //}
+            foreach (SimAircraft pilot in _simAircraftHandler.SimAircraftList)
+            {
+                await client.QueueMessage(new SocketAircraftUpdateData(new AircraftEventCreated(pilot.Callsign, new AircraftResponse(pilot, true))));
+            }
+
+            _simAircraftHandler.SimAircraftListLock.ReleaseMutex();
         }
 
-        private static async Task RemoveGeneralClient(ClientStream client)
+        private async Task RemoveGeneralClient(ClientStream client)
         {
             await _generalClientsLock.WaitAsync();
             _generalClients.Remove(client);
@@ -147,7 +123,7 @@ namespace SaunaSim.Api.WebSockets
             _generalClientsLock.Release();
         }
 
-        private static async Task AddAircraftClient(string callsign, ClientStream client)
+        private async Task AddAircraftClient(string callsign, ClientStream client)
         {
             bool aircraftExists = _aircraftClientsMap.TryGetValue(callsign, out AircraftWebSocketHandler value);
 
@@ -157,7 +133,7 @@ namespace SaunaSim.Api.WebSockets
             }
         }
 
-        private static async Task RemoveAircraftClient(string callsign, ClientStream client)
+        private async Task RemoveAircraftClient(string callsign, ClientStream client)
         {
             bool aircraftExists = _aircraftClientsMap.TryGetValue(callsign, out AircraftWebSocketHandler value);
 
@@ -167,12 +143,12 @@ namespace SaunaSim.Api.WebSockets
             }
         }
 
-        public static async Task SendCommandMsg(string msg)
+        public async Task SendCommandMsg(string msg)
         {
             await SendForAllGeneral(new SocketCommandMsgData(msg));
         }
 
-        public static void OnSimStateChange(object sender, SimStateChangedEventArgs e)
+        public void OnSimStateChange(object sender, SimStateChangedEventArgs e)
         {
             Task.Run(async () =>
             {
@@ -184,26 +160,7 @@ namespace SaunaSim.Api.WebSockets
             });
         }
 
-        //private static async Task AircraftPositionWorker()
-        //{
-        //    while (_acftPosUpdate)
-        //    {
-        //        List<AircraftResponse> pilots = new List<AircraftResponse>();
-        //        SimAircraftHandler.PerformOnAircraft((list =>
-        //        {
-        //            foreach (var pilot in list)
-        //            {
-        //                pilots.Add(new AircraftResponse(pilot, true));
-        //            }
-        //        }));
-
-        //        await SendForAll(new SocketAircraftUpdateData(pilots));
-
-        //        await Task.Delay(AppSettingsManager.PosCalcRate);
-        //    }
-        //}
-
-        private static async Task SendForAllGeneral(ISocketResponseData data)
+        private async Task SendForAllGeneral(ISocketResponseData data)
         {
             await _generalClientsLock.WaitAsync();
             var tasks = new List<Task>();
@@ -216,7 +173,7 @@ namespace SaunaSim.Api.WebSockets
             await Task.WhenAll(tasks);
         }
 
-        public static async Task HandleGeneralSocket(WebSocket ws)
+        public async Task HandleGeneralSocket(WebSocket ws)
         {
             // Create Stream
             var stream = new ClientStream(ws);
@@ -244,7 +201,7 @@ namespace SaunaSim.Api.WebSockets
             }
         }
 
-        public static async Task HandleAircraftSocket(string callsign, WebSocket ws)
+        public async Task HandleAircraftSocket(string callsign, WebSocket ws)
         {
             // Create Stream
             var stream = new ClientStream(ws);

@@ -1,24 +1,28 @@
 ﻿using System;
-using AviationCalcUtilNet.GeoTools;
-using AviationCalcUtilNet.GeoTools.GribTools;
-using AviationCalcUtilNet.MathTools;
 using System.Collections.Generic;
 using SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller;
 using SaunaSim.Core.Simulator.Aircraft.FMS;
 using SaunaSim.Core.Simulator.Aircraft.FMS.Legs;
 using SaunaSim.Core.Simulator.Aircraft.Performance;
 using System.Net;
+using AviationCalcUtilNet.Units;
+using AviationCalcUtilNet.Geo;
+using AviationCalcUtilNet.Aviation;
+using AviationCalcUtilNet.Atmos.Grib;
+using AviationCalcUtilNet.Atmos;
+using SaunaSim.Core.Data;
+using FsdConnectorNet.Args;
 
 namespace SaunaSim.Core.Simulator.Aircraft.Autopilot
 {
     public class AircraftAutopilot
     {
         private readonly SimAircraft _parentAircraft;
-
+        
         // Autopilot internal variables
         private double _targetThrust;
-        private double _targetBank;
-        private double _targetPitch;
+        private Angle _targetBank;
+        private Angle _targetPitch;
 
         // Modes
         private LateralModeType _curLatMode;
@@ -66,6 +70,14 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot
 
         public void OnPositionUpdate(int intervalMs)
         {
+            // Check for FMS Speed
+            if (_spdMode == McpSpeedSelectorType.FMS)
+            {
+                _spdUnits = _parentAircraft.Fms.FmsSpeedUnits;
+                _selSpd = _parentAircraft.Fms.FmsSpeedValue;
+            }
+
+            
             // Run Bank Controller
             RunRollController(intervalMs);
 
@@ -81,25 +93,25 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot
             if (_curThrustMode == ThrustModeType.SPEED)
             {
                 // Convert selected mach # to IAS if required
-                double selSpdKts = _selSpd;
+                Velocity selSpdKts = Velocity.FromKnots(_selSpd);
                 if (_spdUnits == McpSpeedUnitsType.MACH)
                 {
                     selSpdKts = ConvertMachToKts(_selSpd);
                 }
 
                 // Calculate required thrust
-                double speedDelta = _parentAircraft.Position.IndicatedAirSpeed - selSpdKts;
-                double zeroAccelThrust = PerfDataHandler.GetRequiredThrustForVs(_parentAircraft.PerformanceData, _parentAircraft.Position.VerticalSpeed, 0,
-                    selSpdKts, _parentAircraft.Position.DensityAltitude, _parentAircraft.Data.Mass_kg,
+                Velocity speedDelta = _parentAircraft.Position.IndicatedAirSpeed - selSpdKts;
+                double zeroAccelThrust = PerfDataHandler.GetRequiredThrustForVs(_parentAircraft.PerformanceData, _parentAircraft.Position.VerticalSpeed.FeetPerMinute, 0,
+                    selSpdKts.Knots, _parentAircraft.Position.DensityAltitude.Feet, _parentAircraft.Data.Mass_kg,
                     _parentAircraft.Data.SpeedBrakePos, _parentAircraft.Data.Config);
                 _targetThrust = AutopilotUtil.CalculateDemandedThrottleForSpeed(
                     speedDelta,
                     _parentAircraft.Data.ThrustLeverPos,
                     zeroAccelThrust * 100.0,
                     (thrust) =>
-                        PerfDataHandler.CalculatePerformance(_parentAircraft.PerformanceData, _parentAircraft.Position.Pitch, thrust / 100.0,
-                            _parentAircraft.Position.IndicatedAirSpeed, _parentAircraft.Position.DensityAltitude, _parentAircraft.Data.Mass_kg, _parentAircraft.Data.SpeedBrakePos,
-                            _parentAircraft.Data.Config).accelFwd,
+                        Acceleration.FromKnotsPerSecond(PerfDataHandler.CalculatePerformance(_parentAircraft.PerformanceData, _parentAircraft.Position.Pitch.Degrees, thrust / 100.0,
+                            _parentAircraft.Position.IndicatedAirSpeed.Knots, _parentAircraft.Position.DensityAltitude.Feet, _parentAircraft.Data.Mass_kg, _parentAircraft.Data.SpeedBrakePos,
+                            _parentAircraft.Data.Config).accelFwd),
                     intervalMs
                 );
                 _parentAircraft.Data.ThrustLeverVel = AutopilotUtil.CalculateThrustRate(_targetThrust, _parentAircraft.Data.ThrustLeverPos, intervalMs);
@@ -134,8 +146,8 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot
                     _curVertMode = VerticalModeType.ALT;
                 }
                 // Check if we're off altitude by more than 200ft
-                double altDelta = _parentAircraft.Position.IndicatedAltitude - _selAlt;
-                if (Math.Abs(altDelta) > 200)
+                Length altDelta = _parentAircraft.Position.IndicatedAltitude - Length.FromFeet(_selAlt);
+                if (Math.Abs(altDelta.Feet) > 200)
                 {
                     PitchHandleFlch(intervalMs);
                 } else
@@ -160,8 +172,8 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot
                 }
 
                 // Check if we're at altitude
-                double altDelta = _parentAircraft.Position.IndicatedAltitude - _selAlt;
-                if (Math.Abs(_parentAircraft.Position.VerticalSpeed) < 50 && Math.Abs(altDelta) < 1)
+                Length altDelta = _parentAircraft.Position.IndicatedAltitude - Length.FromFeet(_selAlt);
+                if (Math.Abs(_parentAircraft.Position.VerticalSpeed.FeetPerMinute) < 50 && Math.Abs(altDelta.Feet) < 1)
                 {
                     _curVertMode = _curVertMode == VerticalModeType.ASEL ? VerticalModeType.ALT : VerticalModeType.VALT;
                 }
@@ -179,10 +191,10 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot
                     _curThrustMode = ThrustModeType.SPEED;
 
                     // Calculate pitch and pitch rate
-                    _targetPitch = PerfDataHandler.GetRequiredPitchForVs(_parentAircraft.PerformanceData, _selVs,
-                        _parentAircraft.Position.IndicatedAirSpeed, _parentAircraft.Position.DensityAltitude, _parentAircraft.Data.Mass_kg,
-                        _parentAircraft.Data.SpeedBrakePos, _parentAircraft.Data.Config);
-                    _parentAircraft.Position.PitchRate = AutopilotUtil.CalculatePitchRate(_targetPitch, _parentAircraft.Position.Pitch, intervalMs);
+                    _targetPitch = Angle.FromDegrees(PerfDataHandler.GetRequiredPitchForVs(_parentAircraft.PerformanceData, _selVs,
+                        _parentAircraft.Position.IndicatedAirSpeed.Knots, _parentAircraft.Position.DensityAltitude.Feet, _parentAircraft.Data.Mass_kg,
+                        _parentAircraft.Data.SpeedBrakePos, _parentAircraft.Data.Config));
+                    _parentAircraft.Position.PitchRate = AutopilotUtil.CalculatePitchRate(_targetPitch, _parentAircraft.Position.Pitch, PitchToVsFunction, intervalMs);
                 }
             } else if (_curVertMode == VerticalModeType.FPA)
             {
@@ -194,17 +206,20 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot
                 {
                     // Set thrust mode to speed
                     _curThrustMode = ThrustModeType.SPEED;
-
-
                 }
             } else if (_curVertMode == VerticalModeType.APCH)
             {
                 if (_curLatMode != LateralModeType.APCH)
                 {
                     _curVertMode = VerticalModeType.FPA;
-                    _selFpa = _parentAircraft.Position.FlightPathAngle;
+                    _selFpa = _parentAircraft.Position.FlightPathAngle.Degrees;
                     PitchHandleFpa(intervalMs);
-                } else
+                } else if (_parentAircraft.Position.TrueAltitude < _parentAircraft.RelaventAirport.Elevation + Length.FromFeet(30))
+                {
+                    _curVertMode = VerticalModeType.LAND;
+                    PitchHandleLand(intervalMs);
+                }
+                else
                 {
                     _curThrustMode = ThrustModeType.SPEED;
 
@@ -216,7 +231,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot
                 if (_curLatMode != LateralModeType.LNAV)
                 {
                     _curVertMode = VerticalModeType.FPA;
-                    _selFpa = _parentAircraft.Position.FlightPathAngle;
+                    _selFpa = _parentAircraft.Position.FlightPathAngle.Degrees;
                     PitchHandleFpa(intervalMs);
                 } else if (PitchShouldAsel(intervalMs))
                 {
@@ -229,6 +244,9 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot
 
                     PitchHandleVnav(intervalMs);
                 }
+            }else if(_curVertMode == VerticalModeType.LAND)
+            {
+                PitchHandleLand(intervalMs);
             }
         }
 
@@ -254,10 +272,10 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot
                 _parentAircraft.Position.BankRate = AutopilotUtil.CalculateRollRate(_targetBank, _parentAircraft.Position.Bank, intervalMs);
             } else if (_curLatMode == LateralModeType.HDG)
             {
-                RollHdgTrackHold(_parentAircraft.Position.Heading_Mag, _selHdg, intervalMs);
+                RollHdgTrackHold(_parentAircraft.Position.Heading_Mag,SelectedHeadingBearing, intervalMs);
             } else if (_curLatMode == LateralModeType.TRACK)
             {
-                RollHdgTrackHold(_parentAircraft.Position.Track_Mag, _selHdg, intervalMs);
+                RollHdgTrackHold(_parentAircraft.Position.Track_Mag, SelectedHeadingBearing, intervalMs);
             } else if (_curLatMode == LateralModeType.LNAV || _curLatMode == LateralModeType.APCH)
             {
                 RollHandleLnav(intervalMs);
@@ -276,7 +294,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot
             }
 
             // Get True Course and crossTrackError
-            (double requiredTrueCourse, double crossTrackError, _, double turnRadius) = fms.CourseInterceptInfo;
+            (Bearing requiredTrueCourse, Length crossTrackError, _, Length turnRadius) = fms.CourseInterceptInfo;
 
             // Calculate Bank Angle & Rate
             _targetBank = AutopilotUtil.CalculateDemandedRollForNav(crossTrackError, _parentAircraft.Position.Track_True, requiredTrueCourse,
@@ -285,28 +303,28 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot
             _parentAircraft.Position.BankRate = AutopilotUtil.CalculateRollRate(_targetBank, _parentAircraft.Position.Bank, intervalMs);
         }
 
-        private void RollHdgTrackHold(double currentBearing, double targetBearing, int intervalMs)
+        private void RollHdgTrackHold(Bearing currentBearing, Bearing targetBearing, int intervalMs)
         {
-            double hdgDelta = GeoUtil.CalculateTurnAmount(currentBearing, targetBearing);
+            Angle hdgDelta = targetBearing - currentBearing;
 
             // Go the shortest way if we're almost at the heading
-            if (Math.Abs(hdgDelta) < 1)
+            if (Math.Abs(hdgDelta.Degrees) < 1)
             {
                 _hdgKnobDir = McpKnobDirection.SHORTEST;
             }
 
-            if (Math.Abs(hdgDelta) > double.Epsilon || Math.Abs(_parentAircraft.Position.Bank) > double.Epsilon)
+            if (Math.Abs(hdgDelta.Radians) > double.Epsilon || Math.Abs(_parentAircraft.Position.Bank.Radians) > double.Epsilon)
             {
                 // Figure out turn direction
-                bool isRightTurn = (_hdgKnobDir == McpKnobDirection.SHORTEST) ? (hdgDelta > 0) : (_hdgKnobDir == McpKnobDirection.RIGHT);
+                bool isRightTurn = (_hdgKnobDir == McpKnobDirection.SHORTEST) ? (hdgDelta.Radians > 0) : (_hdgKnobDir == McpKnobDirection.RIGHT);
 
                 // Get new hdgDelta
-                if (isRightTurn && hdgDelta < 0)
+                if (isRightTurn && hdgDelta.Radians < 0)
                 {
-                    hdgDelta += 360;
-                } else if (!isRightTurn && hdgDelta > 0)
+                    hdgDelta += Angle.FromDegrees(360);
+                } else if (!isRightTurn && hdgDelta.Radians > 0)
                 {
-                    hdgDelta -= 360;
+                    hdgDelta -= Angle.FromDegrees(360);
                 }
 
                 // Desired bank angle
@@ -314,86 +332,111 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot
                 _parentAircraft.Position.BankRate = AutopilotUtil.CalculateRollRate(_targetBank, _parentAircraft.Position.Bank, intervalMs);
             } else
             {
-                _parentAircraft.Position.BankRate = 0;
+                _parentAircraft.Position.BankRate = (AngularVelocity)0;
             }
+        }
+
+        private Velocity PitchToVsFunction(Angle pitch)
+        {
+            return Velocity.FromFeetPerMinute(PerfDataHandler.CalculatePerformance(
+                _parentAircraft.PerformanceData,
+                pitch.Degrees,
+                _parentAircraft.Data.ThrustLeverPos / 100.0, 
+                _parentAircraft.Position.IndicatedAirSpeed.Knots,
+                _parentAircraft.Position.DensityAltitude.Feet, 
+                _parentAircraft.Data.Mass_kg, 
+                _parentAircraft.Data.SpeedBrakePos, 
+                _parentAircraft.Data.Config).vs);
         }
 
         private bool PitchShouldAsel(int intervalMs)
         {
-            double altDelta = _parentAircraft.Position.IndicatedAltitude - _selAlt;
+            Length altDelta = _parentAircraft.Position.IndicatedAltitude - Length.FromFeet(_selAlt);
 
             // Calculate required ASEL pitch
             double zeroVsPitch = PerfDataHandler.GetRequiredPitchForVs(_parentAircraft.PerformanceData, 0,
-                _parentAircraft.Position.IndicatedAirSpeed, _parentAircraft.Position.DensityAltitude, _parentAircraft.Data.Mass_kg,
+                _parentAircraft.Position.IndicatedAirSpeed.Knots, _parentAircraft.Position.DensityAltitude.Feet, _parentAircraft.Data.Mass_kg,
                 _parentAircraft.Data.SpeedBrakePos, _parentAircraft.Data.Config);
-            double idlePitch = PerfDataHandler.GetRequiredPitchForThrust(_parentAircraft.PerformanceData, 0, 0, _parentAircraft.Position.IndicatedAirSpeed,
-                _parentAircraft.Position.DensityAltitude, _parentAircraft.Data.Mass_kg, _parentAircraft.Data.SpeedBrakePos, _parentAircraft.Data.Config);
-            double maxPitch = PerfDataHandler.GetRequiredPitchForThrust(_parentAircraft.PerformanceData, 1, 0, _parentAircraft.Position.IndicatedAirSpeed,
-                _parentAircraft.Position.DensityAltitude, _parentAircraft.Data.Mass_kg, _parentAircraft.Data.SpeedBrakePos, _parentAircraft.Data.Config);
-            double pitchTarget = AutopilotUtil.CalculateDemandedPitchForAltitude(
+            double idlePitch = PerfDataHandler.GetRequiredPitchForThrust(_parentAircraft.PerformanceData, 0, 0, _parentAircraft.Position.IndicatedAirSpeed.Knots,
+                _parentAircraft.Position.DensityAltitude.Feet, _parentAircraft.Data.Mass_kg, _parentAircraft.Data.SpeedBrakePos, _parentAircraft.Data.Config);
+            double maxPitch = PerfDataHandler.GetRequiredPitchForThrust(_parentAircraft.PerformanceData, 1, 0, _parentAircraft.Position.IndicatedAirSpeed.Knots,
+                _parentAircraft.Position.DensityAltitude.Feet, _parentAircraft.Data.Mass_kg, _parentAircraft.Data.SpeedBrakePos, _parentAircraft.Data.Config);
+            Angle pitchTarget = AutopilotUtil.CalculateDemandedPitchForAltitude(
                 altDelta,
                 _parentAircraft.Position.Pitch,
-                zeroVsPitch,
-                idlePitch,
-                maxPitch,
+                Angle.FromDegrees(zeroVsPitch),
+                 Angle.FromDegrees(idlePitch),
+                Angle.FromDegrees(maxPitch),
                 (pitch) =>
-                    PerfDataHandler.CalculatePerformance(_parentAircraft.PerformanceData, pitch, _parentAircraft.Data.ThrustLeverPos / 100.0,
-                        _parentAircraft.Position.IndicatedAirSpeed, _parentAircraft.Position.DensityAltitude, _parentAircraft.Data.Mass_kg, _parentAircraft.Data.SpeedBrakePos,
-                        _parentAircraft.Data.Config).vs / 60,
+                    Velocity.FromFeetPerMinute(PerfDataHandler.CalculatePerformance(_parentAircraft.PerformanceData, pitch.Degrees, _parentAircraft.Data.ThrustLeverPos / 100.0,
+                        _parentAircraft.Position.IndicatedAirSpeed.Knots, _parentAircraft.Position.DensityAltitude.Feet, _parentAircraft.Data.Mass_kg, _parentAircraft.Data.SpeedBrakePos,
+                        _parentAircraft.Data.Config).vs),
                 intervalMs
             );
 
-            return Math.Abs(zeroVsPitch - pitchTarget) < double.Epsilon;
+            return Math.Abs(zeroVsPitch - pitchTarget.Degrees) < double.Epsilon;
+        }
+
+        private void PitchHandleLand(int intervalMs)
+        {
+            Length altDelta = _parentAircraft.Position.IndicatedAltitude - _parentAircraft.RelaventAirport.Elevation.Feet;
+            _curThrustMode = ThrustModeType.THRUST;
+            _targetThrust = 0;
+
+            _targetPitch = Angle.FromDegrees(PerfDataHandler.GetRequiredPitchForVs(_parentAircraft.PerformanceData, -150,
+                        _parentAircraft.Position.IndicatedAirSpeed.Knots, _parentAircraft.Position.DensityAltitude.Feet, _parentAircraft.Data.Mass_kg,
+                        _parentAircraft.Data.SpeedBrakePos, _parentAircraft.Data.Config));
+            _parentAircraft.Position.PitchRate = AutopilotUtil.CalculatePitchRate(_targetPitch, _parentAircraft.Position.Pitch, PitchToVsFunction, intervalMs);
         }
 
         private void PitchHandleAsel(int intervalMs)
         {
-            double altDelta = _parentAircraft.Position.IndicatedAltitude - _selAlt;
+            Length altDelta = _parentAircraft.Position.IndicatedAltitude - SelectedAltitudeLength;
             _curThrustMode = ThrustModeType.SPEED;
 
             // Calculate required ASEL pitch
             double zeroVsPitch = PerfDataHandler.GetRequiredPitchForVs(_parentAircraft.PerformanceData, 0,
-                _parentAircraft.Position.IndicatedAirSpeed, _parentAircraft.Position.DensityAltitude, _parentAircraft.Data.Mass_kg,
+                _parentAircraft.Position.IndicatedAirSpeed.Knots, _parentAircraft.Position.DensityAltitude.Feet, _parentAircraft.Data.Mass_kg,
                 _parentAircraft.Data.SpeedBrakePos, _parentAircraft.Data.Config);
-            double idlePitch = PerfDataHandler.GetRequiredPitchForThrust(_parentAircraft.PerformanceData, 0, 0, _parentAircraft.Position.IndicatedAirSpeed,
-                _parentAircraft.Position.DensityAltitude, _parentAircraft.Data.Mass_kg, _parentAircraft.Data.SpeedBrakePos, _parentAircraft.Data.Config);
-            double maxPitch = PerfDataHandler.GetRequiredPitchForThrust(_parentAircraft.PerformanceData, 1, 0, _parentAircraft.Position.IndicatedAirSpeed,
-                _parentAircraft.Position.DensityAltitude, _parentAircraft.Data.Mass_kg, _parentAircraft.Data.SpeedBrakePos, _parentAircraft.Data.Config);
+            double idlePitch = PerfDataHandler.GetRequiredPitchForThrust(_parentAircraft.PerformanceData, 0, 0, _parentAircraft.Position.IndicatedAirSpeed.Knots,
+                _parentAircraft.Position.DensityAltitude.Feet, _parentAircraft.Data.Mass_kg, _parentAircraft.Data.SpeedBrakePos, _parentAircraft.Data.Config);
+            double maxPitch = PerfDataHandler.GetRequiredPitchForThrust(_parentAircraft.PerformanceData, 1, 0, _parentAircraft.Position.IndicatedAirSpeed.Knots,
+                _parentAircraft.Position.DensityAltitude.Feet, _parentAircraft.Data.Mass_kg, _parentAircraft.Data.SpeedBrakePos, _parentAircraft.Data.Config);
             _targetPitch = AutopilotUtil.CalculateDemandedPitchForAltitude(
                 altDelta,
                 _parentAircraft.Position.Pitch,
-                zeroVsPitch,
-                idlePitch,
-                maxPitch,
+                Angle.FromDegrees(zeroVsPitch),
+                Angle.FromDegrees(idlePitch),
+                Angle.FromDegrees(maxPitch),
                 (pitch) =>
-                    PerfDataHandler.CalculatePerformance(_parentAircraft.PerformanceData, pitch, _parentAircraft.Data.ThrustLeverPos / 100.0,
-                        _parentAircraft.Position.IndicatedAirSpeed, _parentAircraft.Position.DensityAltitude, _parentAircraft.Data.Mass_kg, _parentAircraft.Data.SpeedBrakePos,
-                        _parentAircraft.Data.Config).vs / 60,
+                    Velocity.FromFeetPerMinute(PerfDataHandler.CalculatePerformance(_parentAircraft.PerformanceData, pitch.Degrees, _parentAircraft.Data.ThrustLeverPos / 100.0,
+                        _parentAircraft.Position.IndicatedAirSpeed.Knots, _parentAircraft.Position.DensityAltitude.Feet, _parentAircraft.Data.Mass_kg, _parentAircraft.Data.SpeedBrakePos,
+                        _parentAircraft.Data.Config).vs),
                 intervalMs
             );
 
-            _parentAircraft.Position.PitchRate = AutopilotUtil.CalculatePitchRate(_targetPitch, _parentAircraft.Position.Pitch, intervalMs);
+            _parentAircraft.Position.PitchRate = AutopilotUtil.CalculatePitchRate(_targetPitch, _parentAircraft.Position.Pitch, PitchToVsFunction, intervalMs);
         }
 
         private void PitchHandleFpa(int intervalMs)
         {
             // Calculate pitch and pitch rate
-            _targetPitch = PerfDataHandler.GetRequiredPitchForVs(_parentAircraft.PerformanceData, PerfDataHandler.ConvertFpaToVs(_selFpa, _parentAircraft.Position.GroundSpeed),
-                _parentAircraft.Position.IndicatedAirSpeed, _parentAircraft.Position.DensityAltitude, _parentAircraft.Data.Mass_kg,
-                _parentAircraft.Data.SpeedBrakePos, _parentAircraft.Data.Config);
-            _parentAircraft.Position.PitchRate = AutopilotUtil.CalculatePitchRate(_targetPitch, _parentAircraft.Position.Pitch, intervalMs);
+            _targetPitch = Angle.FromDegrees(PerfDataHandler.GetRequiredPitchForVs(_parentAircraft.PerformanceData, AviationUtil.CalculateVerticalSpeed(_parentAircraft.Position.GroundSpeed, SelectedFpaAngle).FeetPerMinute,
+                _parentAircraft.Position.IndicatedAirSpeed.Knots, _parentAircraft.Position.DensityAltitude.Feet, _parentAircraft.Data.Mass_kg,
+                _parentAircraft.Data.SpeedBrakePos, _parentAircraft.Data.Config));
+            _parentAircraft.Position.PitchRate = AutopilotUtil.CalculatePitchRate(_targetPitch, _parentAircraft.Position.Pitch, PitchToVsFunction, intervalMs);
         }
 
         private void PitchHandleFlch(int intervalMs)
         {
             // Figure out thrust setting
-            double altDelta = _parentAircraft.Position.IndicatedAltitude - _selAlt;
+            Length altDelta = _parentAircraft.Position.IndicatedAltitude - SelectedAltitudeLength;
             _curThrustMode = ThrustModeType.THRUST;
 
-            if (altDelta > 0 && _targetThrust > double.Epsilon)
+            if (altDelta.Meters > 0 && _targetThrust > double.Epsilon)
             {
                 _targetThrust = 0;
-            } else if (altDelta < 0 && _targetThrust < 100)
+            } else if (altDelta.Meters < 0 && _targetThrust < 100)
             {
                 _targetThrust = 100;
             }
@@ -402,16 +445,16 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot
             double selSpdKts = _selSpd;
             if (_spdUnits == McpSpeedUnitsType.MACH)
             {
-                selSpdKts = ConvertMachToKts(_selSpd);
+                selSpdKts = ConvertMachToKts(_selSpd).Knots;
             }
 
             // Calculate pitch limits
-            double maxPitch = AutopilotUtil.PITCH_LIMIT_MAX;
-            double minPitch = AutopilotUtil.PITCH_LIMIT_MIN;
-            double zeroVsPitch = PerfDataHandler.GetRequiredPitchForVs(_parentAircraft.PerformanceData, 0,
-                _parentAircraft.Position.IndicatedAirSpeed, _parentAircraft.Position.DensityAltitude, _parentAircraft.Data.Mass_kg,
-                _parentAircraft.Data.SpeedBrakePos, _parentAircraft.Data.Config);
-            if (altDelta > 0)
+            Angle maxPitch = AutopilotUtil.PITCH_LIMIT_MAX;
+            Angle minPitch = AutopilotUtil.PITCH_LIMIT_MIN;
+            Angle zeroVsPitch = Angle.FromDegrees(PerfDataHandler.GetRequiredPitchForVs(_parentAircraft.PerformanceData, 0,
+                _parentAircraft.Position.IndicatedAirSpeed.Knots, _parentAircraft.Position.DensityAltitude.Feet, _parentAircraft.Data.Mass_kg,
+                _parentAircraft.Data.SpeedBrakePos, _parentAircraft.Data.Config));
+            if (altDelta.Meters > 0)
             {
                 maxPitch = zeroVsPitch;
             } else
@@ -420,23 +463,24 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot
             }
 
             // Calculate required pitch
-            double speedDelta = _parentAircraft.Position.IndicatedAirSpeed - selSpdKts;
+            Velocity speedDelta = _parentAircraft.Position.IndicatedAirSpeed - Velocity.FromKnots(selSpdKts);
             double zeroAccelPitch = PerfDataHandler.GetRequiredPitchForThrust(_parentAircraft.PerformanceData, _parentAircraft.Data.ThrustLeverPos / 100.0, 0,
-                selSpdKts, _parentAircraft.Position.DensityAltitude, _parentAircraft.Data.Mass_kg,
+                selSpdKts, _parentAircraft.Position.DensityAltitude.Feet, _parentAircraft.Data.Mass_kg,
                 _parentAircraft.Data.SpeedBrakePos, _parentAircraft.Data.Config);
             _targetPitch = AutopilotUtil.CalculateDemandedPitchForSpeed(
                 speedDelta,
                 _parentAircraft.Position.Pitch,
-                zeroAccelPitch,
+                Angle.FromDegrees(zeroAccelPitch),
                 maxPitch,
                 minPitch,
                 (pitch) =>
-                    PerfDataHandler.CalculatePerformance(_parentAircraft.PerformanceData, pitch, _parentAircraft.Data.ThrustLeverPos / 100.0,
-                        _parentAircraft.Position.IndicatedAirSpeed, _parentAircraft.Position.DensityAltitude, _parentAircraft.Data.Mass_kg, _parentAircraft.Data.SpeedBrakePos,
-                        _parentAircraft.Data.Config).accelFwd,
+                    Acceleration.FromKnotsPerSecond(PerfDataHandler.CalculatePerformance(_parentAircraft.PerformanceData, pitch.Degrees, _parentAircraft.Data.ThrustLeverPos / 100.0,
+                        _parentAircraft.Position.IndicatedAirSpeed.Knots, _parentAircraft.Position.DensityAltitude.Feet, _parentAircraft.Data.Mass_kg, _parentAircraft.Data.SpeedBrakePos,
+                        _parentAircraft.Data.Config).accelFwd),
+                PitchToVsFunction,
                 intervalMs
             );
-            _parentAircraft.Position.PitchRate = AutopilotUtil.CalculatePitchRate(_targetPitch, _parentAircraft.Position.Pitch, intervalMs);
+            _parentAircraft.Position.PitchRate = AutopilotUtil.CalculatePitchRate(_targetPitch, _parentAircraft.Position.Pitch, PitchToVsFunction, intervalMs);
         }
 
         private bool ShouldCaptureVnavPath(int intervalMs)
@@ -449,14 +493,14 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot
             }
 
             // Get Required FPA and Vertical Deviation
-            (double reqFpa, double vTk_m) = (fms.RequiredFpa, fms.VerticalTrackDistance_m);
+            (Angle reqFpa, Length vTk_m) = (fms.RequiredFpa, fms.VerticalTrackDistance);
 
             // Calculate target FPA
-            double targetFpa = AutopilotUtil.CalculateDemandedPitchForVnav(vTk_m, _parentAircraft.Position.FlightPathAngle, -reqFpa, _parentAircraft.PerformanceData, _parentAircraft.Position.IndicatedAirSpeed, _parentAircraft.Position.DensityAltitude, _parentAircraft.Data.Mass_kg, _parentAircraft.Data.SpeedBrakePos, _parentAircraft.Data.Config, _parentAircraft.Position.GroundSpeed, intervalMs).demandedFpa;
+            Angle targetFpa = AutopilotUtil.CalculateDemandedPitchForVnav(vTk_m, _parentAircraft.Position.FlightPathAngle, -reqFpa, _parentAircraft.PerformanceData, _parentAircraft.Position.IndicatedAirSpeed, _parentAircraft.Position.DensityAltitude, _parentAircraft.Data.Mass_kg, _parentAircraft.Data.SpeedBrakePos, _parentAircraft.Data.Config, _parentAircraft.Position.GroundSpeed, _parentAircraft.Data.ThrustLeverPos / 100.0, intervalMs).demandedFpa;
 
-            if (-reqFpa < 0)
+            if ((-reqFpa).Radians < 0)
             {
-                return targetFpa - 0.1 < -reqFpa && -reqFpa < targetFpa + 0.1;
+                return targetFpa.Degrees - 0.1 < -reqFpa.Degrees && -reqFpa.Degrees < targetFpa.Degrees + 0.1;
             }
             return false;
         }
@@ -467,31 +511,29 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot
 
             if (fms.ActiveLeg == null)
             {
-                _selFpa = _parentAircraft.Position.FlightPathAngle;
+                SelectedFpaAngle = _parentAircraft.Position.FlightPathAngle;
                 _curVertMode = VerticalModeType.FPA;
                 return;
             }
 
             // Get Required FPA and Vertical Deviation
-            (double reqFpa, double vTk_m) = (fms.RequiredFpa, fms.VerticalTrackDistance_m);
+            (Angle reqFpa, Length vTk_m) = (fms.RequiredFpa, fms.VerticalTrackDistance);
 
             // Calculate pitch and pitch rate
-            _targetPitch = AutopilotUtil.CalculateDemandedPitchForVnav(vTk_m, _parentAircraft.Position.FlightPathAngle, -reqFpa, _parentAircraft.PerformanceData, _parentAircraft.Position.IndicatedAirSpeed, _parentAircraft.Position.DensityAltitude, _parentAircraft.Data.Mass_kg, _parentAircraft.Data.SpeedBrakePos, _parentAircraft.Data.Config, _parentAircraft.Position.GroundSpeed, intervalMs).demandedPitch;
-            _parentAircraft.Position.PitchRate = AutopilotUtil.CalculatePitchRate(_targetPitch, _parentAircraft.Position.Pitch, intervalMs);
+            _targetPitch = AutopilotUtil.CalculateDemandedPitchForVnav(vTk_m, _parentAircraft.Position.FlightPathAngle, -reqFpa, _parentAircraft.PerformanceData, _parentAircraft.Position.IndicatedAirSpeed, _parentAircraft.Position.DensityAltitude, _parentAircraft.Data.Mass_kg, _parentAircraft.Data.SpeedBrakePos, _parentAircraft.Data.Config, _parentAircraft.Position.GroundSpeed, _parentAircraft.Data.ThrustLeverPos / 100.0,  intervalMs).demandedPitch;
+            _parentAircraft.Position.PitchRate = AutopilotUtil.CalculatePitchRate(_targetPitch, _parentAircraft.Position.Pitch, PitchToVsFunction, intervalMs);
         }
 
-        private double ConvertMachToKts(double speedMach)
+        private Velocity ConvertMachToKts(double speedMach)
         {
             GribDataPoint gribPoint = _parentAircraft.Position.GribPoint;
-            double trueAlt_ft = _parentAircraft.Position.TrueAltitude;
-            double trueAlt_m = MathUtil.ConvertFeetToMeters(trueAlt_ft);
-            double refPres_hPa = gribPoint?.Level_hPa ?? AtmosUtil.ISA_STD_PRES_hPa;
-            double refAlt_ft = gribPoint?.GeoPotentialHeight_Ft ?? 0;
-            double refAlt_m = gribPoint?.GeoPotentialHeight_M ?? 0;
-            double refTemp_K = gribPoint?.Temp_K ?? AtmosUtil.ISA_STD_TEMP_K;
-            double T = AtmosUtil.CalculateTempAtAlt(trueAlt_m, refAlt_m, refTemp_K);
-            double selTas = MathUtil.ConvertMpersToKts(AtmosUtil.ConvertMachToTas(speedMach / 100.0, T));
-            return AtmosUtil.ConvertTasToIas(selTas, refPres_hPa, trueAlt_ft, refAlt_ft, refTemp_K, out _);
+            Length trueAlt = _parentAircraft.Position.TrueAltitude;
+            Pressure refPres = gribPoint?.LevelPressure ?? AtmosUtil.ISA_STD_PRES;
+            Length refAlt = gribPoint?.GeoPotentialHeight ?? Length.FromFeet(0);
+            Temperature refTemp = gribPoint?.Temp ?? AtmosUtil.ISA_STD_TEMP;
+            Temperature T = AtmosUtil.CalculateTempAtAlt(trueAlt, refAlt, refTemp);
+            Velocity selTas = AtmosUtil.ConvertMachToTas(speedMach / 100.0, T);
+            return AtmosUtil.ConvertTasToIas(selTas, refPres, trueAlt, refAlt, refTemp).ias;
         }
 
 
@@ -591,6 +633,12 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot
             }
         }
 
+        public Bearing SelectedHeadingBearing
+        {
+            get => Bearing.FromDegrees(SelectedHeading);
+            set => SelectedHeading = (int) Math.Round(value.Degrees);
+        }
+
         public int SelectedAltitude
         {
             get => _selAlt;
@@ -609,16 +657,34 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot
             }
         }
 
+        public Length SelectedAltitudeLength
+        {
+            get => Length.FromFeet(SelectedAltitude);
+            set => SelectedAltitude = (int)Math.Round(value.Feet);
+        }
+
         public int SelectedVerticalSpeed
         {
             get => _selVs;
             set => _selVs = value;
         }
 
+        public Velocity SelectedVerticalSpeedVelocity
+        {
+            get => Velocity.FromFeetPerMinute(SelectedVerticalSpeed);
+            set => SelectedVerticalSpeed = (int)Math.Round(value.FeetPerMinute);
+        }
+
         public double SelectedFpa
         {
             get => _selFpa;
             set => _selFpa = value;
+        }
+
+        public Angle SelectedFpaAngle
+        {
+            get => Angle.FromDegrees(SelectedFpa);
+            set => SelectedFpa = (int)Math.Round(value.Degrees);
         }
 
         public McpSpeedSelectorType SelectedSpeedMode
@@ -633,24 +699,22 @@ namespace SaunaSim.Core.Simulator.Aircraft.Autopilot
             set
             {
                 GribDataPoint gribPoint = _parentAircraft.Position.GribPoint;
-                double trueAlt_ft = _parentAircraft.Position.TrueAltitude;
-                double trueAlt_m = MathUtil.ConvertFeetToMeters(trueAlt_ft);
-                double refPres_hPa = gribPoint?.Level_hPa ?? AtmosUtil.ISA_STD_PRES_hPa;
-                double refAlt_ft = gribPoint?.GeoPotentialHeight_Ft ?? 0;
-                double refAlt_m = gribPoint?.GeoPotentialHeight_M ?? 0;
-                double refTemp_K = gribPoint?.Temp_K ?? AtmosUtil.ISA_STD_TEMP_K;
+                Length trueAlt = _parentAircraft.Position.TrueAltitude;
+                Pressure refPres = gribPoint?.LevelPressure ?? AtmosUtil.ISA_STD_PRES;
+                Length refAlt = gribPoint?.GeoPotentialHeight ?? Length.FromFeet(0);
+                Temperature refTemp = gribPoint?.Temp ?? AtmosUtil.ISA_STD_TEMP;
 
                 if (value == McpSpeedUnitsType.MACH && _spdUnits == McpSpeedUnitsType.KNOTS)
                 {
                     // Convert selected speeds from IAS to Mach
-                    AtmosUtil.ConvertIasToTas(_selSpd, refPres_hPa, trueAlt_ft, refAlt_ft, refTemp_K, out double maxMach);
+                    double maxMach = AtmosUtil.ConvertIasToTas(Velocity.FromKnots(_selSpd), refPres, trueAlt, refAlt, refTemp).mach;
                     _selSpd = (int)(maxMach * 100);
                 } else if (value == McpSpeedUnitsType.KNOTS && _spdUnits == McpSpeedUnitsType.MACH)
                 {
                     // Convert selected speeds from Mach to IAS
-                    double T = AtmosUtil.CalculateTempAtAlt(trueAlt_m, refAlt_m, refTemp_K);
-                    double selTas = MathUtil.ConvertMpersToKts(AtmosUtil.ConvertMachToTas(_selSpd / 100.0, T));
-                    _selSpd = (int)AtmosUtil.ConvertTasToIas(selTas, refPres_hPa, trueAlt_ft, refAlt_ft, refTemp_K, out _);
+                    Temperature T = AtmosUtil.CalculateTempAtAlt(trueAlt, refAlt, refTemp);
+                    Velocity selTas = AtmosUtil.ConvertMachToTas(_selSpd / 100.0, T);
+                    _selSpd = (int)AtmosUtil.ConvertTasToIas(selTas, refPres, trueAlt, refAlt, refTemp).ias.Knots;
                 }
 
                 _spdUnits = value;

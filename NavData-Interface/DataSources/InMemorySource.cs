@@ -1,26 +1,36 @@
-﻿using System;
-using System.Collections.Generic;
-using AviationCalcUtilNet.GeoTools;
-using NavData_Interface.DataSources;
+﻿using AviationCalcUtilNet.GeoTools;
+using NavData_Interface.Objects.Fixes;
 using NavData_Interface.Objects;
-using NavData_Interface.Objects.Fix;
+using System;
+using System.Collections.Generic;
+using NavData_Interface.Objects.LegCollections.Airways;
+using AviationCalcUtilNet.Units;
 
-namespace SaunaSim.Core.Data.NavData
+namespace NavData_Interface.DataSources
 {
-	public class CustomNavDataSource : DataSource
-	{
+    public class InMemorySource : DataSource
+    {
         private List<Fix> _fixes;
         private List<Localizer> _locs;
         private List<PublishedHold> _pubHolds;
         private List<Airport> _airports;
 
-		public CustomNavDataSource()
-		{
+        private string _id;
+
+        public override string GetId()
+        {
+            return _id;
+        }
+
+        public InMemorySource(string id)
+        {
             _fixes = new List<Fix>();
             _locs = new List<Localizer>();
             _pubHolds = new List<PublishedHold>();
             _airports = new List<Airport>();
-		}
+
+            _id = id;
+        }
 
         public void AddFix(Fix fix)
         {
@@ -43,7 +53,7 @@ namespace SaunaSim.Core.Data.NavData
         }
 
 
-        public Airport GetAirportByIdentifier(string identifier)
+        public override Airport GetAirportByIdentifier(string identifier)
         {
             foreach (Airport airport in _airports)
             {
@@ -81,13 +91,39 @@ namespace SaunaSim.Core.Data.NavData
         {
             foreach (PublishedHold hold in _pubHolds)
             {
-                if (hold.Waypoint.Identifier.ToUpper() == fix.Identifier.ToUpper() && GeoPoint.DistanceM(hold.Waypoint.Location, fix.Location) < 1000)
+                if (hold.Waypoint.Identifier.ToUpper() == fix.Identifier.ToUpper() && GeoPoint.Distance(hold.Waypoint.Location, fix.Location) < Length.FromMeters(1000))
                 {
                     return hold;
                 }
             }
             return null;
         }
+
+        public override Airport GetClosestAirportWithinRadius(GeoPoint position, Length radius)
+        {
+            Airport closestAirport = null;
+            double bestDistance = double.MaxValue;
+            foreach (var airport in _airports)
+            {
+                var distance = GeoPoint.Distance(airport.Location, position).Meters;
+                if (distance < bestDistance)
+                {
+                    bestDistance = distance;
+                    closestAirport = airport;
+                }
+            }
+            return closestAirport;
+        }
+
+        public override Runway GetRunwayFromAirportRunwayIdentifier(string airportIdentifier, string runwayIdentifier)
+        {
+            // TODO !!
+            return null;
+        }
+
+        public override Airway GetAirwayFromIdentifierAndFixes(string airwayIdentifier, Fix startFix, Fix endFix)
+        {
+            return null;
+        }
     }
 }
-

@@ -9,18 +9,77 @@ namespace SaunaSim.Core.Simulator.Aircraft
 {
     public class AircraftData
     {
-        public int Config { get; set; }
+        private SimAircraft _parentAircraft;
+
+        public AircraftData(SimAircraft parentAircraft)
+        {
+            _parentAircraft = parentAircraft;
+        }
+
+        private int _config;
+        public int Config {
+            get => _config;
+            set
+            {
+                if (value > _parentAircraft.PerformanceData.ConfigList.Count - 1)
+                {
+                    _config = _parentAircraft.PerformanceData.ConfigList.Count - 1;
+                } else {
+                    _config = value;
+                }
+
+                // Update FSD
+                var flapsPct = (double)_config / _parentAircraft.PerformanceData.ConfigList.Count;
+
+                _parentAircraft.Connection.SetFlapsPct((int)(flapsPct * 100.0));
+                _parentAircraft.Connection.SetGearDown(_parentAircraft.PerformanceData.ConfigList[_config].GearDown);
+            }
+        }
 
         public double ThrustLeverPos { get; set; }
 
         public double ThrustLeverVel { get; set; }
 
+        private bool _thrustReverse = false;
+        public bool ThrustReverse
+        {
+            get
+            {
+                return _thrustReverse;
+            }
+            set
+            {
+                if (value != _thrustReverse)
+                {
+                    _parentAircraft.Connection.SetEnginesReversing(value);
+                }
+                _thrustReverse = value;
+            }
+        }
+
+        //private bool _gearPos { get; set; }
+        //private bool GearPos
+        //{
+        //    get
+        //    {
+        //        return _gearPos;
+        //    }
+        //    set
+        //    {
+        //        if(value != _gearPos)
+        //        {
+        //            _parentAircraft.Connection.SetGearDown(value);
+        //        }
+        //        _gearPos = value;
+        //    }
+        //}
         private double _spdBrakePos = 0;
         public double SpeedBrakePos
         {
             get => _spdBrakePos;
             set
             {
+                var oldValue = _spdBrakePos;
                 if (value < 0)
                 {
                     _spdBrakePos = 0;
@@ -30,6 +89,12 @@ namespace SaunaSim.Core.Simulator.Aircraft
                 } else
                 {
                     _spdBrakePos = value;
+                }
+
+                // Update FSD
+                if (oldValue != _spdBrakePos)
+                {
+                    _parentAircraft.Connection.SetSpoilersDeployed(_spdBrakePos > 0);
                 }
             }
         }

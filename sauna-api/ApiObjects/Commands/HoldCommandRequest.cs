@@ -1,3 +1,4 @@
+using NavData_Interface.Objects;
 using SaunaSim.Core.Data;
 
 namespace SaunaSim.Api.ApiObjects.Commands

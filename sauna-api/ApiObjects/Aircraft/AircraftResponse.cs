@@ -1,7 +1,6 @@
 using SaunaSim.Core;
 using SaunaSim.Core.Data;
 using SaunaSim.Core.Simulator.Aircraft;
-using SaunaSim.Core.Simulator.Aircraft.Control;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using System.Collections.Generic;

@@ -18,6 +18,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Performance
                 Descent_KIAS = 290,
                 Descent_Mach = 0.78,
                 Engines = 2,
+                EnginesReverse = true,
                 ConfigList = new List<PerfConfigSetting>()
                 {
                     new PerfConfigSetting()
@@ -63,7 +64,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Performance
                         MinKias = 110,
                         NormKias = 140,
                         VsPenalty = -1000,
-                        PitchChange = -15
+                        PitchChange = -10
                     }
                 },
                 MTOW_kg = 78000,
@@ -122,7 +123,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Performance
             double zeroAccelThrust = -dataPoint.AccelLevelIdleThrust / (dataPoint.AccelLevelMaxThrust - dataPoint.AccelLevelIdleThrust);
             double thrustDelta = ((desiredAccelFwd - dataPoint.AccelLevelIdleThrust) / (dataPoint.AccelLevelMaxThrust - dataPoint.AccelLevelIdleThrust)) - zeroAccelThrust;
             double pitchPerc = thrustLeverPos - thrustDelta;
-            double pitch_degs = pitchPerc * (dataPoint.PitchClimb - dataPoint.PitchDescent) - dataPoint.PitchDescent;
+            double pitch_degs = pitchPerc * (dataPoint.PitchClimb - dataPoint.PitchDescent) + dataPoint.PitchDescent;
 
             return pitch_degs;
         }
@@ -133,7 +134,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Performance
             PerfDataPoint dataPoint = perfData.GetDataPoint((int)dens_alt_ft, (int)ias_kts, (int)mass_kg, spdBrake, config);
 
             double pitchPerc = (desiredVs - dataPoint.VsDescent) / (dataPoint.VsClimb - dataPoint.VsDescent);
-            double pitch_degs = (pitchPerc * (dataPoint.PitchClimb - dataPoint.PitchDescent)) - dataPoint.PitchDescent;
+            double pitch_degs = (pitchPerc * (dataPoint.PitchClimb - dataPoint.PitchDescent)) + dataPoint.PitchDescent;
 
             return pitch_degs;
         }
@@ -152,118 +153,13 @@ namespace SaunaSim.Core.Simulator.Aircraft.Performance
         public static (double accelFwd, double vs) CalculatePerformance(PerfData perfData, double pitch_degs, double thrustLeverPos, double ias_kts, double dens_alt_ft, double mass_kg, double spdBrake, int config)
         {
             PerfDataPoint dataPoint = perfData.GetDataPoint((int) dens_alt_ft, (int) ias_kts, (int) mass_kg, spdBrake, config);
-            double pitchPerc = (pitch_degs + dataPoint.PitchDescent) / (dataPoint.PitchClimb - dataPoint.PitchDescent);
+            double pitchPerc = (pitch_degs - dataPoint.PitchDescent) / (dataPoint.PitchClimb - dataPoint.PitchDescent);
             double vs = pitchPerc * (dataPoint.VsClimb - dataPoint.VsDescent) + dataPoint.VsDescent;
             double thrustDelta = thrustLeverPos - pitchPerc;
             double zeroAccelThrust = -dataPoint.AccelLevelIdleThrust / (dataPoint.AccelLevelMaxThrust - dataPoint.AccelLevelIdleThrust);
             double accelFwd = ((zeroAccelThrust + thrustDelta) * (dataPoint.AccelLevelMaxThrust - dataPoint.AccelLevelIdleThrust)) + dataPoint.AccelLevelIdleThrust;
 
             return (accelFwd, vs);
-        }
-        
-        public static double InterpolateNumbers(double start, double end, double multiplier)
-        {
-            return multiplier * (end - start) + start;
-        }
-        
-        public static double CalculateFinalVelocity(double Vi, double a, double t)
-        {
-            return Vi + a * t;
-        }
-
-        public static double CalculateAcceleration(double Vi, double Vf, double t)
-        {
-            return (Vf - Vi) / t;
-        }
-
-        public static double CalculateDisplacement(double Vi, double a, double t)
-        {
-            return Vi * t + 0.5 * a * Math.Pow(t, 2);
-        }
-        
-        public static double ConvertTasToGs(double tas, double fpa_rads, double hwind)
-        {
-            double tas_parallel = tas * Math.Cos(fpa_rads);
-            return tas_parallel - hwind;
-        }
-
-        public static double ConvertGsToTas(double gs, double fpa_rads, double hwind)
-        {
-            double tas_parallel = gs + hwind;
-            double cosine = Math.Cos(fpa_rads);
-            return cosine == 0 ? 0 : tas_parallel / Math.Cos(fpa_rads);
-        }
-        
-        public static double ConvertFpmToMpers(double fpm)
-        {
-            return MathUtil.ConvertFeetToMeters(fpm) / 60;
-        }
-        
-        public static double ConvertMpersToFpm(double mpers)
-        {
-            return MathUtil.ConvertMetersToFeet(60 * mpers);
-        }
-
-        public static double ConvertVsToFpa(double vs, double gs)
-        {
-            if (gs < double.Epsilon)
-            {
-                return 0;
-            }
-
-            return MathUtil.ConvertRadiansToDegrees(Math.Atan2(ConvertFpmToMpers(vs), MathUtil.ConvertKtsToMpers(gs)));
-        }
-
-        public static double ConvertFpaToVs(double fpa, double gs)
-        {
-            if (gs < double.Epsilon)
-            {
-                return 0;
-            }
-
-            return ConvertMpersToFpm(Math.Tan(MathUtil.ConvertDegreesToRadians(fpa)) * MathUtil.ConvertKtsToMpers(gs));
-        }
-
-        public static (double, double) CreateLineEquation(double x1, double y1, double x2, double y2)
-        {
-            double m = (y2 - y1) / (x2 - x1);
-            double b = y1 - (m * x1);
-
-            return (m, b);
-        }
-
-        public static (double, double) FindLinesIntersection(double m1, double b1, double m2, double b2)
-        {
-            bool noM1 = double.IsInfinity(m1) || double.IsNaN(m1) || double.IsNaN(b1);
-            bool noM2 = double.IsInfinity(m2) || double.IsNaN(m2) || double.IsNaN(b2);
-            if (noM1 && noM2)
-            {
-                return (0, 0);
-            }
-
-            if (noM1)
-            {
-                return (0, b2);
-            }
-
-            if (noM2)
-            {
-                return (0, b1);
-            }
-
-            if (m2 - m1 == 0)
-            {
-                return (0, 0);
-            }
-
-            double x = (b1 - b2) / (m2 - m1);
-            double y = m1 * x + b1;
-            return (x, y);
-        }
-
-        public static Func<double, double> GenerateLineFunction(double m, double b)
-        {
-            return (x) => m * x + b;
         }
     }
 }

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using AviationCalcUtilNet.Math;
 
 namespace SaunaSim.Core.Simulator.Aircraft.Performance
 {
@@ -15,6 +16,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Performance
         
         // Performance
         public int Engines { get; set; }
+        public bool EnginesReverse { get; set; }
         public List<PerfConfigSetting> ConfigList { get; set; }
         public int DataPointMass_kg { get; set; }
         public int DataPointDeltaMass_kg { get; set; }
@@ -103,10 +105,10 @@ namespace SaunaSim.Core.Simulator.Aircraft.Performance
             
             // Calculate Mass Penalty
             double massMult = (mass_kg - DataPointMass_kg) / (double)(DataPointDeltaMass_kg - DataPointMass_kg);
-            double curMassVsPenalty = PerfDataHandler.InterpolateNumbers(0, DeltaMassVsPenalty_fpm, massMult);
+            double curMassVsPenalty = MathUtil.InterpolateNumbers(0, DeltaMassVsPenalty_fpm, massMult);
             
             // Calculate Speedbrake Penalty
-            double curSpdBrkVsPenalty = PerfDataHandler.InterpolateNumbers(0, SpeedBrakeVsPenalty_fpm, spdBrake);
+            double curSpdBrkVsPenalty = MathUtil.InterpolateNumbers(0, SpeedBrakeVsPenalty_fpm, spdBrake);
             
             // Calculate Config Penalty/Pitch Change
             double curCfgVsPenalty = 0, curCfgPitchDelta = 0;

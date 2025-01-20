@@ -11,7 +11,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
-using AviationCalcUtilNet.GeoTools.MagneticTools;
+using SaunaSim.Api.Services;
 
 namespace SaunaSim.Api
 {
@@ -40,29 +40,14 @@ namespace SaunaSim.Api
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             services.AddEndpointsApiExplorer();
             services.AddSwaggerGen();
-        }
 
-        private void OnShutdown()
-        {
-            Console.WriteLine("Shutting Down");
-            SimAircraftHandler.DeleteAllAircraft();
+            // Sim Aircraft Service
+            services.AddSingleton<ISimAircraftService, SimAircraftService>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env, IHostApplicationLifetime applicationLifetime, ILogger<Startup> logger)
         {
-            // Load Magnetic File
-            try
-            {
-                MagneticUtil.LoadData();
-                logger.LogInformation("Magnetic File Loaded");
-            } catch (Exception)
-            {
-                logger.LogError("There was an error loading the WMM.COF file. Ensure that WMM.COF is placed in the 'magnetic' folder.");
-            }
-
-            // Register shutdown
-            applicationLifetime.ApplicationStopping.Register(OnShutdown);
 
             if (env.IsDevelopment())
             {
