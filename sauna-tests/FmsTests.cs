@@ -114,7 +114,7 @@ namespace sauna_tests
                                 sb.Append($"{vnavPt.Angle.Degrees:N1} -> ");
                             }
 
-                            sb.Append($"{vnavPt.Speed:N0}KT/{vnavPt.Alt.Feet:N0}ft ");
+                            sb.Append($"{vnavPt.Speed:N0}>{vnavPt.CmdSpeed}/{vnavPt.Alt.Feet:N0}ft ");
                             
                             if (vnavPt.AlongTrackDistance <= Length.FromMeters(0))
                             {

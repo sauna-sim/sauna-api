@@ -238,7 +238,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.VNAV
             var curDensAlt = FmsVnavUtil.CalculateDensityAltitude(curAlt, gribPoint);
 
             // Calculate target speed
-            (var targetSpeedUnits, var targetSpeed) = FmsVnavUtil.CalculateFmsSpeed(currentPhase, iterator.DistanceToRwy + iterator.AlongTrackDistance, curAlt, perfData, depArptElev, perfInit, gribPoint);
+            var (targetSpeedUnits, targetSpeed) = FmsVnavUtil.CalculateFmsSpeed(currentPhase, iterator.DistanceToRwy + iterator.AlongTrackDistance, curAlt, perfData, depArptElev, perfInit, gribPoint);
             var targetSpeedInKts = FmsVnavUtil.GetKnotsSpeed(targetSpeedUnits, targetSpeed, curAlt, gribPoint);
             
             // Check for early speed
@@ -323,8 +323,9 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.VNAV
             targetSpeedInKts = FmsVnavUtil.GetKnotsSpeed(targetSpeedUnits, targetSpeed, curAlt, gribPoint);
 
             // ---  Calculate Angle
+            var cruiseAlt = Length.FromFeet(perfInit.CruiseAlt);
             Angle targetAngle = Angle.FromDegrees(3.0);
-            if (iterator.DecelDist != null || iterator.EarlyUpperAlt >= curAlt)
+            if (iterator.DecelDist != null || iterator.EarlyUpperAlt <= curAlt || cruiseAlt <= curAlt)
             {
                 targetAngle = Angle.FromRadians(0);
             } else if (currentPhase == FmsPhaseType.APPROACH)
@@ -363,20 +364,16 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.VNAV
             }
             else
             {
-                var foundVnavPt = false;
-                foreach (var vnavPt in curLeg.EndPoint.VnavPoints)
+                for (int i = 0; i < curLeg.EndPoint.VnavPoints.Count; i++)
                 {
-                    if (vnavPt.AlongTrackDistance == iterator.AlongTrackDistance)
+                    if (curLeg.EndPoint.VnavPoints[i].AlongTrackDistance >= iterator.AlongTrackDistance)
                     {
-                        foundVnavPt = true;
+                        curLeg.EndPoint.VnavPoints.RemoveRange(i, curLeg.EndPoint.VnavPoints.Count - i);
                         break;
                     }
                 }
-
-                if (!foundVnavPt)
-                {
-                    curLeg.EndPoint.VnavPoints.Add(newVnavPt);
-                }
+                
+                curLeg.EndPoint.VnavPoints.Add(newVnavPt);
             }
 
             // ---  Adjust iterator
@@ -397,22 +394,31 @@ namespace SaunaSim.Core.Simulator.Aircraft.FMS.VNAV
             {
                 var startAlt = FmsVnavUtil.CalculateStartAltitude(curAlt, newAlongTrack - iterator.AlongTrackDistance, targetAngle);
                 var limitAlt = Length.FromFeet(perfInit.LimitAlt);
-                var cruiseAlt = Length.FromFeet(perfInit.CruiseAlt);
 
+                Length crossedAlt = null;
+
+                if (iterator.EarlyUpperAlt != null && startAlt > iterator.EarlyUpperAlt && curAlt < iterator.EarlyUpperAlt)
+                {
+                    crossedAlt = iterator.EarlyUpperAlt;
+                    newAlongTrack = FmsVnavUtil.CalculateDistanceForAltitude(curAlt, iterator.EarlyUpperAlt, targetAngle);
+                }
                 // Check if cruise alt was reached
                 if (startAlt >= cruiseAlt && curAlt < cruiseAlt)
                 {
-                    iterator.Finished = true;
-                    return iterator;
-                }
-                if (iterator.EarlyUpperAlt != null && startAlt > iterator.EarlyUpperAlt && curAlt < iterator.EarlyUpperAlt)
-                {
-                    newAlongTrack = FmsVnavUtil.CalculateDistanceForAltitude(curAlt, iterator.EarlyUpperAlt, targetAngle);
+                    if (crossedAlt == null || cruiseAlt < crossedAlt)
+                    {
+                        crossedAlt = cruiseAlt;
+                        newAlongTrack = FmsVnavUtil.CalculateDistanceForAltitude(curAlt, cruiseAlt, targetAngle);
+                    }
                 }
                 // Check for limit alt crossing
                 if (startAlt >= limitAlt && curAlt < limitAlt && targetSpeedInKts > perfInit.LimitSpeed)
                 {
-                    newAlongTrack = FmsVnavUtil.CalculateDistanceForAltitude(curAlt, limitAlt, targetAngle);
+                    if (crossedAlt == null || limitAlt < crossedAlt)
+                    {
+                        crossedAlt = limitAlt;
+                        newAlongTrack = FmsVnavUtil.CalculateDistanceForAltitude(curAlt, limitAlt, targetAngle);
+                    }
                 }
                 
             }
