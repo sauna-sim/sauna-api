@@ -25,6 +25,7 @@ using NavData_Interface.Objects.Fixes;
 using SaunaSim.Api.Services;
 using AviationCalcUtilNet.Geo;
 using AviationCalcUtilNet.Units;
+using SaunaSim.Core.Data.Scenario;
 
 namespace SaunaSim.Api.Controllers
 {
@@ -138,6 +139,84 @@ namespace SaunaSim.Api.Controllers
             }
         }
 
+        [HttpPost("loadSaunaScenario")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<ActionResult> LoadSaunaScenario(LoadScenarioFileRequest request)
+        {
+            try
+            {
+                List<AircraftBuilder> pilots = new List<AircraftBuilder>();
+                AircraftBuilder lastPilot = null;
+
+                foreach (SaunaScenarioAircraft aircraft in request.Scenario.Aircraft)
+                {
+                    Latitude lat = Latitude.FromDegrees(aircraft.Pos.Lat);
+                    Longitude lon = Longitude.FromDegrees(aircraft.Pos.Lon);
+
+                    // XPDR code
+                    int squawk = 0;
+                    try
+                    {
+                        squawk = Convert.ToInt32(aircraft.Squawk);
+                    }
+                    catch (Exception e)
+                    {
+                        if (e is not OverflowException && e is not FormatException)
+                        {
+                            throw;
+                        }
+                    }
+
+                    lastPilot = new AircraftBuilder(aircraft.Callsign, request.Cid, request.Password, request.Server, request.Port, _aircraftService.Handler.MagTileManager, _aircraftService.Handler.GribTileManager, _aircraftService.CommandHandler)
+                    {
+                        Protocol = request.Protocol,
+                        Position = new GeoPoint(lat, lon, Length.FromFeet(aircraft.Alt)),
+                        HeadingMag = Bearing.FromDegrees(0), //TODO: Automatically infer this from the route they are on.
+                        LogInfo = (string msg) =>
+                        {
+                            _logger.LogInformation($"{aircraft.Callsign}: {msg}");
+                        },
+                        LogWarn = (string msg) =>
+                        {
+                            _logger.LogWarning($"{aircraft.Callsign}: {msg}");
+                        },
+                        LogError = (string msg) =>
+                        {
+                            _logger.LogError($"{aircraft.Callsign}: {msg}");
+                        },
+                        XpdrMode = TransponderModeType.ModeC,
+                        Squawk = squawk,
+                        FlightPlan = aircraft.Fp
+                    };                    
+
+                    pilots.Add(lastPilot);                     
+                }
+
+                List<Task> tasks = new();
+
+                foreach (AircraftBuilder pilot in pilots) 
+                {
+                    tasks.Add(Task.Factory.StartNew(() =>
+                    {
+                        DateTime start = DateTime.UtcNow;
+                        var aircraft = pilot.Create(PrivateInfoLoader.GetClientInfo((string msg) => { _logger.LogWarning($"{pilot.Callsign}: {msg}"); }));
+                        _aircraftService.Handler.AddAircraft(aircraft);
+                        aircraft.Start();
+                        _logger.LogInformation($"{pilot.Callsign} created in {(DateTime.UtcNow - start).TotalMilliseconds}ms");
+                    }));
+                }
+
+                await Task.WhenAll(tasks);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.StackTrace);
+            }
+
+            return Ok();
+        }
+
         [HttpPost("loadEuroscopeScenario")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -233,7 +312,15 @@ namespace SaunaSim.Api.Controllers
                     {
                         if (lastPilot != null)
                         {
-                            lastPilot.EsFlightPlanStr = line;
+                            try
+                            {
+                                lastPilot.FlightPlan = FsdConnectorNet.FlightPlan.ParseFromEsScenarioFile(line);
+                            } catch(FlightPlanException e)
+                            {
+                                _logger.LogWarning("Error parsing flight plan");
+                                _logger.LogWarning(e.Message);
+                            }
+                            
                         }
                     } else if (line.StartsWith("REQALT"))
                     {
