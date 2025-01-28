@@ -9,6 +9,9 @@ updates:
     directory: "/sauna-api/" # Location of package manifests
     schedule:
       interval: "weekly"
+    ignore:
+      - dependency-name: "Microsoft.AspNetCore.*"
+        versions: ["7.x", "8.x"]
 
   - package-ecosystem: "nuget" # See documentation for possible values
     directory: "/sauna-sim-core/" # Location of package manifests
