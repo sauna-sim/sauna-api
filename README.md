@@ -6,8 +6,8 @@
 
 [Build Status]: https://img.shields.io/github/actions/workflow/status/Sauna-ATC-Training-Simulator/sauna-api/build-and-test.yml?branch=master
 [actions]: https://github.com/Sauna-ATC-Training-Simulator/sauna-api/actions?query=branch%3Amaster
-[Latest Version]: https://img.shields.io/github/v/release/Sauna-ATC-Training-Simulator/sauna-ui?include_prereleases
-[github.release]: https://github.com/Sauna-ATC-Training-Simulator/sauna-ui/releases/latest
+[Latest Version]: https://img.shields.io/github/v/release/Sauna-ATC-Training-Simulator/sauna-api?include_prereleases
+[github.release]: https://github.com/Sauna-ATC-Training-Simulator/sauna-api/releases/latest
 [Changelog Img]: https://img.shields.io/badge/Changelog-blue
 [changelog]: CHANGELOG.md
 [License Img]: https://img.shields.io/badge/License-GPLv3-blue
