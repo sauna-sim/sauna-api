@@ -151,9 +151,16 @@ namespace SaunaSim.Core.Simulator.Aircraft
                 SimAircraft c = _aircrafts[i];
                 if (c.ConnectionStatus == ConnectionStatusType.DISCONNECTED || (c.Callsign.Equals(aircraft.Callsign) && c.ConnectionStatus == ConnectionStatusType.WAITING))
                 {
-                    Task.Run(() => AircraftDeleted?.Invoke(null, new AircraftDeletedEventArgs(_aircrafts[i].Callsign)));
-                    _aircrafts[i].Dispose();
-                    _aircrafts.RemoveAt(i);
+                    try
+                    {
+                        Task.Run(() => AircraftDeleted?.Invoke(null, new AircraftDeletedEventArgs(_aircrafts[i].Callsign)));
+                        _aircrafts[i].Dispose();
+                        _aircrafts.RemoveAt(i);
+                    }
+                    catch (ArgumentOutOfRangeException)
+                    {
+                        
+                    }
                 } else if (c.Callsign.Equals(aircraft.Callsign))
                 {
                     _aircraftsLock.ReleaseMutex();
