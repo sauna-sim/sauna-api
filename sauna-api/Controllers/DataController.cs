@@ -172,7 +172,7 @@ namespace SaunaSim.Api.Controllers
                     {
                         Protocol = request.Protocol,
                         Position = new GeoPoint(lat, lon, Length.FromFeet(aircraft.Alt)),
-                        HeadingMag = Bearing.FromDegrees(0),
+                        HeadingMag = Bearing.FromDegrees(0), //TODO: Automatically infer this from the route they are on.
                         LogInfo = (string msg) =>
                         {
                             _logger.LogInformation($"{aircraft.Callsign}: {msg}");
