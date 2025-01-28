@@ -29,5 +29,7 @@ updates:
         versions: ["7.x", "8.x"]
       - dependency-name: "Swashbuckle.AspNetCore"
         versions: [ "7.x", "8.x" ]
+      - dependency-name: "NUnit"
+        versions: [ "4.x" ]
       - dependency-name: "NUnit.*"
         versions: [ "4.x" ]
