@@ -1,4 +1,17 @@
 # Sauna API
+[![Build Status]][actions]
+[![Latest Version]][github.release]
+[![License Img]][license]
+[![Changelog Img]][changelog]
+
+[Build Status]: https://img.shields.io/github/actions/workflow/status/Sauna-ATC-Training-Simulator/sauna-api/build-and-test.yml?branch=master
+[actions]: https://github.com/Sauna-ATC-Training-Simulator/sauna-api/actions?query=branch%3Amaster
+[Latest Version]: https://img.shields.io/github/v/release/Sauna-ATC-Training-Simulator/sauna-ui?include_prereleases
+[github.release]: https://github.com/Sauna-ATC-Training-Simulator/sauna-ui/releases/latest
+[Changelog Img]: https://img.shields.io/badge/Changelog-blue
+[changelog]: CHANGELOG.md
+[License Img]: https://img.shields.io/badge/License-GPLv3-blue
+[license]: LICENSE
 
 ## About
 This is a project that will allow for simulated ATC sessions (sweatbox sessions). It can be used on the VATSIM sweatbox server or on private FSD servers. By allowing airport and aircraft scenario configurations, it will allow ARTCCs and FIRs to better train their controllers for situations that they may encounter on the VATSIM network.
@@ -28,18 +41,32 @@ The API is a .NET 6.0 project. Simply build the sauna-api solution for your desi
 Ensure that settings are sent to the API on initial connect via the `POST /api/data/settings` endpoint. Current settings can be obtained via `GET /api/data/settings`.
 
 **Settings Example:**
-```
+```json
 {
-  "commandFrequency": "133.125",
-  "posCalcRate": "100"
+  "commandFrequency": "133.125"
 }
 ```
 
-### Sector Data
-The program currently **REQUIRES** that waypoint and airway data be loaded from a sector file. It accepts both `*.sct2` and `*.sct` from Euroscope or VRC. Use the `POST /api/data/loadSectorFile` endpoint.
+### Navigation Data
+Currently, navigation data can either be loaded directly from a Navigraph DFD file or from a sector file.
+
+#### Navigraph
+This is the preferred method to import navigation data. This does require you to have an API key with Navigraph to obtain the DFD files.
+Use the `POST /api/data/loadDFDNavData` endpoint.
 
 **Data Format:**
+```json
+{
+  "uuid": "<Navigraph Package UUID>",
+  "fileName": "<DFD File Path>"
+}
 ```
+
+#### Sector File
+It accepts both `*.sct2` and `*.sct` from Euroscope or VRC. Use the `POST /api/data/loadSectorFile` endpoint.
+
+**Data Format:**
+```json
 {
   "fileName": "/Users/asdf/Downloads/test.sct2"
 }
@@ -53,7 +80,7 @@ Currently, a modified Euroscope 3.2 scenario file format (`*.txt`) is used. The 
 Load scenario files through the `POST /api/data/loadEuroscopeScenario` endpoint.
 
 **Data Format:**
-```
+```json
 {
   "fileName": "/Users/asdf/Downloads/scenario.txt",
   "cid": "111111",
