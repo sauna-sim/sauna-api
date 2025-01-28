@@ -45,7 +45,7 @@ namespace SaunaSim.Core.Data.Loaders
         public bool IsSpeedMach { get; set; } = false;
         public TransponderModeType XpdrMode { get; set; } = TransponderModeType.ModeC;
         public int DelayMs { get; set; } = 0;
-        public string EsFlightPlanStr { get; set; } = "";
+        public FlightPlan? FlightPlan { get; set; }
         public int RequestedAlt { get; set; } = -1;
 
         internal AircraftBuilder(MagneticTileManager magTileMgr, GribTileManager gribTileMgr, CommandHandler commandHandler) {
@@ -122,14 +122,13 @@ namespace SaunaSim.Core.Data.Loaders
                 }
             }
 
-            // Flightplan
-            FlightPlan flightPlan;
+            // Flightplan           
+            aircraft.FlightPlan = FlightPlan;
+            var flightPlan = FlightPlan;
 
-            try
+            if(flightPlan != null)
             {
-                flightPlan = FlightPlan.ParseFromEsScenarioFile(EsFlightPlanStr);
-                aircraft.FlightPlan = flightPlan;
-                string[] waypoints = flightPlan.route?.Split(' ', '.') ?? new string[0];
+                string[] waypoints = flightPlan?.route?.Split(' ', '.') ?? new string[0];
                 List<Leg> NavDataFormatLegs = new List<Leg>();
 
                 if (waypoints.Length > 0 && waypoints[0] != "")
@@ -143,7 +142,7 @@ namespace SaunaSim.Core.Data.Loaders
 
                     for (int j = 9; j > 0; j--)
                     {
-                        Sid potentialSid = DataHandler.GetSidByAirportAndIdentifier(flightPlan.origin, rawSidName.Replace('#', (char)(j + 48)));
+                        Sid potentialSid = DataHandler.GetSidByAirportAndIdentifier(flightPlan?.origin, rawSidName.Replace('#', (char)(j + 48)));
 
                         if (potentialSid != null)
                         {
@@ -173,7 +172,7 @@ namespace SaunaSim.Core.Data.Loaders
                             break;
                         }
                     }
-                    
+
 
                     int i = 0;
 
@@ -213,7 +212,7 @@ namespace SaunaSim.Core.Data.Loaders
 
                         if (i == waypoints.Length - 1)
                         {
-                            Star potentialStar = DataHandler.GetStarByAirportAndIdentifier(flightPlan.destination, waypoints[i]);
+                            Star potentialStar = DataHandler.GetStarByAirportAndIdentifier(flightPlan?.destination, waypoints[i]);
 
                             if (potentialStar != null)
                             {
@@ -231,7 +230,8 @@ namespace SaunaSim.Core.Data.Loaders
                                 {
                                     NavDataFormatLegs.Add(l);
                                 }
-                            } else
+                            }
+                            else
                             {
                                 // Go to this non-STAR waypoint, if it's not DCT, then DCT dest.
                                 if (waypoints[i] != "DCT")
@@ -245,7 +245,7 @@ namespace SaunaSim.Core.Data.Loaders
                                     }
                                 }
 
-                                string destAptIdentifier = flightPlan.destination;
+                                string destAptIdentifier = flightPlan?.destination;
 
                                 Airport dest = DataHandler.GetAirportByIdentifier(destAptIdentifier);
 
@@ -323,35 +323,30 @@ namespace SaunaSim.Core.Data.Loaders
 
                     aircraft.Autopilot.AddArmedLateralMode(LateralModeType.LNAV);
                 }
-            }
-            catch (FlightPlanException e)
-            {
-                LogWarn("Error parsing flight plan");
-                LogWarn(e.Message);
-            }
-            
-            // Find closest leg to activate
-            var lowestAtk = Length.FromMeters(double.MaxValue);
-            var lowestIndex = -1;
-            var fmsLegs = aircraft.Fms.GetRouteLegs();
-            for (int i = 0; i < fmsLegs.Count; i++)
-            {
-                var currLeg = fmsLegs[i];
-                currLeg.ProcessLeg(aircraft, 100);
-                var aTk = currLeg.GetCourseInterceptInfo(aircraft).alongTrackDistance;
-
-                if (currLeg != null && aTk > Length.FromMeters(0) && aTk < lowestAtk)
+              
+                // Find closest leg to activate
+                var lowestAtk = Length.FromMeters(double.MaxValue);
+                var lowestIndex = -1;
+                var fmsLegs = aircraft.Fms.GetRouteLegs();
+                for (int i = 0; i < fmsLegs.Count; i++)
                 {
-                    lowestAtk = aTk;
-                    lowestIndex = i;
+                    var currLeg = fmsLegs[i];
+                    currLeg.ProcessLeg(aircraft, 100);
+                    var aTk = currLeg.GetCourseInterceptInfo(aircraft).alongTrackDistance;
+
+                    if (currLeg != null && aTk > Length.FromMeters(0) && aTk < lowestAtk)
+                    {
+                        lowestAtk = aTk;
+                        lowestIndex = i;
+                    }
                 }
-            }
 
-            if (lowestIndex >= 0)
-            {
-                for (int i = 0; i < lowestIndex; i++)
+                if (lowestIndex >= 0)
                 {
-                    aircraft.Fms.RemoveFirstLeg();
+                    for (int i = 0; i < lowestIndex; i++)
+                    {
+                        aircraft.Fms.RemoveFirstLeg();
+                    }
                 }
             }
 

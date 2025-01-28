@@ -347,7 +347,7 @@ namespace sauna_tests
                 Squawk = 1200
             };
 
-            pilot.EsFlightPlanStr = "$FPEZY938K:*A:I:A320:420:EGGP:::28000:EGAA:00:00:0:0:::WAL2T WAL M146 IPSET P6 BELZU";
+            pilot.FlightPlan = FlightPlan.ParseFromEsScenarioFile("$FPEZY938K:*A:I:A320:420:EGGP:::28000:EGAA:00:00:0:0:::WAL2T WAL M146 IPSET P6 BELZU");
 
             var aircraft = pilot.Create(PrivateInfoLoader.GetClientInfo(_ => { }));
 

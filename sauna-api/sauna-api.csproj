@@ -9,8 +9,8 @@
     <StartupObject>SaunaSim.Api.Program</StartupObject>
     <AssemblyName>SaunaApi</AssemblyName>
     <NeutralLanguage>en-US</NeutralLanguage>
-    <Version>0.19.1</Version>
-	  <AssemblyVersion>$(Version)</AssemblyVersion>
+    <Version>0.20.0</Version>
+    <AssemblyVersion>$(Version)</AssemblyVersion>
     <FileVersion>$(Version)</FileVersion>
     <EnableUnmanagedDebugging>true</EnableUnmanagedDebugging>
     <ServerGarbageCollection>false</ServerGarbageCollection>
