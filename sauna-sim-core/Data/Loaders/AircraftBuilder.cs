@@ -329,6 +329,31 @@ namespace SaunaSim.Core.Data.Loaders
                 LogWarn("Error parsing flight plan");
                 LogWarn(e.Message);
             }
+            
+            // Find closest leg to activate
+            var lowestAtk = Length.FromMeters(double.MaxValue);
+            var lowestIndex = -1;
+            var fmsLegs = aircraft.Fms.GetRouteLegs();
+            for (int i = 0; i < fmsLegs.Count; i++)
+            {
+                var currLeg = fmsLegs[i];
+                currLeg.ProcessLeg(aircraft, 100);
+                var aTk = currLeg.GetCourseInterceptInfo(aircraft).alongTrackDistance;
+
+                if (currLeg != null && aTk > Length.FromMeters(0) && aTk < lowestAtk)
+                {
+                    lowestAtk = aTk;
+                    lowestIndex = i;
+                }
+            }
+
+            if (lowestIndex >= 0)
+            {
+                for (int i = 0; i < lowestIndex; i++)
+                {
+                    aircraft.Fms.RemoveFirstLeg();
+                }
+            }
 
             // Requested Alt
             if (RequestedAlt >= 0)
