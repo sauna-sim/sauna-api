@@ -12,6 +12,8 @@ updates:
     ignore:
       - dependency-name: "Microsoft.AspNetCore.*"
         versions: ["7.x", "8.x"]
+      - dependency-name: "Swashbuckle.AspNetCore.*"
+        versions: [ "7.x", "8.x" ]
 
   - package-ecosystem: "nuget" # See documentation for possible values
     directory: "/sauna-sim-core/" # Location of package manifests
@@ -25,3 +27,7 @@ updates:
     ignore:
       - dependency-name: "Microsoft.AspNetCore.*"
         versions: ["7.x", "8.x"]
+      - dependency-name: "Swashbuckle.AspNetCore.*"
+        versions: [ "7.x", "8.x" ]
+      - dependency-name: "NUnit"
+        versions: [ "4.x" ]
