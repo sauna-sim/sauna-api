@@ -72,7 +72,7 @@ jobs:
         run: |
           cd ${{ github.workspace }}/sauna-vatsim-private
           cargo build --verbose --target-dir ${{ github.workspace }}/out/build --target ${{ inputs.rust-arch }}-${{ inputs.rust-os }} -r
-          Copy-Item -Path "${{ github.workspace }}/out/build/${{ inputs.rust-arch }}-${{ inputs.rust-os }}/release/*" -Destination "${{ github.workspace }}/bin" -Include *.dll,*.pdb,*.so*,*.dylib*
+          Copy-Item -Path "${{ github.workspace }}/out/build/${{ inputs.rust-arch }}-${{ inputs.rust-os }}/release/*" -Destination "${{ github.workspace }}/bin" -Include *.dll,*.so*,*.dylib*
       - name: Tar Output
         shell: pwsh
         run: |
