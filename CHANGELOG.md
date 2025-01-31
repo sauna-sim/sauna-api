@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.21.0] - 2025-01-31
+### Changed
+- The way secret data is loaded
+
+
 ## [0.20.0] - 2025-01-28
 ### Added
 - Support for new scenario format (JSON)
@@ -26,7 +31,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - NullPointerExceptions
 
-[Unreleased]: https://github.com/Sauna-ATC-Training-Simulator/sauna-api/compare/v0.20.0...master
+[Unreleased]: https://github.com/Sauna-ATC-Training-Simulator/sauna-api/compare/v0.21.0...master
+[0.20.0]: https://github.com/Sauna-ATC-Training-Simulator/sauna-api/compare/v0.20.0...v0.21.0
 [0.20.0]: https://github.com/Sauna-ATC-Training-Simulator/sauna-api/compare/v0.19.1...v0.20.0
 [0.19.1]: https://github.com/Sauna-ATC-Training-Simulator/sauna-api/compare/v0.19.0...v0.19.1
 [0.19.0]: https://github.com/Sauna-ATC-Training-Simulator/sauna-api/compare/v0.18.2...v0.19.0

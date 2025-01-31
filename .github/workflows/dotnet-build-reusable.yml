@@ -15,6 +15,20 @@ on:
         required: false
         default: 'linux'
         type: string
+      rust-arch:
+        description: 'Architecture for Rust'
+        required: true
+        type: string
+      rust-os:
+        description: 'Rust OS target'
+        required: false
+        default: 'unknown-linux-gnu'
+        type: string
+      rust-target-suffix:
+        description: 'Rust target suffix'
+        default: ''
+        required: false
+        type: string
 
 jobs:      
   build:
@@ -38,6 +52,16 @@ jobs:
         uses: nuget/setup-nuget@v1
         with:
           nuget-version: 'latest'
+      - name: Use Stable Rust
+        uses: dtolnay/rust-toolchain@stable
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './target'
+      - name: Install Rust Target
+        shell: pwsh
+        run: |
+          rustup target add ${{ inputs.rust-arch }}-${{ inputs.rust-os }}${{ inputs.rust-target-suffix }}
       - name: Build
         shell: pwsh
         run: |
@@ -46,8 +70,9 @@ jobs:
       - name: Build Sauna Vatsim Private
         shell: pwsh
         run: |
-          cd ${{ github.workspace }}/sauna-vatsim-private/sauna-vatsim-private
-          dotnet build sauna-vatsim-private.csproj --verbosity normal -c Release -o ${{ github.workspace }}/bin
+          cd ${{ github.workspace }}/sauna-vatsim-private
+          cargo build --verbose --target-dir ${{ github.workspace }}/out/build --target ${{ inputs.rust-arch }}-${{ inputs.rust-os }} -r
+          Copy-Item -Path "${{ github.workspace }}/out/build/${{ matrix.rust-arch }}-${{ matrix.rust-os }}/release/*" -Destination "${{ github.workspace }}/bin" -Include *.dll,*.pdb,*.so*,*.dylib*
       - name: Tar Output
         shell: pwsh
         run: |

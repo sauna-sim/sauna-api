@@ -1,9 +1,12 @@
 ﻿
 using AviationCalcUtilNet.Math;
+using FsdConnectorNet;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
 using SaunaSim.Api.Controllers;
+using SaunaSim.Api.Utilities;
+using System.Diagnostics;
 
 namespace sauna_tests;
 
@@ -42,5 +45,12 @@ public class Tests
 
         Assert.That(intX, Is.EqualTo(0.5));
         Assert.That(intY, Is.EqualTo(0.5));
+    }
+
+    [Test]
+    public void Test2()
+    {
+        ClientInfo vatsimInfo = PrivateInfoLoader.GetClientInfo((string s) => { Debug.WriteLine(s); });
+        vatsimInfo.ToString();
     }
 }
