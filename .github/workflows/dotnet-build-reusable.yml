@@ -80,7 +80,7 @@ jobs:
           cd ${{ github.workspace }}/bin
           tar -cvzf ${{ github.workspace }}/bins/SaunaApi-${{ inputs.short-os }}-${{ inputs.arch }}.tar.gz *
       - name: Archive Binaries
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: SaunaApi-bins
           path: |
