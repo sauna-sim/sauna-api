@@ -32,7 +32,6 @@ namespace NavData_Interface.DataSources
 
         public DFDSource(string filePath) : this(filePath, "")
         {
-
         }
 
         /// <summary>
@@ -51,11 +50,13 @@ namespace NavData_Interface.DataSources
             }.ToString();
 
             _connection = new SqliteConnection(connectionString);
-            
+
             try
             {
                 _connection.Open();
-            } catch (SqliteException e) { 
+            }
+            catch (SqliteException e)
+            {
                 if (e.SqliteErrorCode == 14)
                 {
                     throw new System.IO.FileNotFoundException(filePath);
@@ -75,12 +76,14 @@ namespace NavData_Interface.DataSources
                     if (reader.Read())
                     {
                         Airac_version = reader["current_airac"].ToString();
-                    } else
+                    }
+                    else
                     {
                         throw new FormatException("The navigation data file has an incorrect format.");
                     }
                 }
-            } catch (Exception e)
+            }
+            catch (Exception e)
             {
                 throw new Exception("The navigation data file is invalid.", e);
             }
@@ -94,7 +97,7 @@ namespace NavData_Interface.DataSources
             {
                 return null;
             }
-            
+
             return foundLocs[0];
         }
 
@@ -134,7 +137,8 @@ namespace NavData_Interface.DataSources
             if (airports.Count == 1)
             {
                 return airports[0];
-            } else if (airports.Count > 1)
+            }
+            else if (airports.Count > 1)
             {
                 Console.Error.WriteLine($"Found two airport results for {airportIdentifier}. This should never happen!");
             }
@@ -160,7 +164,7 @@ namespace NavData_Interface.DataSources
         public List<Waypoint> GetWaypointsByIdentifier(string identifier)
         {
             // We need to combine enroute + terminal waypoints
-            
+
             List<Waypoint> waypoints = GetObjectsWithQuery<Waypoint>(WaypointLookupByIdentifier(true, identifier), reader => WaypointFactory.Factory(reader));
             foreach (var waypoint in GetObjectsWithQuery<Waypoint>(WaypointLookupByIdentifier(false, identifier), reader => WaypointFactory.Factory(reader)))
             {
@@ -177,7 +181,7 @@ namespace NavData_Interface.DataSources
                 Connection = _connection,
                 CommandText = "SELECT * from tbl_vhfnavaids WHERE vor_identifier = @identifier OR dme_ident = @identifier"
             };
-            
+
             cmd.Parameters.AddWithValue("@identifier", identifier);
 
             return cmd;
@@ -186,7 +190,7 @@ namespace NavData_Interface.DataSources
         public List<VhfNavaid> GetVhfNavaidsByIdentifier(string identifier)
         {
             List<VhfNavaid> navaids = GetObjectsWithQuery<VhfNavaid>(
-                VhfNavaidLookupByIdentifier(identifier), 
+                VhfNavaidLookupByIdentifier(identifier),
                 reader => VhfNavaidFactory.Factory(reader));
 
             return navaids;
@@ -196,10 +200,11 @@ namespace NavData_Interface.DataSources
         {
             var table = isTerminal ? "tbl_terminal_ndbnavaids" : "tbl_enroute_ndbnavaids";
 
-            var cmd = new SqliteCommand(){
+            var cmd = new SqliteCommand()
+            {
                 Connection = _connection,
                 CommandText = $"SELECT * FROM {table} WHERE ndb_identifier = @identifier"
-                };
+            };
 
             cmd.Parameters.AddWithValue("@identifier", identifier);
 
@@ -375,6 +380,7 @@ namespace NavData_Interface.DataSources
                     closestAirport = airport;
                 }
             }
+
             return closestAirport;
         }
 
@@ -437,18 +443,34 @@ namespace NavData_Interface.DataSources
             return reader.HasRows;
         }
 
-        private SqliteCommand SidLookupByAirportAndIdentifier(string airportIdentifier, string sidIdentifier)
+        private SqliteCommand ProcedureLookupByAirportIdentifier(string procedureTable, string airportIdentifier, string procedureIdentifier)
         {
             SqliteCommand command = new SqliteCommand()
             {
                 Connection = _connection,
-                CommandText = $"SELECT * FROM tbl_sids WHERE airport_identifier == @airport AND procedure_identifier = @sid"
+                CommandText = $"SELECT * FROM {procedureTable} WHERE airport_identifier == @airport AND procedure_identifier = @procedure"
             };
 
+            //command.Parameters.AddWithValue("@table", procedureTable);
             command.Parameters.AddWithValue("@airport", airportIdentifier);
-            command.Parameters.AddWithValue("@sid", sidIdentifier);
+            command.Parameters.AddWithValue("@procedure", procedureIdentifier);
 
             return command;
+        }
+
+        private SqliteCommand SidLookupByAirportAndIdentifier(string airportIdentifier, string sidIdentifier)
+        {
+            return ProcedureLookupByAirportIdentifier("tbl_sids", airportIdentifier, sidIdentifier);
+            // SqliteCommand command = new SqliteCommand()
+            // {
+            //     Connection = _connection,
+            //     CommandText = $"SELECT * FROM tbl_sids WHERE airport_identifier == @airport AND procedure_identifier = @sid"
+            // };
+            //
+            // command.Parameters.AddWithValue("@airport", airportIdentifier);
+            // command.Parameters.AddWithValue("@sid", sidIdentifier);
+            //
+            // return command;
         }
 
         public override Sid GetSidByAirportAndIdentifier(string airportIdentifier, string sidIdentifier)
@@ -462,16 +484,17 @@ namespace NavData_Interface.DataSources
 
         private SqliteCommand StarLookupByAirportAndIdentifier(string airportIdentifier, string sidIdentifier)
         {
-            SqliteCommand command = new SqliteCommand()
-            {
-                Connection = _connection,
-                CommandText = "SELECT * FROM tbl_stars WHERE airport_identifier == @airport AND procedure_identifier = @sid"
-            };
-
-            command.Parameters.AddWithValue("@airport", airportIdentifier);
-            command.Parameters.AddWithValue("@sid", sidIdentifier);
-
-            return command;
+            return ProcedureLookupByAirportIdentifier("tbl_stars", airportIdentifier, sidIdentifier);
+            // SqliteCommand command = new SqliteCommand()
+            // {
+            //     Connection = _connection,
+            //     CommandText = "SELECT * FROM tbl_stars WHERE airport_identifier == @airport AND procedure_identifier = @sid"
+            // };
+            //
+            // command.Parameters.AddWithValue("@airport", airportIdentifier);
+            // command.Parameters.AddWithValue("@sid", sidIdentifier);
+            //
+            // return command;
         }
 
         public override Star GetStarByAirportAndIdentifier(string airportIdentifier, string sidIdentifier)
@@ -481,6 +504,13 @@ namespace NavData_Interface.DataSources
             var sid = StarFactory.Factory(reader, _connection);
 
             return sid;
+        }
+
+        public Approach GetApproachByAirportAndIdentifier(string airportIdentifier, string iapIdentifier)
+        {
+            var reader = ProcedureLookupByAirportIdentifier("tbl_iaps", airportIdentifier, iapIdentifier)
+                .ExecuteReader();
+            return ApproachFactory.Factory(reader, _connection);
         }
     }
 }

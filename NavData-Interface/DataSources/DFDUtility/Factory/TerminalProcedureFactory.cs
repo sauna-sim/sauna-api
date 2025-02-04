@@ -34,12 +34,12 @@ namespace NavData_Interface.DataSources.DFDUtility.Factory
             {
                 case "4":
                     // This leg is for a runway transition. Read the whole thing
-                    {
-                        var transitionIdentifier = _reader["transition_identifier"].ToString();
-                        var transition = ReadTransition(transitionIdentifier);
-                        _firstTransitions.Add(transition);
-                        return;
-                    }
+                {
+                    var transitionIdentifier = _reader["transition_identifier"].ToString();
+                    var transition = ReadTransition(transitionIdentifier);
+                    _firstTransitions.Add(transition);
+                    return;
+                }
                 case "5":
                     // This leg is for the common portion. Read just this leg and add it
                     if (_firstTransitions.Count == 0 && _reader["transition_altitude"].ToString() != "")
@@ -48,16 +48,17 @@ namespace NavData_Interface.DataSources.DFDUtility.Factory
                         // A non-null transition_altitude, which is the transition altitude for this STAR.
                         _transitionAltitude = Length.FromFeet(Int32.Parse(_reader["transition_altitude"].ToString()));
                     }
+
                     _commonLegs.Add(ReadLeg());
                     //_reader.Read();
                     return;
                 case "6":
-                    {
-                        var transitionIdentifier = _reader["transition_identifier"].ToString();
-                        var transition = ReadTransition(transitionIdentifier);
-                        _secondTransitions.Add(transition);
-                        return;
-                    }
+                {
+                    var transitionIdentifier = _reader["transition_identifier"].ToString();
+                    var transition = ReadTransition(transitionIdentifier);
+                    _secondTransitions.Add(transition);
+                    return;
+                }
 
                 // The following are possible entries
                 // They correspond to rwyTransition, common route and transition
@@ -81,11 +82,16 @@ namespace NavData_Interface.DataSources.DFDUtility.Factory
                     goto case "5";
                 case "S":
                     goto case "6";
+                case "I":
+                    goto case "5";
+                case "A":
+                    goto case "4";
             }
         }
 
-        protected (string airportIdentifier, string routeIdentifier, List<Transition> firstTransitions, List<Leg> commonLegs, List<Transition> secondTransitions, Length transitionAltitude) GatherData()
-        { 
+        protected (string airportIdentifier, string routeIdentifier, List<Transition> firstTransitions, List<Leg> commonLegs, List<Transition> secondTransitions, Length
+            transitionAltitude) GatherData()
+        {
             // if you're here cause there's an infinite loop in this function
             // try _reader.read() instead of HasRows
             // idk documentation is kinda unclear
@@ -108,7 +114,7 @@ namespace NavData_Interface.DataSources.DFDUtility.Factory
             _secondTransitions = null;
             var returnCommonLegs = _commonLegs;
             _commonLegs = null;
-            
+
             _reader = null;
             _connection = null;
 
@@ -128,6 +134,7 @@ namespace NavData_Interface.DataSources.DFDUtility.Factory
 
             var legs = new List<Leg>();
 
+            // TODO: This is causing the first 
             do
             {
                 legs.Add(ReadLeg());
@@ -158,7 +165,8 @@ namespace NavData_Interface.DataSources.DFDUtility.Factory
                 if (_reader["turn_direction"].ToString() == "L")
                 {
                     turnDirection = RequiredTurnDirectionType.LEFT;
-                } else if (_reader["turn_direction"].ToString() == "R") 
+                }
+                else if (_reader["turn_direction"].ToString() == "R")
                 {
                     turnDirection = RequiredTurnDirectionType.RIGHT;
                 }
@@ -201,14 +209,16 @@ namespace NavData_Interface.DataSources.DFDUtility.Factory
                     {
                         recommendedNavaid = NdbFactory.Factory(cmd.ExecuteReader());
                     }
-                } catch (Exception e)
+                }
+                catch (Exception e)
                 {
                     // Probably doesn't have ids.
                     var navaidIdentifier = _reader["recommanded_navaid"].ToString();
                     GeoPoint location = SQLHelper.locationFromColumns(_reader, "recommanded_navaid_latitude", "recommanded_navaid_longitude");
 
                     recommendedNavaid = new VhfNavaid(location, "", "", "", navaidIdentifier, navaidIdentifier, 199.998, "", null, Length.FromNauticalMiles(200));
-                } finally
+                }
+                finally
                 {
                     if (_reader["theta"].GetType() != typeof(DBNull))
                     {
@@ -242,7 +252,6 @@ namespace NavData_Interface.DataSources.DFDUtility.Factory
 
             if (_reader["altitude1"].ToString() != "")
             {
-
                 if (_reader["altitude1"].ToString().StartsWith("FL") == true)
                 {
                     altitude1 = 100 * Int32.Parse(_reader["altitude1"].ToString().Substring(2, 3));
@@ -255,11 +264,11 @@ namespace NavData_Interface.DataSources.DFDUtility.Factory
 
             if (_reader["altitude2"].ToString() != "")
             {
-                
                 if (_reader["altitude2"].ToString().StartsWith("FL") == true)
                 {
                     altitude2 = 100 * Int32.Parse(_reader["altitude2"].ToString().Substring(2, 3));
-                } else
+                }
+                else
                 {
                     altitude2 = Int32.Parse(_reader["altitude2"].ToString());
                 }
@@ -269,26 +278,30 @@ namespace NavData_Interface.DataSources.DFDUtility.Factory
             {
                 // At or above. The altitude given is the lower restriction.
                 lowerAlt = Length.FromFeet(altitude1);
-            } else if (altRestrictionType == "-")
+            }
+            else if (altRestrictionType == "-")
             {
                 // At or below. The altitude given is the upper restriction.
                 upperAlt = Length.FromFeet(altitude1);
-            } else if (String.IsNullOrEmpty(altRestrictionType) && !String.IsNullOrEmpty(_reader["altitude1"].ToString()))
+            }
+            else if (String.IsNullOrEmpty(altRestrictionType) && !String.IsNullOrEmpty(_reader["altitude1"].ToString()))
             {
                 // If the restrictionType is null, and we have an altitude, it's an 'at' restriction
                 upperAlt = Length.FromFeet(altitude1);
                 lowerAlt = Length.FromFeet(altitude1);
-            } else if (altRestrictionType == "B")
+            }
+            else if (altRestrictionType == "B")
             {
                 // 'Between' restriction. Altitude1 is always the upper and Altitude2 is always the lower.
                 upperAlt = Length.FromFeet(altitude1);
                 lowerAlt = Length.FromFeet(altitude2);
-            } else if (altRestrictionType == "C")
+            }
+            else if (altRestrictionType == "C")
             {
                 // 'Termination at or above'. Altitude2 has the lower altitude. Used for 'X to altitude' legs.
                 // Seemingly never actually used in any procedure??? We'll handle it anyway.
                 upperAlt = Length.FromFeet(altitude2);
-            } 
+            }
 
             SpeedRestrictionType? speedRestrictionType = null;
             var speedRestrictionTypeRaw = _reader["speed_limit_description"].ToString();
@@ -303,10 +316,12 @@ namespace NavData_Interface.DataSources.DFDUtility.Factory
             if (speedRestrictionTypeRaw == "" && _reader["speed_limit"].ToString() != "")
             {
                 speedRestrictionType = SpeedRestrictionType.AT;
-            } else if (speedRestrictionTypeRaw == "+")
+            }
+            else if (speedRestrictionTypeRaw == "+")
             {
                 speedRestrictionType = SpeedRestrictionType.ABOVE;
-            } else if (speedRestrictionTypeRaw == "-")
+            }
+            else if (speedRestrictionTypeRaw == "-")
             {
                 speedRestrictionType = SpeedRestrictionType.BELOW;
             }
@@ -314,7 +329,7 @@ namespace NavData_Interface.DataSources.DFDUtility.Factory
             Fix centerFix = null;
 
             var centerWaypointIdent = _reader["center_waypoint"].ToString();
-            
+
             if (centerWaypointIdent != "")
             {
                 GeoPoint centerWaypointLocation = SQLHelper.locationFromColumns(_reader, "center_waypoint_latitude", "center_waypoint_longitude");
@@ -332,11 +347,12 @@ namespace NavData_Interface.DataSources.DFDUtility.Factory
             if (legLengthRaw != "")
             {
                 legLength = Double.Parse(legLengthRaw);
-                
+
                 if (legLengthTypeRaw == "D")
                 {
                     legLengthType = HoldLegLengthTypeEnum.DISTANCE;
-                } else
+                }
+                else
                 {
                     legLengthType = HoldLegLengthTypeEnum.TIME;
                 }
@@ -358,7 +374,7 @@ namespace NavData_Interface.DataSources.DFDUtility.Factory
                 arcRadius,
                 legLengthType,
                 legLength
-                );
+            );
         }
     }
 }
