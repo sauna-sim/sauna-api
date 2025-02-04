@@ -17,6 +17,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Primitives;
+using NUnit.Framework.Internal;
 
 namespace sauna_tests
 {
@@ -32,17 +33,77 @@ namespace sauna_tests
             _magTileManager = new MagneticTileManager(ref model);
         }
 
-        [Test]
-        public void TestVnav1()
+        private List<IRouteLeg> TestBuildRouteLegs()
         {
             Console.WriteLine(Directory.GetCurrentDirectory());
             var navDataInterface = new DFDSource("e_dfd_2412.s3db");
+            
+            // KATL - KBOS
+            // 27R PLMMR3 BURGG Q22 RBV Q419 JFK ROBUC3 ILS 4R
+            
+            // Legs
+            var legs = new List<IRouteLeg>();
+
+            // SID
+            var sid = navDataInterface.GetSidByAirportAndIdentifier("KATL", "PLMMR3");
+            sid.selectTransition("BURGG");
+            sid.selectRunwayTransition("27R");
+            
+            foreach (var leg in LegFactory.RouteLegsFromNavDataLegs(sid.GetEnumerator(), _magTileManager))
+            {
+                legs.Add(leg);
+            }
+            
+            // Q22
+            var position = legs[legs.Count - 1].EndPoint.Point.PointPosition;
+            var q22 = navDataInterface.GetAirwayFromIdentifierAndFixes(
+                "Q22",
+                navDataInterface.GetClosestFixByIdentifier(position, "BURGG"),
+                navDataInterface.GetClosestFixByIdentifier(position, "RBV"));
+            
+            foreach (var leg in LegFactory.RouteLegsFromNavDataLegs(q22.GetEnumerator(), _magTileManager))
+            {
+                legs.Add(leg);
+            }
+            
+            position = legs[legs.Count - 1].EndPoint.Point.PointPosition;
+            var q419 = navDataInterface.GetAirwayFromIdentifierAndFixes(
+                "Q419",
+                navDataInterface.GetClosestFixByIdentifier(position, "RBV"),
+                navDataInterface.GetClosestFixByIdentifier(position, "JFK"));
+            
+            foreach (var leg in LegFactory.RouteLegsFromNavDataLegs(q419.GetEnumerator(), _magTileManager))
+            {
+                legs.Add(leg);
+            }
+            
+            // STAR
             var star = navDataInterface.GetStarByAirportAndIdentifier("KBOS", "ROBUC3");
             star.selectTransition("JFK");
             star.selectRunwayTransition("04R");
+            
+            foreach (var leg in LegFactory.RouteLegsFromNavDataLegs(star.GetEnumerator(), _magTileManager))
+            {
+                legs.Add(leg);
+            }
+            
+            // Approach
+            var apch = navDataInterface.GetApproachByAirportAndIdentifier("KBOS", "I04R");
+            apch.SelectVia("GOSHI");
+            
+            foreach (var leg in LegFactory.RouteLegsFromNavDataLegs(apch.GetEnumerator(), _magTileManager))
+            {
+                legs.Add(leg);
+            }
 
-            IList<IRouteLeg> legs = LegFactory.RouteLegsFromNavDataLegs(star.GetEnumerator(), _magTileManager);
+            return legs;
+        }
 
+        [Test]
+        public void TestVnav1()
+        {
+            var legs = TestBuildRouteLegs();
+            
             PerfData perfData = PerfDataHandler.LookupForAircraft("A320");
 
             PerfInit init = new PerfInit()
