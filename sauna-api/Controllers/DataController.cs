@@ -26,6 +26,8 @@ using SaunaSim.Api.Services;
 using AviationCalcUtilNet.Geo;
 using AviationCalcUtilNet.Units;
 using SaunaSim.Core.Data.Scenario;
+using System.Net.Http;
+using System.Web;
 
 namespace SaunaSim.Api.Controllers
 {
@@ -70,10 +72,10 @@ namespace SaunaSim.Api.Controllers
             return Ok(new AppSettingsRequestResponse(AppSettingsManager.Settings));
         }
 
-        [HttpGet("navigraphApiCreds")]
+        [HttpPost("navigraphAuthInit")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public ActionResult<NavigraphApiCreds> GetNavigraphApiCreds()
+        public async Task<ActionResult> NavigraphAuthInit(NavigraphAuthInitRequest authRequest)
         {
             string error = "";
             var navigraphCreds = PrivateInfoLoader.GetNavigraphCreds((string s) =>
@@ -86,7 +88,87 @@ namespace SaunaSim.Api.Controllers
                 return BadRequest(error);
             }
 
-            return navigraphCreds;
+            using var client = new HttpClient();
+            client.BaseAddress = new Uri(navigraphCreds.ApiAuthUrl);
+
+            var query = new Dictionary<string, string>
+            {
+                ["client_id"] = navigraphCreds.ClientId,
+                ["client_secret"] = navigraphCreds.ClientSecret,
+                ["code_challenge"] = authRequest.CodeChallenge,
+                ["code_challenge_method"] = authRequest.CodeChallengeMethod
+            };
+            var response = await client.PostAsync("/connect/deviceauthorization", new FormUrlEncodedContent(query));
+
+            if (response.IsSuccessStatusCode)
+            {
+                return Ok(await response.Content.ReadAsStringAsync());
+            }
+
+            return new StatusCodeResult((int)response.StatusCode);
+        }
+
+        [HttpPost("navigraphAuthToken")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<ActionResult> NavigraphAuthToken(NavigraphAuthTokenRequest authRequest)
+        {
+            string error = "";
+            var navigraphCreds = PrivateInfoLoader.GetNavigraphCreds((string s) =>
+            {
+                error = s;
+            });
+
+            if (navigraphCreds == null)
+            {
+                return BadRequest(error);
+            }
+
+            using var client = new HttpClient();
+            client.BaseAddress = new Uri(navigraphCreds.ApiAuthUrl);
+
+            var query = new Dictionary<string, string>
+            {
+                ["client_id"] = navigraphCreds.ClientId,
+                ["client_secret"] = navigraphCreds.ClientSecret
+            };
+
+            if (authRequest.CodeVerifier != null)
+            {
+                query["code_verifier"] = authRequest.CodeVerifier;
+            }
+
+            if (authRequest.GrantType != null)
+            {
+                query["grant_type"] = authRequest.GrantType;
+            }
+
+            if (authRequest.DeviceCode != null)
+            {
+                query["device_code"] = authRequest.DeviceCode;
+            }
+
+            if (authRequest.Scope != null)
+            {
+                query["scope"] = authRequest.Scope;
+            }
+
+            if (authRequest.RefreshToken != null)
+            {
+                query["refresh_token"] = authRequest.RefreshToken;
+            }
+
+            var response = await client.PostAsync("/connect/token", new FormUrlEncodedContent(query));
+
+            if (response.IsSuccessStatusCode)
+            {
+                return Ok(await response.Content.ReadAsStringAsync());
+            } else if (response.StatusCode == System.Net.HttpStatusCode.BadRequest)
+            {
+                return BadRequest(await response.Content.ReadAsStringAsync());
+            }
+
+            return new StatusCodeResult((int)response.StatusCode);
         }
 
         [HttpGet("hasNavigraphDataLoaded")]

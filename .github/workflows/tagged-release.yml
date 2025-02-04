@@ -6,36 +6,55 @@ on:
     
 jobs:
   build:
-    # Arch Matrix
+   # Arch Matrix
     strategy:
       fail-fast: false
       matrix:
-        arch: [x64, x86] #arm, arm64
+        arch: [x64, arm64] #x86, arm
         os: [macos-latest, windows-latest, ubuntu-latest]
         include:
           - os: macos-latest
             short-os: osx
+            rust-os: apple-darwin
           - os: windows-latest
             short-os: win
+            rust-os: pc-windows-msvc
           - os: ubuntu-latest
             short-os: linux
+            rust-os: unknown-linux-gnu
+#          - arch: x86
+#            rust-arch: i686
+          - arch: x64
+            rust-arch: x86_64
+#          - arch: arm
+#            rust-arch: armv7
+          - arch: arm64
+            rust-arch: aarch64
+#          - os: ubuntu-latest
+#            arch: arm
+#            rust-target-suffix: eabihf
         exclude:
 #          - os: windows-latest
 #            arch: arm
-          - os: ubuntu-latest
-            arch: x86
-          - os: macos-latest
-            arch: x86
+#          - os: ubuntu-latest
+#            arch: x86
+#          - os: macos-latest
+#            arch: x86
 #          - os: macos-latest
 #            arch: arm
-#          - os: ubuntu-latest
-#            arch: arm64
+          - os: windows-latest
+            arch: arm64
+          - os: ubuntu-latest
+            arch: arm64
     uses: ./.github/workflows/dotnet-build-reusable.yml
     secrets: inherit # Pass all secrets
     with:
       arch: ${{ matrix.arch }}
+      rust-arch: ${{ matrix.rust-arch }}
       os: ${{ matrix.os }}
       short-os: ${{ matrix.short-os }}
+      rust-os: ${{ matrix.rust-os }}
+      rust-target-suffix: ${{ matrix.rust-target-suffix }}
       
   create-github-release:
     if: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')}}
@@ -43,9 +62,10 @@ jobs:
     needs: build
     steps:
       - name: Download Tars
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
-          name: SaunaApi-bins
+          pattern: SaunaApi-bins*
+          merge-multiple: true
           path: ${{ github.workspace }}/bins
       - uses: "marvinpinto/action-automatic-releases@v1.2.1"
         with:
