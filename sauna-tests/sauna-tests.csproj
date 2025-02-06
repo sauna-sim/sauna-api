@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <RootNamespace>sauna_tests</RootNamespace>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
@@ -16,8 +16,8 @@
     <PackageReference Include="NUnit.Analyzers" Version="3.10.0" />
     <PackageReference Include="coverlet.collector" Version="6.0.4" />
     <PackageReference Include="PShivaraman.AviationCalcUtilNet" Version="2.12.1" />
-    <PackageReference Include="Microsoft.AspNetCore.TestHost" Version="6.0.36" />
-    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="6.0.36" />
+    <PackageReference Include="Microsoft.AspNetCore.TestHost" Version="8.0.12" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="8.0.12" />
   </ItemGroup>
 
   <ItemGroup>

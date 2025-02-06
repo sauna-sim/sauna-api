@@ -47,7 +47,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v3
         with:
-          dotnet-version: 6.x.x
+          dotnet-version: 8.x.x
       - name: Setup NuGet
         uses: nuget/setup-nuget@v1
         with:

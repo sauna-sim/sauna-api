@@ -29,7 +29,7 @@ The Sauna UI project will provide a user-friendly interface for the API.
 
 ## Dependencies
 The project depends on the following frameworks and packages:
-- **.NET 6.0 & ASP .NET Core 6.0**
+- **.NET 8.0 & ASP .NET Core 8.0**
 - **[Aviation Calc Util NET](https://github.com/997R8V10/aviation-calc-util-net)**
 - **[FSD Connector NET](https://github.com/caspianmerlin/FsdConnectorNet)**
 - **[Newtonsoft JSON](https://github.com/JamesNK/Newtonsoft.Json)**
