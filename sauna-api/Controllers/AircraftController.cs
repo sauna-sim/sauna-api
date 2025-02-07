@@ -21,6 +21,7 @@ using System.Threading;
 using SaunaSim.Api.WebSockets;
 using SaunaSim.Api.Services;
 using AviationCalcUtilNet.Geo;
+using Microsoft.Extensions.Hosting;
 
 namespace SaunaSim.Api.Controllers
 {
@@ -28,14 +29,15 @@ namespace SaunaSim.Api.Controllers
     [Route("api/aircraft")]
     public class AircraftController : ControllerBase
     {
-
         private readonly ILogger<DataController> _logger;
         private readonly ISimAircraftService _aircraftService;
+        private readonly IHostApplicationLifetime _applicationLifetime;
 
-        public AircraftController(ILogger<DataController> logger, ISimAircraftService aircraftService)
+        public AircraftController(ILogger<DataController> logger, ISimAircraftService aircraftService, IHostApplicationLifetime appLifetime)
         {
             _logger = logger;
             _aircraftService = aircraftService;
+            _applicationLifetime = appLifetime;
         }
 
         [HttpPost("create")]
@@ -153,7 +155,7 @@ namespace SaunaSim.Api.Controllers
                 try
                 {
                     using var webSocket = await HttpContext.WebSockets.AcceptWebSocketAsync();
-                    await _aircraftService.WebSocketHandler.HandleAircraftSocket(callsign, webSocket);
+                    await _aircraftService.WebSocketHandler.HandleAircraftSocket(callsign, webSocket, _applicationLifetime.ApplicationStopping);
                 } catch (Exception e)
                 {
                     _logger.LogWarning($"Websocket connection failed: {e.Message}");

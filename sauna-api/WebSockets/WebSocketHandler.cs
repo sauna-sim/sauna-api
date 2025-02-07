@@ -173,7 +173,7 @@ namespace SaunaSim.Api.WebSockets
             await Task.WhenAll(tasks);
         }
 
-        public async Task HandleGeneralSocket(WebSocket ws)
+        public async Task HandleGeneralSocket(WebSocket ws, CancellationToken cancelToken)
         {
             // Create Stream
             var stream = new ClientStream(ws);
@@ -183,25 +183,25 @@ namespace SaunaSim.Api.WebSockets
             try
             {
                 var buffer = new byte[1024 * 4];
-                var receiveResult = await ws.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+                var receiveResult = await ws.ReceiveAsync(new ArraySegment<byte>(buffer), cancelToken);
 
                 while (!receiveResult.CloseStatus.HasValue && !stream.ShouldClose)
                 {
                     var message = Encoding.UTF8.GetString(buffer, 0, receiveResult.Count);
 
-                    receiveResult = await ws.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+                    receiveResult = await ws.ReceiveAsync(new ArraySegment<byte>(buffer), cancelToken);
                 }
 
                 // Remove and close client
                 await RemoveGeneralClient(stream);
-                await ws.CloseAsync(receiveResult.CloseStatus.Value, receiveResult.CloseStatusDescription, CancellationToken.None);
+                await ws.CloseAsync(receiveResult.CloseStatus.Value, receiveResult.CloseStatusDescription, cancelToken);
             } catch (Exception e)
             {
                 await RemoveGeneralClient(stream);
             }
         }
 
-        public async Task HandleAircraftSocket(string callsign, WebSocket ws)
+        public async Task HandleAircraftSocket(string callsign, WebSocket ws, CancellationToken cancelToken)
         {
             // Create Stream
             var stream = new ClientStream(ws);
@@ -211,7 +211,7 @@ namespace SaunaSim.Api.WebSockets
             try
             {
                 var buffer = new byte[1024 * 4];
-                var receiveResult = await ws.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+                var receiveResult = await ws.ReceiveAsync(new ArraySegment<byte>(buffer), cancelToken);
 
                 while (!receiveResult.CloseStatus.HasValue && !stream.ShouldClose)
                 {
@@ -235,12 +235,12 @@ namespace SaunaSim.Api.WebSockets
 
                     } catch (Exception) { }
 
-                    receiveResult = await ws.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+                    receiveResult = await ws.ReceiveAsync(new ArraySegment<byte>(buffer), cancelToken);
                 }
 
                 // Remove and close client
                 await RemoveAircraftClient(callsign, stream);
-                await ws.CloseAsync(receiveResult.CloseStatus.Value, receiveResult.CloseStatusDescription, CancellationToken.None);
+                await ws.CloseAsync(receiveResult.CloseStatus.Value, receiveResult.CloseStatusDescription, cancelToken);
             } catch (Exception e)
             {
                 await RemoveAircraftClient(callsign, stream);

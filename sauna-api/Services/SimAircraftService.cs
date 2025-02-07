@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Threading;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using SaunaSim.Api.Controllers;
 using SaunaSim.Api.WebSockets;
@@ -28,13 +29,14 @@ namespace SaunaSim.Api.Services
 
         public Mutex CommandsBufferLock { get; private set; }
 
-        public SimAircraftService(ILogger<DataController> logger)
+        public SimAircraftService(ILogger<DataController> logger, IHostApplicationLifetime appLifetime)
 		{
 			_logger = logger;
 			Handler = new SimAircraftHandler(
 				Path.Join(AppDomain.CurrentDomain.BaseDirectory, "magnetic", "WMM.COF"),
 				Path.Join(Path.GetTempPath(), "sauna-api", "grib-tiles"),
-				LogFunc
+				LogFunc,
+				appLifetime.ApplicationStopping
 			);
 			CommandHandler = new CommandHandler(Handler);
 			WebSocketHandler = new WebSocketHandler(Handler);

@@ -90,6 +90,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
         private GribTileManager _gribTileManager;
         private MagneticTileManager _magTileManager;
         private CommandHandler _commandHandler;
+        public CancellationToken CancelToken { private get; set; } = CancellationToken.None;
 
         // Events
         public event EventHandler<AircraftPositionUpdateEventArgs> PositionUpdated;
@@ -444,7 +445,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
         }
         private void AircraftPositionWorker()
         {
-            while (_shouldUpdatePosition)
+            while (_shouldUpdatePosition && CancelToken.IsCancellationRequested == false)
             {
                 // Check calculation step time
                 _lagTimer.Restart();
