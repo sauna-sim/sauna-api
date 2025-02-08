@@ -58,7 +58,7 @@ jobs:
       - name: Rust cache
         uses: swatinem/rust-cache@v2
         with:
-          workspaces: '${{ github.workspace }}/out/build'
+          workspaces: './out -> build'
       - name: Install Rust Target
         shell: pwsh
         run: |
