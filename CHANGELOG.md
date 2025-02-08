@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.22.3] - 2025-02-07
+### Added
+- Support for Linux ARM64 Builds
+
 ## [0.22.1] - 2025-02-06
 ### Fixed
 - Websockets not being closed on shutdown
@@ -40,7 +44,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - NullPointerExceptions
 
-[Unreleased]: https://github.com/Sauna-ATC-Training-Simulator/sauna-api/compare/v0.22.1...master
+[Unreleased]: https://github.com/Sauna-ATC-Training-Simulator/sauna-api/compare/v0.22.3...master
+[0.22.3]: https://github.com/Sauna-ATC-Training-Simulator/sauna-api/compare/v0.22.1...v0.22.3
 [0.22.1]: https://github.com/Sauna-ATC-Training-Simulator/sauna-api/compare/v0.22.0...v0.22.1
 [0.22.0]: https://github.com/Sauna-ATC-Training-Simulator/sauna-api/compare/v0.21.0...v0.22.0
 [0.21.0]: https://github.com/Sauna-ATC-Training-Simulator/sauna-api/compare/v0.20.0...v0.21.0

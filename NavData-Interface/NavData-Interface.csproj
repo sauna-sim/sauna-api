@@ -9,7 +9,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Data.Sqlite" Version="9.0.1" />
-    <PackageReference Include="PShivaraman.AviationCalcUtilNet" Version="2.12.1" />
+    <PackageReference Include="PShivaraman.AviationCalcUtilNet" Version="2.13.2" />
   </ItemGroup>
 
 

@@ -48,10 +48,6 @@ jobs:
         uses: actions/setup-dotnet@v3
         with:
           dotnet-version: 8.x.x
-      - name: Setup NuGet
-        uses: nuget/setup-nuget@v1
-        with:
-          nuget-version: 'latest'
       - name: Use Stable Rust
         uses: dtolnay/rust-toolchain@stable
       - name: Rust cache
