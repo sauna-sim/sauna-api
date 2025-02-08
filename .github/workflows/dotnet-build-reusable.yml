@@ -64,7 +64,7 @@ jobs:
         run: |
           rustup target add ${{ inputs.rust-arch }}-${{ inputs.rust-os }}${{ inputs.rust-target-suffix }}
       - name: Install Linux Arm64 Tools
-        if: ${{ matrix.short-os == 'linux' && matrix.arch == 'arm64' }}
+        if: ${{ inputs.short-os == 'linux' && inputs.arch == 'arm64' }}
         run: |
           sudo apt-get install gcc-aarch64-linux-gnu -y
       - name: Build
