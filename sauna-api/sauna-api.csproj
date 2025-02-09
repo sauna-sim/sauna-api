@@ -9,15 +9,15 @@
     <StartupObject>SaunaSim.Api.Program</StartupObject>
     <AssemblyName>SaunaApi</AssemblyName>
     <NeutralLanguage>en-US</NeutralLanguage>
-    <Version>0.22.3</Version>
+    <Version>0.22.4</Version>
     <AssemblyVersion>$(Version)</AssemblyVersion>
     <FileVersion>$(Version)</FileVersion>
     <EnableUnmanagedDebugging>true</EnableUnmanagedDebugging>
     <ServerGarbageCollection>false</ServerGarbageCollection>
     <RepositoryType>git</RepositoryType>
-    <RepositoryUrl>https://github.com/Sauna-ATC-Training-Simulator/sauna-api</RepositoryUrl>
+    <RepositoryUrl>https://github.com/sauna-sim/sauna-api</RepositoryUrl>
     <PackageReadmeFile>README.md</PackageReadmeFile>
-    <PackageProjectUrl>https://github.com/Sauna-ATC-Training-Simulator/sauna-api</PackageProjectUrl>
+    <PackageProjectUrl>https://github.com/sauna-sim/sauna-api</PackageProjectUrl>
   </PropertyGroup>
   
   <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">

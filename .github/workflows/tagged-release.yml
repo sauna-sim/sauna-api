@@ -26,9 +26,6 @@ jobs:
             rust-arch: x86_64
           - arch: arm64
             rust-arch: aarch64
-          - short-os: linux
-            arch: arm64
-            rust-config: --config "target.aarch64-unknown-linux-gnu.linker='aarch64-linux-gnu-gcc'"
     uses: ./.github/workflows/dotnet-build-reusable.yml
     secrets: inherit # Pass all secrets
     with:
@@ -38,7 +35,6 @@ jobs:
       short-os: ${{ matrix.short-os }}
       rust-os: ${{ matrix.rust-os }}
       rust-target-suffix: ${{ matrix.rust-target-suffix }}
-      rust-config: ${{ matrix.rust-config }}
       
   create-github-release:
     if: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')}}
