@@ -21,7 +21,6 @@
     <None Remove="Simulator\Aircraft\FMS\NavDisplay\" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="JsonSchemas\" />
     <Folder Include="Simulator\Aircraft\FMS\NavDisplay\" />
   </ItemGroup>
   <ItemGroup>

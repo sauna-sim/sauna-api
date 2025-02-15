@@ -12,9 +12,9 @@ using System.Text;
 
 namespace SaunaSim.Core.Simulator.Aircraft.FMS.Legs
 {
-    internal static class LegFactory
+    public static class LegFactory
     {
-        internal static IList<IRouteLeg> RouteLegsFromNavDataLegs(IEnumerator<Leg> legsEnumerator, MagneticTileManager mcManager)
+        public static IList<IRouteLeg> RouteLegsFromNavDataLegs(IEnumerator<Leg> legsEnumerator, MagneticTileManager mcManager)
         {
             List<IRouteLeg> routeLegs = new List<IRouteLeg>();
 
