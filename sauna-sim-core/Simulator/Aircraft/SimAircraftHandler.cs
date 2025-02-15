@@ -39,6 +39,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
         private int _simRate;
         private bool disposedValue;
         private Action<string, int> _logger;
+        private CancellationToken _cancellationToken;
 
         public event EventHandler<SimStateChangedEventArgs> GlobalSimStateChanged;
         public event EventHandler<AircraftPositionUpdateEventArgs> AircraftCreated;
@@ -48,11 +49,12 @@ namespace SaunaSim.Core.Simulator.Aircraft
         public event EventHandler<AircraftSimStateChangedEventArgs> AircraftSimStateChanged;
 
 
-        public SimAircraftHandler(string magCofFile, string gribTilePath, Action<string, int> logger)
+        public SimAircraftHandler(string magCofFile, string gribTilePath, Action<string, int> logger, CancellationToken token)
         {
             _logger = logger;
             _allPaused = true;
             _simRate = 10;
+            _cancellationToken = token;
             _aircraftsLock = new Mutex();
             _aircraftsLock.WaitOne();
             _aircrafts = new List<SimAircraft>();
@@ -173,6 +175,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
             aircraft.ConnectionStatusChanged += Aircraft_ConnectionStatusChanged;
             aircraft.PositionUpdated += Aircraft_PositionUpdated;
             aircraft.SimStateChanged += Aircraft_SimStateChanged;
+            aircraft.CancelToken = _cancellationToken;
             _aircrafts.Add(aircraft);
 
             _aircraftsLock.ReleaseMutex();

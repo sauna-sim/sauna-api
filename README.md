@@ -4,10 +4,10 @@
 [![License Img]][license]
 [![Changelog Img]][changelog]
 
-[Build Status]: https://img.shields.io/github/actions/workflow/status/Sauna-ATC-Training-Simulator/sauna-api/build-and-test.yml?branch=master
-[actions]: https://github.com/Sauna-ATC-Training-Simulator/sauna-api/actions?query=branch%3Amaster
-[Latest Version]: https://img.shields.io/github/v/release/Sauna-ATC-Training-Simulator/sauna-api?include_prereleases
-[github.release]: https://github.com/Sauna-ATC-Training-Simulator/sauna-api/releases/latest
+[Build Status]: https://img.shields.io/github/actions/workflow/status/sauna-sim/sauna-api/build-and-test.yml?branch=master
+[actions]: https://github.com/sauna-sim/sauna-api/actions?query=branch%3Amaster
+[Latest Version]: https://img.shields.io/github/v/release/sauna-sim/sauna-api?include_prereleases
+[github.release]: https://github.com/sauna-sim/sauna-api/releases/latest
 [Changelog Img]: https://img.shields.io/badge/Changelog-blue
 [changelog]: CHANGELOG.md
 [License Img]: https://img.shields.io/badge/License-GPLv3-blue
@@ -24,12 +24,12 @@ The API is written in C# and runs on ASP.NET Core. The application is cross-plat
 
 The solution contains 2 projects. `sauna-api` handles the actual API requests and `sauna-sim-core` contains the core simulation code.
 
-### [Sauna UI](https://github.com/Sauna-ATC-Training-Simulator/sauna-ui)
+### [Sauna UI](https://github.com/sauna-sim/sauna-ui)
 The Sauna UI project will provide a user-friendly interface for the API.
 
 ## Dependencies
 The project depends on the following frameworks and packages:
-- **.NET 6.0 & ASP .NET Core 6.0**
+- **.NET 8.0 & ASP .NET Core 8.0**
 - **[Aviation Calc Util NET](https://github.com/997R8V10/aviation-calc-util-net)**
 - **[FSD Connector NET](https://github.com/caspianmerlin/FsdConnectorNet)**
 - **[Newtonsoft JSON](https://github.com/JamesNK/Newtonsoft.Json)**

@@ -48,7 +48,7 @@ namespace SaunaSim.Api.Controllers
                 try
                 {
                     using var webSocket = await HttpContext.WebSockets.AcceptWebSocketAsync();
-                    await _aircraftService.WebSocketHandler.HandleGeneralSocket(webSocket);
+                    await _aircraftService.WebSocketHandler.HandleGeneralSocket(webSocket, _appLifetime.ApplicationStopping);
                 } catch (Exception e)
                 {
                     _logger.LogWarning($"Websocket connection failed: {e.Message}");

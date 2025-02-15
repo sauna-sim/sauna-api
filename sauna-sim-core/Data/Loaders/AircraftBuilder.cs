@@ -180,7 +180,7 @@ namespace SaunaSim.Core.Data.Loaders
                     {
                         // DF to first FP waypoint.
 
-                        for (bool foundValidWp = false; !foundValidWp; i++)
+                        for (bool foundValidWp = false; !foundValidWp && i < waypoints.Length; i++)
                         {
                             Fix firstWp = DataHandler.GetClosestWaypointByIdentifier(waypoints[i], aircraft.Position.PositionGeoPoint);
 

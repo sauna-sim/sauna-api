@@ -321,7 +321,8 @@ namespace sauna_tests
             var Handler = new SimAircraftHandler(
                 Path.Join(AppDomain.CurrentDomain.BaseDirectory, "magnetic", "WMM.COF"),
                 Path.Join(Path.GetTempPath(), "sauna-api", "grib-tiles"),
-                (s, i) => { }
+                (s, i) => { },
+                CancellationToken.None
             );
             var cmdHandler = new CommandHandler(Handler);
             var webSocketHandler = new WebSocketHandler(Handler);

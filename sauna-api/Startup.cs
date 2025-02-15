@@ -80,6 +80,17 @@ namespace SaunaSim.Api
             {
                 endpoints.MapControllers();
             });
+            
+            // Check for lifetime shutdown working with WebSocket active
+            applicationLifetime.ApplicationStopping.Register(() =>
+            {
+                Console.WriteLine("*** Application is shutting down...");
+            }, true);
+    
+            applicationLifetime.ApplicationStopped.Register(() =>
+            {
+                Console.WriteLine("*** Application is shut down...");
+            }, true);
         }
     }
 }
