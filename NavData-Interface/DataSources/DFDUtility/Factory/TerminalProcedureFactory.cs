@@ -9,35 +9,47 @@ using NavData_Interface.Objects.LegCollections.Legs;
 using NavData_Interface.Objects.LegCollections.Procedures;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Microsoft.Data.Sqlite;
 
 namespace NavData_Interface.DataSources.DFDUtility.Factory
 {
     internal abstract class TerminalProcedureFactory
     {
-        protected List<Transition> _firstTransitions = new List<Transition>();
-        protected List<Transition> _secondTransitions = new List<Transition>();
-        protected List<Leg> _commonLegs = new List<Leg>();
-        protected SqliteDataReader _reader = null;
-        protected SqliteConnection _connection = null;
-        Length _transitionAltitude = null;
+        private Dictionary<string, Transition> _firstTransitions;
+        private Dictionary<string, Transition> _secondTransitions;
+        private List<Leg> _commonLegs;
+        private SqliteDataReader _reader;
+        private SqliteConnection _connection;
+        private Length _transitionAltitude;
 
-        public TerminalProcedureFactory(SqliteDataReader reader, SqliteConnection connection)
+        protected TerminalProcedureFactory(SqliteDataReader reader, SqliteConnection connection)
         {
             _reader = reader;
             _connection = connection;
+            _firstTransitions = new Dictionary<string, Transition>();
+            _secondTransitions = new Dictionary<string, Transition>();
+            _commonLegs = new List<Leg>();
         }
 
-        protected void handleRow()
+        private void HandleRow()
         {
             switch (_reader["route_type"].ToString())
             {
                 case "4":
-                    // This leg is for a runway transition. Read the whole thing
+                    // This leg is for a runway transition.
                 {
+                    // Get Transition Identifier
                     var transitionIdentifier = _reader["transition_identifier"].ToString();
-                    var transition = ReadTransition(transitionIdentifier);
-                    _firstTransitions.Add(transition);
+                    
+                    // Check if transition was already created
+                    if (!_firstTransitions.ContainsKey(transitionIdentifier))
+                    {
+                        _firstTransitions.Add(transitionIdentifier, SetupTransition(transitionIdentifier));
+                    }
+
+                    // Read leg
+                    _firstTransitions[transitionIdentifier].legs.Add(ReadLeg());
                     return;
                 }
                 case "5":
@@ -54,9 +66,17 @@ namespace NavData_Interface.DataSources.DFDUtility.Factory
                     return;
                 case "6":
                 {
+                    // Get Transition Identifier
                     var transitionIdentifier = _reader["transition_identifier"].ToString();
-                    var transition = ReadTransition(transitionIdentifier);
-                    _secondTransitions.Add(transition);
+                    
+                    // Check if transition was already created
+                    if (!_secondTransitions.ContainsKey(transitionIdentifier))
+                    {
+                        _secondTransitions.Add(transitionIdentifier, SetupTransition(transitionIdentifier));
+                    }
+
+                    // Read leg
+                    _secondTransitions[transitionIdentifier].legs.Add(ReadLeg());
                     return;
                 }
 
@@ -102,15 +122,15 @@ namespace NavData_Interface.DataSources.DFDUtility.Factory
 
             do
             {
-                handleRow();
+                HandleRow();
             } while (_reader.Read());
 
             _reader.Close();
 
             // Make sure we don't have stale references here
-            var returnFirstTransitions = _firstTransitions;
+            var returnFirstTransitions = _firstTransitions.Values.ToList();
             _firstTransitions = null;
-            var returnSecondTransitions = _secondTransitions;
+            var returnSecondTransitions = _secondTransitions.Values.ToList();
             _secondTransitions = null;
             var returnCommonLegs = _commonLegs;
             _commonLegs = null;
@@ -121,7 +141,7 @@ namespace NavData_Interface.DataSources.DFDUtility.Factory
             return (airportIdentifier, routeIdentifier, returnFirstTransitions, returnCommonLegs, returnSecondTransitions, _transitionAltitude);
         }
 
-        protected Transition ReadTransition(string transitionIdentifier)
+        private Transition SetupTransition(string transitionIdentifier)
         {
             // The transition altitude for this SID is always on the first leg of each transition. Store it now
             // This COULD be null if it's determined by ATC
@@ -131,19 +151,11 @@ namespace NavData_Interface.DataSources.DFDUtility.Factory
             {
                 transitionAltitude = Length.FromFeet((long)_reader["transition_altitude"]);
             }
-
-            var legs = new List<Leg>();
-
-            // TODO: This is causing the first 
-            do
-            {
-                legs.Add(ReadLeg());
-            } while (_reader.Read() && _reader["transition_identifier"].ToString() == transitionIdentifier);
-
-            return new Transition(legs, transitionIdentifier, transitionAltitude);
+            
+            return new Transition(new List<Leg>(), transitionIdentifier, transitionAltitude);
         }
 
-        protected Leg ReadLeg()
+        private Leg ReadLeg()
         {
             var waypointIdentifier = _reader["waypoint_identifier"].ToString();
 
@@ -158,7 +170,7 @@ namespace NavData_Interface.DataSources.DFDUtility.Factory
 
             RequiredTurnDirectionType? turnDirection = null;
 
-            if (_reader["turn_direction"] != null)
+            if (_reader["turn_direction"].GetType() != typeof(DBNull))
             {
                 // The turn is more than 90 degrees. Possibilities are L, R and E
                 // E just means either direction is OK. In that case we keep turnDirection null.
@@ -210,7 +222,7 @@ namespace NavData_Interface.DataSources.DFDUtility.Factory
                         recommendedNavaid = NdbFactory.Factory(cmd.ExecuteReader());
                     }
                 }
-                catch (Exception e)
+                catch (Exception)
                 {
                     // Probably doesn't have ids.
                     var navaidIdentifier = _reader["recommanded_navaid"].ToString();
@@ -240,10 +252,10 @@ namespace NavData_Interface.DataSources.DFDUtility.Factory
 
             if (magneticCourseRaw != "")
             {
-                outBoundMagneticCourse = Bearing.FromDegrees(Double.Parse(magneticCourseRaw));
+                outBoundMagneticCourse = Bearing.FromDegrees(double.Parse(magneticCourseRaw));
             }
 
-            var altRestrictionType = _reader["altitude_description"]?.ToString();
+            var altRestrictionType = _reader["altitude_description"].ToString();
 
             Length upperAlt = null;
             Length lowerAlt = null;
@@ -252,7 +264,7 @@ namespace NavData_Interface.DataSources.DFDUtility.Factory
 
             if (_reader["altitude1"].ToString() != "")
             {
-                if (_reader["altitude1"].ToString().StartsWith("FL") == true)
+                if (_reader["altitude1"].ToString().StartsWith("FL"))
                 {
                     altitude1 = 100 * Int32.Parse(_reader["altitude1"].ToString().Substring(2, 3));
                 }
@@ -264,7 +276,7 @@ namespace NavData_Interface.DataSources.DFDUtility.Factory
 
             if (_reader["altitude2"].ToString() != "")
             {
-                if (_reader["altitude2"].ToString().StartsWith("FL") == true)
+                if (_reader["altitude2"].ToString().StartsWith("FL"))
                 {
                     altitude2 = 100 * Int32.Parse(_reader["altitude2"].ToString().Substring(2, 3));
                 }
