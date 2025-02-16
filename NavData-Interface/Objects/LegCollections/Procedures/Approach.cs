@@ -22,5 +22,10 @@ namespace NavData_Interface.Objects.LegCollections.Procedures
         {
             _vias = vias;
         }
+
+        public void SelectVia(string viaIdentifier)
+        {
+            selectFirstTransition(viaIdentifier);
+        } 
     }
 }
