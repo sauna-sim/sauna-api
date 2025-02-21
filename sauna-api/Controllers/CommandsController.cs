@@ -339,7 +339,7 @@ namespace SaunaSim.Api.Controllers
 
             SimAircraft aircraft = client;
 
-            IlsCommand command = new IlsCommand(_aircraftService.Handler.MagTileManager);
+            ApproachCommand command = new ApproachCommand(_aircraftService.Handler.MagTileManager);
             bool result = command.HandleCommand(aircraft, LogCommandInfo, request.Runway);
 
             if (result && _aircraftService.CommandHandler.QueueCommand(command))
@@ -363,7 +363,7 @@ namespace SaunaSim.Api.Controllers
 
             SimAircraft aircraft = client;
 
-            LocCommand command = new LocCommand(_aircraftService.Handler.MagTileManager);
+            ApproachInterceptCommand command = new ApproachInterceptCommand(_aircraftService.Handler.MagTileManager);
             bool result = command.HandleCommand(aircraft, LogCommandInfo, request.Runway);
 
             if (result && _aircraftService.CommandHandler.QueueCommand(command))

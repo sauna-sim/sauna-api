@@ -14,7 +14,7 @@ using SaunaSim.Core.Simulator.Aircraft.FMS.Legs;
 
 namespace SaunaSim.Core.Simulator.Commands
 {
-    public class LocCommand : IAircraftCommand
+    public class ApproachInterceptCommand : IAircraftCommand
     {
         public SimAircraft Aircraft { get; set; }
         public Action<string> Logger { get; set; }
@@ -22,7 +22,7 @@ namespace SaunaSim.Core.Simulator.Commands
         private Localizer _loc;
         private MagneticTileManager _magTileMgr;
 
-        public LocCommand(MagneticTileManager magTileMgr)
+        public ApproachInterceptCommand(MagneticTileManager magTileMgr)
         {
             _magTileMgr = magTileMgr;
         }
