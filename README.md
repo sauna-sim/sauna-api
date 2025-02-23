@@ -10,7 +10,7 @@
 [github.release]: https://github.com/sauna-sim/sauna-api/releases/latest
 [Changelog Img]: https://img.shields.io/badge/Changelog-blue
 [changelog]: CHANGELOG.md
-[License Img]: https://img.shields.io/badge/License-GPLv3-blue
+[License Img]: https://img.shields.io/badge/License-LGPL_3-blue
 [license]: LICENSE
 
 ## About

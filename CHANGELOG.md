@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.23.0] - 2025-02-23
+### Changed
+- WMM Updated to 2025 model.
+- License to LGPL
+
 ## [0.22.3] - 2025-02-07
 ### Added
 - Support for Linux ARM64 Builds
@@ -44,7 +49,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - NullPointerExceptions
 
-[Unreleased]: https://github.com/sauna-sim/sauna-api/compare/v0.22.3...master
+[Unreleased]: https://github.com/sauna-sim/sauna-api/compare/v0.23.0...master
+[0.23.0]: https://github.com/sauna-sim/sauna-api/compare/v0.22.3...v0.23.0
 [0.22.3]: https://github.com/sauna-sim/sauna-api/compare/v0.22.1...v0.22.3
 [0.22.1]: https://github.com/sauna-sim/sauna-api/compare/v0.22.0...v0.22.1
 [0.22.0]: https://github.com/sauna-sim/sauna-api/compare/v0.21.0...v0.22.0
