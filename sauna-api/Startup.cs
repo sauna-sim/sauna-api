@@ -1,16 +1,12 @@
+using System;
+using System.Text.Json.Serialization;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using SaunaSim.Core.Simulator.Aircraft;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text.Json.Serialization;
-using System.Threading.Tasks;
 using SaunaSim.Api.Services;
 
 namespace SaunaSim.Api
@@ -27,6 +23,10 @@ namespace SaunaSim.Api
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            // JWT Token
+            services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+                .AddCookie();
+            
             services.AddControllers()
                 // Add JSON Serialization Options
                 .AddJsonOptions(options =>
@@ -62,6 +62,7 @@ namespace SaunaSim.Api
             .AllowAnyHeader()
             .AllowAnyOrigin());
 
+            app.UseAuthentication();
             app.UseAuthorization();
 
             // Swagger
