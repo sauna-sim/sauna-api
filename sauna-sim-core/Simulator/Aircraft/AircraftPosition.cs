@@ -414,7 +414,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
                 _onGround = value;
 
                 // Update FSD
-                if (oldValue != _onGround)
+                if (_parentAircraft.Connection != null && oldValue != _onGround)
                 {
                     _parentAircraft.Connection.SetOnGround(_onGround);
                 }

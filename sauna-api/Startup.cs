@@ -23,10 +23,6 @@ namespace SaunaSim.Api
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            // JWT Token
-            services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
-                .AddCookie();
-            
             services.AddControllers()
                 // Add JSON Serialization Options
                 .AddJsonOptions(options =>
@@ -42,7 +38,7 @@ namespace SaunaSim.Api
             services.AddSwaggerGen();
 
             // Sim Aircraft Service
-            services.AddSingleton<ISimAircraftService, SimAircraftService>();
+            services.AddSingleton<ISaunaSessionService, SaunaSessionService>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -62,7 +58,6 @@ namespace SaunaSim.Api
             .AllowAnyHeader()
             .AllowAnyOrigin());
 
-            app.UseAuthentication();
             app.UseAuthorization();
 
             // Swagger

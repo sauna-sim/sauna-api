@@ -1,65 +1,53 @@
-using SaunaSim.Api.ApiObjects.Aircraft;
-using SaunaSim.Core;
-using SaunaSim.Core.Data;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
-using SaunaSim.Core.Simulator.Aircraft;
-using System.Runtime.CompilerServices;
-using SaunaSim.Api.Utilities;
-using SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller;
-using SaunaSim.Core.Simulator.Aircraft.FMS;
-using SaunaSim.Core.Simulator.Aircraft.FMS.Legs;
-using SaunaSim.Core.Simulator.Aircraft.Performance;
-using SaunaSim.Core.Data.Loaders;
-using SaunaSim.Core.Simulator.Aircraft.Autopilot;
-using System.Threading;
-using SaunaSim.Api.WebSockets;
-using SaunaSim.Api.Services;
 using AviationCalcUtilNet.Geo;
+using AviationCalcUtilNet.GeoTools;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using SaunaSim.Api.ApiObjects.Aircraft;
+using SaunaSim.Api.Services;
+using SaunaSim.Core.Data.Loaders;
+using SaunaSim.Core.Simulator.Aircraft;
 
 namespace SaunaSim.Api.Controllers
 {
     [ApiController]
-    [Route("api/aircraft")]
+    [Route("api/session/{sessionId}/aircraft")]
     public class AircraftController : ControllerBase
     {
         private readonly ILogger<DataController> _logger;
-        private readonly ISimAircraftService _aircraftService;
+        private readonly ISaunaSessionService _sessionService;
         private readonly IHostApplicationLifetime _applicationLifetime;
 
-        public AircraftController(ILogger<DataController> logger, ISimAircraftService aircraftService, IHostApplicationLifetime appLifetime)
+        public AircraftController(ILogger<DataController> logger, ISaunaSessionService sessionService, IHostApplicationLifetime appLifetime)
         {
             _logger = logger;
-            _aircraftService = aircraftService;
+            _sessionService = sessionService;
             _applicationLifetime = appLifetime;
         }
 
         [HttpPost("create")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public ActionResult<AircraftResponse> CreateAircraft(CreateAircraftRequest request)
+        public ActionResult<AircraftResponse> CreateAircraft(CreateAircraftRequest request, string sessionId)
         {
+            if (!_sessionService.Sessions.TryGetValue(sessionId, out var sessionContainer))
+            {
+                return BadRequest("Session Not Found");
+            }
+            
             try
             {
                 AircraftBuilder builder = new AircraftBuilder(
                     request.Callsign,
-                    request.Cid,
-                    request.Password,
-                    request.Server,
-                    request.Port,
-                    _aircraftService.Handler.MagTileManager,
-                    _aircraftService.Handler.GribTileManager,
-                    _aircraftService.CommandHandler)
+                    sessionContainer.Session.AircraftHandler.MagTileManager,
+                    sessionContainer.Session.AircraftHandler.GribTileManager,
+                    sessionContainer.Session.CommandHandler)
                 {
-                    FullName = request.FullName,
-                    Protocol = request.Protocol,
-                    Position = new AviationCalcUtilNet.GeoTools.GeoPoint(request.Position.Latitude,
+                    Position = new GeoPoint(request.Position.Latitude,
                     request.Position.Longitude,
                     request.Position.IndicatedAltitude),
                     HeadingMag = Bearing.FromDegrees(request.Position.MagneticHeading),
@@ -87,9 +75,8 @@ namespace SaunaSim.Api.Controllers
                     //builder.FmsWaypoints = request.FmsWaypointList;
                 }
 
-                var pilot = builder.Create(PrivateInfoLoader.GetClientInfo((string msg) => { _logger.LogWarning($"{request.Callsign}: {msg}"); }));
-                _aircraftService.Handler.AddAircraft(pilot);
-                pilot.Start();
+                var pilot = builder.Create();
+                sessionContainer.Session.AircraftHandler.AddAircraft(pilot);
 
                 return Ok(new AircraftResponse(pilot, true));
             } catch (Exception e)
@@ -98,41 +85,43 @@ namespace SaunaSim.Api.Controllers
             }
         }
 
-        [HttpGet("getAll")]
-        public List<AircraftResponse> GetAllAircraft()
+        [HttpGet("all/{fms:bool?}")]
+        public ActionResult<List<AircraftResponse>> GetAllAircraft(bool? fms, string sessionId)
         {
+            if (!_sessionService.Sessions.TryGetValue(sessionId, out var sessionContainer))
+            {
+                return BadRequest("Session Not Found");
+            }
+            
             List<AircraftResponse> pilots = new List<AircraftResponse>();
-            _aircraftService.AircraftListLock.WaitOne();
+            try
+            {
+                sessionContainer.Session.AircraftHandler.SimAircraftListLock.WaitOne();
 
-                foreach (var pilot in _aircraftService.AircraftList)
+                foreach (var pilot in sessionContainer.Session.AircraftHandler.SimAircraftList)
                 {
-                    pilots.Add(new AircraftResponse(pilot));
+                    pilots.Add(new AircraftResponse(pilot, fms.HasValue && fms.Value));
                 }
+            }
+            finally
+            {
+                sessionContainer.Session.AircraftHandler.SimAircraftListLock.ReleaseMutex();
+            }
 
-            _aircraftService.AircraftListLock.ReleaseMutex();
             return pilots;
         }
 
-        [HttpGet("getAllWithFms")]
-        public List<AircraftResponse> GetAllAircraftWithFms()
-        {
-            List<AircraftResponse> pilots = new List<AircraftResponse>();
-            _aircraftService.AircraftListLock.WaitOne();
-
-                foreach (var pilot in _aircraftService.AircraftList)
-                {
-                    pilots.Add(new AircraftResponse(pilot, true));
-                }
-            _aircraftService.AircraftListLock.ReleaseMutex();
-            return pilots;
-        }
-
-        [HttpGet("getByCallsign/{callsign}")]
+        [HttpGet("{callsign}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public ActionResult<AircraftResponse> GetAircraftByCallsign(string callsign)
+        public ActionResult<AircraftResponse> GetAircraftByCallsign(string callsign, string sessionId)
         {
-            SimAircraft client = _aircraftService.Handler.GetAircraftByCallsign(callsign);
+            if (!_sessionService.Sessions.TryGetValue(sessionId, out var sessionContainer))
+            {
+                return BadRequest("Session Not Found");
+            }
+            
+            SimAircraft client = sessionContainer.Session.AircraftHandler.GetAircraftByCallsign(callsign);
 
             if (client == null)
             {
@@ -142,12 +131,18 @@ namespace SaunaSim.Api.Controllers
             return Ok(new AircraftResponse(client, true));
         }
 
-        [HttpGet("websocketByCallsign/{callsign}")]
+        [HttpGet("{callsign}/websocket")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task WebSocketForCallsign(string callsign)
+        public async Task WebSocketForCallsign(string callsign, string sessionId)
         {
-            if (_aircraftService.Handler.GetAircraftByCallsign(callsign) == null)
+            if (!_sessionService.Sessions.TryGetValue(sessionId, out var sessionContainer))
+            {
+                HttpContext.Response.StatusCode = StatusCodes.Status400BadRequest;
+                return;
+            }
+            
+            if (sessionContainer.Session.AircraftHandler.GetAircraftByCallsign(callsign) == null)
             {
                 HttpContext.Response.StatusCode = StatusCodes.Status400BadRequest;
             } else if (HttpContext.WebSockets.IsWebSocketRequest)
@@ -155,7 +150,7 @@ namespace SaunaSim.Api.Controllers
                 try
                 {
                     using var webSocket = await HttpContext.WebSockets.AcceptWebSocketAsync();
-                    await _aircraftService.WebSocketHandler.HandleAircraftSocket(callsign, webSocket, _applicationLifetime.ApplicationStopping);
+                    await sessionContainer.WebSocketHandler.HandleAircraftSocket(callsign, webSocket, _applicationLifetime.ApplicationStopping);
                 } catch (Exception e)
                 {
                     _logger.LogWarning($"Websocket connection failed: {e.Message}");
@@ -166,12 +161,17 @@ namespace SaunaSim.Api.Controllers
             }
         }
 
-        [HttpGet("getByPartialCallsign/{callsign}")]
+        [HttpGet("byPartialCallsign/{callsign}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public ActionResult<AircraftResponse> GetAircraftByPartialCallsign(string callsign)
+        public ActionResult<AircraftResponse> GetAircraftByPartialCallsign(string callsign, string sessionId)
         {
-            SimAircraft client = _aircraftService.Handler.GetAircraftWhichContainsCallsign(callsign);
+            if (!_sessionService.Sessions.TryGetValue(sessionId, out var sessionContainer))
+            {
+                return BadRequest("Session Not Found");
+            }
+            
+            SimAircraft client = sessionContainer.Session.AircraftHandler.GetAircraftWhichContainsCallsign(callsign);
 
             if (client == null)
             {
@@ -181,62 +181,17 @@ namespace SaunaSim.Api.Controllers
             return Ok(new AircraftResponse(client, true));
         }
 
-        [HttpPost("all/unpause")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        public ActionResult<AircraftStateRequestResponse> UnpauseAll()
-        {
-            _aircraftService.Handler.AllPaused = false;
-
-            return Ok(new AircraftStateRequestResponse
-            {
-                Paused = _aircraftService.Handler.AllPaused,
-                SimRate = _aircraftService.Handler.SimRate
-            });
-        }
-
-        [HttpPost("all/pause")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        public ActionResult<AircraftStateRequestResponse> PauseAll()
-        {
-            _aircraftService.Handler.AllPaused = true;
-
-            return Ok(new AircraftStateRequestResponse
-            {
-                Paused = _aircraftService.Handler.AllPaused,
-                SimRate = _aircraftService.Handler.SimRate
-            });
-        }
-
-        [HttpPost("all/simrate")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        public ActionResult<AircraftStateRequestResponse> SetAllSimRate(AircraftStateRequestResponse request)
-        {
-            _aircraftService.Handler.SimRate = request.SimRate;
-
-            return Ok(new AircraftStateRequestResponse
-            {
-                Paused = _aircraftService.Handler.AllPaused,
-                SimRate = _aircraftService.Handler.SimRate
-            });
-        }
-
-        [HttpGet("all/simState")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        public ActionResult<AircraftStateRequestResponse> GetAllSimState()
-        {
-            return Ok(new AircraftStateRequestResponse
-            {
-                Paused = _aircraftService.Handler.AllPaused,
-                SimRate = _aircraftService.Handler.SimRate
-            });
-        }
-
-        [HttpPost("byCallsign/{callsign}/unpause")]
+        [HttpPost("{callsign}/unpause")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public ActionResult<AircraftStateRequestResponse> UnpauseAircraft(string callsign)
+        public ActionResult<AircraftStateRequestResponse> UnpauseAircraft(string callsign, string sessionId)
         {
-            SimAircraft client = _aircraftService.Handler.GetAircraftByCallsign(callsign);
+            if (!_sessionService.Sessions.TryGetValue(sessionId, out var sessionContainer))
+            {
+                return BadRequest("Session Not Found");
+            }
+            
+            SimAircraft client = sessionContainer.Session.AircraftHandler.GetAircraftByCallsign(callsign);
 
             if (client == null)
             {
@@ -252,12 +207,17 @@ namespace SaunaSim.Api.Controllers
             });
         }
 
-        [HttpPost("byCallsign/{callsign}/pause")]
+        [HttpPost("{callsign}/pause")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public ActionResult<AircraftStateRequestResponse> PauseAircraft(string callsign)
+        public ActionResult<AircraftStateRequestResponse> PauseAircraft(string callsign, string sessionId)
         {
-            SimAircraft client = _aircraftService.Handler.GetAircraftByCallsign(callsign);
+            if (!_sessionService.Sessions.TryGetValue(sessionId, out var sessionContainer))
+            {
+                return BadRequest("Session Not Found");
+            }
+            
+            SimAircraft client = sessionContainer.Session.AircraftHandler.GetAircraftByCallsign(callsign);
 
             if (client == null)
             {
@@ -273,12 +233,17 @@ namespace SaunaSim.Api.Controllers
             });
         }
 
-        [HttpPost("byCallsign/{callsign}/simrate")]
+        [HttpPost("{callsign}/simrate")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public ActionResult<AircraftStateRequestResponse> SetAircraftSimRate(string callsign, AircraftStateRequestResponse request)
+        public ActionResult<AircraftStateRequestResponse> SetAircraftSimRate(string callsign, AircraftStateRequestResponse request, string sessionId)
         {
-            SimAircraft client = _aircraftService.Handler.GetAircraftByCallsign(callsign);
+            if (!_sessionService.Sessions.TryGetValue(sessionId, out var sessionContainer))
+            {
+                return BadRequest("Session Not Found");
+            }
+            
+            SimAircraft client = sessionContainer.Session.AircraftHandler.GetAircraftByCallsign(callsign);
 
             if (client == null)
             {
@@ -294,12 +259,17 @@ namespace SaunaSim.Api.Controllers
             });
         }
 
-        [HttpGet("byCallsign/{callsign}/simState")]
+        [HttpGet("{callsign}/simState")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public ActionResult<AircraftStateRequestResponse> GetAircraftSimState(string callsign)
+        public ActionResult<AircraftStateRequestResponse> GetAircraftSimState(string callsign, string sessionId)
         {
-            SimAircraft client = _aircraftService.Handler.GetAircraftByCallsign(callsign);
+            if (!_sessionService.Sessions.TryGetValue(sessionId, out var sessionContainer))
+            {
+                return BadRequest("Session Not Found");
+            }
+            
+            SimAircraft client = sessionContainer.Session.AircraftHandler.GetAircraftByCallsign(callsign);
 
             if (client == null)
             {
@@ -308,137 +278,44 @@ namespace SaunaSim.Api.Controllers
 
             return Ok(new AircraftStateRequestResponse
             {
-                Paused = _aircraftService.Handler.AllPaused,
-                SimRate = _aircraftService.Handler.SimRate
+                Paused = sessionContainer.Session.AircraftHandler.AllPaused,
+                SimRate = sessionContainer.Session.AircraftHandler.SimRate
             });
         }
 
-        [HttpDelete("removeByCallsign/{callsign}")]
+        [HttpDelete("{callsign}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public ActionResult<AircraftResponse> RemoveAircraftByCallsign(string callsign)
+        public ActionResult<AircraftResponse> RemoveAircraftByCallsign(string callsign, string sessionId)
         {
-            SimAircraft client = _aircraftService.Handler.GetAircraftByCallsign(callsign);
+            if (!_sessionService.Sessions.TryGetValue(sessionId, out var sessionContainer))
+            {
+                return BadRequest("Session Not Found");
+            }
+            
+            SimAircraft client = sessionContainer.Session.AircraftHandler.GetAircraftByCallsign(callsign);
 
             if (client == null)
             {
                 return BadRequest("The aircraft was not found!");
             }
 
-            _aircraftService.Handler.RemoveAircraftByCallsign(callsign);
+            sessionContainer.Session.AircraftHandler.RemoveAircraftByCallsign(callsign);
 
             return Ok(new AircraftResponse(client, true));
         }
 
-        [HttpDelete("all/remove")]
+        [HttpDelete("all")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public ActionResult RemoveAll()
+        public ActionResult RemoveAll(string sessionId)
         {
-            _aircraftService.Handler.DeleteAllAircraft();
+            if (!_sessionService.Sessions.TryGetValue(sessionId, out var sessionContainer))
+            {
+                return BadRequest("Session Not Found");
+            }
+            
+            sessionContainer.Session.AircraftHandler.DeleteAllAircraft();
             return Ok();
-        }
-
-        [HttpPost("mcp/byCallsign/{callsign}/setSpeedMode/{speedMode}")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public ActionResult<AircraftAutopilot> McpSetSpeedMode(string callsign, McpSpeedSelectorType speedMode)
-        {
-            SimAircraft client = _aircraftService.Handler.GetAircraftByCallsign(callsign);
-
-            if (client == null)
-            {
-                return BadRequest("The aircraft was not found!");
-            }
-
-            client.Autopilot.SelectedSpeedMode = speedMode;
-
-            return Ok(client.Autopilot);
-        }
-
-        [HttpPost("mcp/byCallsign/{callsign}/setSpeedUnits/{speedUnits}")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public ActionResult<AircraftAutopilot> McpSetSpeedUnits(string callsign, McpSpeedUnitsType speedUnits)
-        {
-            SimAircraft client = _aircraftService.Handler.GetAircraftByCallsign(callsign);
-
-            if (client == null)
-            {
-                return BadRequest("The aircraft was not found!");
-            }
-
-            client.Autopilot.SelectedSpeedUnits = speedUnits;
-
-            return Ok(client.Autopilot);
-        }
-
-        [HttpPost("mcp/byCallsign/{callsign}/setSelSpeed/{selSpeed}")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public ActionResult<AircraftAutopilot> McpSetSpeedBug(string callsign, int selSpeed)
-        {
-            SimAircraft client = _aircraftService.Handler.GetAircraftByCallsign(callsign);
-
-            if (client == null)
-            {
-                return BadRequest("The aircraft was not found!");
-            }
-
-            client.Autopilot.SelectedSpeed = selSpeed;
-
-            return Ok(client.Autopilot);
-        }
-
-        [HttpPost("mcp/byCallsign/{callsign}/setSelHdg/{selHdg}/{turnDir}")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public ActionResult<AircraftAutopilot> McpSetHdgBug(string callsign, int selHdg, McpKnobDirection turnDir)
-        {
-            SimAircraft client = _aircraftService.Handler.GetAircraftByCallsign(callsign);
-
-            if (client == null)
-            {
-                return BadRequest("The aircraft was not found!");
-            }
-
-            client.Autopilot.SelectedHeading = selHdg;
-            client.Autopilot.HdgKnobTurnDirection = turnDir;
-
-            return Ok(client.Autopilot);
-        }
-
-        [HttpPost("mcp/byCallsign/{callsign}/setSelAlt/{selAlt}")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public ActionResult<AircraftAutopilot> McpSetAltBug(string callsign, int selAlt)
-        {
-            SimAircraft client = _aircraftService.Handler.GetAircraftByCallsign(callsign);
-
-            if (client == null)
-            {
-                return BadRequest("The aircraft was not found!");
-            }
-
-            client.Autopilot.SelectedAltitude = selAlt;
-
-            return Ok(client.Autopilot);
-        }
-
-        [HttpPost("mcp/byCallsign/{callsign}/setSelFpa/{selFpa}")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public ActionResult<AircraftAutopilot> McpSetFpaBug(string callsign, int selFpa)
-        {
-            SimAircraft client = _aircraftService.Handler.GetAircraftByCallsign(callsign);
-
-            if (client == null)
-            {
-                return BadRequest("The aircraft was not found!");
-            }
-
-            client.Autopilot.SelectedFpa = selFpa;
-
-            return Ok(client.Autopilot);
         }
     }
 }
