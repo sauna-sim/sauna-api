@@ -1,35 +1,28 @@
-﻿using FsdConnectorNet;
-using FsdConnectorNet.Args;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-using SaunaSim.Core.Data;
-using SaunaSim.Core.Simulator.Commands;
-using System;
+﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
-using System.Reflection;
-using System.Runtime.CompilerServices;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Timers;
+using AviationCalcUtilNet.Atmos.Grib;
+using AviationCalcUtilNet.Aviation;
+using AviationCalcUtilNet.Geo;
 using AviationCalcUtilNet.GeoTools;
-using AviationCalcUtilNet.MathTools;
+using AviationCalcUtilNet.Magnetic;
+using AviationCalcUtilNet.Physics;
+using AviationCalcUtilNet.Units;
+using FsdConnectorNet;
+using FsdConnectorNet.Args;
+using NavData_Interface.Objects.Fixes;
+using SaunaSim.Core.Data;
 using SaunaSim.Core.Simulator.Aircraft.Autopilot;
 using SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller;
 using SaunaSim.Core.Simulator.Aircraft.FMS;
-using SaunaSim.Core.Simulator.Aircraft.Performance;
-using System.Diagnostics;
 using SaunaSim.Core.Simulator.Aircraft.Ground;
+using SaunaSim.Core.Simulator.Aircraft.Performance;
 using SaunaSim.Core.Simulator.Aircraft.Pilot;
-using AviationCalcUtilNet.Atmos.Grib;
-using AviationCalcUtilNet.Magnetic;
-using AviationCalcUtilNet.Geo;
-using AviationCalcUtilNet.Units;
-using NavData_Interface.Objects.Fixes;
-using AviationCalcUtilNet.Physics;
-using AviationCalcUtilNet.Aviation;
-using AviationCalcUtilNet.Math;
+using SaunaSim.Core.Simulator.Commands;
 using SaunaSim.Core.Simulator.Session;
 
 namespace SaunaSim.Core.Simulator.Aircraft
@@ -86,11 +79,13 @@ namespace SaunaSim.Core.Simulator.Aircraft
         private PauseableTimer _delayTimer;
         private bool disposedValue;
         private bool _shouldUpdatePosition = false;
-        private ClientInfo _clientInfo;
         private readonly Stopwatch _lagTimer;
         private readonly GribTileManager _gribTileManager;
         private MagneticTileManager _magTileManager;
         private readonly CommandHandler _commandHandler;
+        
+        public const int PositionUpdateInterval = 100;
+        
         public CancellationToken CancelToken { private get; set; } = CancellationToken.None;
 
         // Events
@@ -449,28 +444,28 @@ namespace SaunaSim.Core.Simulator.Aircraft
         private void HandleInFlight()
         {
             // Update FMS
-            Fms.OnPositionUpdate((int)(AppSettingsManager.PosCalcRate * (_simRate / 10.0)));
+            Fms.OnPositionUpdate((int)(PositionUpdateInterval * (_simRate / 10.0)));
 
             // Run Config Handler
-            ArtificialPilot.OnPositionUpdate((int)(AppSettingsManager.PosCalcRate * (_simRate / 10.0)));
+            ArtificialPilot.OnPositionUpdate((int)(PositionUpdateInterval * (_simRate / 10.0)));
 
             // Run Autopilot
-            Autopilot.OnPositionUpdate((int)(AppSettingsManager.PosCalcRate * (_simRate / 10.0)));
+            Autopilot.OnPositionUpdate((int)(PositionUpdateInterval * (_simRate / 10.0)));
 
             // TODO: Update Mass
 
             // Move Aircraft
-            MoveAircraft((int)(AppSettingsManager.PosCalcRate * (_simRate / 10.0)));
+            MoveAircraft((int)(PositionUpdateInterval * (_simRate / 10.0)));
         }
         private void HandleOnGround()
         {
             // Run ground handler
-            GroundHandler.OnPositionUpdate((int)(AppSettingsManager.PosCalcRate * (_simRate / 10.0)));
+            GroundHandler.OnPositionUpdate((int)(PositionUpdateInterval * (_simRate / 10.0)));
 
             // TODO: Update Mass
 
             // Move aircraft
-            MoveAircraftOnGround((int)(AppSettingsManager.PosCalcRate * (_simRate / 10.0)));
+            MoveAircraftOnGround((int)(PositionUpdateInterval * (_simRate / 10.0)));
         }
         private void AircraftPositionWorker()
         {
@@ -519,7 +514,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
                 }
 
                 // Remove calculation time from position calculation rate
-                int sleepTime = AppSettingsManager.PosCalcRate - (int)_lagTimer.ElapsedMilliseconds;
+                int sleepTime = PositionUpdateInterval - (int)_lagTimer.ElapsedMilliseconds;
 
                 // Sleep the thread
                 if (sleepTime > 0)

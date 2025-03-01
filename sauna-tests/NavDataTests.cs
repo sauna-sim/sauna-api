@@ -26,6 +26,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Data.Sqlite;
+using SaunaSim.Core.Simulator.Session;
 
 namespace sauna_tests
 {
@@ -319,6 +320,7 @@ namespace sauna_tests
             DataHandler.LoadNavigraphDataFile(DFD_FILE_PATH_1, "aaa");
 
             var Handler = new SimAircraftHandler(
+                new SimSessionDetails() {SessionType = SimSessionType.STANDALONE},
                 Path.Join(AppDomain.CurrentDomain.BaseDirectory, "magnetic", "WMM.COF"),
                 Path.Join(Path.GetTempPath(), "sauna-api", "grib-tiles"),
                 (s, i) => { },
@@ -327,9 +329,8 @@ namespace sauna_tests
             var cmdHandler = new CommandHandler(Handler);
             var webSocketHandler = new WebSocketHandler(Handler);
 
-            var pilot = new AircraftBuilder("RYR36CU", "1", "pass", "127.0.0.1", 6809, Handler.MagTileManager, Handler.GribTileManager, cmdHandler)
+            var pilot = new AircraftBuilder("RYR36CU", Handler.MagTileManager, Handler.GribTileManager, cmdHandler)
             {
-                Protocol = ProtocolRevision.Classic,
                 Position = new GeoPoint(0, 0, 5000),
                 HeadingMag = Bearing.FromDegrees(0),
                 LogInfo = (string msg) =>
@@ -350,7 +351,7 @@ namespace sauna_tests
 
             pilot.FlightPlan = FlightPlan.ParseFromEsScenarioFile("$FPEZY938K:*A:I:A320:420:EGGP:::28000:EGAA:00:00:0:0:::WAL2T WAL M146 IPSET P6 BELZU");
 
-            var aircraft = pilot.Create(PrivateInfoLoader.GetClientInfo(_ => { }));
+            var aircraft = pilot.Create();
 
             Console.WriteLine($"Route is WAL2T WAL M146 IPSET P6 BELZU");
 
