@@ -101,9 +101,6 @@ namespace SaunaSim.Api.WebSockets
                 SimRate = _simAircraftHandler.SimRate
             }));
 
-            // Send initial position calcluation rate
-            await client.QueueMessage(new SocketPosCalcUpdateData(AppSettingsManager.PosCalcRate));
-
             // Send all aircraft initially
             _simAircraftHandler.SimAircraftListLock.WaitOne();
 
