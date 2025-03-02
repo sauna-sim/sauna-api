@@ -9,7 +9,7 @@ namespace SaunaSim.Core.Simulator.Session
     /// <summary>
     /// A Sauna Simulator Session.
     /// </summary>
-    public class SimSession
+    public class SimSession : IDisposable
     {
         private SimSessionDetails _details;
         public SimSessionDetails Details
@@ -22,6 +22,8 @@ namespace SaunaSim.Core.Simulator.Session
             }
         }
         
+        public CancellationTokenSource SessionCancel { get; } 
+        
         public SimAircraftHandler AircraftHandler { get; }
         
         public CommandHandler CommandHandler { get; }
@@ -31,11 +33,38 @@ namespace SaunaSim.Core.Simulator.Session
             string magCofFile,
             string gribTilePath,
             Action<string, int> logger, 
-            CancellationToken cancelToken)
+            CancellationToken externalCancel)
         {
+            SessionCancel = new CancellationTokenSource();
             _details = details;
-            AircraftHandler = new SimAircraftHandler(details, magCofFile, gribTilePath, logger, cancelToken);
+            AircraftHandler = new SimAircraftHandler(details, magCofFile, gribTilePath, logger, externalCancel);
             CommandHandler = new CommandHandler(AircraftHandler);
+        }
+
+        ~SimSession()
+        {
+            Dispose(false);
+        }
+        
+        private void ReleaseUnmanagedResources()
+        {
+            // TODO release unmanaged resources here
+        }
+
+        private void Dispose(bool disposing)
+        {
+            ReleaseUnmanagedResources();
+            if (disposing)
+            {
+                SessionCancel?.Dispose();
+                AircraftHandler?.Dispose();
+            }
+        }
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
         }
     }
 }

@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace SaunaSim.Api.WebSockets
 {
-    public class AircraftWebSocketHandler
+    public class AircraftWebSocketHandler : IDisposable
     {
         private string _callsign;
         private SemaphoreSlim _clientsLock;
@@ -104,6 +104,15 @@ namespace SaunaSim.Api.WebSockets
             _clientsLock.Release();
 
             await Task.WhenAll(tasks);
+        }
+
+        public void Dispose()
+        {
+            _clientsLock?.Dispose();
+            foreach (var client in _clients)
+            {
+                client.Dispose();
+            }
         }
     }
 }
