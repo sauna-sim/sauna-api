@@ -20,7 +20,7 @@ jobs:
             os: windows-latest            
             rust-os: pc-windows-msvc
           - short-os: linux
-            os: ubuntu-24.04            
+            os: ubuntu-22.04            
             rust-os: unknown-linux-gnu
           - arch: x64
             rust-arch: x86_64
