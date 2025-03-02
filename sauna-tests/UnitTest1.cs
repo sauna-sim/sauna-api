@@ -25,7 +25,7 @@ public class Tests
         var client = application.CreateClient();
 
 
-        var response = await client.GetStringAsync("/api/data/settings");
+        var response = await client.GetStringAsync("/api/server/info");
        
         Assert.That(response, Is.Not.Empty);
     }
