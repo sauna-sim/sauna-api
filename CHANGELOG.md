@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.24.0] - 2025-03-01
+### Added
+- Session Handling
+
+### Changed
+- Major API rewrite
+
 ## [0.23.0] - 2025-02-23
 ### Changed
 - WMM Updated to 2025 model.
@@ -49,7 +56,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - NullPointerExceptions
 
-[Unreleased]: https://github.com/sauna-sim/sauna-api/compare/v0.23.0...master
+[Unreleased]: https://github.com/sauna-sim/sauna-api/compare/v0.24.0...master
+[0.24.0]: https://github.com/sauna-sim/sauna-api/compare/v0.23.0...v0.24.0
 [0.23.0]: https://github.com/sauna-sim/sauna-api/compare/v0.22.3...v0.23.0
 [0.22.3]: https://github.com/sauna-sim/sauna-api/compare/v0.22.1...v0.22.3
 [0.22.1]: https://github.com/sauna-sim/sauna-api/compare/v0.22.0...v0.22.1
