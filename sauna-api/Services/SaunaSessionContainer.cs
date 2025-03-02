@@ -9,7 +9,7 @@ using SaunaSim.Core.Simulator.Session;
 
 namespace SaunaSim.Api.Services;
 
-public class SaunaSessionContainer
+public class SaunaSessionContainer : IDisposable
 {
     public string SessionId { get; }
     public SimSession Session { get; }
@@ -30,5 +30,12 @@ public class SaunaSessionContainer
         WebSocketHandler = new WebSocketHandler(Session.AircraftHandler);
         CommandsBuffer = new List<string>();
         CommandsBufferLock = new Mutex();
+    }
+
+    public void Dispose()
+    {
+        WebSocketHandler?.Dispose();
+        Session?.Dispose();
+        CommandsBufferLock?.Dispose();
     }
 }

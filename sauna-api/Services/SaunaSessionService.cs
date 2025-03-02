@@ -51,7 +51,12 @@ namespace SaunaSim.Api.Services
 
 		public bool RemoveSession(string sessionId)
 		{
-			return Sessions.Remove(sessionId);
+			bool removed = Sessions.Remove(sessionId, out var value);
+			if (removed)
+			{
+				value.Dispose();
+			}
+			return removed;
 		}
 	}
 }

@@ -21,12 +21,12 @@ using SaunaSim.Api.WebSockets.RequestData;
 
 namespace SaunaSim.Api.WebSockets
 {
-    public class WebSocketHandler
+    public class WebSocketHandler : IDisposable
     {
-        private List<ClientStream> _generalClients;
-        private SemaphoreSlim _generalClientsLock;
-        private Dictionary<string, AircraftWebSocketHandler> _aircraftClientsMap;
-        private SimAircraftHandler _simAircraftHandler;
+        private readonly List<ClientStream> _generalClients;
+        private readonly SemaphoreSlim _generalClientsLock;
+        private readonly Dictionary<string, AircraftWebSocketHandler> _aircraftClientsMap;
+        private readonly SimAircraftHandler _simAircraftHandler;
 
         public WebSocketHandler(SimAircraftHandler handler)
         {
@@ -241,6 +241,20 @@ namespace SaunaSim.Api.WebSockets
             } catch (Exception e)
             {
                 await RemoveAircraftClient(callsign, stream);
+            }
+        }
+
+        public void Dispose()
+        {
+            _generalClientsLock?.Dispose();
+            foreach (var client in _generalClients)
+            {
+                client.Dispose();
+            }
+
+            foreach (var aircraft in _aircraftClientsMap.Values)
+            {
+                aircraft.Dispose();
             }
         }
     }

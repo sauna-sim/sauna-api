@@ -20,7 +20,7 @@ using System.Threading.Tasks;
 
 namespace SaunaSim.Api.WebSockets
 {
-    public class ClientStream
+    public class ClientStream : IDisposable
     {
         private WebSocket _ws;
         private Queue<ISocketResponseData> _responseQueue;
@@ -121,6 +121,21 @@ namespace SaunaSim.Api.WebSockets
         {
             ShouldClose = true;
             _sendWorker.Wait();
+        }
+
+        public void Dispose()
+        {
+            _ws?.Dispose();
+            _responseQueueLock?.Dispose();
+            try
+            {
+                StopSend();
+                _sendWorker?.Dispose();
+            }
+            catch (Exception)
+            {
+                // ignored
+            }
         }
     }
 }
