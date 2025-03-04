@@ -1,16 +1,12 @@
+using System;
+using System.Text.Json.Serialization;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using SaunaSim.Core.Simulator.Aircraft;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text.Json.Serialization;
-using System.Threading.Tasks;
 using SaunaSim.Api.Services;
 
 namespace SaunaSim.Api
@@ -42,7 +38,7 @@ namespace SaunaSim.Api
             services.AddSwaggerGen();
 
             // Sim Aircraft Service
-            services.AddSingleton<ISimAircraftService, SimAircraftService>();
+            services.AddSingleton<ISaunaSessionService, SaunaSessionService>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
