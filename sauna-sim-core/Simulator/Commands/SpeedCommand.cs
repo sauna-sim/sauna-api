@@ -55,7 +55,7 @@ namespace SaunaSim.Core.Simulator.Commands
             // Check argument length
             if (args.Count < 1)
             {
-                Logger?.Invoke($"ERROR: Turn Right Heading requires at least 1 argument!");
+                Logger?.Invoke($"ERROR: Speed requires at least 1 argument!");
                 return false;
             }
 

@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
+using SaunaSim.Core.Simulator.Session;
 
 namespace SaunaSim.Core.Simulator.Aircraft
 {
@@ -34,25 +35,25 @@ namespace SaunaSim.Core.Simulator.Aircraft
     public class SimAircraftHandler : IDisposable
     {
         private List<SimAircraft> _aircrafts;
-        private Mutex _aircraftsLock;
+        private readonly Mutex _aircraftsLock;
         private bool _allPaused;
         private int _simRate;
         private bool disposedValue;
         private Action<string, int> _logger;
+        private readonly CancellationToken _cancellationToken;
 
         public event EventHandler<SimStateChangedEventArgs> GlobalSimStateChanged;
         public event EventHandler<AircraftPositionUpdateEventArgs> AircraftCreated;
         public event EventHandler<AircraftDeletedEventArgs> AircraftDeleted;
-        public event EventHandler<AircraftPositionUpdateEventArgs> AircraftPositionChanged;
-        public event EventHandler<AircraftConnectionStatusChangedEventArgs> AircraftConnectionStatusChanged;
-        public event EventHandler<AircraftSimStateChangedEventArgs> AircraftSimStateChanged;
 
 
-        public SimAircraftHandler(string magCofFile, string gribTilePath, Action<string, int> logger)
+        public SimAircraftHandler(SimSessionDetails sessionDetails, string magCofFile, string gribTilePath, Action<string, int> logger, CancellationToken token)
         {
             _logger = logger;
+            _sessionDetails = sessionDetails;
             _allPaused = true;
             _simRate = 10;
+            _cancellationToken = token;
             _aircraftsLock = new Mutex();
             _aircraftsLock.WaitOne();
             _aircrafts = new List<SimAircraft>();
@@ -74,6 +75,30 @@ namespace SaunaSim.Core.Simulator.Aircraft
         public MagneticTileManager MagTileManager { get; private set; }
 
         public GribTileManager GribTileManager { get; private set; }
+
+        private SimSessionDetails _sessionDetails;
+
+        public SimSessionDetails SessionDetails
+        {
+            get => _sessionDetails;
+            set
+            {
+                _sessionDetails = value;
+
+                try
+                {
+                    _aircraftsLock.WaitOne();
+                    foreach (SimAircraft aircraft in _aircrafts)
+                    {
+                        aircraft.SessionDetails = _sessionDetails;
+                    }
+                }
+                finally
+                {
+                    _aircraftsLock.ReleaseMutex();
+                }
+            }
+        }
 
         public Mutex SimAircraftListLock => _aircraftsLock;
 
@@ -132,7 +157,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
                 {
                     foundAcft = aircraft;
                     _aircrafts.Remove(aircraft);
-                    Task.Run(() => AircraftDeleted?.Invoke(null, new AircraftDeletedEventArgs(foundAcft.Callsign)));
+                    Task.Run(() => AircraftDeleted?.Invoke(null, new AircraftDeletedEventArgs(callsign)), _cancellationToken);
                     break;
                 }
             }
@@ -151,9 +176,17 @@ namespace SaunaSim.Core.Simulator.Aircraft
                 SimAircraft c = _aircrafts[i];
                 if (c.ConnectionStatus == ConnectionStatusType.DISCONNECTED || (c.Callsign.Equals(aircraft.Callsign) && c.ConnectionStatus == ConnectionStatusType.WAITING))
                 {
-                    Task.Run(() => AircraftDeleted?.Invoke(null, new AircraftDeletedEventArgs(_aircrafts[i].Callsign)));
-                    _aircrafts[i].Dispose();
-                    _aircrafts.RemoveAt(i);
+                    try
+                    {
+                        var callsign = _aircrafts[i].Callsign;
+                        Task.Run(() => AircraftDeleted?.Invoke(null, new AircraftDeletedEventArgs(callsign)), _cancellationToken);
+                        _aircrafts[i].Dispose();
+                        _aircrafts.RemoveAt(i);
+                    }
+                    catch (ArgumentOutOfRangeException)
+                    {
+                        
+                    }
                 } else if (c.Callsign.Equals(aircraft.Callsign))
                 {
                     _aircraftsLock.ReleaseMutex();
@@ -163,29 +196,14 @@ namespace SaunaSim.Core.Simulator.Aircraft
 
             aircraft.Paused = _allPaused;
             aircraft.SimRate = _simRate;
-            aircraft.ConnectionStatusChanged += Aircraft_ConnectionStatusChanged;
-            aircraft.PositionUpdated += Aircraft_PositionUpdated;
-            aircraft.SimStateChanged += Aircraft_SimStateChanged;
+            aircraft.CancelToken = _cancellationToken;
             _aircrafts.Add(aircraft);
-
+            
             _aircraftsLock.ReleaseMutex();
-            Task.Run(() => AircraftCreated?.Invoke(null, new AircraftPositionUpdateEventArgs(DateTime.UtcNow, aircraft)));
+            
+            aircraft.Start(_sessionDetails);
+            Task.Run(() => AircraftCreated?.Invoke(null, new AircraftPositionUpdateEventArgs(DateTime.UtcNow, aircraft)), _cancellationToken);
             return true;
-        }
-
-        private void Aircraft_SimStateChanged(object sender, AircraftSimStateChangedEventArgs e)
-        {
-            Task.Run(() => AircraftSimStateChanged?.Invoke(sender, e));
-        }
-
-        private void Aircraft_PositionUpdated(object sender, AircraftPositionUpdateEventArgs e)
-        {
-            Task.Run(() => AircraftPositionChanged?.Invoke(sender, e));
-        }
-
-        private void Aircraft_ConnectionStatusChanged(object sender, AircraftConnectionStatusChangedEventArgs e)
-        {
-            Task.Run(() => AircraftConnectionStatusChanged?.Invoke(sender, e));
         }
 
         public SimAircraft GetAircraftWhichContainsCallsign(string callsignMatch)

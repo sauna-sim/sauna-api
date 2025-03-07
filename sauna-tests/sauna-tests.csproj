@@ -1,23 +1,23 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <RootNamespace>sauna_tests</RootNamespace>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-
+    <Platforms>x64;x86;ARM64</Platforms>
     <IsPackable>false</IsPackable>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.13.0" />
     <PackageReference Include="NUnit" Version="3.14.0" />
-    <PackageReference Include="NUnit3TestAdapter" Version="4.2.1" />
+    <PackageReference Include="NUnit3TestAdapter" Version="5.0.0" />
     <PackageReference Include="NUnit.Analyzers" Version="3.10.0" />
-    <PackageReference Include="coverlet.collector" Version="6.0.0" />
-    <PackageReference Include="PShivaraman.AviationCalcUtilNet" Version="2.12.1" />
-    <PackageReference Include="Microsoft.AspNetCore.TestHost" Version="6.0.25" />
-    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="6.0.23" />
+    <PackageReference Include="coverlet.collector" Version="6.0.4" />
+    <PackageReference Include="PShivaraman.AviationCalcUtilNet" Version="2.13.2" />
+    <PackageReference Include="Microsoft.AspNetCore.TestHost" Version="8.0.13" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="8.0.13" />
   </ItemGroup>
 
   <ItemGroup>
@@ -27,5 +27,8 @@
     <None Remove="PShivaraman.AviationCalcUtilNet" />
     <None Remove="Microsoft.AspNetCore.TestHost" />
     <None Remove="Microsoft.AspNetCore.Mvc.Testing" />
+    <None Update="e_dfd_2101.s3db">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 </Project>

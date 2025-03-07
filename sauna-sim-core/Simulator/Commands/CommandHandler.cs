@@ -11,33 +11,33 @@ namespace SaunaSim.Core.Simulator.Commands
 {
     public class CommandHandler
     {
-        private Queue<IAircraftCommand> commandQueue;
-        private object commandQueueLock;
-        private bool processingCommand;
-        private SimAircraftHandler _handler;
+        private readonly Queue<IAircraftCommand> _commandQueue;
+        private readonly object _commandQueueLock;
+        private bool _processingCommand;
+        private readonly SimAircraftHandler _handler;
 
         public CommandHandler(SimAircraftHandler handler)
         {
-            commandQueue = new Queue<IAircraftCommand>();
-            processingCommand = false;
-            commandQueueLock = new object();
+            _commandQueue = new Queue<IAircraftCommand>();
+            _processingCommand = false;
+            _commandQueueLock = new object();
             _handler = handler;
         }
 
         private void ProcessNextCommand()
         {
-            if (processingCommand)
+            if (_processingCommand)
             {
                 return;
             }
 
-            processingCommand = true;
-            while (commandQueue.Count > 0)
+            _processingCommand = true;
+            while (_commandQueue.Count > 0)
             {
                 IAircraftCommand cmd;
-                lock (commandQueueLock)
+                lock (_commandQueueLock)
                 {
-                    cmd = commandQueue.Dequeue();
+                    cmd = _commandQueue.Dequeue();
                 }
 
                 // Generate random delay
@@ -46,7 +46,7 @@ namespace SaunaSim.Core.Simulator.Commands
 
                 cmd.ExecuteCommand();
             }
-            processingCommand = false;
+            _processingCommand = false;
         }
 
         public bool QueueCommand(IAircraftCommand command)
@@ -54,9 +54,9 @@ namespace SaunaSim.Core.Simulator.Commands
             if (command != null)
             {
                 // Add to Queue
-                lock (commandQueueLock)
+                lock (_commandQueueLock)
                 {
-                    commandQueue.Enqueue(command);
+                    _commandQueue.Enqueue(command);
                 }
 
                 // Launch thread to execute queue
@@ -185,6 +185,10 @@ namespace SaunaSim.Core.Simulator.Commands
                         logger($"ERROR: Speed Brake Pos Invalid");
                     }
                     break;
+
+                case "sid":
+                    cmd = new SidCommand();
+                    break;
                 case "config":
                     try
                     {
@@ -219,9 +223,9 @@ namespace SaunaSim.Core.Simulator.Commands
                 if (cmd.HandleCommand(ref args))
                 {
                     // Add to Queue
-                    lock (commandQueueLock)
+                    lock (_commandQueueLock)
                     {
-                        commandQueue.Enqueue(cmd);
+                        _commandQueue.Enqueue(cmd);
                     }
 
                     // Launch thread to execute queue

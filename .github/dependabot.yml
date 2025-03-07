@@ -9,11 +9,26 @@ updates:
     directory: "/sauna-api/" # Location of package manifests
     schedule:
       interval: "weekly"
+    ignore:
+      - dependency-name: "Microsoft.AspNetCore.*"
+        versions: ["9.x"]
+      - dependency-name: "Swashbuckle.AspNetCore"
+        versions: [ "9.x" ]
+    groups:
+      api-dependabot-nuget:
+        applies-to: version-updates
+        patterns:
+          - "*"
 
   - package-ecosystem: "nuget" # See documentation for possible values
     directory: "/sauna-sim-core/" # Location of package manifests
     schedule:
       interval: "weekly"
+    groups:
+      core-dependabot-nuget:
+        applies-to: version-updates
+        patterns:
+          - "*"
       
   - package-ecosystem: "nuget" # See documentation for possible values
     directory: "/sauna-tests/" # Location of package manifests
@@ -21,4 +36,15 @@ updates:
       interval: "weekly"
     ignore:
       - dependency-name: "Microsoft.AspNetCore.*"
-        versions: ["7.x", "8.x"]
+        versions: [ "9.x"]
+      - dependency-name: "Swashbuckle.AspNetCore"
+        versions: [ "9.x" ]
+      - dependency-name: "NUnit"
+        versions: [ "4.x" ]
+      - dependency-name: "NUnit.*"
+        versions: [ "4.x" ]
+    groups:
+      tests-dependabot-nuget:
+        applies-to: version-updates
+        patterns:
+          - "*"

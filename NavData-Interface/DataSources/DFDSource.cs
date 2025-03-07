@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using System.Data.SQLite;
 using NavData_Interface.Objects.Fixes;
 using AviationCalcUtilNet.GeoTools;
 using NavData_Interface.Objects.Fixes.Navaids;
@@ -13,12 +12,14 @@ using NavData_Interface.Objects.Fixes.Waypoints;
 using NavData_Interface.Objects.LegCollections.Airways;
 using AviationCalcUtilNet.Units;
 using AviationCalcUtilNet.Geo;
+using Microsoft.Data.Sqlite;
+using NavData_Interface.Objects.LegCollections.Procedures;
 
 namespace NavData_Interface.DataSources
 {
     public class DFDSource : DataSource
     {
-        private SQLiteConnection _connection;
+        private SqliteConnection _connection;
 
         public string Airac_version { get; }
 
@@ -27,6 +28,10 @@ namespace NavData_Interface.DataSources
         public override string GetId()
         {
             return Uuid;
+        }
+
+        public DFDSource(string filePath) : this(filePath, "")
+        {
         }
 
         /// <summary>
@@ -38,20 +43,21 @@ namespace NavData_Interface.DataSources
         {
             Uuid = uuid;
 
-            var connectionString = new SQLiteConnectionStringBuilder()
+            var connectionString = new SqliteConnectionStringBuilder()
             {
                 DataSource = filePath,
-                Version = 3,
-                ReadOnly = true
+                Mode = SqliteOpenMode.ReadOnly,
             }.ToString();
 
-            _connection = new SQLiteConnection(connectionString);
-            
+            _connection = new SqliteConnection(connectionString);
+
             try
             {
                 _connection.Open();
-            } catch (SQLiteException e) { 
-                if (e.ResultCode == SQLiteErrorCode.CantOpen)
+            }
+            catch (SqliteException e)
+            {
+                if (e.SqliteErrorCode == 14)
                 {
                     throw new System.IO.FileNotFoundException(filePath);
                 }
@@ -59,8 +65,9 @@ namespace NavData_Interface.DataSources
 
             try
             {
-                var cmd = new SQLiteCommand(_connection)
+                var cmd = new SqliteCommand()
                 {
+                    Connection = _connection,
                     CommandText = "SELECT * FROM tbl_header"
                 };
 
@@ -69,19 +76,20 @@ namespace NavData_Interface.DataSources
                     if (reader.Read())
                     {
                         Airac_version = reader["current_airac"].ToString();
-                    } else
+                    }
+                    else
                     {
                         throw new FormatException("The navigation data file has an incorrect format.");
                     }
                 }
-            } catch (Exception e)
+            }
+            catch (Exception e)
             {
                 throw new Exception("The navigation data file is invalid.", e);
             }
         }
 
-        override
-        public Localizer GetLocalizerFromAirportRunway(string airportIdentifier, string runwayIdentifier)
+        public override Localizer GetLocalizerFromAirportRunway(string airportIdentifier, string runwayIdentifier)
         {
             var foundLocs = GetObjectsWithQuery<Localizer>(LocalizerLookupByAirportRunway(airportIdentifier, runwayIdentifier), reader => LocalizerFactory.Factory(reader));
 
@@ -89,17 +97,18 @@ namespace NavData_Interface.DataSources
             {
                 return null;
             }
-            
+
             return foundLocs[0];
         }
 
-        private SQLiteCommand LocalizerLookupByAirportRunway(string airportIdentifier, string runwayIdentifier)
+        private SqliteCommand LocalizerLookupByAirportRunway(string airportIdentifier, string runwayIdentifier)
         {
             runwayIdentifier = "RW" + runwayIdentifier;
-            
-            var cmd = new SQLiteCommand(_connection)
+
+            var cmd = new SqliteCommand()
             {
-                CommandText = $"SELECT * from tbl_localizers_glideslopes WHERE airport_identifier = @airportIdentifier AND runway_identifier = @runwayIdentifier"
+                Connection = _connection,
+                CommandText = "SELECT * from tbl_localizers_glideslopes WHERE airport_identifier = @airportIdentifier AND runway_identifier = @runwayIdentifier"
             };
 
             cmd.Parameters.AddWithValue("@airportIdentifier", airportIdentifier);
@@ -108,11 +117,12 @@ namespace NavData_Interface.DataSources
             return cmd;
         }
 
-        private SQLiteCommand AirportLookupByIdentifier(string identifier)
+        private SqliteCommand AirportLookupByIdentifier(string identifier)
         {
-            var cmd = new SQLiteCommand(_connection)
+            var cmd = new SqliteCommand()
             {
-                CommandText = $"SELECT * FROM tbl_airports WHERE airport_identifier = @identifier"
+                Connection = _connection,
+                CommandText = "SELECT * FROM tbl_airports WHERE airport_identifier = @identifier",
             };
 
             cmd.Parameters.AddWithValue("@identifier", identifier);
@@ -127,7 +137,8 @@ namespace NavData_Interface.DataSources
             if (airports.Count == 1)
             {
                 return airports[0];
-            } else if (airports.Count > 1)
+            }
+            else if (airports.Count > 1)
             {
                 Console.Error.WriteLine($"Found two airport results for {airportIdentifier}. This should never happen!");
             }
@@ -135,12 +146,13 @@ namespace NavData_Interface.DataSources
             return null;
         }
 
-        private SQLiteCommand WaypointLookupByIdentifier(bool isTerminal, string identifier)
+        private SqliteCommand WaypointLookupByIdentifier(bool isTerminal, string identifier)
         {
             var table = isTerminal ? "tbl_terminal_waypoints" : "tbl_enroute_waypoints";
 
-            var cmd = new SQLiteCommand(_connection)
+            var cmd = new SqliteCommand()
             {
+                Connection = _connection,
                 CommandText = $"SELECT * FROM {table} WHERE waypoint_identifier = @identifier"
             };
 
@@ -152,7 +164,7 @@ namespace NavData_Interface.DataSources
         public List<Waypoint> GetWaypointsByIdentifier(string identifier)
         {
             // We need to combine enroute + terminal waypoints
-            
+
             List<Waypoint> waypoints = GetObjectsWithQuery<Waypoint>(WaypointLookupByIdentifier(true, identifier), reader => WaypointFactory.Factory(reader));
             foreach (var waypoint in GetObjectsWithQuery<Waypoint>(WaypointLookupByIdentifier(false, identifier), reader => WaypointFactory.Factory(reader)))
             {
@@ -162,12 +174,14 @@ namespace NavData_Interface.DataSources
             return waypoints;
         }
 
-        private SQLiteCommand VhfNavaidLookupByIdentifier(string identifier)
+        private SqliteCommand VhfNavaidLookupByIdentifier(string identifier)
         {
-            var cmd = new SQLiteCommand(_connection)
+            var cmd = new SqliteCommand()
             {
-                CommandText = $"SELECT * from tbl_vhfnavaids WHERE vor_identifier = @identifier OR dme_ident = @identifier"
+                Connection = _connection,
+                CommandText = "SELECT * from tbl_vhfnavaids WHERE vor_identifier = @identifier OR dme_ident = @identifier"
             };
+
             cmd.Parameters.AddWithValue("@identifier", identifier);
 
             return cmd;
@@ -176,18 +190,19 @@ namespace NavData_Interface.DataSources
         public List<VhfNavaid> GetVhfNavaidsByIdentifier(string identifier)
         {
             List<VhfNavaid> navaids = GetObjectsWithQuery<VhfNavaid>(
-                VhfNavaidLookupByIdentifier(identifier), 
+                VhfNavaidLookupByIdentifier(identifier),
                 reader => VhfNavaidFactory.Factory(reader));
 
             return navaids;
         }
 
-        public SQLiteCommand NdbLookupByIdentifier(bool isTerminal, string identifier)
+        public SqliteCommand NdbLookupByIdentifier(bool isTerminal, string identifier)
         {
             var table = isTerminal ? "tbl_terminal_ndbnavaids" : "tbl_enroute_ndbnavaids";
 
-            var cmd = new SQLiteCommand(_connection)
+            var cmd = new SqliteCommand()
             {
+                Connection = _connection,
                 CommandText = $"SELECT * FROM {table} WHERE ndb_identifier = @identifier"
             };
 
@@ -196,7 +211,7 @@ namespace NavData_Interface.DataSources
             return cmd;
         }
 
-        public SQLiteCommand AirportsFilterByDistance(GeoPoint position, Length radius)
+        public SqliteCommand AirportsFilterByDistance(GeoPoint position, Length radius)
         {
             radius = Length.FromMeters(Math.Min(radius.Meters, Length.FromNauticalMiles(100).Meters));
 
@@ -239,9 +254,11 @@ namespace NavData_Interface.DataSources
             if (rightLon <= leftLon)
             {
                 // SELECT * from (airports) WHERE ((latitude) BETWEEN bottomlat AND topLAT) AND (longitude >= leftlon OR longitude <= right)
-                var cmd = new SQLiteCommand(_connection)
+                var cmd = new SqliteCommand()
                 {
-                    CommandText = $"SELECT * FROM tbl_airports WHERE (airport_ref_latitude BETWEEN @bottomLat AND @topLat) AND (airport_ref_longitude >= @leftLon OR airport_ref_longitude <= @rightLon)"
+                    Connection = _connection,
+                    CommandText =
+                        "SELECT * FROM tbl_airports WHERE (airport_ref_latitude BETWEEN @bottomLat AND @topLat) AND (airport_ref_longitude >= @leftLon OR airport_ref_longitude <= @rightLon)"
                 };
 
                 cmd.Parameters.AddWithValue("@bottomLat", bottomLat.Degrees);
@@ -254,9 +271,11 @@ namespace NavData_Interface.DataSources
             else
             {
                 // SELECT * FROM (airports) WHERE ((latitude) BETWEEN bottomlat AND topLAT) AND (longitude) BETWEEN leftlon AND rightlon)
-                var cmd = new SQLiteCommand(_connection)
+                var cmd = new SqliteCommand()
                 {
-                    CommandText = $"SELECT * FROM tbl_airports WHERE (airport_ref_latitude BETWEEN @bottomLat AND @topLat) AND (airport_ref_longitude BETWEEN @leftLon AND @rightLon)"
+                    Connection = _connection,
+                    CommandText =
+                        "SELECT * FROM tbl_airports WHERE (airport_ref_latitude BETWEEN @bottomLat AND @topLat) AND (airport_ref_longitude BETWEEN @leftLon AND @rightLon)"
                 };
 
                 cmd.Parameters.AddWithValue("@bottomLat", bottomLat.Degrees);
@@ -300,7 +319,7 @@ namespace NavData_Interface.DataSources
             return navaids;
         }
 
-        internal List<T> GetObjectsWithQuery<T>(SQLiteCommand cmd, Func<SQLiteDataReader, T> objectFactory)
+        internal List<T> GetObjectsWithQuery<T>(SqliteCommand cmd, Func<SqliteDataReader, T> objectFactory)
         {
             var objects = new List<T>();
 
@@ -361,14 +380,17 @@ namespace NavData_Interface.DataSources
                     closestAirport = airport;
                 }
             }
+
             return closestAirport;
         }
 
-        private SQLiteCommand RunwayLookupByAirportIdentifier(string airportIdentifier, string runwayIdentifier)
+        private SqliteCommand RunwayLookupByAirportIdentifier(string airportIdentifier, string runwayIdentifier)
         {
-            SQLiteCommand command = new SQLiteCommand();
-
-            command.CommandText = $"SELECT * FROM tbl_runways WHERE airport_identifier == @airport AND runway_identifier == RW@runway";
+            SqliteCommand command = new SqliteCommand()
+            {
+                Connection = _connection,
+                CommandText = $"SELECT * FROM tbl_runways WHERE airport_identifier == @airport AND runway_identifier == RW@runway"
+            };
 
             command.Parameters.AddWithValue("@airport", airportIdentifier);
             command.Parameters.AddWithValue("@runway", runwayIdentifier);
@@ -390,11 +412,13 @@ namespace NavData_Interface.DataSources
             return runways[0];
         }
 
-        private SQLiteCommand AirwayLookupByIdentifier(string airwayIdentifier)
+        private SqliteCommand AirwayLookupByIdentifier(string airwayIdentifier)
         {
-            SQLiteCommand command = new SQLiteCommand();
-
-            command.CommandText = $"SELECT * FROM tbl_airways WHERE airway_identifier == @airway";
+            SqliteCommand command = new SqliteCommand()
+            {
+                Connection = _connection,
+                CommandText = "SELECT * FROM tbl_enroute_airways WHERE route_identifier == @airway"
+            };
 
             command.Parameters.AddWithValue("@airway", airwayIdentifier);
 
@@ -410,6 +434,83 @@ namespace NavData_Interface.DataSources
             airway.SelectSection(startFix, endFix);
 
             return airway;
+        }
+
+        public override bool IsValidAirwayIdentifier(string airwayIdentifier)
+        {
+            var reader = AirwayLookupByIdentifier(airwayIdentifier).ExecuteReader();
+
+            return reader.HasRows;
+        }
+
+        private SqliteCommand ProcedureLookupByAirportIdentifier(string procedureTable, string airportIdentifier, string procedureIdentifier)
+        {
+            SqliteCommand command = new SqliteCommand()
+            {
+                Connection = _connection,
+                CommandText = $"SELECT * FROM {procedureTable} WHERE airport_identifier == @airport AND procedure_identifier = @procedure"
+            };
+
+            //command.Parameters.AddWithValue("@table", procedureTable);
+            command.Parameters.AddWithValue("@airport", airportIdentifier);
+            command.Parameters.AddWithValue("@procedure", procedureIdentifier);
+
+            return command;
+        }
+
+        private SqliteCommand SidLookupByAirportAndIdentifier(string airportIdentifier, string sidIdentifier)
+        {
+            return ProcedureLookupByAirportIdentifier("tbl_sids", airportIdentifier, sidIdentifier);
+            // SqliteCommand command = new SqliteCommand()
+            // {
+            //     Connection = _connection,
+            //     CommandText = $"SELECT * FROM tbl_sids WHERE airport_identifier == @airport AND procedure_identifier = @sid"
+            // };
+            //
+            // command.Parameters.AddWithValue("@airport", airportIdentifier);
+            // command.Parameters.AddWithValue("@sid", sidIdentifier);
+            //
+            // return command;
+        }
+
+        public override Sid GetSidByAirportAndIdentifier(string airportIdentifier, string sidIdentifier)
+        {
+            var reader = SidLookupByAirportAndIdentifier(airportIdentifier, sidIdentifier).ExecuteReader();
+
+            var sid = SidFactory.Factory(reader, _connection);
+
+            return sid;
+        }
+
+        private SqliteCommand StarLookupByAirportAndIdentifier(string airportIdentifier, string sidIdentifier)
+        {
+            return ProcedureLookupByAirportIdentifier("tbl_stars", airportIdentifier, sidIdentifier);
+            // SqliteCommand command = new SqliteCommand()
+            // {
+            //     Connection = _connection,
+            //     CommandText = "SELECT * FROM tbl_stars WHERE airport_identifier == @airport AND procedure_identifier = @sid"
+            // };
+            //
+            // command.Parameters.AddWithValue("@airport", airportIdentifier);
+            // command.Parameters.AddWithValue("@sid", sidIdentifier);
+            //
+            // return command;
+        }
+
+        public override Star GetStarByAirportAndIdentifier(string airportIdentifier, string sidIdentifier)
+        {
+            var reader = StarLookupByAirportAndIdentifier(airportIdentifier, sidIdentifier).ExecuteReader();
+
+            var sid = StarFactory.Factory(reader, _connection);
+
+            return sid;
+        }
+
+        public Approach GetApproachByAirportAndIdentifier(string airportIdentifier, string iapIdentifier)
+        {
+            var reader = ProcedureLookupByAirportIdentifier("tbl_iaps", airportIdentifier, iapIdentifier)
+                .ExecuteReader();
+            return ApproachFactory.Factory(reader, _connection);
         }
     }
 }

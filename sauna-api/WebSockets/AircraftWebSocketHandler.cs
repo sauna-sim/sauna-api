@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace SaunaSim.Api.WebSockets
 {
-    public class AircraftWebSocketHandler
+    public class AircraftWebSocketHandler : IDisposable
     {
         private string _callsign;
         private SemaphoreSlim _clientsLock;
@@ -68,6 +68,8 @@ namespace SaunaSim.Api.WebSockets
             var pilot = _handler.GetAircraftByCallsign(_callsign);
             if (pilot != null)
             {
+                // Send initial position calculation rate
+                await client.QueueMessage(new SocketPosCalcUpdateData(SimAircraft.PositionUpdateInterval));
                 await client.QueueMessage(new SocketAircraftUpdateData(new AircraftEventPosition(pilot.Callsign, DateTime.UtcNow, new AircraftResponse(pilot, true))));
             }
         }
@@ -102,6 +104,15 @@ namespace SaunaSim.Api.WebSockets
             _clientsLock.Release();
 
             await Task.WhenAll(tasks);
+        }
+
+        public void Dispose()
+        {
+            _clientsLock?.Dispose();
+            foreach (var client in _clients)
+            {
+                client.Dispose();
+            }
         }
     }
 }

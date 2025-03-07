@@ -1,19 +1,20 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
-    <Platforms>x86;x64</Platforms>
-    <Version>0.17.0</Version>
+    <Platforms>x64;ARM64</Platforms>
+    <Version>0.24.0</Version>
     <AssemblyVersion>$(Version)</AssemblyVersion>
     <FileVersion>$(Version)</FileVersion>
     <Description>Sauna Simulator Core Library</Description>
     <Authors>Prithvisagar Shivaraman</Authors>
     <RootNamespace>SaunaSim.Core</RootNamespace>
     <AssemblyName>SaunaSimCore</AssemblyName>
+    <Configurations>Debug;Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-    <PackageReference Include="PShivaraman.AviationCalcUtilNet" Version="2.12.1" />
-    <PackageReference Include="CaspianMerlin.FsdConnectorNet" Version="0.2.26" />
+    <PackageReference Include="PShivaraman.AviationCalcUtilNet" Version="2.13.2" />
+    <PackageReference Include="CaspianMerlin.FsdConnectorNet" Version="0.2.28" />
   </ItemGroup>
   <ItemGroup>
     <None Remove="JsonSchemas\" />

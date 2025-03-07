@@ -6,36 +6,35 @@ on:
     
 jobs:
   build:
-    # Arch Matrix
+   # Arch Matrix
     strategy:
       fail-fast: false
       matrix:
-        arch: [x64, x86] #arm, arm64
-        os: [macos-latest, windows-latest, ubuntu-latest]
+        arch: [x64, arm64]
+        short-os: [win, linux, osx]
         include:
-          - os: macos-latest
-            short-os: osx
-          - os: windows-latest
-            short-os: win
-          - os: ubuntu-latest
-            short-os: linux
-        exclude:
-#          - os: windows-latest
-#            arch: arm
-          - os: ubuntu-latest
-            arch: x86
-          - os: macos-latest
-            arch: x86
-#          - os: macos-latest
-#            arch: arm
-#          - os: ubuntu-latest
-#            arch: arm64
+          - short-os: osx
+            os: macos-latest            
+            rust-os: apple-darwin
+          - short-os: win
+            os: windows-latest            
+            rust-os: pc-windows-msvc
+          - short-os: linux
+            os: ubuntu-24.04
+            rust-os: unknown-linux-gnu
+          - arch: x64
+            rust-arch: x86_64
+          - arch: arm64
+            rust-arch: aarch64
     uses: ./.github/workflows/dotnet-build-reusable.yml
     secrets: inherit # Pass all secrets
     with:
       arch: ${{ matrix.arch }}
+      rust-arch: ${{ matrix.rust-arch }}
       os: ${{ matrix.os }}
       short-os: ${{ matrix.short-os }}
+      rust-os: ${{ matrix.rust-os }}
+      rust-target-suffix: ${{ matrix.rust-target-suffix }}
       
   create-github-release:
     if: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')}}
@@ -43,9 +42,10 @@ jobs:
     needs: build
     steps:
       - name: Download Tars
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
-          name: SaunaApi-bins
+          pattern: SaunaApi-bins*
+          merge-multiple: true
           path: ${{ github.workspace }}/bins
       - uses: "marvinpinto/action-automatic-releases@v1.2.1"
         with:
