@@ -38,7 +38,7 @@
   <ItemGroup>
     <PackageReference Include="PShivaraman.AviationCalcUtilNet" Version="2.13.2" />
     <PackageReference Include="CaspianMerlin.FsdConnectorNet" Version="0.2.28" />
-    <PackageReference Include="Swashbuckle.AspNetCore" Version="8.0.0" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="8.1.0" />
   </ItemGroup>
 
   <ItemGroup>
