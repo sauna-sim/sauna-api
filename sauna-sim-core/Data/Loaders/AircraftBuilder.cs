@@ -24,22 +24,16 @@ namespace SaunaSim.Core.Data.Loaders
 {
     public class AircraftBuilder
     {
-        public MagneticTileManager MagTileManager { get; private set; }
-        public GribTileManager GribTileManager { get; private set; }
-        public CommandHandler CommandHandler { get; private set; }
-        public string Callsign { get; set; }
-        public string Cid { get; set; }
-        public string Password { get; set; }
-        public string FullName { get; set; } = "Simulator Pilot";
-        public string Server { get; set; }
-        public int Port { get; set; }
+        private readonly MagneticTileManager _magTileManager;
+        private readonly GribTileManager _gribTileManager;
+        private readonly CommandHandler _commandHandler;
+        public string Callsign { get; }
         public int Squawk { get; set; } = 0;
         public GeoPoint Position { get; set; } = new GeoPoint(0, 0, 10000);
         public Action<string> LogInfo { get; set; }
         public Action<string> LogWarn { get; set; }
         public Action<string> LogError { get; set; }
         public string AircraftType { get; set; } = "A320";
-        public ProtocolRevision Protocol { get; set; } = ProtocolRevision.Classic;
         public Bearing HeadingMag { get; set; } = Bearing.FromDegrees(0);
         public double Speed { get; set; } = 250;
         public bool IsSpeedMach { get; set; } = false;
@@ -49,42 +43,31 @@ namespace SaunaSim.Core.Data.Loaders
         public int RequestedAlt { get; set; } = -1;
 
         internal AircraftBuilder(MagneticTileManager magTileMgr, GribTileManager gribTileMgr, CommandHandler commandHandler) {
-            MagTileManager = magTileMgr;
-            GribTileManager = gribTileMgr;
-            CommandHandler = commandHandler;
+            _magTileManager = magTileMgr;
+            _gribTileManager = gribTileMgr;
+            _commandHandler = commandHandler;
             LogInfo = (string msg) => { Console.WriteLine($"{Callsign}: [INFO] {msg}"); };
             LogWarn = (string msg) => { Console.WriteLine($"{Callsign}: [WARN] {msg}"); };
             LogError = (string msg) => { Console.WriteLine($"{Callsign}: [ERROR] {msg}"); };
         }
 
-        public AircraftBuilder(string callsign, string cid, string password, string server, int port, MagneticTileManager magTileMgr, GribTileManager gribTileMgr, CommandHandler commandHandler) : this(magTileMgr, gribTileMgr, commandHandler)
+        public AircraftBuilder(string callsign, MagneticTileManager magTileMgr, GribTileManager gribTileMgr, CommandHandler commandHandler) : this(magTileMgr, gribTileMgr, commandHandler)
         {
             Callsign = callsign;
-            Cid = cid;
-            Server = server;
-            Port = port;
-            Password = password;
         }
 
-        public SimAircraft Create(ClientInfo clientInfo)
+        public SimAircraft Create()
         {
             SimAircraft aircraft = new SimAircraft(
                 Callsign,
-                Cid,
-                Password,
-                FullName,
-                Server,
-                (ushort)Port,
-                Protocol,
-                clientInfo,
                 PerfDataHandler.LookupForAircraft(AircraftType),
                 Position.Lat,
                 Position.Lon,
                 Position.Alt,
                 HeadingMag,
-                MagTileManager,
-                GribTileManager,
-                CommandHandler,
+                _magTileManager,
+                _gribTileManager,
+                _commandHandler,
                 DelayMs)
             {
                 LogInfo = LogInfo,
@@ -128,8 +111,8 @@ namespace SaunaSim.Core.Data.Loaders
 
             if(flightPlan != null)
             {
-                string[] waypoints = flightPlan?.route?.Split(' ', '.') ?? new string[0];
-                List<Leg> NavDataFormatLegs = new List<Leg>();
+                string[] waypoints = flightPlan?.route?.Split(' ', '.') ?? Array.Empty<string>();
+                List<Leg> navDataFormatLegs = new List<Leg>();
 
                 if (waypoints.Length > 0 && waypoints[0] != "")
                 {
@@ -149,21 +132,21 @@ namespace SaunaSim.Core.Data.Loaders
                             // TODO: Handle runway transition and SID transition. This just loads the 'central' part of the SID
                             foreach (Leg l in potentialSid)
                             {
-                                NavDataFormatLegs.Add(l);
+                                navDataFormatLegs.Add(l);
                             }
 
                             // Our last point of the SID should now match with the following FP route point. If not, TF there
                             if (waypoints.Length > 1)
                             {
-                                Leg prevLeg = NavDataFormatLegs[NavDataFormatLegs.Count - 1];
-                                if (NavDataFormatLegs[NavDataFormatLegs.Count - 1].EndPoint.Identifier != waypoints[1])
+                                Leg prevLeg = navDataFormatLegs[navDataFormatLegs.Count - 1];
+                                if (navDataFormatLegs[navDataFormatLegs.Count - 1].EndPoint.Identifier != waypoints[1])
                                 {
                                     Fix nextWp = DataHandler.GetClosestWaypointByIdentifier(waypoints[1], prevLeg.EndPoint.Location);
 
                                     if (nextWp != null)
                                     {
                                         Leg tfLeg = new Leg(LegType.TRACK_TO_FIX, null, null, null, null, nextWp, null, null, null, null, null, null, null, null, null);
-                                        NavDataFormatLegs.Add(tfLeg);
+                                        navDataFormatLegs.Add(tfLeg);
                                     }
                                 }
                             }
@@ -191,7 +174,7 @@ namespace SaunaSim.Core.Data.Loaders
                             else
                             {
                                 Leg dfLeg = new Leg(LegType.DIRECT_TO_FIX, null, null, null, null, firstWp, new NavData_Interface.Objects.Fixes.Waypoints.WaypointDescription(false, true, false), null, null, null, null, null, null, null, null);
-                                NavDataFormatLegs.Add(dfLeg);
+                                navDataFormatLegs.Add(dfLeg);
                                 foundValidWp = true;
                             }
                         }
@@ -228,7 +211,7 @@ namespace SaunaSim.Core.Data.Loaders
 
                                 foreach (Leg l in potentialStar)
                                 {
-                                    NavDataFormatLegs.Add(l);
+                                    navDataFormatLegs.Add(l);
                                 }
                             }
                             else
@@ -236,12 +219,12 @@ namespace SaunaSim.Core.Data.Loaders
                                 // Go to this non-STAR waypoint, if it's not DCT, then DCT dest.
                                 if (waypoints[i] != "DCT")
                                 {
-                                    Fix finalWp = DataHandler.GetClosestWaypointByIdentifier(waypoints[i], NavDataFormatLegs[NavDataFormatLegs.Count - 1].EndPoint.Location);
+                                    Fix finalWp = DataHandler.GetClosestWaypointByIdentifier(waypoints[i], navDataFormatLegs[navDataFormatLegs.Count - 1].EndPoint.Location);
 
                                     if (finalWp != null)
                                     {
                                         Leg tfLeg = new Leg(LegType.TRACK_TO_FIX, null, null, null, null, finalWp, new NavData_Interface.Objects.Fixes.Waypoints.WaypointDescription(false, true, false), null, null, null, null, null, null, null, null);
-                                        NavDataFormatLegs.Add(tfLeg);
+                                        navDataFormatLegs.Add(tfLeg);
                                     }
                                 }
 
@@ -252,7 +235,7 @@ namespace SaunaSim.Core.Data.Loaders
                                 if (dest != null)
                                 {
                                     Leg tfLeg = new Leg(LegType.TRACK_TO_FIX, null, null, null, null, dest, new NavData_Interface.Objects.Fixes.Waypoints.WaypointDescription(true, true, false), null, null, null, null, null, null, null, null);
-                                    NavDataFormatLegs.Add(tfLeg);
+                                    navDataFormatLegs.Add(tfLeg);
                                 }
                             }
                         }
@@ -267,7 +250,7 @@ namespace SaunaSim.Core.Data.Loaders
                             // This is an airway! If we can process it, and select the previous and following waypoint, we'll accept it and add all legs.
                             // Otherwise try to process as waypoint anyways
 
-                            Fix prevWp = NavDataFormatLegs[NavDataFormatLegs.Count - 1].EndPoint;
+                            Fix prevWp = navDataFormatLegs[navDataFormatLegs.Count - 1].EndPoint;
                             string airwayIdentifier = waypoints[i];
 
                             // In case there's a duplicate waypoint, use the one closest to the starting waypoint
@@ -283,7 +266,7 @@ namespace SaunaSim.Core.Data.Loaders
 
                                     foreach (Leg l in airway)
                                     {
-                                        NavDataFormatLegs.Add(l);
+                                        navDataFormatLegs.Add(l);
                                     }
 
                                     // All legs added, also, we now have a leg to the next waypoint. So skip that one.
@@ -298,18 +281,18 @@ namespace SaunaSim.Core.Data.Loaders
                             }
                         }
 
-                        Fix dctWp = DataHandler.GetClosestWaypointByIdentifier(waypoints[i], NavDataFormatLegs[NavDataFormatLegs.Count - 1].EndPoint.Location);
+                        Fix dctWp = DataHandler.GetClosestWaypointByIdentifier(waypoints[i], navDataFormatLegs[navDataFormatLegs.Count - 1].EndPoint.Location);
 
                         if (dctWp != null)
                         {
                             Leg tfLeg = new Leg(LegType.TRACK_TO_FIX, null, null, null, null, dctWp, new NavData_Interface.Objects.Fixes.Waypoints.WaypointDescription(false, true, false), null, null, null, null, null, null, null, null);
-                            NavDataFormatLegs.Add(tfLeg);
+                            navDataFormatLegs.Add(tfLeg);
                         }
                     }
                 }
 
 
-                IList<IRouteLeg> legs = LegFactory.RouteLegsFromNavDataLegs(NavDataFormatLegs, MagTileManager);
+                IList<IRouteLeg> legs = LegFactory.RouteLegsFromNavDataLegs(navDataFormatLegs, _magTileManager);
 
                 foreach (IRouteLeg leg in legs)
                 {

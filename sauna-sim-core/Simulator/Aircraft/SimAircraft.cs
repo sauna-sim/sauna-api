@@ -1,35 +1,29 @@
-﻿using FsdConnectorNet;
-using FsdConnectorNet.Args;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-using SaunaSim.Core.Data;
-using SaunaSim.Core.Simulator.Commands;
-using System;
+﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
-using System.Reflection;
-using System.Runtime.CompilerServices;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Timers;
+using AviationCalcUtilNet.Atmos.Grib;
+using AviationCalcUtilNet.Aviation;
+using AviationCalcUtilNet.Geo;
 using AviationCalcUtilNet.GeoTools;
-using AviationCalcUtilNet.MathTools;
+using AviationCalcUtilNet.Magnetic;
+using AviationCalcUtilNet.Physics;
+using AviationCalcUtilNet.Units;
+using FsdConnectorNet;
+using FsdConnectorNet.Args;
+using NavData_Interface.Objects.Fixes;
+using SaunaSim.Core.Data;
 using SaunaSim.Core.Simulator.Aircraft.Autopilot;
 using SaunaSim.Core.Simulator.Aircraft.Autopilot.Controller;
 using SaunaSim.Core.Simulator.Aircraft.FMS;
-using SaunaSim.Core.Simulator.Aircraft.Performance;
-using System.Diagnostics;
 using SaunaSim.Core.Simulator.Aircraft.Ground;
+using SaunaSim.Core.Simulator.Aircraft.Performance;
 using SaunaSim.Core.Simulator.Aircraft.Pilot;
-using AviationCalcUtilNet.Atmos.Grib;
-using AviationCalcUtilNet.Magnetic;
-using AviationCalcUtilNet.Geo;
-using AviationCalcUtilNet.Units;
-using NavData_Interface.Objects.Fixes;
-using AviationCalcUtilNet.Physics;
-using AviationCalcUtilNet.Aviation;
-using AviationCalcUtilNet.Math;
+using SaunaSim.Core.Simulator.Commands;
+using SaunaSim.Core.Simulator.Session;
 
 namespace SaunaSim.Core.Simulator.Aircraft
 {
@@ -85,11 +79,13 @@ namespace SaunaSim.Core.Simulator.Aircraft
         private PauseableTimer _delayTimer;
         private bool disposedValue;
         private bool _shouldUpdatePosition = false;
-        private ClientInfo _clientInfo;
-        private Stopwatch _lagTimer;
-        private GribTileManager _gribTileManager;
+        private readonly Stopwatch _lagTimer;
+        private readonly GribTileManager _gribTileManager;
         private MagneticTileManager _magTileManager;
-        private CommandHandler _commandHandler;
+        private readonly CommandHandler _commandHandler;
+        
+        public const int PositionUpdateInterval = 100;
+        
         public CancellationToken CancelToken { private get; set; } = CancellationToken.None;
 
         // Events
@@ -98,9 +94,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
         public event EventHandler<AircraftSimStateChangedEventArgs> SimStateChanged;
 
         // Connection Info
-        public LoginInfo LoginInfo { get; private set; }
-
-        public string Callsign => LoginInfo.callsign;
+        public string Callsign { get; private set; }
 
         public Connection Connection { get; private set; }
 
@@ -116,6 +110,25 @@ namespace SaunaSim.Core.Simulator.Aircraft
         }
 
         // Simulator Data
+        private SimSessionDetails _sessionDetails;
+
+        public SimSessionDetails SessionDetails
+        {
+            get => _sessionDetails;
+            set
+            {
+                _sessionDetails = value;
+
+                Connection?.Dispose();
+
+                // Start FSD Connection if there is no delay
+                if (_sessionDetails.SessionType == SimSessionType.FSD && DelayMs < 0)
+                {
+                    InitializeFsdConnection();
+                }
+            }
+        }
+        
         private bool _paused;
         public bool Paused
         {
@@ -168,23 +181,17 @@ namespace SaunaSim.Core.Simulator.Aircraft
         }
 
         // Aircraft Info
-        private AircraftPosition _position;
-        public AircraftPosition Position => _position;
+        public AircraftPosition Position { get; private set; }
 
-        private AircraftAutopilot _autopilot;
-        public AircraftAutopilot Autopilot => _autopilot;
+        public AircraftAutopilot Autopilot { get; private set; }
 
-        private AircraftGroundHandler _groundhandler;
-        public AircraftGroundHandler GroundHandler => _groundhandler;
+        public AircraftGroundHandler GroundHandler { get; }
 
-        private ArtificialPilot _artificialpilot;
-        public ArtificialPilot ArtificialPilot => _artificialpilot;
+        public ArtificialPilot ArtificialPilot { get; }
 
-        private AircraftFms _fms;
-        public AircraftFms Fms => _fms;
+        public AircraftFms Fms { get; private set; }
 
-        private AircraftData _data;
-        public AircraftData Data => _data;
+        public AircraftData Data { get; }
 
         public PerfData PerformanceData { get; set; }
 
@@ -219,7 +226,6 @@ namespace SaunaSim.Core.Simulator.Aircraft
 
         public FlightPhaseType FlightPhase { get; set; }
 
-
         // Loggers
         public Action<string> LogInfo { get; set; }
 
@@ -230,17 +236,10 @@ namespace SaunaSim.Core.Simulator.Aircraft
         //Airport
         public Airport RelaventAirport { get; set; }
 
-        public SimAircraft(string callsign, string networkId, string password, string fullname, string hostname, ushort port, ProtocolRevision protocol, ClientInfo clientInfo,
-              PerfData perfData, Latitude lat, Longitude lon, Length alt, Bearing hdg_mag, MagneticTileManager magTileManager, GribTileManager gribTileManager, CommandHandler commandHandler, int delayMs = 0)
+        public SimAircraft(string callsign, PerfData perfData, Latitude lat, Longitude lon, Length alt, Bearing hdg_mag, MagneticTileManager magTileManager, GribTileManager gribTileManager, CommandHandler commandHandler, int delayMs = 0)
         {
-            LoginInfo = new LoginInfo(networkId, password, callsign, fullname, PilotRatingType.Student, hostname, protocol, AppSettingsManager.CommandFrequency, port);
-            _clientInfo = clientInfo;
+            Callsign = callsign;
             _lagTimer = new Stopwatch();
-            Connection = new Connection();
-            Connection.Connected += OnConnectionEstablished;
-            Connection.Disconnected += OnConnectionTerminated;
-            Connection.FrequencyMessageReceived += OnFrequencyMessageReceived;
-            Connection.PrivateMessageReceived += OnPrivateMessageReceived;
 
             _magTileManager = magTileManager;
             _gribTileManager = gribTileManager;
@@ -249,7 +248,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
             _simRate = 10;
             _paused = true;
 
-            _position = new AircraftPosition(lat, lon, alt, this, magTileManager)
+            Position = new AircraftPosition(lat, lon, alt, this, magTileManager)
             {
                 Pitch = Angle.FromDegrees(2.5),
                 Bank = Angle.FromDegrees(0),
@@ -259,7 +258,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
 
             FlightPhase = FlightPhaseType.IN_FLIGHT;
 
-            _data = new AircraftData(this)
+            Data = new AircraftData(this)
             {
                 ThrustLeverPos = 0,
                 SpeedBrakePos = 0,
@@ -269,7 +268,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
                 Mass_kg = (perfData.MTOW_kg + perfData.OEW_kg) / 2
             };
 
-            _autopilot = new AircraftAutopilot(this)
+            Autopilot = new AircraftAutopilot(this)
             {
                 SelectedAltitude = Convert.ToInt32(alt.Feet),
                 SelectedHeading = Convert.ToInt32(hdg_mag.Degrees),
@@ -279,11 +278,11 @@ namespace SaunaSim.Core.Simulator.Aircraft
                 CurrentVerticalMode = VerticalModeType.FLCH
             };
 
-            _groundhandler = new AircraftGroundHandler(this) { };
+            GroundHandler = new AircraftGroundHandler(this) { };
 
-            _artificialpilot = new ArtificialPilot(this) { };
+            ArtificialPilot = new ArtificialPilot(this) { };
 
-            _fms = new AircraftFms(this, magTileManager);
+            Fms = new AircraftFms(this, magTileManager);
             PerformanceData = perfData;
             DelayMs = delayMs;
 
@@ -300,9 +299,10 @@ namespace SaunaSim.Core.Simulator.Aircraft
             Position.GribPoint = tile.GetClosestPoint(Position.PositionGeoPoint);
         }
 
-        public void Start()
+        public void Start(SimSessionDetails details)
         {
             // Set initial assignments
+            _sessionDetails = details;
             UpdateGribPoint();
 
             // Determine flight phase
@@ -327,7 +327,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
 
         private void OnFrequencyMessageReceived(object sender, FrequencyMessageEventArgs e)
         {
-            if (e.Frequency == AppSettingsManager.CommandFrequency && e.Message.StartsWith($"{Callsign}, "))
+            if (FsdConnectionDetails.ConvertFrequency(e.Frequency) == _sessionDetails.ConnectionDetails?.CommandFrequency && e.Message.StartsWith($"{Callsign}, "))
             {
                 // Split message into args
                 List<string> split = e.Message.Replace($"{Callsign}, ", "").Split(' ').ToList();
@@ -372,32 +372,58 @@ namespace SaunaSim.Core.Simulator.Aircraft
         {
             DelayMs = -1;
             _delayTimer?.Stop();
+            
+            // Start Position Update Thread
+            _shouldUpdatePosition = true;
+            _posUpdThread = new Thread(AircraftPositionWorker);
+            _posUpdThread.Name = $"{Callsign} Position Worker";
+            _posUpdThread.Start();
 
             // Connect to FSD Server
-            Connection.Connect(_clientInfo, LoginInfo, GetFsdPilotPosition(), _data.AircraftConfig, new PlaneInfo(AircraftType, AirlineCode));
+            if (_sessionDetails.SessionType == SimSessionType.FSD)
+            {
+                InitializeFsdConnection();
+            }
+        }
+
+        private void InitializeFsdConnection()
+        {
+            if (_sessionDetails.ConnectionDetails == null ||
+                _sessionDetails.ClientInfo == null)
+            {
+                return;
+            }
+            
+            Connection = new Connection();
+            Connection.Connected += OnConnectionEstablished;
+            Connection.Disconnected += OnConnectionTerminated;
+            Connection.FrequencyMessageReceived += OnFrequencyMessageReceived;
+            Connection.PrivateMessageReceived += OnPrivateMessageReceived;
+
+            Connection.Connect(
+                _sessionDetails.ClientInfo.Value,
+                _sessionDetails.ConnectionDetails.Value.ToLoginInfo(Callsign),
+                GetFsdPilotPosition(),
+                Data.AircraftConfig,
+                new PlaneInfo(AircraftType, AirlineCode));
             ConnectionStatus = ConnectionStatusType.CONNECTING;
         }
 
         private void OnConnectionEstablished(object sender, EventArgs e)
         {
             ConnectionStatus = ConnectionStatusType.CONNECTED;
-            // Start Position Update Thread
-            _shouldUpdatePosition = true;
-            _posUpdThread = new Thread(new ThreadStart(AircraftPositionWorker));
-            _posUpdThread.Name = $"{Callsign} Position Worker";
-            _posUpdThread.Start();
 
             // Send Flight Plan
             Connection.SendFlightPlan(_flightPlan);
 
             // Stick to Ground
-            Connection.SetOnGround(_position.OnGround);
+            Connection.SetOnGround(Position.OnGround);
 
             // Set Flap, Gear and Spoiler Position
-            var flapsPct = (double)_data.Config / PerformanceData.ConfigList.Count;
+            var flapsPct = (double)Data.Config / PerformanceData.ConfigList.Count;
             Connection.SetFlapsPct((int)(flapsPct * 100.0));
-            Connection.SetGearDown(PerformanceData.ConfigList[_data.Config].GearDown);
-            Connection.SetSpoilersDeployed(_data.SpeedBrakePos > 0);
+            Connection.SetGearDown(PerformanceData.ConfigList[Data.Config].GearDown);
+            Connection.SetSpoilersDeployed(Data.SpeedBrakePos > 0);
 
             // Set Aircraft Lights
             Connection.SetBeaconLight(true);
@@ -414,34 +440,32 @@ namespace SaunaSim.Core.Simulator.Aircraft
         private void OnConnectionTerminated(object sender, EventArgs e)
         {
             ConnectionStatus = ConnectionStatusType.DISCONNECTED;
-            _shouldUpdatePosition = false;
-            _delayTimer?.Stop();
         }
         private void HandleInFlight()
         {
             // Update FMS
-            _fms.OnPositionUpdate((int)(AppSettingsManager.PosCalcRate * (_simRate / 10.0)));
+            Fms.OnPositionUpdate((int)(PositionUpdateInterval * (_simRate / 10.0)));
 
             // Run Config Handler
-            _artificialpilot.OnPositionUpdate((int)(AppSettingsManager.PosCalcRate * (_simRate / 10.0)));
+            ArtificialPilot.OnPositionUpdate((int)(PositionUpdateInterval * (_simRate / 10.0)));
 
             // Run Autopilot
-            _autopilot.OnPositionUpdate((int)(AppSettingsManager.PosCalcRate * (_simRate / 10.0)));
+            Autopilot.OnPositionUpdate((int)(PositionUpdateInterval * (_simRate / 10.0)));
 
             // TODO: Update Mass
 
             // Move Aircraft
-            MoveAircraft((int)(AppSettingsManager.PosCalcRate * (_simRate / 10.0)));
+            MoveAircraft((int)(PositionUpdateInterval * (_simRate / 10.0)));
         }
         private void HandleOnGround()
         {
             // Run ground handler
-            _groundhandler.OnPositionUpdate((int)(AppSettingsManager.PosCalcRate * (_simRate / 10.0)));
+            GroundHandler.OnPositionUpdate((int)(PositionUpdateInterval * (_simRate / 10.0)));
 
             // TODO: Update Mass
 
             // Move aircraft
-            MoveAircraftOnGround((int)(AppSettingsManager.PosCalcRate * (_simRate / 10.0)));
+            MoveAircraftOnGround((int)(PositionUpdateInterval * (_simRate / 10.0)));
         }
         private void AircraftPositionWorker()
         {
@@ -456,12 +480,12 @@ namespace SaunaSim.Core.Simulator.Aircraft
                     if (FlightPhase == FlightPhaseType.IN_FLIGHT)
                     {
                         //If we're on APCH below 50ft afe then switch flight phase to ground
-                        if (_autopilot.CurrentVerticalMode == VerticalModeType.LAND &&
+                        if (Autopilot.CurrentVerticalMode == VerticalModeType.LAND &&
                             (Position.TrueAltitude < RelaventAirport.Elevation + Length.FromFeet(1)))
                         {
                             FlightPhase = FlightPhaseType.ON_GROUND;
 
-                            _groundhandler.GroundPhase = GroundPhaseType.LAND;
+                            GroundHandler.GroundPhase = GroundPhaseType.LAND;
                             HandleOnGround();
                         }
                         else
@@ -475,19 +499,22 @@ namespace SaunaSim.Core.Simulator.Aircraft
                     }
 
                     // Update Aircraft FSD Config
-                    _artificialpilot.AircraftLights();
+                    ArtificialPilot.AircraftLights();
 
                     // Update Grib Data
                     UpdateGribPoint();
 
                     // Update FSD
-                    Connection.UpdatePosition(GetFsdPilotPosition());
+                    if (_sessionDetails.SessionType == SimSessionType.FSD && Connection.IsConnected)
+                    {
+                        Connection.UpdatePosition(GetFsdPilotPosition());
+                    }
 
-                    Task.Run(() => PositionUpdated.Invoke(this, new AircraftPositionUpdateEventArgs(DateTime.UtcNow, this)));
+                    Task.Run(() => PositionUpdated?.Invoke(this, new AircraftPositionUpdateEventArgs(DateTime.UtcNow, this)), CancelToken);
                 }
 
                 // Remove calculation time from position calculation rate
-                int sleepTime = AppSettingsManager.PosCalcRate - (int)_lagTimer.ElapsedMilliseconds;
+                int sleepTime = PositionUpdateInterval - (int)_lagTimer.ElapsedMilliseconds;
 
                 // Sleep the thread
                 if (sleepTime > 0)
@@ -592,7 +619,7 @@ namespace SaunaSim.Core.Simulator.Aircraft
             Position.IndicatedAltitude += Position.VerticalSpeed * TimeSpan.FromSeconds(t);
         }
 
-        public PilotPosition GetFsdPilotPosition()
+        private PilotPosition GetFsdPilotPosition()
         {
             return new PilotPosition(XpdrMode, (ushort)Squawk, Position.Latitude.Degrees, Position.Longitude.Degrees, Position.TrueAltitude.Feet, Position.TrueAltitude.Feet,
                 Position.PressureAltitude.Feet, Position.GroundSpeed.Knots, Position.Pitch.Degrees, Position.Bank.Degrees, Position.Heading_True.Degrees, Position.OnGround, Position.Velocity_X.MetersPerSecond, Position.Velocity_Y.MetersPerSecond,
@@ -607,19 +634,22 @@ namespace SaunaSim.Core.Simulator.Aircraft
                 {
                     // Stop updating position
                     _shouldUpdatePosition = false;
-                    _posUpdThread?.Join();
+                    if (_posUpdThread != null && _posUpdThread.IsAlive)
+                    {
+                        _posUpdThread.Join();
+                    }
 
                     // Stop delay timer
-                    Connection.Dispose();
+                    Connection?.Dispose();
                     _delayTimer?.Stop();
                     _delayTimer?.Dispose();
                 }
 
                 Connection = null;
                 _posUpdThread = null;
-                _position = null;
-                _autopilot = null;
-                _fms = null;
+                Position = null;
+                Autopilot = null;
+                Fms = null;
                 //Control = null;
                 _delayTimer = null;
                 disposedValue = true;

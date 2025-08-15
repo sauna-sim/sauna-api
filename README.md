@@ -10,7 +10,7 @@
 [github.release]: https://github.com/sauna-sim/sauna-api/releases/latest
 [Changelog Img]: https://img.shields.io/badge/Changelog-blue
 [changelog]: CHANGELOG.md
-[License Img]: https://img.shields.io/badge/License-GPLv3-blue
+[License Img]: https://img.shields.io/badge/License-LGPL_3-blue
 [license]: LICENSE
 
 ## About
@@ -35,17 +35,25 @@ The project depends on the following frameworks and packages:
 - **[Newtonsoft JSON](https://github.com/JamesNK/Newtonsoft.Json)**
 
 ## Building
-The API is a .NET 6.0 project. Simply build the sauna-api solution for your desired platform. All dependencies are pulled by NuGet automatically.
+The API is a .NET 8.0 project. Simply build the sauna-api solution for your desired platform. All dependencies are pulled by NuGet automatically.
 
 ## Usage
-Ensure that settings are sent to the API on initial connect via the `POST /api/data/settings` endpoint. Current settings can be obtained via `GET /api/data/settings`.
+Navigate to `/swagger` after starting the API to see API documentation.
 
-**Settings Example:**
-```json
-{
-  "commandFrequency": "133.125"
-}
-```
+[//]: # (Ensure that settings are sent to the API on initial connect via the `POST /api/data/settings` endpoint. Current settings can be obtained via `GET /api/data/settings`.)
+
+[//]: # ()
+[//]: # (**Settings Example:**)
+
+[//]: # (```json)
+
+[//]: # ({)
+
+[//]: # (  "commandFrequency": "133.125")
+
+[//]: # (})
+
+[//]: # (```)
 
 ### Navigation Data
 Currently, navigation data can either be loaded directly from a Navigraph DFD file or from a sector file.
@@ -72,24 +80,38 @@ It accepts both `*.sct2` and `*.sct` from Euroscope or VRC. Use the `POST /api/d
 }
 ```
 
-### Scenario Files
-Currently, a modified Euroscope 3.2 scenario file format (`*.txt`) is used. The main difference is that appending a ` HOLD` at the end of the ROUTE string will cause the aircraft to automatically hold. Original ES 3.2 file should work without modification.
+[//]: # (### Scenario Files)
 
-*Note: This file format may be replaced by a more robust file format in the future.*
+[//]: # (Currently, a modified Euroscope 3.2 scenario file format &#40;`*.txt`&#41; is used. The main difference is that appending a ` HOLD` at the end of the ROUTE string will cause the aircraft to automatically hold. Original ES 3.2 file should work without modification.)
 
-Load scenario files through the `POST /api/data/loadEuroscopeScenario` endpoint.
+[//]: # ()
+[//]: # (*Note: This file format may be replaced by a more robust file format in the future.*)
 
-**Data Format:**
-```json
-{
-  "fileName": "/Users/asdf/Downloads/scenario.txt",
-  "cid": "111111",
-  "password": "password",
-  "server": "fsdserver.example.com",
-  "port": 6809,
-  "protocolRevision": "Classic"
-}
-```
+[//]: # ()
+[//]: # (Load scenario files through the `POST /api/data/loadEuroscopeScenario` endpoint.)
+
+[//]: # ()
+[//]: # (**Data Format:**)
+
+[//]: # (```json)
+
+[//]: # ({)
+
+[//]: # (  "fileName": "/Users/asdf/Downloads/scenario.txt",)
+
+[//]: # (  "cid": "111111",)
+
+[//]: # (  "password": "password",)
+
+[//]: # (  "server": "fsdserver.example.com",)
+
+[//]: # (  "port": 6809,)
+
+[//]: # (  "protocolRevision": "Classic")
+
+[//]: # (})
+
+[//]: # (```)
 
 ### Running the Scenario
 Aircraft are paused by default when the scenario is loaded in. All aircraft are currently controlled via text commands sent through the *Command Frequency* or via the API.

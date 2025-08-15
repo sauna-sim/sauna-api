@@ -20,30 +20,30 @@ using System.Threading.Tasks;
 
 namespace SaunaSim.Api.WebSockets
 {
-    public class ClientStream
+    public class ClientStream : IDisposable
     {
         private WebSocket _ws;
-        private bool _cancellationRequested;
         private Queue<ISocketResponseData> _responseQueue;
         private SemaphoreSlim _responseQueueLock;
         private Task _sendWorker;
         private int _posRepCount = 0;
+        private const int SendDelayTime = 100;
 
         public int PosRepIgnore { get; set; } = 0;
 
-        public bool ShouldClose { get => _cancellationRequested; set => _cancellationRequested = value; }
+        public bool ShouldClose { get; set; }
 
         public ClientStream(WebSocket ws)
         {
             _ws = ws;
-            _cancellationRequested = false;
+            ShouldClose = false;
             _responseQueue = new Queue<ISocketResponseData>();
             _responseQueueLock = new SemaphoreSlim(1);
         }
 
         private async Task ResponseWorker()
         {
-            while (!_cancellationRequested && _ws.State == WebSocketState.Open)
+            while (!ShouldClose && _ws.State == WebSocketState.Open)
             {
                 await _responseQueueLock.WaitAsync();
                 bool found = _responseQueue.TryDequeue(out var msg);
@@ -53,14 +53,14 @@ namespace SaunaSim.Api.WebSockets
                     await SendObject(msg);
                 } else
                 {
-                    await Task.Delay(AppSettingsManager.PosCalcRate);
+                    await Task.Delay(SendDelayTime);
                 }
             }
         }
 
         private async Task SendString(string msg)
         {
-            if (!_cancellationRequested && _ws.State == WebSocketState.Open)
+            if (!ShouldClose && _ws.State == WebSocketState.Open)
             {
                 var bytes = Encoding.UTF8.GetBytes(msg);
                 var arraySegment = new ArraySegment<byte>(bytes, 0, bytes.Length);
@@ -113,14 +113,29 @@ namespace SaunaSim.Api.WebSockets
 
         public void StartSend()
         {
-            _cancellationRequested = false;
+            ShouldClose = false;
             _sendWorker = Task.Run(ResponseWorker);
         }
 
         public void StopSend()
         {
-            _cancellationRequested = true;
+            ShouldClose = true;
             _sendWorker.Wait();
+        }
+
+        public void Dispose()
+        {
+            _ws?.Dispose();
+            _responseQueueLock?.Dispose();
+            try
+            {
+                StopSend();
+                _sendWorker?.Dispose();
+            }
+            catch (Exception)
+            {
+                // ignored
+            }
         }
     }
 }

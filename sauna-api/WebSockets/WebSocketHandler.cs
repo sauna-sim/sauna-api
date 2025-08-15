@@ -21,17 +21,19 @@ using SaunaSim.Api.WebSockets.RequestData;
 
 namespace SaunaSim.Api.WebSockets
 {
-    public class WebSocketHandler
+    public class WebSocketHandler : IDisposable
     {
-        private List<ClientStream> _generalClients;
-        private SemaphoreSlim _generalClientsLock;
-        private Dictionary<string, AircraftWebSocketHandler> _aircraftClientsMap;
-        private SimAircraftHandler _simAircraftHandler;
+        private readonly List<ClientStream> _generalClients;
+        private readonly SemaphoreSlim _generalClientsLock;
+        private readonly SemaphoreSlim _aircraftClientsLock;
+        private readonly Dictionary<string, AircraftWebSocketHandler> _aircraftClientsMap;
+        private readonly SimAircraftHandler _simAircraftHandler;
 
         public WebSocketHandler(SimAircraftHandler handler)
         {
             _generalClients = new();
             _generalClientsLock = new(1);
+            _aircraftClientsLock = new(1);
             _aircraftClientsMap = new();
             _simAircraftHandler = handler;
 
@@ -49,13 +51,23 @@ namespace SaunaSim.Api.WebSockets
             // Handle Aircraft Clients
             Task.Run(async () =>
             {
-                bool aircraftExists = _aircraftClientsMap.TryGetValue(e.Callsign, out AircraftWebSocketHandler value);
-
-                if (aircraftExists)
+                try
                 {
-                    await value.RemoveAll();
-                    _aircraftClientsMap.Remove(e.Callsign);
+                    await _aircraftClientsLock.WaitAsync();
+                    
+                    bool aircraftExists = _aircraftClientsMap.TryGetValue(e.Callsign, out AircraftWebSocketHandler value);
+
+                    if (aircraftExists)
+                    {
+                        await value.RemoveAll();
+                        _aircraftClientsMap.Remove(e.Callsign);
+                    }
                 }
+                finally
+                {
+                    _aircraftClientsLock.Release();
+                }
+                
             });
         }
 
@@ -67,15 +79,23 @@ namespace SaunaSim.Api.WebSockets
             // Handle Aircraft Clients
             Task.Run(async () =>
             {
-                bool aircraftExists = _aircraftClientsMap.TryGetValue(e.Aircraft.Callsign, out AircraftWebSocketHandler value);
-
-                if (aircraftExists)
+                try
                 {
-                    await value.RemoveAll();
-                    _aircraftClientsMap.Remove(e.Aircraft.Callsign);
-                }
+                    await _aircraftClientsLock.WaitAsync();
+                    bool aircraftExists = _aircraftClientsMap.TryGetValue(e.Aircraft.Callsign, out AircraftWebSocketHandler value);
 
-                _aircraftClientsMap.Add(e.Aircraft.Callsign, new AircraftWebSocketHandler(e.Aircraft.Callsign, _simAircraftHandler));
+                    if (aircraftExists)
+                    {
+                        await value.RemoveAll();
+                        _aircraftClientsMap.Remove(e.Aircraft.Callsign);
+                    }
+
+                    _aircraftClientsMap.Add(e.Aircraft.Callsign, new AircraftWebSocketHandler(e.Aircraft.Callsign, _simAircraftHandler));
+                }
+                finally
+                {
+                    _aircraftClientsLock.Release();
+                }
             });
         }
 
@@ -101,9 +121,6 @@ namespace SaunaSim.Api.WebSockets
                 SimRate = _simAircraftHandler.SimRate
             }));
 
-            // Send initial position calcluation rate
-            await client.QueueMessage(new SocketPosCalcUpdateData(AppSettingsManager.PosCalcRate));
-
             // Send all aircraft initially
             _simAircraftHandler.SimAircraftListLock.WaitOne();
 
@@ -125,21 +142,37 @@ namespace SaunaSim.Api.WebSockets
 
         private async Task AddAircraftClient(string callsign, ClientStream client)
         {
-            bool aircraftExists = _aircraftClientsMap.TryGetValue(callsign, out AircraftWebSocketHandler value);
-
-            if (aircraftExists)
+            try
             {
-                await value.AddClient(client);
+                await _aircraftClientsLock.WaitAsync();
+                bool aircraftExists = _aircraftClientsMap.TryGetValue(callsign, out AircraftWebSocketHandler value);
+
+                if (aircraftExists)
+                {
+                    await value.AddClient(client);
+                }
+            }
+            finally
+            {
+                _aircraftClientsLock.Release();
             }
         }
 
         private async Task RemoveAircraftClient(string callsign, ClientStream client)
         {
-            bool aircraftExists = _aircraftClientsMap.TryGetValue(callsign, out AircraftWebSocketHandler value);
-
-            if (aircraftExists)
+            try
             {
-                await value.RemoveClient(client);
+                await _aircraftClientsLock.WaitAsync();
+                bool aircraftExists = _aircraftClientsMap.TryGetValue(callsign, out AircraftWebSocketHandler value);
+
+                if (aircraftExists)
+                {
+                    await value.RemoveClient(client);
+                }
+            }
+            finally
+            {
+                _aircraftClientsLock.Release();
             }
         }
 
@@ -244,6 +277,16 @@ namespace SaunaSim.Api.WebSockets
             } catch (Exception e)
             {
                 await RemoveAircraftClient(callsign, stream);
+            }
+        }
+
+        public void Dispose()
+        {
+            _generalClientsLock?.Dispose();
+            
+            foreach (var client in _generalClients)
+            {
+                client.Dispose();
             }
         }
     }

@@ -1,12 +1,9 @@
-﻿using FsdConnectorNet;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
-using SaunaSim.Api.ApiObjects.Data;
-using SaunaSim.Core.Data;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using FsdConnectorNet;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 
 namespace SaunaSim.Api.Controllers
 {

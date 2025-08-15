@@ -20,7 +20,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Pilot
             }
             set
             {
-                if(value != _landingLights)
+                if(value != _landingLights && _parentAircraft.Connection != null)
                 {
                     _parentAircraft.Connection.SetLandingLights(value);
                 }
@@ -37,7 +37,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Pilot
             }
             set
             {
-                if (value != _taxiLights)
+                if (value != _taxiLights && _parentAircraft.Connection != null)
                 {
                     _parentAircraft.Connection.SetTaxiLights(value);
                 }
@@ -54,7 +54,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Pilot
             }
             set
             {
-                if (value != _strobeLights)
+                if (value != _strobeLights && _parentAircraft.Connection != null)
                 {
                     _parentAircraft.Connection.SetStrobeLight(value);
                 }
@@ -71,7 +71,7 @@ namespace SaunaSim.Core.Simulator.Aircraft.Pilot
             }
             set
             {
-                if (value != _logoLights)
+                if (value != _logoLights && _parentAircraft.Connection != null)
                 {
                     _parentAircraft.Connection.SetLogoLight(value);
                 }

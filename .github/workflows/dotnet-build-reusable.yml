@@ -61,6 +61,7 @@ jobs:
       - name: Install Linux Arm64 Tools
         if: ${{ inputs.short-os == 'linux' && inputs.arch == 'arm64' }}
         run: |
+          sudo apt-get update
           sudo apt-get install gcc-aarch64-linux-gnu -y
           echo CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc >> "$GITHUB_ENV"
       - name: Build
