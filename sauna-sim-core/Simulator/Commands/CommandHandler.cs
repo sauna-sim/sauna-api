@@ -134,12 +134,12 @@ namespace SaunaSim.Core.Simulator.Commands
                 case "loc":
                 case "fac":
                 case "fat":
-                    cmd = new LocCommand(_handler.MagTileManager);
+                    cmd = new ApproachInterceptCommand(_handler.MagTileManager);
                     break;
                 case "ils":
                 case "app":
                 case "apch":
-                    cmd = new IlsCommand(_handler.MagTileManager);
+                    cmd = new ApproachCommand(_handler.MagTileManager);
                     break;
                 case "to":
                 case "takeoff":
